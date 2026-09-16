@@ -121,6 +121,8 @@ export function writePlan(ctx: WriterContext, doc: PlanDoc): XmlNode[] {
 
 // ---- 결재란 (cloned from the reference: 1×2 logo table + 12×11 approval grid) ----------
 
+export const DEFAULT_APPROVAL_LINE = ["담당", "팀장", "실장", "본부장", "원장"] as const;
+
 function approvalBlock(ctx: WriterContext, doc: PlanDoc): XmlNode[] {
   const out: XmlNode[] = [];
   const m = doc.meta;
@@ -138,13 +140,15 @@ function approvalBlock(ctx: WriterContext, doc: PlanDoc): XmlNode[] {
   setCellText(gridP, 1, 1, a.등록일자 ?? `${year}. . .`);
   setCellText(gridP, 4, 1, a.결재일자 ?? `${year}. . .`);
   setCellText(gridP, 7, 1, a.공개구분 ?? "공개");
-  // signer labels (row 0, cols 3,5,6,8,10)
+  // signer labels (row 0, cols 3,5,6,8,10) — 기본 결재라인 담당 → 팀장 → 실장 → 본부장 → 원장 (user 2026-09-16);
+  // `결재.라인` 으로 바꿀 수 있다(예: 북부지소 문서는 [담당, 지소장, 단장, 본부장, 원장])
+  const line = a.라인 && a.라인.length === 5 ? a.라인 : DEFAULT_APPROVAL_LINE;
   const labels: [number, string | undefined][] = [
-    [3, "담  당"],
-    [5, a.팀장 ? "팀장" : "지소장"],
-    [6, a.실장 ? "실장" : "단장"],
-    [8, a.본부장 ? "본부장" : "본부장 직무대리"],
-    [10, "원장"],
+    [3, line[0].length === 2 ? `${line[0][0]}  ${line[0][1]}` : line[0]],
+    [5, line[1]],
+    [6, line[2]],
+    [8, line[3]],
+    [10, line[4]],
   ];
   for (const [col, text] of labels) if (text) setCellText(gridP, 0, col, text);
   // signer names go in the signature row (row 2)

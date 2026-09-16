@@ -60,6 +60,14 @@ describe("buildHwpx — notice", () => {
 
 describe("buildHwpx — plan", () => {
   const { bytes, report } = buildHwpx(planFixture(), { now: NOW });
+  it("approval line defaults to 담당·팀장·실장·본부장·원장 and can be overridden", async () => {
+    const text = await extractText(bytes);
+    for (const l of ["담  당", "팀장", "실장", "본부장", "원장"]) expect(text).toContain(l);
+    expect(text).not.toContain("지소장");
+    const doc = planFixture();
+    (doc.meta as { 결재?: Record<string, unknown> }).결재 = { ...(doc.meta as { 결재?: Record<string, unknown> }).결재, 라인: ["담당", "지소장", "단장", "본부장", "원장"] };
+    expect(await extractText(buildHwpx(doc, { now: NOW }).bytes)).toContain("지소장");
+  });
   it("validates and keeps the chapter band widths", async () => {
     const v = await validateHwpx(bytes);
     expect(v.errors).toEqual([]);
