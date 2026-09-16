@@ -112,7 +112,7 @@ ${sourcesGuide(input)}
         systemPromptAppend: `${COMMON()}\n역할: 사업계획(안) 작성자. .claude/skills/gepa-plan-design/SKILL.md 의 정본 목차·표 규격·문체를 따른다. 수치는 research/notes.md 와 sources.json 에 있는 것만 쓰고 (출처, 연도)를 붙인다.`,
         prompt: `${brief}\n작업 폴더: ${workspaceDir}\n\n${workspaceDir}/research/notes.md 와 sources.json 을 읽고(없으면 주제만으로 작성하되 통계는 "확인 필요"로 표시), 「${project.title}」 사업계획(안)을 작성하라.
 front-matter: 제목(…사업계획(안)), 연도, 부서(${project.contact.부서명}), 결재{공개구분: 공개}, numbering: roman, lineSpacing: 160, body1Font: hyHeadlineBold. (요약은 쓰지 않는다 — 표지는 결재란·사업명 상자·로고만)
-장 구성: 추진배경 및 목적 / 사업개요 및 추진절차 / 세부 추진계획(## 절 2~3개) / 추진일정 / 소요예산(표+예산과목) / 기대효과(끝.). 분량 A4 8~12쪽.
+장 구성: 추진배경 및 목적(추진배경 ㅇ 3개, 추진목적 ㅇ 2~3개, 1쪽) / 사업개요 및 추진절차 / 세부 추진계획(## 절 2~3개) / 추진일정 / 소요예산(표+예산과목) / 기대효과(ㅇ 3개, 끝.). 분량 A4 8~12쪽.
 ${input.supplementalResearch ? "근거가 부족한 항목에 한해 Task(researcher)로 보충 조사할 수 있다(최대 2회, 같은 메시지에서 병렬 호출). 그 밖의 수치는 research/notes.md 와 sources.json 에 있는 것만 쓴다." : "보충 조사는 하지 않는다: 근거는 research/notes.md 와 sources.json 에 있는 것만 쓰고, 없는 수치는 \"확인 필요\"로 표시한다."} notes.md 와 sources.json 은 각각 Read 한 번으로 읽고 Grep 을 반복하지 않는다(위키 경로가 주어진 경우에만 Grep 2~3회).
 ${sourcesGuide(input)}${DOC_CONTRACT("plan", "plan")}${resume}`,
         allowedTools: input.supplementalResearch ? ["Read", "Write", "Glob", "Grep", "Task", "WebSearch", "WebFetch"] : ["Read", "Write", "Glob", "Grep"],
