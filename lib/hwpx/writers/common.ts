@@ -292,7 +292,8 @@ export function emitTable(ctx: WriterContext, fs: FamilyStyle, b: TableBlock): X
       const pt = isHeader ? d.headerFontPt : d.fontPt;
       const bold = c.bold ?? isHeader;
       const text = inlineText(c.inlines);
-      const alignDefault: ParaSpec["align"] = isHeader ? "CENTER" : c.align ? (c.align.toUpperCase().replace("BOTH", "JUSTIFY") as ParaSpec["align"]) : text.length <= 8 || b.role === "docs" ? "CENTER" : "JUSTIFY";
+      // first (구분) column is always centred (user 2026-09-16); other body cells centre when short, justify when long
+      const alignDefault: ParaSpec["align"] = isHeader ? "CENTER" : c.align ? (c.align.toUpperCase().replace("BOTH", "JUSTIFY") as ParaSpec["align"]) : ci === 0 || text.length <= 8 || b.role === "docs" ? "CENTER" : "JUSTIFY";
       const paraPr = ctx.reg.paraPr({ align: alignDefault, lineSpacing: d.lineSpacing });
       const base: CharSpec = { font: "table", pt, bold };
       // paragraphs: split on '\n' (from br inlines or literal newlines)
