@@ -322,8 +322,13 @@ export function emitTable(ctx: WriterContext, fs: FamilyStyle, b: TableBlock): X
             nestedHeight += nested.height + 280; // + out margins
             continue;
           }
-          paras.push(ctx.cellPara({ paraPr, runs: ctx.runsFor(g, base), vertsize: pt * 100, lineSpacing: d.lineSpacing, horzsize: interior }));
-          lines += ctx.lineCount(inlineText(g), pt, interior);
+          // a bullet line inside a cell ("∙ 항목", "· 항목", "- 항목", "○ 항목") hangs its wrapped lines under the text
+          // (user 2026-09-16); the bullet prefix width at this size is the hanging indent
+          const gText = inlineText(g);
+          const bullet = /^(\s*[∙·•\-○ㅇ◦]\s+)/.exec(gText);
+          const cellParaPr = bullet && !isHeader ? ctx.reg.paraPr({ align: alignDefault === "CENTER" ? "LEFT" : alignDefault, lineSpacing: d.lineSpacing, hanging: ctx.textWidth(bullet[1], pt) }) : paraPr;
+          paras.push(ctx.cellPara({ paraPr: cellParaPr, runs: ctx.runsFor(g, base), vertsize: pt * 100, lineSpacing: d.lineSpacing, horzsize: interior }));
+          lines += ctx.lineCount(gText, pt, interior);
         }
       }
       const h = Math.round(Math.max(lines, nestedHeight ? 0 : 1) * pt * 100 * (d.lineSpacing / 100)) + nestedHeight + margin.t + margin.b + 300;

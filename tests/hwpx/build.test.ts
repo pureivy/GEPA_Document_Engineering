@@ -60,6 +60,19 @@ describe("buildHwpx — notice", () => {
 
 describe("buildHwpx — plan", () => {
   const { bytes, report } = buildHwpx(planFixture(), { now: NOW });
+  it("hangs wrapped bullet lines inside table cells under the text", () => {
+    const doc = planFixture();
+    doc.blocks.push({ id: "t9", k: "table", role: "roles", rows: [
+      { cells: [{ inlines: [{ t: "text", text: "구분" }] }, { inlines: [{ t: "text", text: "주요기능 및 역할" }] }] },
+      { cells: [{ inlines: [{ t: "text", text: "성주군" }] }, { inlines: [{ t: "text", text: "∙ 사업비 지원(대행 협약), 관내 소상공인 홍보·대상 발굴 협조, 읍면 행정복지센터 접수 안내 문의" }] }] },
+    ], headerRows: 1 });
+    const { sectionXml, headerXml } = buildHwpx(doc, { now: NOW });
+    const m = /<hp:p [^>]*paraPrIDRef="(\d+)"[^>]*>(?:(?!<\/hp:p>)[\s\S])*∙ 사업비 지원/.exec(sectionXml);
+    expect(m).not.toBeNull();
+    const pp = new RegExp(`<hh:paraPr id="${m![1]}"[^>]*>(?:(?!</hh:paraPr>).)*<hp:default>(?:(?!</hp:default>).)*<hc:intent value="(-\\d+)"`, "s").exec(headerXml);
+    expect(pp).not.toBeNull();
+    expect(Number(pp![1])).toBeLessThan(0); // negative intent = 내어쓰기
+  });
   it("bolds a leading (라벨) of ○ items, glyph stays regular", () => {
     const doc = planFixture();
     doc.blocks.push({ id: "bl1", k: "para", role: "body2", glyph: "ㅇ", inlines: [{ t: "text", text: "(사전 진단) 참여기업 현황 파악" }] });
