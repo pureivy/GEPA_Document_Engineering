@@ -7,6 +7,7 @@ import { isAbsolute, join } from "node:path";
 import { rhwpBin, spawnCommandSync as spawnSync } from "../platform";
 import { DocModelSchema, type DocModel } from "../docmodel/schema";
 import { parseDsl } from "../docmodel/dsl";
+import { normalizeDocMeta, normalizeDslText, type NormalizeChange } from "../docmodel/govNormalize";
 import { toDsl } from "../docmodel/serialize/toDsl";
 import { exportStageDoc, ensureRendered, readExportReport, readPageSvg } from "../hwpx/export";
 import type { ExportReportDTO, Stage } from "../contracts";
@@ -56,10 +57,35 @@ export function saveStageDoc(projectId: string, stage: Stage, doc: DocModel, sou
 }
 
 /** Parse DSL text produced by an agent, save it, and return the doc + warnings. */
-export function saveStageDsl(projectId: string, stage: Stage, dslText: string, source: "agent" | "user" = "agent"): { doc: DocModel; warnings: { line: number; message: string }[]; version: number } {
-  const { doc, warnings } = parseDsl(dslText);
-  const version = saveStageDoc(projectId, stage, doc, source, dslText);
-  return { doc, warnings, version };
+export function saveStageDsl(projectId: string, stage: Stage, dslText: string, source: "agent" | "user" = "agent"): { doc: DocModel; warnings: { line: number; message: string }[]; version: number; normalized?: NormalizeChange[] } {
+  // agent output is normalised to the 편람/house conventions before it becomes a version;
+  // user edits are saved verbatim (the editor shows lint warnings instead)
+  let text = dslText;
+  const normalized: NormalizeChange[] = [];
+  if (source === "agent") {
+    const r = normalizeDslText(dslText);
+    text = r.text;
+    normalized.push(...r.changes);
+  }
+  const parsed = parseDsl(text);
+  let doc = parsed.doc;
+  if (source === "agent") {
+    const m = normalizeDocMeta(doc);
+    doc = m.doc;
+    normalized.push(...m.changes);
+    if (normalized.length) {
+      // meta fixes need re-serialisation; pure text fixes keep the agent's own layout
+      if (m.changes.length) text = toDsl(doc);
+      try {
+        writeFileSync(join(stageDir(projectId, stage), "draft.dsl.md"), text, "utf8");
+      } catch (e) {
+        console.error("[service] normalized draft write failed:", (e as Error).message);
+      }
+      console.log(`[service] ${stage} draft normalized: ${normalized.map((c) => `${c.rule}×${c.count}`).join(", ")}`);
+    }
+  }
+  const version = saveStageDoc(projectId, stage, doc, source, text);
+  return { doc, warnings: parsed.warnings, version, normalized };
 }
 
 export function listVersions(projectId: string, stage: Stage): { seq: number; source: string; createdAt: string }[] {

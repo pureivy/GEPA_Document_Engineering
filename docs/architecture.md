@@ -559,6 +559,8 @@ Plan family roles (ids filled by the extraction script from plan.hwpx's header):
 
 ## D. Agent design
 
+> **2026-09-16 — 저장 시 자동 정규화.** 에이전트가 쓴 초안은 `saveStageDsl(…, "agent")`에서 `lib/docmodel/govNormalize.ts`를 거친다: 물결표 붙이기, 날짜 0 제거·요일 앞 마침표·붙은 날짜 띄우기, 쌍점 앞 공백 제거, `끝.` 앞 두 타, 원장 자리표시자 → 실제 성명, 보도자료 담당부서 정식 명칭·책임자 자동 채움(조직표). 결과는 draft.dsl.md에 다시 쓰고 버전으로 저장한다. 사용자 편집본은 손대지 않는다(린트 경고만). 판단이 필요한 것(항목 하나, 표로 끝나는 본문, 글자 수)은 여전히 경고·검토 대상.
+>
 > **2026-09-16 — 기존 사업계획서로 시작.** 새 프로젝트 대화상자에서 지난 계획서(hwp/hwpx/pdf/docx/md/txt)를 올리고 "이번에 바뀌는 내용"을 적으면 `POST /api/projects/:id/reference`(multipart)가 파일을 `projects/<id>/reference/`에 저장하고 텍스트를 `reference/base-plan.md`로 추출(`lib/reference/extract.ts`: hwpx 전 구역, hwp는 rhwp 변환, pdf는 pdftotext, docx는 w:t)한 뒤 `projects.reference_name/reference_changes`(migration 0001)에 기록하고, `autoRun`이면 research를 autoChain으로 시작한다. 프롬프트는 `referenceGuide()`로 단계별 지시(조사: 바뀐 내용 관련 최신 근거만·웹 5회, 계획: 골격·문체 유지하고 변경 사항 일관 반영, 공고·보도: 변경 반영 확인)를 덧붙인다. 계획서 단계의 보충 조사는 옵션(`supplementalResearch`, RunControls·개요·새 프로젝트의 "계획서 보충 조사" 체크, 기본 꺼짐, auto-chain을 따라 전달).
 >
 > **2026-09-16 — 단계 자동 연결·속도.** `startStageRun({ autoChain: true })` / `POST …/run {autoChain}`: 성공 시 서버가 다음 단계(research → plan → notice → press)를 그 단계의 기본 모델로 500 ms 뒤 시작한다(`chainNext` in `lib/stages/runIntegration.ts`; 충돌은 project+stage 단위라 안전). UI: RunControls "다음 단계 자동 실행"(localStorage `gepa.autoChain`, 기본 켜짐), 프로젝트 개요 "전체 자동 실행". 속도: plan 단계는 보충 조사(Task/WebSearch/WebFetch) 없이 notes/sources만 사용, 문서는 한 번에 Write(재작성 최대 1회), researcher 하위 에이전트 병렬 호출·웹 예산 6/8, maxTurns research 45·plan 40. 기준 실측(AI 코칭 성주군): research 22 min, plan 28 min, notice 4 min, press 9 min.
