@@ -18,6 +18,10 @@ export const projects = sqliteTable("projects", {
   organizer: text("organizer").notNull().default(""),
   /** JSON: { 담당자?, 부서?, 전화?, 이메일?, 우편주소? … } */
   contact: text("contact").notNull().default("{}"),
+  /** uploaded 기존 사업계획서 (file name under projects/<id>/reference/, extracted text in base-plan.md) */
+  referenceName: text("reference_name"),
+  /** what changed versus the uploaded plan (free text) */
+  referenceChanges: text("reference_changes"),
   createdAt: text("created_at").notNull(),
   updatedAt: text("updated_at").notNull(),
 });

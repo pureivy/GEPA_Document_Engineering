@@ -48,6 +48,7 @@ const TEMPLATE: Record<Family, Record<string, unknown>> = {
     결재: { 담당: "", 팀장: "", 실장: "", 본부장: "", 원장: "", 등록일자: "", 결재일자: "", 공개구분: "", 협조: "" },
     요약: { 사업개요: "", 추진일정: "", 기대효과: "" },
     numbering: "roman",
+    ladder: "gov",
     lineSpacing: 160,
     body1Font: "humanMyeongjoBold",
     house: "gepa",

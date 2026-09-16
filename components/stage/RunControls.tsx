@@ -36,6 +36,14 @@ export interface RunControlsProps {
   model: string;
   defaultModel: string;
   onModelChange: (model: string) => void;
+  /** 완료 후 다음 단계 자동 실행 */
+  autoChain: boolean;
+  canAutoChain: boolean;
+  onAutoChainChange: (v: boolean) => void;
+  /** 사업계획서 작성 시 보충 조사 허용 (plan/research pages; carried along the auto-chain) */
+  planResearch: boolean;
+  canPlanResearch: boolean;
+  onPlanResearchChange: (v: boolean) => void;
   onRun: () => void;
   onCancel: () => void;
   onResume: (instruction: string) => void;
@@ -94,6 +102,18 @@ export function RunControls(p: RunControlsProps) {
           </option>
         )}
       </Select>
+      {p.canAutoChain ? (
+        <label className="flex items-center gap-1 text-[11px] text-slate-600" title="이 단계가 성공하면 다음 단계(사업계획서 → 공고문 → 보도자료)를 자동으로 시작합니다">
+          <input type="checkbox" className="h-3.5 w-3.5" checked={p.autoChain} disabled={p.running} onChange={(e) => p.onAutoChainChange(e.target.checked)} />
+          다음 단계 자동 실행
+        </label>
+      ) : null}
+      {p.canPlanResearch ? (
+        <label className="flex items-center gap-1 text-[11px] text-slate-600" title="사업계획서 작성 중 근거가 부족하면 조사 에이전트로 보충 조사합니다(최대 2회, 10분 안팎 추가)">
+          <input type="checkbox" className="h-3.5 w-3.5" checked={p.planResearch} disabled={p.running} onChange={(e) => p.onPlanResearchChange(e.target.checked)} />
+          계획서 보충 조사
+        </label>
+      ) : null}
       <Button variant="outline" size="sm" disabled={p.running || !p.canResume || p.busy} onClick={() => setResumeOpen(true)} title={p.canResume ? "이전 세션을 이어서 수정 요청을 전달합니다" : "이어서 수정하려면 완료된 실행이 필요합니다"}>
         <MessageSquarePlus className="h-3.5 w-3.5" /> 이어서 수정 요청
       </Button>

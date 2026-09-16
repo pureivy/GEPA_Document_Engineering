@@ -5,7 +5,7 @@
  * cancel / resume), the SSE stream, the typing controller and the edit → save → export flow.
  */
 import Link from "next/link";
-import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState, useSyncExternalStore } from "react";
 import { Group, Panel, Separator } from "react-resizable-panels";
 import { ChevronLeft, Settings2 } from "lucide-react";
 import { STAGE_FAMILY, STAGE_LABEL, STAGES, type ProjectDTO, type RunDTO, type RunStatus, type Stage } from "@/lib/contracts";
@@ -35,11 +35,43 @@ export interface StageRunnerProps {
 const ZOOM_MIN = 50;
 const ZOOM_MAX = 150;
 
+// ---- run preferences (localStorage) as an external store so SSR and client agree
+const prefListeners = new Set<() => void>();
+function subscribePref(cb: () => void): () => void {
+  prefListeners.add(cb);
+  return () => prefListeners.delete(cb);
+}
+function readPref(key: string, def: boolean): boolean {
+  try {
+    const v = window.localStorage.getItem(key);
+    return v === null ? def : v === "1";
+  } catch {
+    return def;
+  }
+}
+function writePref(key: string, v: boolean) {
+  try {
+    window.localStorage.setItem(key, v ? "1" : "0");
+  } catch {
+    /* private mode */
+  }
+  for (const l of prefListeners) l();
+}
+const subscribeAutoChain = subscribePref;
+const readAutoChain = () => readPref("gepa.autoChain", true);
+const readPlanResearch = () => readPref("gepa.planResearch", false);
+
 export function StageRunner({ projectId, stage, defaultModel }: StageRunnerProps) {
   const family = STAGE_FAMILY[stage];
   const isResearch = stage === "research";
   // model for the next run of this stage (per-run override; the stage default otherwise)
   const [model, setModel] = useState(defaultModel);
+  // 완료 후 다음 단계 자동 실행 (research → plan → notice → press); remembered per browser (default on)
+  const autoChain = useSyncExternalStore(subscribeAutoChain, readAutoChain, () => true);
+  // 사업계획서 작성 시 보충 조사 허용 (default off — the plan stage is much faster without it)
+  const planResearch = useSyncExternalStore(subscribePref, readPlanResearch, () => false);
+  const changeAutoChain = (v: boolean) => writePref("gepa.autoChain", v);
+  const changePlanResearch = (v: boolean) => writePref("gepa.planResearch", v);
 
   // ---- project / runs
   const [project, setProject] = useState<ProjectDTO | null>(null);
@@ -312,7 +344,7 @@ export function StageRunner({ projectId, stage, defaultModel }: StageRunnerProps
     setActionError(null);
     try {
       editorRef.current?.flushPendingSave();
-      const r = await api.runStage(projectId, stage, { ...opts, model });
+      const r = await api.runStage(projectId, stage, { ...opts, model, autoChain: autoChain && stage !== "press", supplementalResearch: planResearch });
       store.reset();
       controllerRef.current?.reset();
       resetLive();
@@ -424,11 +456,26 @@ export function StageRunner({ projectId, stage, defaultModel }: StageRunnerProps
         model={model}
         defaultModel={defaultModel}
         onModelChange={setModel}
+        autoChain={autoChain}
+        canAutoChain={stage !== "press"}
+        onAutoChainChange={changeAutoChain}
+        planResearch={planResearch}
+        canPlanResearch={stage === "plan" || stage === "research"}
+        onPlanResearchChange={changePlanResearch}
         onRun={() => void start()}
         onCancel={() => void cancel()}
         onResume={(instruction) => void start({ resume: true, instruction })}
         onSkipAnimation={() => controllerRef.current?.flush()}
       />
+
+      {autoChain && stage !== "press" && status === "succeeded" && !running ? (
+        <div className="flex items-center gap-2 border-b border-emerald-200 bg-emerald-50 px-3 py-1.5 text-xs text-emerald-800">
+          <span className="flex-1">이 단계가 끝나 다음 단계가 자동으로 시작됩니다.</span>
+          <Link href={`/projects/${projectId}/${STAGES[STAGES.indexOf(stage) + 1]}`} className="font-medium underline">
+            {STAGE_LABEL[STAGES[STAGES.indexOf(stage) + 1]]} 열기
+          </Link>
+        </div>
+      ) : null}
 
       {loadError || actionError ? (
         <div className="flex items-center gap-2 border-b border-red-200 bg-red-50 px-3 py-1.5 text-xs text-red-800">

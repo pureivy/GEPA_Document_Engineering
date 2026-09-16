@@ -75,9 +75,22 @@ export const api = {
     return "project" in r ? r.project : r;
   },
   getProject: (id: string) => request<ProjectDetail>(`/api/projects/${encodeURIComponent(id)}`),
+  /** upload a 기존 사업계획서 (+ 변경 사항); autoRun starts 조사 → … automatically */
+  uploadReference: async (id: string, file: File, changes: string, autoRun: boolean, supplementalResearch = false) => {
+    const fd = new FormData();
+    fd.append("file", file);
+    fd.append("changes", changes);
+    fd.append("autoRun", autoRun ? "1" : "0");
+    fd.append("supplementalResearch", supplementalResearch ? "1" : "0");
+    const res = await fetch(`/api/projects/${encodeURIComponent(id)}/reference`, { method: "POST", body: fd, headers: { Accept: "application/json" } });
+    const body = (await res.json().catch(() => ({}))) as { error?: string; project?: ProjectDTO; chars?: number; truncated?: boolean };
+    if (!res.ok) throw new ApiError(res.status, body.error ?? `${res.status} ${res.statusText}`, body);
+    return body as { project: ProjectDTO; chars: number; truncated: boolean };
+  },
+  deleteProject: (id: string) => request<{ ok: true; id: string }>(`/api/projects/${encodeURIComponent(id)}`, { method: "DELETE" }),
 
   // runs
-  runStage: (projectId: string, stage: Stage, opts: { resume?: boolean; instruction?: string; model?: string } = {}) =>
+  runStage: (projectId: string, stage: Stage, opts: { resume?: boolean; instruction?: string; model?: string; autoChain?: boolean; supplementalResearch?: boolean } = {}) =>
     request<{ runId: string; sessionId: string }>(
       `${stageBase(projectId, stage)}/run`,
       json(opts),

@@ -16,6 +16,7 @@ export function serializeProject(row: ProjectRow): ProjectDTO {
     region: row.region,
     organizer: row.organizer,
     contact: contact as ProjectDTO["contact"],
+    ...(row.referenceName ? { reference: { fileName: row.referenceName, changes: row.referenceChanges ?? "" } } : {}),
     createdAt: row.createdAt,
     updatedAt: row.updatedAt,
   };

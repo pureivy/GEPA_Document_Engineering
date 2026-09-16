@@ -48,6 +48,8 @@ export async function POST(req: Request) {
     region: body.data.region,
     organizer: body.data.organizer,
     contact: JSON.stringify(body.data.contact),
+    referenceName: null,
+    referenceChanges: null,
     createdAt: now,
     updatedAt: now,
   };

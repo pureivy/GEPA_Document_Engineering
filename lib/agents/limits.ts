@@ -22,8 +22,8 @@ export const DEFAULT_IDLE_TIMEOUT_MS = 300_000;
  * researcher subagents, plan 18 min, notice 11 min, press 7 min, review 8 min.
  */
 export const STAGE_LIMITS: Record<Stage, StageLimits> = {
-  research: { maxTurns: 60, wallTimeoutMs: 45 * MIN, idleTimeoutMs: DEFAULT_IDLE_TIMEOUT_MS },
-  plan: { maxTurns: 60, wallTimeoutMs: 40 * MIN, idleTimeoutMs: DEFAULT_IDLE_TIMEOUT_MS },
+  research: { maxTurns: 45, wallTimeoutMs: 35 * MIN, idleTimeoutMs: DEFAULT_IDLE_TIMEOUT_MS },
+  plan: { maxTurns: 40, wallTimeoutMs: 30 * MIN, idleTimeoutMs: DEFAULT_IDLE_TIMEOUT_MS },
   notice: { maxTurns: 30, wallTimeoutMs: 25 * MIN, idleTimeoutMs: DEFAULT_IDLE_TIMEOUT_MS },
   press: { maxTurns: 20, wallTimeoutMs: 15 * MIN, idleTimeoutMs: DEFAULT_IDLE_TIMEOUT_MS },
   review: { maxTurns: 15, wallTimeoutMs: 15 * MIN, idleTimeoutMs: DEFAULT_IDLE_TIMEOUT_MS },
@@ -32,7 +32,7 @@ export const STAGE_LIMITS: Record<Stage, StageLimits> = {
 /** Default tool allow-lists per stage (see docs/architecture.md §D.2). */
 export const STAGE_ALLOWED_TOOLS: Record<Stage, string[]> = {
   research: ["WebSearch", "WebFetch", "Read", "Write", "Edit", "Glob", "Grep", "Task"],
-  plan: ["Read", "Write", "Task", "WebSearch", "WebFetch"],
+  plan: ["Read", "Write", "Glob", "Grep"], // 2026-09-16: no 보충 조사 in the plan stage (the 28-min plan run spent most of its time on it)
   notice: ["Read", "Write"],
   press: ["Read", "Write"],
   review: ["Read"],

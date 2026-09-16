@@ -21,6 +21,10 @@ const bodySchema = z.object({
   reviewTarget: z.enum(["plan", "notice", "press"]).optional(),
   /** model alias for this run; defaults to the stage's configured model */
   model: z.enum(MODEL_ALIASES).optional(),
+  /** start the following stages automatically when this one succeeds (research → plan → notice → press) */
+  autoChain: z.boolean().optional(),
+  /** plan: allow 보충 조사 (Task/WebSearch/WebFetch, max 2) */
+  supplementalResearch: z.boolean().optional(),
 });
 
 export async function POST(req: Request, ctx: { params: Promise<{ id: string; stage: string }> }) {
@@ -47,6 +51,8 @@ export async function POST(req: Request, ctx: { params: Promise<{ id: string; st
       reviewTarget: body.data.reviewTarget,
       resumeSessionId,
       model: body.data.model,
+      autoChain: body.data.autoChain,
+      supplementalResearch: body.data.supplementalResearch,
     });
     return Response.json({ runId, sessionId, stage, projectId: id, resumed: !!resumeSessionId }, { status: 202 });
   } catch (err) {

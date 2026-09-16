@@ -18,6 +18,8 @@ export interface ProjectDTO {
   region: string;
   organizer: string;
   contact: { 부서명: string; 담당자?: string; 전화: string; 이메일: string; 우편주소?: string };
+  /** uploaded 기존 사업계획서 (projects/<id>/reference/<fileName>, text in reference/base-plan.md) and what changes */
+  reference?: { fileName: string; changes: string };
   createdAt: string;
   updatedAt: string;
 }

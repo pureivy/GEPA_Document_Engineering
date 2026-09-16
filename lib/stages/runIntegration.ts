@@ -31,6 +31,19 @@ export interface StartStageRunOptions {
   /** per-run model override (alias); otherwise the stage default from STAGE_MODELS / env */
   model?: string;
   runner?: StartRunInput["runner"];
+  /**
+   * When the run succeeds, start the next pipeline stage automatically
+   * (research → plan → notice → press) with the stage's default model (user request 2026-09-16).
+   */
+  autoChain?: boolean;
+  /** plan stage: allow 보충 조사 (Task/WebSearch/WebFetch), propagated along an auto-chain */
+  supplementalResearch?: boolean;
+}
+
+const PIPELINE: Stage[] = ["research", "plan", "notice", "press"];
+export function nextStage(stage: Stage | "review"): Stage | null {
+  const i = PIPELINE.indexOf(stage as Stage);
+  return i >= 0 && i + 1 < PIPELINE.length ? PIPELINE[i + 1] : null;
 }
 
 /** The MCP tool ids that will actually work with the configured keys (for the prompt). */
@@ -73,7 +86,7 @@ export function startStageRun(opts: StartStageRunOptions): { runId: string; sess
     }
   }
   const dataTools = mcpConfigPath ? availableDataTools() : undefined;
-  const input: StagePromptInput = { stage: opts.stage, project: opts.project, workspaceDir, instruction: opts.instruction, reviewTarget: opts.reviewTarget, dataTools, wikiDir };
+  const input: StagePromptInput = { stage: opts.stage, project: opts.project, workspaceDir, instruction: opts.instruction, reviewTarget: opts.reviewTarget, dataTools, wikiDir, supplementalResearch: opts.supplementalResearch };
   const p = buildStagePrompt(input);
   const limits = limitsFor(opts.stage);
   const isDocStage = opts.stage === "plan" || opts.stage === "notice" || opts.stage === "press";
@@ -187,10 +200,27 @@ export function startStageRun(opts: StartStageRunOptions): { runId: string; sess
     }
   };
 
+  /** 단계 자동 연결: 성공한 뒤 다음 단계를 같은 옵션으로 시작한다(다음 단계 모델은 그 단계 기본값). */
+  const chainNext = (status: string) => {
+    if (!opts.autoChain || status !== "succeeded") return;
+    const next = nextStage(opts.stage);
+    if (!next) return;
+    // the current run is being finalized in the run manager; start the next one on the next tick
+    setTimeout(() => {
+      try {
+        const r = startStageRun({ project: opts.project, stage: next, autoChain: true, supplementalResearch: opts.supplementalResearch });
+        console.log(`[runIntegration] auto-chain: ${opts.stage} → ${next} (run ${r.runId})`);
+      } catch (e) {
+        console.error(`[runIntegration] auto-chain ${opts.stage} → ${next} failed:`, (e as Error).message);
+      }
+    }, 500);
+  };
+
   const onEnd: StartRunInput["onEnd"] = (run) => {
     if (opts.stage === "research") {
       const notes = join(workspaceDir, "research", "notes.md");
       if (!existsSync(notes)) publish({ type: "doc.error", message: "research/notes.md 가 생성되지 않았습니다. '이어서 수정 요청'으로 종합을 지시하세요.", status: run.status });
+      else chainNext(run.status);
       return;
     }
     if (!isDocStage) return;
@@ -213,6 +243,7 @@ export function startStageRun(opts: StartStageRunOptions): { runId: string; sess
       // Auto-export in the background (the run is already finalized, so no frame can be
       // published for it; the UI polls GET …/export or triggers POST …/export after run end).
       void exportStage(opts.project.id, docStage).catch((e: Error) => console.error("[runIntegration] export failed:", e.message));
+      chainNext(run.status);
     } catch (e) {
       publish({ type: "doc.error", message: (e as Error).message });
     }
