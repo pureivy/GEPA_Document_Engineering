@@ -56,3 +56,17 @@ describe("ActivityStore", () => {
     expect(t.kind === "tool" && toolSummary(t.name, t.input)).toEqual({ label: "웹 페이지", detail: "https://example.com" });
   });
 });
+
+describe("thinking deltas", () => {
+  it("are merged into one item until another event arrives", () => {
+    const store = new ActivityStore();
+    store.push({ type: "thinking", text: "기존 계획서는 " });
+    store.push({ type: "thinking", text: "영양군 " });
+    store.push({ type: "thinking", text: "쿠폰 사업" });
+    store.push({ type: "text.delta", text: "답변" });
+    store.push({ type: "thinking", text: "다음 생각" });
+    store.flushSnapshot();
+    const thoughts = store.getSnapshot().items.filter((i) => i.kind === "thinking");
+    expect(thoughts.map((t) => t.kind === "thinking" && t.text)).toEqual(["기존 계획서는 영양군 쿠폰 사업", "다음 생각"]);
+  });
+});

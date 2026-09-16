@@ -5,7 +5,8 @@
  * cancel / resume), the SSE stream, the typing controller and the edit → save → export flow.
  */
 import Link from "next/link";
-import { useCallback, useEffect, useMemo, useRef, useState, useSyncExternalStore } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { PREF_AUTO_CHAIN, PREF_PLAN_RESEARCH, useBoolPref, writePref } from "@/lib/client/prefs";
 import { Group, Panel, Separator } from "react-resizable-panels";
 import { ChevronLeft, Settings2 } from "lucide-react";
 import { STAGE_FAMILY, STAGE_LABEL, STAGES, type ProjectDTO, type RunDTO, type RunStatus, type Stage } from "@/lib/contracts";
@@ -35,31 +36,6 @@ export interface StageRunnerProps {
 const ZOOM_MIN = 50;
 const ZOOM_MAX = 150;
 
-// ---- run preferences (localStorage) as an external store so SSR and client agree
-const prefListeners = new Set<() => void>();
-function subscribePref(cb: () => void): () => void {
-  prefListeners.add(cb);
-  return () => prefListeners.delete(cb);
-}
-function readPref(key: string, def: boolean): boolean {
-  try {
-    const v = window.localStorage.getItem(key);
-    return v === null ? def : v === "1";
-  } catch {
-    return def;
-  }
-}
-function writePref(key: string, v: boolean) {
-  try {
-    window.localStorage.setItem(key, v ? "1" : "0");
-  } catch {
-    /* private mode */
-  }
-  for (const l of prefListeners) l();
-}
-const subscribeAutoChain = subscribePref;
-const readAutoChain = () => readPref("gepa.autoChain", true);
-const readPlanResearch = () => readPref("gepa.planResearch", false);
 
 export function StageRunner({ projectId, stage, defaultModel }: StageRunnerProps) {
   const family = STAGE_FAMILY[stage];
@@ -67,11 +43,11 @@ export function StageRunner({ projectId, stage, defaultModel }: StageRunnerProps
   // model for the next run of this stage (per-run override; the stage default otherwise)
   const [model, setModel] = useState(defaultModel);
   // 완료 후 다음 단계 자동 실행 (research → plan → notice → press); remembered per browser (default on)
-  const autoChain = useSyncExternalStore(subscribeAutoChain, readAutoChain, () => true);
+  const autoChain = useBoolPref(PREF_AUTO_CHAIN, true);
   // 사업계획서 작성 시 보충 조사 허용 (default off — the plan stage is much faster without it)
-  const planResearch = useSyncExternalStore(subscribePref, readPlanResearch, () => false);
-  const changeAutoChain = (v: boolean) => writePref("gepa.autoChain", v);
-  const changePlanResearch = (v: boolean) => writePref("gepa.planResearch", v);
+  const planResearch = useBoolPref(PREF_PLAN_RESEARCH, false);
+  const changeAutoChain = (v: boolean) => writePref(PREF_AUTO_CHAIN, v);
+  const changePlanResearch = (v: boolean) => writePref(PREF_PLAN_RESEARCH, v);
 
   // ---- project / runs
   const [project, setProject] = useState<ProjectDTO | null>(null);

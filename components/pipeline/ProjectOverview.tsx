@@ -6,6 +6,7 @@ import { ChevronLeft, PlayCircle, RefreshCw } from "lucide-react";
 import type { RunDTO, Stage } from "@/lib/contracts";
 import { STAGES, STAGE_LABEL, type ProjectDTO } from "@/lib/contracts";
 import { api, errorMessage } from "@/lib/client/api";
+import { PREF_PLAN_RESEARCH, useBoolPref } from "@/lib/client/prefs";
 import { formatCost, formatDateTime, formatDuration, RUN_STATUS_LABEL } from "@/lib/client/format";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -43,7 +44,8 @@ export function ProjectOverview({ projectId }: { projectId: string }) {
   const [loading, setLoading] = useState(true);
   const [reloadKey, setReloadKey] = useState(0);
   const [starting, setStarting] = useState(false);
-  const [planResearch, setPlanResearch] = useState(false);
+  // 사업계획서 보충 조사 여부는 새 프로젝트 대화상자/사업계획서 화면에서 정한 브라우저 설정을 따른다
+  const planResearch = useBoolPref(PREF_PLAN_RESEARCH, false);
   const router = useRouter();
   const polling = !!data && Object.values(data.active).some(Boolean);
   /** 조사부터 보도자료까지 한 번에: research 를 autoChain 으로 시작하면 서버가 다음 단계를 이어 실행한다 */
@@ -101,11 +103,7 @@ export function ProjectOverview({ projectId }: { projectId: string }) {
         <Link href="/" className="inline-flex items-center gap-1 rounded px-1.5 py-1 text-xs text-slate-600 hover:bg-slate-100">
           <ChevronLeft className="h-4 w-4" /> 프로젝트 목록
         </Link>
-        <label className="ml-auto flex items-center gap-1 text-[11px] text-slate-600" title="사업계획서 작성 중 근거가 부족하면 보충 조사합니다(최대 2회, 10분 안팎 추가)">
-          <input type="checkbox" className="h-3.5 w-3.5" checked={planResearch} onChange={(e) => setPlanResearch(e.target.checked)} />
-          계획서 보충 조사
-        </label>
-        <Button size="sm" variant="primary" onClick={() => void runAll()} loading={starting} disabled={polling} title="조사 → 사업계획서 → 공고문 → 보도자료를 자동으로 이어서 실행합니다">
+        <Button size="sm" variant="primary" className="ml-auto" onClick={() => void runAll()} loading={starting} disabled={polling} title={`조사 → 사업계획서 → 공고문 → 보도자료를 자동으로 이어서 실행합니다 (계획서 보충 조사 ${planResearch ? "켜짐" : "꺼짐"} — 사업계획서 화면에서 변경)`}>
           <PlayCircle className="h-3.5 w-3.5" /> 전체 자동 실행
         </Button>
         <Button size="sm" variant="ghost" onClick={reload} loading={loading}>

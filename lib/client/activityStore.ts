@@ -84,6 +84,7 @@ export class ActivityStore {
   private lastEventAt: number | null = null;
   /** the text item currently receiving deltas, per parent ("" = top level) */
   private openText = new Map<string, Extract<ActivityItem, { kind: "text" }>>();
+  private openThinking: Extract<ActivityItem, { kind: "thinking" }> | null = null;
 
   subscribe = (l: Listener): (() => void) => {
     this.listeners.add(l);
@@ -120,6 +121,7 @@ export class ActivityStore {
   }
 
   push(ev: AgentActivityEvent, at: number = Date.now()): void {
+    if (ev.type !== "thinking") this.openThinking = null;
     this.lastEventAt = at;
     switch (ev.type) {
       case "init":
@@ -149,9 +151,16 @@ export class ActivityStore {
         }
         break;
       }
-      case "thinking":
-        this.add({ kind: "thinking", id: this.nextId("think"), text: ev.text }, null);
+      case "thinking": {
+        // thinking arrives as a stream of small deltas (a few characters each) — append to the
+        // open thinking item instead of one entry per delta, which read as one word per line
+        if (this.openThinking) this.openThinking.text += ev.text;
+        else {
+          this.openThinking = { kind: "thinking", id: this.nextId("think"), text: ev.text };
+          this.add(this.openThinking, null);
+        }
         break;
+      }
       case "tool.start": {
         // a tool call ends the current text segment at that level
         this.openText.delete(ev.parentToolUseId ?? "");

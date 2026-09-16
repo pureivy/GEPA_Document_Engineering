@@ -9,6 +9,7 @@ import { formatDateTime } from "@/lib/client/format";
 import { Button } from "@/components/ui/button";
 import { Dialog } from "@/components/ui/dialog";
 import { Field, Input, Textarea } from "@/components/ui/input";
+import { PREF_PLAN_RESEARCH, useBoolPref, writePref } from "@/lib/client/prefs";
 
 const EMPTY: NewProjectInput = {
   title: "",
@@ -27,7 +28,7 @@ function NewProjectDialog({ onClose, onCreated }: { onClose: () => void; onCreat
   const [refFile, setRefFile] = useState<File | null>(null);
   const [changes, setChanges] = useState("");
   const [autoRun, setAutoRun] = useState(true);
-  const [planResearch, setPlanResearch] = useState(false);
+  const planResearch = useBoolPref(PREF_PLAN_RESEARCH, false);
   const [phase, setPhase] = useState<"" | "create" | "upload">("");
 
   const set = <K extends keyof NewProjectInput>(k: K, v: NewProjectInput[K]) => setForm((f) => ({ ...f, [k]: v }));
@@ -142,8 +143,8 @@ function NewProjectDialog({ onClose, onCreated }: { onClose: () => void; onCreat
                     <input type="checkbox" className="h-3.5 w-3.5" checked={autoRun} onChange={(e) => setAutoRun(e.target.checked)} />
                     만든 뒤 조사부터 보도자료까지 자동 실행
                   </label>
-                  <label className="flex items-center gap-1" title="사업계획서 작성 중 근거가 부족하면 보충 조사합니다(최대 2회)">
-                    <input type="checkbox" className="h-3.5 w-3.5" checked={planResearch} onChange={(e) => setPlanResearch(e.target.checked)} />
+                  <label className="flex items-center gap-1" title="사업계획서 작성 중 근거가 부족하면 조사 에이전트로 보충 조사합니다(최대 2회). 이 설정은 기억되어 이후 실행에도 적용됩니다">
+                    <input type="checkbox" className="h-3.5 w-3.5" checked={planResearch} onChange={(e) => writePref(PREF_PLAN_RESEARCH, e.target.checked)} />
                     계획서 보충 조사
                   </label>
                 </div>
