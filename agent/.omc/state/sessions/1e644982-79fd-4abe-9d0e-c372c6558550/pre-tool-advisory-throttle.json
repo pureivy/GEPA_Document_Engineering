@@ -1,0 +1,30 @@
+{
+  "version": 1,
+  "entries": {
+    "445ed27a3872b681d98190bae61ccb84954e1bc4e140df5370be958dee776b3a": {
+      "last_emitted_at_ms": 1789439161878,
+      "message": "Verify changes work after editing. Test functionality before marking complete."
+    },
+    "466399dafa2d20f60587180bad0a07358eb7f2bce724df0ff682f038ad33f5ad": {
+      "last_emitted_at_ms": 1789438726054,
+      "message": "Read multiple files in parallel when possible for faster analysis."
+    },
+    "5bb3fb63829baab51c0771fea05633b7205df95157e747f5858edd0795f95076": {
+      "last_emitted_at_ms": 1789438314297,
+      "message": "Spawning agent: researcher (inherit) | Task: 법령·기대효과 조사"
+    },
+    "e331c6674a41a6e2fec1a888b36c31d8a731fed56ff7853a2991c74d920840e6": {
+      "last_emitted_at_ms": 1789438296684,
+      "message": "Spawning agent: researcher (inherit) | Task: 유사사업·예산근거 조사"
+    },
+    "060a139ecf702e6b5e46e33a2b43183558f90492a31a1def43be686cd7e7b596": {
+      "last_emitted_at_ms": 1789438277548,
+      "message": "Spawning agent: researcher (inherit) | Task: 배경·현황통계 조사(영주 소상공인)"
+    },
+    "459c54e5f35d6a58dcd90d2aecc21fa6d1f35d241bc5b134c506f87dc7b6d67b": {
+      "last_emitted_at_ms": 1789438159385,
+      "message": "Combine searches in parallel when investigating multiple patterns."
+    }
+  },
+  "updated_at": "2026-09-15T02:26:01.878Z"
+}

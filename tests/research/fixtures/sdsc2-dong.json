@@ -1,0 +1,1 @@
+{	"header" : {		"description" : "소상공인시장진흥공단 행정동별 상가업소정보"		,"columns" : ["상가업소번호","상호명"]		,"resultCode" : "00"		,"resultMsg" : "NORMAL SERVICE"	},	"body" : {			"items" : [ {"bizesId":"1","bizesNm":"경산식당","ctprvnNm":"경상북도","signguNm":"경산시","indsLclsCd":"I2","indsLclsNm":"음식","stdrYm":"202606"} ]			,"totalCount" : 4612			,"numOfRows" : 1		}}

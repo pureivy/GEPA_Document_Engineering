@@ -1,0 +1,26 @@
+{
+  "version": 1,
+  "entries": {
+    "466399dafa2d20f60587180bad0a07358eb7f2bce724df0ff682f038ad33f5ad": {
+      "last_emitted_at_ms": 1789438944866,
+      "message": "Read multiple files in parallel when possible for faster analysis."
+    },
+    "5f70cf911f918e34726e0ca05fe145a92fa279487c9d011413f4598d54dedbb4": {
+      "last_emitted_at_ms": 1789438487075,
+      "message": "Spawning agent: researcher (inherit) | Task: 법령·예산·성과 근거 조사"
+    },
+    "694a292a4ebdb9b17bb4d7dc2c3e2ed61e170ac57c54c91ffbe2dff458b788dd": {
+      "last_emitted_at_ms": 1789438464165,
+      "message": "Spawning agent: researcher (inherit) | Task: 유사·선행 사업 및 원공고 조사"
+    },
+    "07f35b0378c1f284c9d757946363ea37cae473827b9a1e93eb1492a051cf0b3a": {
+      "last_emitted_at_ms": 1789438442179,
+      "message": "Spawning agent: researcher (inherit) | Task: 안동·경북 수출통계 3개년 보강"
+    },
+    "459c54e5f35d6a58dcd90d2aecc21fa6d1f35d241bc5b134c506f87dc7b6d67b": {
+      "last_emitted_at_ms": 1789438286838,
+      "message": "Combine searches in parallel when investigating multiple patterns."
+    }
+  },
+  "updated_at": "2026-09-15T02:22:24.866Z"
+}

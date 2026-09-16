@@ -1,0 +1,7 @@
+{
+  "tool_name": "WebSearch",
+  "tool_input_preview": "{\"query\":\"경상북도 조례 \\\"경로당\\\" 지원 OR 활성화 조례 자치법규 경상북도조례 제 호\",\"allowed_domains\":[\"elis.go.kr\",\"law.go.kr\"]}",
+  "error": "You've hit your weekly limit · resets 6am (Asia/Seoul)",
+  "timestamp": "2026-09-15T08:38:04.157Z",
+  "retry_count": 1
+}

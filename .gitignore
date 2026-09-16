@@ -32,6 +32,7 @@ yarn-error.log*
 
 # env files (can opt-in for committing if needed)
 .env*
+!.env.example
 
 # vercel
 .vercel
@@ -39,3 +40,18 @@ yarn-error.log*
 # typescript
 *.tsbuildinfo
 next-env.d.ts
+
+# gepa: local data, binaries, proprietary fonts
+/data/
+/bin/
+/public/fonts/*.ttf
+/public/fonts/*.TTF
+/public/fonts/*.otf
+/templates/*/reference.hwp
+/.playwright-mcp/
+/.omc/
+/agent/.claude/settings.local.json
+/.e2e-data/
+/test-results/
+/playwright-report/
+/.next-e2e/

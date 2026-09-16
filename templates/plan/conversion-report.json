@@ -1,0 +1,2530 @@
+{
+  "family": "plan",
+  "convertedAt": "2026-09-14T23:31:12.499Z",
+  "exportHwpx": {
+    "exit": 3,
+    "json": {
+      "bytes": 311574,
+      "format": "hwpx",
+      "output": "/Users/sangbumnam/AI_Agents_git/GEPA_Document_Engineering/templates/plan/reference.hwpx",
+      "passwordProtected": false,
+      "schemaVersion": "1.0",
+      "source": "/Users/sangbumnam/AI_Agents_git/GEPA_Document_Engineering/templates/plan/reference.hwp",
+      "untrustedContent": false,
+      "untrustedFields": [],
+      "verify": {
+        "diffCount": 490,
+        "identical": false
+      },
+      "verifyPages": null
+    }
+  },
+  "renderDiff": {
+    "exit": 3,
+    "json": {
+      "hardStructPages": 2,
+      "maxDisp": 282,
+      "mode": "pair",
+      "overPages": 9,
+      "pageCountA": 14,
+      "pageCountB": 14,
+      "pageCountMismatch": false,
+      "pageFilter": null,
+      "pages": [
+        {
+          "maxDisp": 0.013333333333434894,
+          "meanDisp": 0.0000698080279237429,
+          "nodeCountA": 191,
+          "nodeCountB": 191,
+          "page": 0,
+          "structTextrunPm1": false,
+          "structureMismatch": false,
+          "topDeltas": [
+            {
+              "dh": -0.013333333333335418,
+              "disp": 0.013333333333434894,
+              "dw": 0.013333333333434894,
+              "dx": 0,
+              "dy": 0,
+              "nodeType": "Image",
+              "path": "Page/Body2/Column0/Group21/Image0"
+            },
+            {
+              "dh": 0,
+              "disp": 0,
+              "dw": 0,
+              "dx": 0,
+              "dy": 0,
+              "nodeType": "Page",
+              "path": "Page"
+            },
+            {
+              "dh": 0,
+              "disp": 0,
+              "dw": 0,
+              "dx": 0,
+              "dy": 0,
+              "nodeType": "PageBg",
+              "path": "Page/PageBg0"
+            },
+            {
+              "dh": 0,
+              "disp": 0,
+              "dw": 0,
+              "dx": 0,
+              "dy": 0,
+              "nodeType": "Header",
+              "path": "Page/Header1"
+            },
+            {
+              "dh": 0,
+              "disp": 0,
+              "dw": 0,
+              "dx": 0,
+              "dy": 0,
+              "nodeType": "Body",
+              "path": "Page/Body2"
+            },
+            {
+              "dh": 0,
+              "disp": 0,
+              "dw": 0,
+              "dx": 0,
+              "dy": 0,
+              "nodeType": "Column",
+              "path": "Page/Body2/Column0"
+            },
+            {
+              "dh": 0,
+              "disp": 0,
+              "dw": 0,
+              "dx": 0,
+              "dy": 0,
+              "nodeType": "Table",
+              "path": "Page/Body2/Column0/Table0"
+            },
+            {
+              "dh": 0,
+              "disp": 0,
+              "dw": 0,
+              "dx": 0,
+              "dy": 0,
+              "nodeType": "Cell",
+              "path": "Page/Body2/Column0/Table0/Cell0"
+            },
+            {
+              "dh": 0,
+              "disp": 0,
+              "dw": 0,
+              "dx": 0,
+              "dy": 0,
+              "nodeType": "TextLine",
+              "path": "Page/Body2/Column0/Table0/Cell0/TextLine0"
+            },
+            {
+              "dh": 0,
+              "disp": 0,
+              "dw": 0,
+              "dx": 0,
+              "dy": 0,
+              "nodeType": "TextRun",
+              "path": "Page/Body2/Column0/Table0/Cell0/TextLine0/TextRun0"
+            },
+            {
+              "dh": 0,
+              "disp": 0,
+              "dw": 0,
+              "dx": 0,
+              "dy": 0,
+              "nodeType": "Image",
+              "path": "Page/Body2/Column0/Table0/Cell0/Image1"
+            },
+            {
+              "dh": 0,
+              "disp": 0,
+              "dw": 0,
+              "dx": 0,
+              "dy": 0,
+              "nodeType": "Cell",
+              "path": "Page/Body2/Column0/Table0/Cell1"
+            },
+            {
+              "dh": 0,
+              "disp": 0,
+              "dw": 0,
+              "dx": 0,
+              "dy": 0,
+              "nodeType": "TextLine",
+              "path": "Page/Body2/Column0/Table0/Cell1/TextLine0"
+            },
+            {
+              "dh": 0,
+              "disp": 0,
+              "dw": 0,
+              "dx": 0,
+              "dy": 0,
+              "nodeType": "TextRun",
+              "path": "Page/Body2/Column0/Table0/Cell1/TextLine0/TextRun0"
+            },
+            {
+              "dh": 0,
+              "disp": 0,
+              "dw": 0,
+              "dx": 0,
+              "dy": 0,
+              "nodeType": "TextRun",
+              "path": "Page/Body2/Column0/Table0/Cell1/TextLine0/TextRun1"
+            },
+            {
+              "dh": 0,
+              "disp": 0,
+              "dw": 0,
+              "dx": 0,
+              "dy": 0,
+              "nodeType": "TextRun",
+              "path": "Page/Body2/Column0/Table0/Cell1/TextLine0/TextRun2"
+            },
+            {
+              "dh": 0,
+              "disp": 0,
+              "dw": 0,
+              "dx": 0,
+              "dy": 0,
+              "nodeType": "Table",
+              "path": "Page/Body2/Column0/Table1"
+            },
+            {
+              "dh": 0,
+              "disp": 0,
+              "dw": 0,
+              "dx": 0,
+              "dy": 0,
+              "nodeType": "Cell",
+              "path": "Page/Body2/Column0/Table1/Cell0"
+            },
+            {
+              "dh": 0,
+              "disp": 0,
+              "dw": 0,
+              "dx": 0,
+              "dy": 0,
+              "nodeType": "TextLine",
+              "path": "Page/Body2/Column0/Table1/Cell0/TextLine0"
+            },
+            {
+              "dh": 0,
+              "disp": 0,
+              "dw": 0,
+              "dx": 0,
+              "dy": 0,
+              "nodeType": "TextRun",
+              "path": "Page/Body2/Column0/Table1/Cell0/TextLine0/TextRun0"
+            }
+          ],
+          "typeDeltas": []
+        },
+        {
+          "maxDisp": 8.479999999999677,
+          "meanDisp": 0.7943642611684169,
+          "nodeCountA": 194,
+          "nodeCountB": 194,
+          "page": 1,
+          "structTextrunPm1": false,
+          "structureMismatch": false,
+          "topDeltas": [
+            {
+              "dh": 0,
+              "disp": 8.479999999999677,
+              "dw": 0,
+              "dx": 0,
+              "dy": -8.479999999999677,
+              "nodeType": "TextLine",
+              "path": "Page/Body2/Column0/Table0/Cell5/TextLine35"
+            },
+            {
+              "dh": 0,
+              "disp": 8.479999999999677,
+              "dw": 0,
+              "dx": 0,
+              "dy": -8.479999999999677,
+              "nodeType": "TextRun",
+              "path": "Page/Body2/Column0/Table0/Cell5/TextLine35/TextRun0"
+            },
+            {
+              "dh": 0,
+              "disp": 8.479999999999677,
+              "dw": 0,
+              "dx": 0,
+              "dy": -8.479999999999677,
+              "nodeType": "Table",
+              "path": "Page/Body2/Column0/Table0/Cell5/Table36"
+            },
+            {
+              "dh": 0,
+              "disp": 8.479999999999677,
+              "dw": 0,
+              "dx": 0,
+              "dy": -8.479999999999677,
+              "nodeType": "Cell",
+              "path": "Page/Body2/Column0/Table0/Cell5/Table36/Cell0"
+            },
+            {
+              "dh": 0,
+              "disp": 8.479999999999677,
+              "dw": 0,
+              "dx": 0,
+              "dy": -8.479999999999677,
+              "nodeType": "Rect",
+              "path": "Page/Body2/Column0/Table0/Cell5/Table36/Cell0/Rect0"
+            },
+            {
+              "dh": 0,
+              "disp": 8.479999999999677,
+              "dw": 0,
+              "dx": 0,
+              "dy": -8.479999999999677,
+              "nodeType": "TextLine",
+              "path": "Page/Body2/Column0/Table0/Cell5/Table36/Cell0/TextLine1"
+            },
+            {
+              "dh": 0,
+              "disp": 8.479999999999677,
+              "dw": 0,
+              "dx": 0,
+              "dy": -8.479999999999677,
+              "nodeType": "TextRun",
+              "path": "Page/Body2/Column0/Table0/Cell5/Table36/Cell0/TextLine1/TextRun0"
+            },
+            {
+              "dh": 0,
+              "disp": 8.479999999999677,
+              "dw": 0,
+              "dx": 0,
+              "dy": -8.479999999999677,
+              "nodeType": "Cell",
+              "path": "Page/Body2/Column0/Table0/Cell5/Table36/Cell1"
+            },
+            {
+              "dh": 0,
+              "disp": 8.479999999999677,
+              "dw": 0,
+              "dx": 0,
+              "dy": -8.479999999999677,
+              "nodeType": "Rect",
+              "path": "Page/Body2/Column0/Table0/Cell5/Table36/Cell1/Rect0"
+            },
+            {
+              "dh": 0,
+              "disp": 8.479999999999677,
+              "dw": 0,
+              "dx": 0,
+              "dy": -8.479999999999677,
+              "nodeType": "TextLine",
+              "path": "Page/Body2/Column0/Table0/Cell5/Table36/Cell1/TextLine1"
+            },
+            {
+              "dh": 0,
+              "disp": 8.479999999999677,
+              "dw": 0,
+              "dx": 0,
+              "dy": -8.479999999999677,
+              "nodeType": "TextRun",
+              "path": "Page/Body2/Column0/Table0/Cell5/Table36/Cell1/TextLine1/TextRun0"
+            },
+            {
+              "dh": 0,
+              "disp": 5.066666666666379,
+              "dw": 0,
+              "dx": 0,
+              "dy": -5.066666666666379,
+              "nodeType": "TextLine",
+              "path": "Page/Body2/Column0/Table0/Cell5/TextLine32"
+            },
+            {
+              "dh": 0,
+              "disp": 5.066666666666379,
+              "dw": 0,
+              "dx": 0,
+              "dy": -5.066666666666379,
+              "nodeType": "TextRun",
+              "path": "Page/Body2/Column0/Table0/Cell5/TextLine32/TextRun0"
+            },
+            {
+              "dh": 0,
+              "disp": 5.066666666666379,
+              "dw": 0,
+              "dx": 0,
+              "dy": -5.066666666666379,
+              "nodeType": "TextLine",
+              "path": "Page/Body2/Column0/Table0/Cell5/TextLine33"
+            },
+            {
+              "dh": 0,
+              "disp": 5.066666666666379,
+              "dw": 0,
+              "dx": 0,
+              "dy": -5.066666666666379,
+              "nodeType": "TextRun",
+              "path": "Page/Body2/Column0/Table0/Cell5/TextLine33/TextRun0"
+            },
+            {
+              "dh": 0,
+              "disp": 5.066666666666379,
+              "dw": 0,
+              "dx": 0,
+              "dy": -5.066666666666379,
+              "nodeType": "TextRun",
+              "path": "Page/Body2/Column0/Table0/Cell5/TextLine33/TextRun1"
+            },
+            {
+              "dh": 0,
+              "disp": 5.066666666666379,
+              "dw": 0,
+              "dx": 0,
+              "dy": -5.066666666666379,
+              "nodeType": "TextRun",
+              "path": "Page/Body2/Column0/Table0/Cell5/TextLine33/TextRun2"
+            },
+            {
+              "dh": 0,
+              "disp": 5.066666666666379,
+              "dw": 0,
+              "dx": 0,
+              "dy": -5.066666666666379,
+              "nodeType": "TextRun",
+              "path": "Page/Body2/Column0/Table0/Cell5/TextLine33/TextRun3"
+            },
+            {
+              "dh": 0,
+              "disp": 5.066666666666379,
+              "dw": 0,
+              "dx": 0,
+              "dy": -5.066666666666379,
+              "nodeType": "TextRun",
+              "path": "Page/Body2/Column0/Table0/Cell5/TextLine33/TextRun4"
+            },
+            {
+              "dh": 0,
+              "disp": 5.066666666666379,
+              "dw": 0,
+              "dx": 0,
+              "dy": -5.066666666666379,
+              "nodeType": "TextRun",
+              "path": "Page/Body2/Column0/Table0/Cell5/TextLine33/TextRun5"
+            }
+          ],
+          "typeDeltas": []
+        },
+        {
+          "maxDisp": 0,
+          "meanDisp": 0,
+          "nodeCountA": 10,
+          "nodeCountB": 10,
+          "page": 2,
+          "structTextrunPm1": false,
+          "structureMismatch": false,
+          "topDeltas": [],
+          "typeDeltas": []
+        },
+        {
+          "maxDisp": 0,
+          "meanDisp": 0,
+          "nodeCountA": 48,
+          "nodeCountB": 48,
+          "page": 3,
+          "structTextrunPm1": false,
+          "structureMismatch": false,
+          "topDeltas": [],
+          "typeDeltas": []
+        },
+        {
+          "maxDisp": 282,
+          "meanDisp": 2.8785900256690873,
+          "nodeCountA": 203,
+          "nodeCountB": 203,
+          "page": 4,
+          "structTextrunPm1": true,
+          "structureMismatch": true,
+          "topDeltas": [
+            {
+              "dh": 0,
+              "disp": 282,
+              "dw": 282,
+              "dx": 0,
+              "dy": 0.013333333333264363,
+              "nodeType": "TextRun",
+              "path": "Page/Body2/Column0/TextLine7/TextRun0"
+            },
+            {
+              "dh": 0,
+              "disp": 141.18666666666658,
+              "dw": 0,
+              "dx": -141.18666666666658,
+              "dy": 0.14666666666653327,
+              "nodeType": "TextRun",
+              "path": "Page/Body2/Column0/Table29/Cell5/TextLine0/TextRun0"
+            },
+            {
+              "dh": 0,
+              "disp": 11.599999999999909,
+              "dw": 11.599999999999909,
+              "dx": -5.799999999999997,
+              "dy": -0.026666666666670835,
+              "nodeType": "TextLine",
+              "path": "Page/Body2/Column0/Table2/Cell0/TextLine1"
+            },
+            {
+              "dh": 0,
+              "disp": 11.599999999999909,
+              "dw": 11.599999999999909,
+              "dx": -5.799999999999997,
+              "dy": -0.026666666666670835,
+              "nodeType": "TextLine",
+              "path": "Page/Body2/Column0/Table2/Cell0/TextLine2"
+            },
+            {
+              "dh": 0,
+              "disp": 11.599999999999909,
+              "dw": 11.599999999999909,
+              "dx": -5.799999999999997,
+              "dy": -0.026666666666670835,
+              "nodeType": "TextLine",
+              "path": "Page/Body2/Column0/Table2/Cell0/TextLine3"
+            },
+            {
+              "dh": 0,
+              "disp": 11.599999999999909,
+              "dw": 11.599999999999909,
+              "dx": -5.799999999999997,
+              "dy": -0.026666666666699257,
+              "nodeType": "TextLine",
+              "path": "Page/Body2/Column0/Table2/Cell0/TextLine4"
+            },
+            {
+              "dh": 0,
+              "disp": 10,
+              "dw": 0.4060606060605991,
+              "dx": 10,
+              "dy": 0.026666666666528727,
+              "nodeType": "TextRun",
+              "path": "Page/Body2/Column0/TextLine12/TextRun2"
+            },
+            {
+              "dh": 0,
+              "disp": 8.556666666666615,
+              "dw": 8.556666666666615,
+              "dx": 0,
+              "dy": 0.03999999999984993,
+              "nodeType": "TextRun",
+              "path": "Page/Body2/Column0/TextLine13/TextRun0"
+            },
+            {
+              "dh": 0,
+              "disp": 8.051851851851893,
+              "dw": 8.051851851851893,
+              "dx": 2,
+              "dy": 0.06666666666649235,
+              "nodeType": "TextRun",
+              "path": "Page/Body2/Column0/TextLine16/TextRun1"
+            },
+            {
+              "dh": 0,
+              "disp": 8,
+              "dw": 8,
+              "dx": 2,
+              "dy": 0.026666666666528727,
+              "nodeType": "TextRun",
+              "path": "Page/Body2/Column0/TextLine12/TextRun1"
+            },
+            {
+              "dh": 0,
+              "disp": 6.74666666666667,
+              "dw": 6.74666666666667,
+              "dx": 2,
+              "dy": 0.09333333333313476,
+              "nodeType": "TextRun",
+              "path": "Page/Body2/Column0/TextLine19/TextRun1"
+            },
+            {
+              "dh": 0,
+              "disp": 5.799999999999997,
+              "dw": 0,
+              "dx": -5.799999999999997,
+              "dy": -0.026666666666670835,
+              "nodeType": "TextRun",
+              "path": "Page/Body2/Column0/Table2/Cell0/TextLine1/TextRun0"
+            },
+            {
+              "dh": 0,
+              "disp": 5.799999999999997,
+              "dw": 0,
+              "dx": -5.799999999999997,
+              "dy": -0.026666666666670835,
+              "nodeType": "TextRun",
+              "path": "Page/Body2/Column0/Table2/Cell0/TextLine1/TextRun1"
+            },
+            {
+              "dh": 0,
+              "disp": 5.799999999999997,
+              "dw": 0,
+              "dx": -5.799999999999997,
+              "dy": -0.026666666666670835,
+              "nodeType": "TextRun",
+              "path": "Page/Body2/Column0/Table2/Cell0/TextLine2/TextRun0"
+            },
+            {
+              "dh": 0,
+              "disp": 5.799999999999997,
+              "dw": 0,
+              "dx": -5.799999999999997,
+              "dy": -0.026666666666670835,
+              "nodeType": "TextRun",
+              "path": "Page/Body2/Column0/Table2/Cell0/TextLine3/TextRun0"
+            },
+            {
+              "dh": 0,
+              "disp": 5.799999999999997,
+              "dw": 0,
+              "dx": -5.799999999999997,
+              "dy": -0.026666666666670835,
+              "nodeType": "TextRun",
+              "path": "Page/Body2/Column0/Table2/Cell0/TextLine3/TextRun1"
+            },
+            {
+              "dh": 0,
+              "disp": 5.799999999999997,
+              "dw": 0,
+              "dx": -5.799999999999997,
+              "dy": -0.026666666666699257,
+              "nodeType": "TextRun",
+              "path": "Page/Body2/Column0/Table2/Cell0/TextLine4/TextRun0"
+            },
+            {
+              "dh": 0,
+              "disp": 4,
+              "dw": 0,
+              "dx": -4,
+              "dy": -5.684341886080802e-14,
+              "nodeType": "TextRun",
+              "path": "Page/Body2/Column0/TextLine6/TextRun2"
+            },
+            {
+              "dh": 0,
+              "disp": 4,
+              "dw": 3,
+              "dx": -4,
+              "dy": -5.684341886080802e-14,
+              "nodeType": "TextRun",
+              "path": "Page/Body2/Column0/TextLine6/TextRun3"
+            },
+            {
+              "dh": 0,
+              "disp": 2,
+              "dw": -2,
+              "dx": 0,
+              "dy": -5.684341886080802e-14,
+              "nodeType": "TextRun",
+              "path": "Page/Body2/Column0/TextLine6/TextRun0"
+            }
+          ],
+          "typeDeltas": []
+        },
+        {
+          "maxDisp": 38,
+          "meanDisp": 0.3543621399175253,
+          "nodeCountA": 324,
+          "nodeCountB": 324,
+          "page": 5,
+          "structTextrunPm1": false,
+          "structureMismatch": false,
+          "topDeltas": [
+            {
+              "dh": 0,
+              "disp": 38,
+              "dw": -38,
+              "dx": 19,
+              "dy": 0.02666666666641504,
+              "nodeType": "TextRun",
+              "path": "Page/Body2/Column0/Table26/Cell19/TextLine2/TextRun0"
+            },
+            {
+              "dh": 0,
+              "disp": 37,
+              "dw": 37,
+              "dx": -18.5,
+              "dy": 0.02666666666641504,
+              "nodeType": "TextRun",
+              "path": "Page/Body2/Column0/Table26/Cell19/TextLine1/TextRun0"
+            },
+            {
+              "dh": 0,
+              "disp": 11.600000000000023,
+              "dw": 11.600000000000023,
+              "dx": -5.800000000000011,
+              "dy": 0.02666666666641504,
+              "nodeType": "TextLine",
+              "path": "Page/Body2/Column0/Table26/Cell19/TextLine0"
+            },
+            {
+              "dh": 0,
+              "disp": 11.600000000000023,
+              "dw": 11.600000000000023,
+              "dx": -5.800000000000011,
+              "dy": 0.02666666666641504,
+              "nodeType": "TextLine",
+              "path": "Page/Body2/Column0/Table26/Cell19/TextLine1"
+            },
+            {
+              "dh": 0,
+              "disp": 11.600000000000023,
+              "dw": 11.600000000000023,
+              "dx": -5.800000000000011,
+              "dy": 0.02666666666641504,
+              "nodeType": "TextLine",
+              "path": "Page/Body2/Column0/Table26/Cell19/TextLine2"
+            },
+            {
+              "dh": 0,
+              "disp": 0.053333333333227984,
+              "dw": 0,
+              "dx": 0,
+              "dy": 0.053333333333227984,
+              "nodeType": "TextLine",
+              "path": "Page/Body2/Column0/TextLine15"
+            },
+            {
+              "dh": 0,
+              "disp": 0.053333333333227984,
+              "dw": 0,
+              "dx": 0,
+              "dy": 0.053333333333227984,
+              "nodeType": "TextRun",
+              "path": "Page/Body2/Column0/TextLine15/TextRun0"
+            },
+            {
+              "dh": 0,
+              "disp": 0.03999999999996362,
+              "dw": 0,
+              "dx": 0,
+              "dy": 0.03999999999996362,
+              "nodeType": "TextLine",
+              "path": "Page/Body2/Column0/TextLine17"
+            },
+            {
+              "dh": 0,
+              "disp": 0.03999999999996362,
+              "dw": 0,
+              "dx": 0,
+              "dy": 0.03999999999996362,
+              "nodeType": "TextRun",
+              "path": "Page/Body2/Column0/TextLine17/TextRun0"
+            },
+            {
+              "dh": 0,
+              "disp": 0.03999999999996362,
+              "dw": 0,
+              "dx": 0,
+              "dy": 0.03999999999996362,
+              "nodeType": "TextLine",
+              "path": "Page/Body2/Column0/TextLine19"
+            },
+            {
+              "dh": 0,
+              "disp": 0.03999999999996362,
+              "dw": 0,
+              "dx": 0,
+              "dy": 0.03999999999996362,
+              "nodeType": "TextRun",
+              "path": "Page/Body2/Column0/TextLine19/TextRun0"
+            },
+            {
+              "dh": 0,
+              "disp": 0.03999999999990678,
+              "dw": 0,
+              "dx": 0,
+              "dy": 0.03999999999990678,
+              "nodeType": "TextLine",
+              "path": "Page/Body2/Column0/TextLine13"
+            },
+            {
+              "dh": 0,
+              "disp": 0.03999999999990678,
+              "dw": 0,
+              "dx": 0,
+              "dy": 0.03999999999990678,
+              "nodeType": "TextRun",
+              "path": "Page/Body2/Column0/TextLine13/TextRun0"
+            },
+            {
+              "dh": 0,
+              "disp": 0.03999999999990678,
+              "dw": 0,
+              "dx": 0,
+              "dy": 0.03999999999990678,
+              "nodeType": "TextLine",
+              "path": "Page/Body2/Column0/TextLine14"
+            },
+            {
+              "dh": 0,
+              "disp": 0.03999999999990678,
+              "dw": 0,
+              "dx": 0,
+              "dy": 0.03999999999990678,
+              "nodeType": "TextRun",
+              "path": "Page/Body2/Column0/TextLine14/TextRun0"
+            },
+            {
+              "dh": 0,
+              "disp": 0.03999999999990678,
+              "dw": 0,
+              "dx": 0,
+              "dy": 0.03999999999990678,
+              "nodeType": "TextLine",
+              "path": "Page/Body2/Column0/TextLine18"
+            },
+            {
+              "dh": 0,
+              "disp": 0.03999999999990678,
+              "dw": 0,
+              "dx": 0,
+              "dy": 0.03999999999990678,
+              "nodeType": "TextRun",
+              "path": "Page/Body2/Column0/TextLine18/TextRun0"
+            },
+            {
+              "dh": 0,
+              "disp": 0.03999999999990678,
+              "dw": 0,
+              "dx": 0,
+              "dy": 0.03999999999990678,
+              "nodeType": "TextRun",
+              "path": "Page/Body2/Column0/TextLine18/TextRun1"
+            },
+            {
+              "dh": 0,
+              "disp": 0.03999999999990678,
+              "dw": 0,
+              "dx": 0,
+              "dy": 0.03999999999990678,
+              "nodeType": "TextRun",
+              "path": "Page/Body2/Column0/TextLine18/TextRun2"
+            },
+            {
+              "dh": 0,
+              "disp": 0.03999999999990678,
+              "dw": 0,
+              "dx": 0,
+              "dy": 0.03999999999990678,
+              "nodeType": "TextRun",
+              "path": "Page/Body2/Column0/TextLine18/TextRun3"
+            }
+          ],
+          "typeDeltas": []
+        },
+        {
+          "maxDisp": 60,
+          "meanDisp": 1.8036251920122848,
+          "nodeCountA": 219,
+          "nodeCountB": 217,
+          "page": 6,
+          "structTextrunPm1": false,
+          "structureMismatch": true,
+          "topDeltas": [
+            {
+              "dh": 0,
+              "disp": 60,
+              "dw": 60,
+              "dx": 0,
+              "dy": 5.959999999999923,
+              "nodeType": "TextRun",
+              "path": "Page/Body2/Column0/Table17/Cell15/TextLine2/TextRun0"
+            },
+            {
+              "dh": 0,
+              "disp": 21,
+              "dw": 21,
+              "dx": -10.726666666666688,
+              "dy": -0.04000000000007731,
+              "nodeType": "TextRun",
+              "path": "Page/Body2/Column0/Table17/Cell16/TextLine0/TextRun0"
+            },
+            {
+              "dh": 0,
+              "disp": 19,
+              "dw": -19,
+              "dx": 9.5,
+              "dy": -0.04000000000007731,
+              "nodeType": "TextRun",
+              "path": "Page/Body2/Column0/Table17/Cell16/TextLine1/TextRun0"
+            },
+            {
+              "dh": 0,
+              "disp": 11.600000000000023,
+              "dw": 11.600000000000023,
+              "dx": -5.800000000000011,
+              "dy": -0.04000000000007731,
+              "nodeType": "TextLine",
+              "path": "Page/Body2/Column0/Table17/Cell18/TextLine0"
+            },
+            {
+              "dh": 0,
+              "disp": 11.600000000000023,
+              "dw": 11.600000000000023,
+              "dx": -5.800000000000011,
+              "dy": -0.04000000000007731,
+              "nodeType": "TextLine",
+              "path": "Page/Body2/Column0/Table17/Cell18/TextLine1"
+            },
+            {
+              "dh": 0,
+              "disp": 11.600000000000023,
+              "dw": 11.600000000000023,
+              "dx": -5.800000000000011,
+              "dy": -0.04000000000007731,
+              "nodeType": "TextLine",
+              "path": "Page/Body2/Column0/Table17/Cell18/TextLine2"
+            },
+            {
+              "dh": 0,
+              "disp": 11.600000000000023,
+              "dw": 11.600000000000023,
+              "dx": -5.800000000000011,
+              "dy": -0.04000000000007731,
+              "nodeType": "TextLine",
+              "path": "Page/Body2/Column0/Table17/Cell18/TextLine3"
+            },
+            {
+              "dh": 0,
+              "disp": 11.600000000000023,
+              "dw": 11.600000000000023,
+              "dx": -5.800000000000011,
+              "dy": -0.04000000000007731,
+              "nodeType": "TextLine",
+              "path": "Page/Body2/Column0/Table17/Cell18/TextLine4"
+            },
+            {
+              "dh": 0,
+              "disp": 11.600000000000023,
+              "dw": 11.600000000000023,
+              "dx": -5.800000000000011,
+              "dy": -0.04000000000007731,
+              "nodeType": "TextLine",
+              "path": "Page/Body2/Column0/Table17/Cell18/TextLine5"
+            },
+            {
+              "dh": 0,
+              "disp": 11.600000000000023,
+              "dw": 11.600000000000023,
+              "dx": -5.800000000000011,
+              "dy": -0.04000000000007731,
+              "nodeType": "TextLine",
+              "path": "Page/Body2/Column0/Table17/Cell18/TextLine6"
+            },
+            {
+              "dh": 0,
+              "disp": 11.600000000000023,
+              "dw": 11.600000000000023,
+              "dx": -5.800000000000011,
+              "dy": -0.04000000000007731,
+              "nodeType": "TextLine",
+              "path": "Page/Body2/Column0/Table17/Cell18/TextLine7"
+            },
+            {
+              "dh": 0,
+              "disp": 11.599999999999994,
+              "dw": 11.599999999999994,
+              "dx": -5.7999999999999545,
+              "dy": -0.03999999999996362,
+              "nodeType": "TextLine",
+              "path": "Page/Body2/Column0/Table17/Cell12/TextLine0"
+            },
+            {
+              "dh": 0,
+              "disp": 11.599999999999994,
+              "dw": 11.599999999999994,
+              "dx": -5.7999999999999545,
+              "dy": -0.03999999999996362,
+              "nodeType": "TextLine",
+              "path": "Page/Body2/Column0/Table17/Cell12/TextLine1"
+            },
+            {
+              "dh": 0,
+              "disp": 11.599999999999994,
+              "dw": 11.599999999999994,
+              "dx": -5.7999999999999545,
+              "dy": -0.03999999999996362,
+              "nodeType": "TextLine",
+              "path": "Page/Body2/Column0/Table17/Cell14/TextLine0"
+            },
+            {
+              "dh": 0,
+              "disp": 11.599999999999994,
+              "dw": 11.599999999999994,
+              "dx": -5.7999999999999545,
+              "dy": -0.03999999999996362,
+              "nodeType": "TextLine",
+              "path": "Page/Body2/Column0/Table17/Cell14/TextLine1"
+            },
+            {
+              "dh": 0,
+              "disp": 11.599999999999994,
+              "dw": 11.599999999999994,
+              "dx": -5.7999999999999545,
+              "dy": -0.04000000000007731,
+              "nodeType": "TextLine",
+              "path": "Page/Body2/Column0/Table17/Cell16/TextLine0"
+            },
+            {
+              "dh": 0,
+              "disp": 11.599999999999994,
+              "dw": 11.599999999999994,
+              "dx": -5.7999999999999545,
+              "dy": -0.04000000000007731,
+              "nodeType": "TextLine",
+              "path": "Page/Body2/Column0/Table17/Cell16/TextLine1"
+            },
+            {
+              "dh": 0,
+              "disp": 11.599999999999994,
+              "dw": 11.599999999999994,
+              "dx": -5.7999999999999545,
+              "dy": -0.04000000000007731,
+              "nodeType": "TextLine",
+              "path": "Page/Body2/Column0/Table17/Cell16/TextLine2"
+            },
+            {
+              "dh": 0,
+              "disp": 11.599999999999994,
+              "dw": 11.599999999999994,
+              "dx": -5.7999999999999545,
+              "dy": -0.04000000000007731,
+              "nodeType": "TextLine",
+              "path": "Page/Body2/Column0/Table17/Cell16/TextLine3"
+            },
+            {
+              "dh": 0,
+              "disp": 6,
+              "dw": 6,
+              "dx": -5.800000000000011,
+              "dy": -0.04000000000007731,
+              "nodeType": "TextRun",
+              "path": "Page/Body2/Column0/Table17/Cell18/TextLine1/TextRun0"
+            }
+          ],
+          "typeDeltas": [
+            {
+              "countA": 63,
+              "countB": 62,
+              "net": -1,
+              "nodeType": "TextLine"
+            },
+            {
+              "countA": 95,
+              "countB": 94,
+              "net": -1,
+              "nodeType": "TextRun"
+            }
+          ]
+        },
+        {
+          "maxDisp": 27,
+          "meanDisp": 2.6033547008546742,
+          "nodeCountA": 210,
+          "nodeCountB": 209,
+          "page": 7,
+          "structTextrunPm1": false,
+          "structureMismatch": true,
+          "topDeltas": [
+            {
+              "dh": 0,
+              "disp": 27,
+              "dw": -27,
+              "dx": -5.800000000000011,
+              "dy": -0.013333333333321207,
+              "nodeType": "TextRun",
+              "path": "Page/Body2/Column0/Table3/Cell18/TextLine2/TextRun0"
+            },
+            {
+              "dh": 0,
+              "disp": 20,
+              "dw": -20,
+              "dx": -5.800000000000011,
+              "dy": 5.684341886080802e-14,
+              "nodeType": "TextRun",
+              "path": "Page/Body2/Column0/Table3/Cell13/TextLine1/TextRun0"
+            },
+            {
+              "dh": 0,
+              "disp": 20,
+              "dw": -20,
+              "dx": -5.800000000000011,
+              "dy": -1.1368683772161603e-13,
+              "nodeType": "TextRun",
+              "path": "Page/Body2/Column0/Table3/Cell21/TextLine1/TextRun0"
+            },
+            {
+              "dh": 0,
+              "disp": 19.797333333333313,
+              "dw": 19.797333333333313,
+              "dx": -5.800000000000011,
+              "dy": 0.026666666666699257,
+              "nodeType": "TextRun",
+              "path": "Page/Body2/Column0/Table3/Cell13/TextLine0/TextRun0"
+            },
+            {
+              "dh": 0,
+              "disp": 19.397333333333336,
+              "dw": 19.397333333333336,
+              "dx": -5.800000000000011,
+              "dy": 0.026666666666642413,
+              "nodeType": "TextRun",
+              "path": "Page/Body2/Column0/Table3/Cell25/TextLine0/TextRun0"
+            },
+            {
+              "dh": 0,
+              "disp": 18.886666666666656,
+              "dw": 8,
+              "dx": -18.886666666666656,
+              "dy": 0.013333333333321207,
+              "nodeType": "TextRun",
+              "path": "Page/Body2/Column0/Table3/Cell7/TextLine3/TextRun0"
+            },
+            {
+              "dh": 0,
+              "disp": 18.397333333333336,
+              "dw": 18.397333333333336,
+              "dx": -5.800000000000011,
+              "dy": 0.026666666666528727,
+              "nodeType": "TextRun",
+              "path": "Page/Body2/Column0/Table3/Cell21/TextLine0/TextRun0"
+            },
+            {
+              "dh": 0,
+              "disp": 18.164444444444428,
+              "dw": 18.164444444444428,
+              "dx": -5.800000000000011,
+              "dy": 0.03999999999996362,
+              "nodeType": "TextRun",
+              "path": "Page/Body2/Column0/Table3/Cell18/TextLine0/TextRun0"
+            },
+            {
+              "dh": 0,
+              "disp": 14.49066666666667,
+              "dw": 14.49066666666667,
+              "dx": -2.8000000000000114,
+              "dy": 0.026666666666642413,
+              "nodeType": "TextRun",
+              "path": "Page/Body2/Column0/Table3/Cell29/TextLine0/TextRun1"
+            },
+            {
+              "dh": 0,
+              "disp": 14.113333333333344,
+              "dw": 14.113333333333344,
+              "dx": -0.8000000000000114,
+              "dy": 0.02666666666658557,
+              "nodeType": "TextRun",
+              "path": "Page/Body2/Column0/Table3/Cell5/TextLine0/TextRun1"
+            },
+            {
+              "dh": 0,
+              "disp": 14,
+              "dw": -14,
+              "dx": -5.800000000000011,
+              "dy": 0,
+              "nodeType": "TextRun",
+              "path": "Page/Body2/Column0/Table3/Cell16/TextLine1/TextRun0"
+            },
+            {
+              "dh": 0,
+              "disp": 13,
+              "dw": 13,
+              "dx": -5.800000000000011,
+              "dy": 0.013333333333321207,
+              "nodeType": "TextRun",
+              "path": "Page/Body2/Column0/Table3/Cell18/TextLine1/TextRun0"
+            },
+            {
+              "dh": 0,
+              "disp": 13,
+              "dw": -13,
+              "dx": -5.800000000000011,
+              "dy": 0,
+              "nodeType": "TextRun",
+              "path": "Page/Body2/Column0/Table3/Cell23/TextLine1/TextRun0"
+            },
+            {
+              "dh": 0,
+              "disp": 12,
+              "dw": 12,
+              "dx": -5.800000000000011,
+              "dy": 0.02666666666658557,
+              "nodeType": "TextRun",
+              "path": "Page/Body2/Column0/Table3/Cell16/TextLine0/TextRun0"
+            },
+            {
+              "dh": 0,
+              "disp": 12,
+              "dw": 12,
+              "dx": -5.800000000000011,
+              "dy": 0.026666666666642413,
+              "nodeType": "TextRun",
+              "path": "Page/Body2/Column0/Table3/Cell23/TextLine0/TextRun0"
+            },
+            {
+              "dh": 0,
+              "disp": 11.600000000000023,
+              "dw": 11.600000000000023,
+              "dx": -5.800000000000011,
+              "dy": 0.02666666666658557,
+              "nodeType": "TextLine",
+              "path": "Page/Body2/Column0/Table3/Cell5/TextLine0"
+            },
+            {
+              "dh": 0,
+              "disp": 11.600000000000023,
+              "dw": 11.600000000000023,
+              "dx": -5.800000000000011,
+              "dy": -1.1368683772161603e-13,
+              "nodeType": "TextLine",
+              "path": "Page/Body2/Column0/Table3/Cell5/TextLine1"
+            },
+            {
+              "dh": 0,
+              "disp": 11.600000000000023,
+              "dw": 11.600000000000023,
+              "dx": -5.800000000000011,
+              "dy": 0.026666666666699257,
+              "nodeType": "TextLine",
+              "path": "Page/Body2/Column0/Table3/Cell13/TextLine0"
+            },
+            {
+              "dh": 0,
+              "disp": 11.600000000000023,
+              "dw": 11.600000000000023,
+              "dx": -5.800000000000011,
+              "dy": 5.684341886080802e-14,
+              "nodeType": "TextLine",
+              "path": "Page/Body2/Column0/Table3/Cell13/TextLine1"
+            },
+            {
+              "dh": 0,
+              "disp": 11.600000000000023,
+              "dw": 11.600000000000023,
+              "dx": -5.800000000000011,
+              "dy": 0.02666666666658557,
+              "nodeType": "TextLine",
+              "path": "Page/Body2/Column0/Table3/Cell16/TextLine0"
+            }
+          ],
+          "typeDeltas": [
+            {
+              "countA": 59,
+              "countB": 58,
+              "net": -1,
+              "nodeType": "TextLine"
+            }
+          ]
+        },
+        {
+          "maxDisp": 0.09333333333324845,
+          "meanDisp": 0.05090342679128515,
+          "nodeCountA": 214,
+          "nodeCountB": 214,
+          "page": 8,
+          "structTextrunPm1": false,
+          "structureMismatch": false,
+          "topDeltas": [
+            {
+              "dh": 0,
+              "disp": 0.09333333333324845,
+              "dw": 0,
+              "dx": 0,
+              "dy": 0.09333333333324845,
+              "nodeType": "TextLine",
+              "path": "Page/Body2/Column0/TextLine18"
+            },
+            {
+              "dh": 0,
+              "disp": 0.09333333333324845,
+              "dw": 0,
+              "dx": 0,
+              "dy": 0.09333333333324845,
+              "nodeType": "TextRun",
+              "path": "Page/Body2/Column0/TextLine18/TextRun0"
+            },
+            {
+              "dh": 0,
+              "disp": 0.09333333333324845,
+              "dw": 0,
+              "dx": 0,
+              "dy": 0.09333333333324845,
+              "nodeType": "TextLine",
+              "path": "Page/Body2/Column0/TextLine21"
+            },
+            {
+              "dh": 0,
+              "disp": 0.09333333333324845,
+              "dw": 0,
+              "dx": 0,
+              "dy": 0.09333333333324845,
+              "nodeType": "TextRun",
+              "path": "Page/Body2/Column0/TextLine21/TextRun0"
+            },
+            {
+              "dh": 0,
+              "disp": 0.08000000000004093,
+              "dw": 0,
+              "dx": 0,
+              "dy": 0.08000000000004093,
+              "nodeType": "TextLine",
+              "path": "Page/Body2/Column0/TextLine14"
+            },
+            {
+              "dh": 0,
+              "disp": 0.08000000000004093,
+              "dw": 0,
+              "dx": 0,
+              "dy": 0.08000000000004093,
+              "nodeType": "TextRun",
+              "path": "Page/Body2/Column0/TextLine14/TextRun0"
+            },
+            {
+              "dh": 0,
+              "disp": 0.07999999999992724,
+              "dw": 0,
+              "dx": 0,
+              "dy": 0.07999999999992724,
+              "nodeType": "TextLine",
+              "path": "Page/Body2/Column0/TextLine17"
+            },
+            {
+              "dh": 0,
+              "disp": 0.07999999999992724,
+              "dw": 0,
+              "dx": 0,
+              "dy": 0.07999999999992724,
+              "nodeType": "TextRun",
+              "path": "Page/Body2/Column0/TextLine17/TextRun0"
+            },
+            {
+              "dh": 0,
+              "disp": 0.07999999999992724,
+              "dw": 0,
+              "dx": 0,
+              "dy": 0.07999999999992724,
+              "nodeType": "TextRun",
+              "path": "Page/Body2/Column0/TextLine17/TextRun1"
+            },
+            {
+              "dh": 0,
+              "disp": 0.07999999999992724,
+              "dw": 0,
+              "dx": 0,
+              "dy": 0.07999999999992724,
+              "nodeType": "TextRun",
+              "path": "Page/Body2/Column0/TextLine17/TextRun2"
+            },
+            {
+              "dh": 0,
+              "disp": 0.07999999999992724,
+              "dw": 0,
+              "dx": 0,
+              "dy": 0.07999999999992724,
+              "nodeType": "TextRun",
+              "path": "Page/Body2/Column0/TextLine17/TextRun3"
+            },
+            {
+              "dh": 0,
+              "disp": 0.07999999999992724,
+              "dw": 0,
+              "dx": 0,
+              "dy": 0.07999999999992724,
+              "nodeType": "TextLine",
+              "path": "Page/Body2/Column0/TextLine20"
+            },
+            {
+              "dh": 0,
+              "disp": 0.07999999999992724,
+              "dw": 0,
+              "dx": 0,
+              "dy": 0.07999999999992724,
+              "nodeType": "TextRun",
+              "path": "Page/Body2/Column0/TextLine20/TextRun0"
+            },
+            {
+              "dh": 0,
+              "disp": 0.06666666666671972,
+              "dw": 0,
+              "dx": 0,
+              "dy": 0.06666666666671972,
+              "nodeType": "TextLine",
+              "path": "Page/Body2/Column0/TextLine12"
+            },
+            {
+              "dh": 0,
+              "disp": 0.06666666666671972,
+              "dw": 0,
+              "dx": 0,
+              "dy": 0.06666666666671972,
+              "nodeType": "TextRun",
+              "path": "Page/Body2/Column0/TextLine12/TextRun0"
+            },
+            {
+              "dh": 0,
+              "disp": 0.06666666666671972,
+              "dw": 0,
+              "dx": 0,
+              "dy": 0.06666666666671972,
+              "nodeType": "TextLine",
+              "path": "Page/Body2/Column0/TextLine13"
+            },
+            {
+              "dh": 0,
+              "disp": 0.06666666666671972,
+              "dw": 0,
+              "dx": 0,
+              "dy": 0.06666666666671972,
+              "nodeType": "TextRun",
+              "path": "Page/Body2/Column0/TextLine13/TextRun0"
+            },
+            {
+              "dh": 0,
+              "disp": 0.06666666666660603,
+              "dw": 0,
+              "dx": 0,
+              "dy": 0.06666666666660603,
+              "nodeType": "TextLine",
+              "path": "Page/Body2/Column0/TextLine16"
+            },
+            {
+              "dh": 0,
+              "disp": 0.06666666666660603,
+              "dw": 0,
+              "dx": 0,
+              "dy": 0.06666666666660603,
+              "nodeType": "TextRun",
+              "path": "Page/Body2/Column0/TextLine16/TextRun0"
+            },
+            {
+              "dh": 0,
+              "disp": 0.06666666666660603,
+              "dw": 0,
+              "dx": 0,
+              "dy": 0.06666666666660603,
+              "nodeType": "TextLine",
+              "path": "Page/Body2/Column0/TextLine19"
+            }
+          ],
+          "typeDeltas": []
+        },
+        {
+          "maxDisp": 35.32666666666671,
+          "meanDisp": 10.385192563081029,
+          "nodeCountA": 502,
+          "nodeCountB": 502,
+          "page": 9,
+          "structTextrunPm1": false,
+          "structureMismatch": false,
+          "topDeltas": [
+            {
+              "dh": 0,
+              "disp": 35.32666666666671,
+              "dw": 0,
+              "dx": 0,
+              "dy": 35.32666666666671,
+              "nodeType": "TextLine",
+              "path": "Page/Body2/Column0/Table2/Cell4/TextLine0"
+            },
+            {
+              "dh": 0,
+              "disp": 35.32666666666671,
+              "dw": 0,
+              "dx": 0,
+              "dy": 35.32666666666671,
+              "nodeType": "TextRun",
+              "path": "Page/Body2/Column0/Table2/Cell4/TextLine0/TextRun0"
+            },
+            {
+              "dh": 0,
+              "disp": 35.32666666666671,
+              "dw": 0,
+              "dx": 0,
+              "dy": 35.32666666666671,
+              "nodeType": "TextRun",
+              "path": "Page/Body2/Column0/Table2/Cell4/TextLine0/TextRun1"
+            },
+            {
+              "dh": 0,
+              "disp": 35.32666666666671,
+              "dw": 0,
+              "dx": 0,
+              "dy": 35.32666666666671,
+              "nodeType": "TextLine",
+              "path": "Page/Body2/Column0/Table2/Cell4/TextLine1"
+            },
+            {
+              "dh": 0,
+              "disp": 35.32666666666671,
+              "dw": 0,
+              "dx": 0,
+              "dy": 35.32666666666671,
+              "nodeType": "TextRun",
+              "path": "Page/Body2/Column0/Table2/Cell4/TextLine1/TextRun0"
+            },
+            {
+              "dh": 0,
+              "disp": 35.32666666666671,
+              "dw": 0,
+              "dx": 0,
+              "dy": 35.32666666666671,
+              "nodeType": "TextLine",
+              "path": "Page/Body2/Column0/Table2/Cell4/TextLine2"
+            },
+            {
+              "dh": 0,
+              "disp": 35.32666666666671,
+              "dw": 0,
+              "dx": 0,
+              "dy": 35.32666666666671,
+              "nodeType": "TextRun",
+              "path": "Page/Body2/Column0/Table2/Cell4/TextLine2/TextRun0"
+            },
+            {
+              "dh": 0,
+              "disp": 35.32666666666671,
+              "dw": 0,
+              "dx": 0,
+              "dy": 35.32666666666671,
+              "nodeType": "TextRun",
+              "path": "Page/Body2/Column0/Table2/Cell4/TextLine2/TextRun1"
+            },
+            {
+              "dh": 0,
+              "disp": 35.32666666666671,
+              "dw": 0,
+              "dx": 0,
+              "dy": 35.32666666666671,
+              "nodeType": "TextRun",
+              "path": "Page/Body2/Column0/Table2/Cell4/TextLine2/TextRun2"
+            },
+            {
+              "dh": 0,
+              "disp": 35.32666666666671,
+              "dw": 0,
+              "dx": 0,
+              "dy": 35.32666666666671,
+              "nodeType": "TextRun",
+              "path": "Page/Body2/Column0/Table2/Cell4/TextLine2/TextRun3"
+            },
+            {
+              "dh": 0,
+              "disp": 35.32666666666671,
+              "dw": 0,
+              "dx": 0,
+              "dy": 35.32666666666671,
+              "nodeType": "TextLine",
+              "path": "Page/Body2/Column0/Table2/Cell4/TextLine5"
+            },
+            {
+              "dh": 0,
+              "disp": 35.32666666666671,
+              "dw": 0,
+              "dx": 0,
+              "dy": 35.32666666666671,
+              "nodeType": "TextRun",
+              "path": "Page/Body2/Column0/Table2/Cell4/TextLine5/TextRun0"
+            },
+            {
+              "dh": 0,
+              "disp": 35.32666666666671,
+              "dw": 0,
+              "dx": 0,
+              "dy": 35.32666666666671,
+              "nodeType": "TextRun",
+              "path": "Page/Body2/Column0/Table2/Cell4/TextLine5/TextRun1"
+            },
+            {
+              "dh": 0,
+              "disp": 35.32666666666671,
+              "dw": 0,
+              "dx": 0,
+              "dy": 35.32666666666671,
+              "nodeType": "TextRun",
+              "path": "Page/Body2/Column0/Table2/Cell4/TextLine5/TextRun2"
+            },
+            {
+              "dh": 0,
+              "disp": 35.32666666666671,
+              "dw": 0,
+              "dx": 0,
+              "dy": 35.32666666666671,
+              "nodeType": "TextRun",
+              "path": "Page/Body2/Column0/Table2/Cell4/TextLine5/TextRun3"
+            },
+            {
+              "dh": 0,
+              "disp": 35.32666666666671,
+              "dw": 0,
+              "dx": 0,
+              "dy": 35.32666666666671,
+              "nodeType": "TextLine",
+              "path": "Page/Body2/Column0/Table2/Cell4/TextLine6"
+            },
+            {
+              "dh": 0,
+              "disp": 35.32666666666671,
+              "dw": 0,
+              "dx": 0,
+              "dy": 35.32666666666671,
+              "nodeType": "TextRun",
+              "path": "Page/Body2/Column0/Table2/Cell4/TextLine6/TextRun0"
+            },
+            {
+              "dh": 0,
+              "disp": 35.32666666666671,
+              "dw": 0,
+              "dx": 0,
+              "dy": 35.32666666666671,
+              "nodeType": "Table",
+              "path": "Page/Body2/Column0/Table2/Cell4/Table7"
+            },
+            {
+              "dh": 0,
+              "disp": 35.32666666666671,
+              "dw": 0,
+              "dx": 0,
+              "dy": 35.32666666666671,
+              "nodeType": "Cell",
+              "path": "Page/Body2/Column0/Table2/Cell4/Table7/Cell0"
+            },
+            {
+              "dh": 0,
+              "disp": 35.32666666666671,
+              "dw": 0,
+              "dx": 0,
+              "dy": 35.32666666666671,
+              "nodeType": "Rect",
+              "path": "Page/Body2/Column0/Table2/Cell4/Table7/Cell0/Rect0"
+            }
+          ],
+          "typeDeltas": []
+        },
+        {
+          "maxDisp": 11.599999999999994,
+          "meanDisp": 0.15256637168144507,
+          "nodeCountA": 226,
+          "nodeCountB": 226,
+          "page": 10,
+          "structTextrunPm1": false,
+          "structureMismatch": false,
+          "topDeltas": [
+            {
+              "dh": 0,
+              "disp": 11.599999999999994,
+              "dw": 11.599999999999994,
+              "dx": -5.7999999999999545,
+              "dy": 0.040000000000020464,
+              "nodeType": "TextLine",
+              "path": "Page/Body2/Column0/Table11/Cell8/TextLine0"
+            },
+            {
+              "dh": 0,
+              "disp": 11.599999999999994,
+              "dw": 11.599999999999994,
+              "dx": -5.7999999999999545,
+              "dy": 0.040000000000020464,
+              "nodeType": "TextLine",
+              "path": "Page/Body2/Column0/Table11/Cell8/TextLine1"
+            },
+            {
+              "dh": 0,
+              "disp": 1,
+              "dw": -1,
+              "dx": 0.5400000000000773,
+              "dy": 0.040000000000020464,
+              "nodeType": "TextRun",
+              "path": "Page/Body2/Column0/Table11/Cell8/TextLine1/TextRun0"
+            },
+            {
+              "dh": 0,
+              "disp": 0.06666666666683341,
+              "dw": 0,
+              "dx": 0,
+              "dy": -0.06666666666683341,
+              "nodeType": "Cell",
+              "path": "Page/Body2/Column0/Table11/Cell11/Table7/Cell18"
+            },
+            {
+              "dh": 0,
+              "disp": 0.06666666666683341,
+              "dw": 0,
+              "dx": 0,
+              "dy": -0.06666666666683341,
+              "nodeType": "TextLine",
+              "path": "Page/Body2/Column0/Table11/Cell11/Table7/Cell18/TextLine0"
+            },
+            {
+              "dh": 0,
+              "disp": 0.06666666666683341,
+              "dw": 0,
+              "dx": 0,
+              "dy": -0.06666666666683341,
+              "nodeType": "TextRun",
+              "path": "Page/Body2/Column0/Table11/Cell11/Table7/Cell18/TextLine0/TextRun0"
+            },
+            {
+              "dh": 0,
+              "disp": 0.06666666666683341,
+              "dw": 0,
+              "dx": 0,
+              "dy": -0.06666666666683341,
+              "nodeType": "TextRun",
+              "path": "Page/Body2/Column0/Table11/Cell11/Table7/Cell18/TextLine0/TextRun1"
+            },
+            {
+              "dh": 0,
+              "disp": 0.06666666666683341,
+              "dw": 0,
+              "dx": 0,
+              "dy": -0.06666666666683341,
+              "nodeType": "TextLine",
+              "path": "Page/Body2/Column0/Table11/Cell11/Table7/Cell18/TextLine1"
+            },
+            {
+              "dh": 0,
+              "disp": 0.06666666666683341,
+              "dw": 0,
+              "dx": 0,
+              "dy": -0.06666666666683341,
+              "nodeType": "TextRun",
+              "path": "Page/Body2/Column0/Table11/Cell11/Table7/Cell18/TextLine1/TextRun0"
+            },
+            {
+              "dh": 0,
+              "disp": 0.06666666666683341,
+              "dw": 0,
+              "dx": 0,
+              "dy": -0.06666666666683341,
+              "nodeType": "Cell",
+              "path": "Page/Body2/Column0/Table11/Cell11/Table7/Cell19"
+            },
+            {
+              "dh": 0,
+              "disp": 0.06666666666683341,
+              "dw": 0,
+              "dx": 0,
+              "dy": -0.06666666666683341,
+              "nodeType": "TextLine",
+              "path": "Page/Body2/Column0/Table11/Cell11/Table7/Cell19/TextLine0"
+            },
+            {
+              "dh": 0,
+              "disp": 0.06666666666683341,
+              "dw": 0,
+              "dx": 0,
+              "dy": -0.06666666666683341,
+              "nodeType": "TextRun",
+              "path": "Page/Body2/Column0/Table11/Cell11/Table7/Cell19/TextLine0/TextRun0"
+            },
+            {
+              "dh": 0,
+              "disp": 0.06666666666683341,
+              "dw": 0,
+              "dx": 0,
+              "dy": -0.06666666666683341,
+              "nodeType": "TextRun",
+              "path": "Page/Body2/Column0/Table11/Cell11/Table7/Cell19/TextLine0/TextRun1"
+            },
+            {
+              "dh": 0,
+              "disp": 0.06666666666683341,
+              "dw": 0,
+              "dx": 0,
+              "dy": -0.06666666666683341,
+              "nodeType": "Cell",
+              "path": "Page/Body2/Column0/Table11/Cell11/Table7/Cell20"
+            },
+            {
+              "dh": 0,
+              "disp": 0.06666666666683341,
+              "dw": 0,
+              "dx": 0,
+              "dy": -0.06666666666683341,
+              "nodeType": "TextLine",
+              "path": "Page/Body2/Column0/Table11/Cell11/Table7/Cell20/TextLine0"
+            },
+            {
+              "dh": 0,
+              "disp": 0.06666666666683341,
+              "dw": 0,
+              "dx": 0,
+              "dy": -0.06666666666683341,
+              "nodeType": "TextRun",
+              "path": "Page/Body2/Column0/Table11/Cell11/Table7/Cell20/TextLine0/TextRun0"
+            },
+            {
+              "dh": 0,
+              "disp": 0.06666666666683341,
+              "dw": 0,
+              "dx": 0,
+              "dy": -0.06666666666683341,
+              "nodeType": "Line",
+              "path": "Page/Body2/Column0/Table11/Cell11/Table7/Line32"
+            },
+            {
+              "dh": 0,
+              "disp": 0.06666666666683341,
+              "dw": 0,
+              "dx": 0,
+              "dy": -0.06666666666683341,
+              "nodeType": "Line",
+              "path": "Page/Body2/Column0/Table11/Cell11/Table7/Line34"
+            },
+            {
+              "dh": 0,
+              "disp": 0.06666666666671972,
+              "dw": 0,
+              "dx": 0,
+              "dy": -0.06666666666671972,
+              "nodeType": "TextLine",
+              "path": "Page/Body2/Column0/Table11/Cell11/TextLine5"
+            },
+            {
+              "dh": 0,
+              "disp": 0.06666666666671972,
+              "dw": 0,
+              "dx": 0,
+              "dy": -0.06666666666671972,
+              "nodeType": "TextRun",
+              "path": "Page/Body2/Column0/Table11/Cell11/TextLine5/TextRun0"
+            }
+          ],
+          "typeDeltas": []
+        },
+        {
+          "maxDisp": 8,
+          "meanDisp": 0.2519658119658102,
+          "nodeCountA": 195,
+          "nodeCountB": 195,
+          "page": 11,
+          "structTextrunPm1": false,
+          "structureMismatch": false,
+          "topDeltas": [
+            {
+              "dh": 0,
+              "disp": 8,
+              "dw": 0,
+              "dx": 8,
+              "dy": 0.07999999999992724,
+              "nodeType": "TextRun",
+              "path": "Page/Body2/Column0/TextLine14/TextRun6"
+            },
+            {
+              "dh": 0,
+              "disp": 8,
+              "dw": 1.819047619047609,
+              "dx": 8,
+              "dy": 0.07999999999992724,
+              "nodeType": "TextRun",
+              "path": "Page/Body2/Column0/TextLine14/TextRun7"
+            },
+            {
+              "dh": 0,
+              "disp": 6,
+              "dw": 0,
+              "dx": 6,
+              "dy": 0.07999999999992724,
+              "nodeType": "TextRun",
+              "path": "Page/Body2/Column0/TextLine14/TextRun4"
+            },
+            {
+              "dh": 0,
+              "disp": 6,
+              "dw": 2,
+              "dx": 6,
+              "dy": 0.07999999999992724,
+              "nodeType": "TextRun",
+              "path": "Page/Body2/Column0/TextLine14/TextRun5"
+            },
+            {
+              "dh": 0,
+              "disp": 4,
+              "dw": 0,
+              "dx": 4,
+              "dy": 0.07999999999992724,
+              "nodeType": "TextRun",
+              "path": "Page/Body2/Column0/TextLine14/TextRun2"
+            },
+            {
+              "dh": 0,
+              "disp": 4,
+              "dw": 2,
+              "dx": 4,
+              "dy": 0.07999999999992724,
+              "nodeType": "TextRun",
+              "path": "Page/Body2/Column0/TextLine14/TextRun3"
+            },
+            {
+              "dh": 0,
+              "disp": 2,
+              "dw": 2,
+              "dx": 0,
+              "dy": 0.07999999999992724,
+              "nodeType": "TextRun",
+              "path": "Page/Body2/Column0/TextLine14/TextRun0"
+            },
+            {
+              "dh": 0,
+              "disp": 2,
+              "dw": 2,
+              "dx": 2,
+              "dy": 0.07999999999992724,
+              "nodeType": "TextRun",
+              "path": "Page/Body2/Column0/TextLine14/TextRun1"
+            },
+            {
+              "dh": 0,
+              "disp": 0.07999999999992724,
+              "dw": 0,
+              "dx": 0,
+              "dy": 0.07999999999992724,
+              "nodeType": "TextLine",
+              "path": "Page/Body2/Column0/TextLine14"
+            },
+            {
+              "dh": 0,
+              "disp": 0.07999999999992724,
+              "dw": 0,
+              "dx": 0,
+              "dy": 0.07999999999992724,
+              "nodeType": "TextLine",
+              "path": "Page/Body2/Column0/TextLine15"
+            },
+            {
+              "dh": 0,
+              "disp": 0.07999999999992724,
+              "dw": 0,
+              "dx": 0,
+              "dy": 0.07999999999992724,
+              "nodeType": "TextRun",
+              "path": "Page/Body2/Column0/TextLine15/TextRun0"
+            },
+            {
+              "dh": 0,
+              "disp": 0.07999999999992724,
+              "dw": 0,
+              "dx": 0,
+              "dy": 0.07999999999992724,
+              "nodeType": "TextRun",
+              "path": "Page/Body2/Column0/TextLine15/TextRun1"
+            },
+            {
+              "dh": 0,
+              "disp": 0.07999999999992724,
+              "dw": 0,
+              "dx": 0,
+              "dy": 0.07999999999992724,
+              "nodeType": "TextRun",
+              "path": "Page/Body2/Column0/TextLine15/TextRun2"
+            },
+            {
+              "dh": 0,
+              "disp": 0.06666666666660603,
+              "dw": 0,
+              "dx": 0,
+              "dy": 0.06666666666660603,
+              "nodeType": "TextLine",
+              "path": "Page/Body2/Column0/TextLine12"
+            },
+            {
+              "dh": 0,
+              "disp": 0.06666666666660603,
+              "dw": 0,
+              "dx": 0,
+              "dy": 0.06666666666660603,
+              "nodeType": "TextRun",
+              "path": "Page/Body2/Column0/TextLine12/TextRun0"
+            },
+            {
+              "dh": 0,
+              "disp": 0.06666666666649235,
+              "dw": 0,
+              "dx": 0,
+              "dy": 0.06666666666649235,
+              "nodeType": "TextLine",
+              "path": "Page/Body2/Column0/TextLine13"
+            },
+            {
+              "dh": 0,
+              "disp": 0.06666666666649235,
+              "dw": 0,
+              "dx": 0,
+              "dy": 0.06666666666649235,
+              "nodeType": "TextRun",
+              "path": "Page/Body2/Column0/TextLine13/TextRun0"
+            },
+            {
+              "dh": 0,
+              "disp": 0.053333333333398514,
+              "dw": 0,
+              "dx": 0,
+              "dy": 0.053333333333398514,
+              "nodeType": "Cell",
+              "path": "Page/Body2/Column0/Table9/Cell9"
+            },
+            {
+              "dh": 0,
+              "disp": 0.053333333333398514,
+              "dw": 0,
+              "dx": 0,
+              "dy": 0.053333333333398514,
+              "nodeType": "TextLine",
+              "path": "Page/Body2/Column0/Table9/Cell9/TextLine0"
+            },
+            {
+              "dh": 0,
+              "disp": 0.053333333333398514,
+              "dw": 0,
+              "dx": 0,
+              "dy": 0.053333333333398514,
+              "nodeType": "TextRun",
+              "path": "Page/Body2/Column0/Table9/Cell9/TextLine0/TextRun0"
+            }
+          ],
+          "typeDeltas": []
+        },
+        {
+          "maxDisp": 0.06666666666660603,
+          "meanDisp": 0.020180180180246324,
+          "nodeCountA": 111,
+          "nodeCountB": 111,
+          "page": 12,
+          "structTextrunPm1": false,
+          "structureMismatch": false,
+          "topDeltas": [
+            {
+              "dh": 0,
+              "disp": 0.06666666666660603,
+              "dw": 0,
+              "dx": 0,
+              "dy": 0.06666666666660603,
+              "nodeType": "TextLine",
+              "path": "Page/Body2/Column0/TextLine18"
+            },
+            {
+              "dh": 0,
+              "disp": 0.06666666666660603,
+              "dw": 0,
+              "dx": 0,
+              "dy": 0.06666666666660603,
+              "nodeType": "TextRun",
+              "path": "Page/Body2/Column0/TextLine18/TextRun0"
+            },
+            {
+              "dh": 0,
+              "disp": 0.053333333333739574,
+              "dw": 0,
+              "dx": 0,
+              "dy": -0.053333333333739574,
+              "nodeType": "TextLine",
+              "path": "Page/Body2/Column0/TextLine39"
+            },
+            {
+              "dh": 0,
+              "disp": 0.053333333333739574,
+              "dw": 0,
+              "dx": 0,
+              "dy": -0.053333333333739574,
+              "nodeType": "TextRun",
+              "path": "Page/Body2/Column0/TextLine39/TextRun0"
+            },
+            {
+              "dh": 0,
+              "disp": 0.05333333333334167,
+              "dw": 0,
+              "dx": 0,
+              "dy": -0.05333333333334167,
+              "nodeType": "TextLine",
+              "path": "Page/Body2/Column0/TextLine7"
+            },
+            {
+              "dh": 0,
+              "disp": 0.05333333333334167,
+              "dw": 0,
+              "dx": 0,
+              "dy": -0.05333333333334167,
+              "nodeType": "TextRun",
+              "path": "Page/Body2/Column0/TextLine7/TextRun0"
+            },
+            {
+              "dh": 0,
+              "disp": 0.05333333333328483,
+              "dw": 0,
+              "dx": 0,
+              "dy": 0.05333333333328483,
+              "nodeType": "TextLine",
+              "path": "Page/Body2/Column0/TextLine16"
+            },
+            {
+              "dh": 0,
+              "disp": 0.05333333333328483,
+              "dw": 0,
+              "dx": 0,
+              "dy": 0.05333333333328483,
+              "nodeType": "TextRun",
+              "path": "Page/Body2/Column0/TextLine16/TextRun0"
+            },
+            {
+              "dh": 0,
+              "disp": 0.053333333333227984,
+              "dw": 0,
+              "dx": 0,
+              "dy": 0.053333333333227984,
+              "nodeType": "TextLine",
+              "path": "Page/Body2/Column0/TextLine20"
+            },
+            {
+              "dh": 0,
+              "disp": 0.053333333333227984,
+              "dw": 0,
+              "dx": 0,
+              "dy": 0.053333333333227984,
+              "nodeType": "TextRun",
+              "path": "Page/Body2/Column0/TextLine20/TextRun0"
+            },
+            {
+              "dh": 0,
+              "disp": 0.05333333333317114,
+              "dw": 0,
+              "dx": 0,
+              "dy": 0.05333333333317114,
+              "nodeType": "TextLine",
+              "path": "Page/Body2/Column0/TextLine17"
+            },
+            {
+              "dh": 0,
+              "disp": 0.05333333333317114,
+              "dw": 0,
+              "dx": 0,
+              "dy": 0.05333333333317114,
+              "nodeType": "TextRun",
+              "path": "Page/Body2/Column0/TextLine17/TextRun0"
+            },
+            {
+              "dh": 0,
+              "disp": 0.04000000000041837,
+              "dw": 0,
+              "dx": 0,
+              "dy": -0.04000000000041837,
+              "nodeType": "TextLine",
+              "path": "Page/Body2/Column0/TextLine37"
+            },
+            {
+              "dh": 0,
+              "disp": 0.04000000000041837,
+              "dw": 0,
+              "dx": 0,
+              "dy": -0.04000000000041837,
+              "nodeType": "TextRun",
+              "path": "Page/Body2/Column0/TextLine37/TextRun0"
+            },
+            {
+              "dh": 0,
+              "disp": 0.04000000000041837,
+              "dw": 0,
+              "dx": 0,
+              "dy": -0.04000000000041837,
+              "nodeType": "TextLine",
+              "path": "Page/Body2/Column0/TextLine40"
+            },
+            {
+              "dh": 0,
+              "disp": 0.04000000000041837,
+              "dw": 0,
+              "dx": 0,
+              "dy": -0.04000000000041837,
+              "nodeType": "TextRun",
+              "path": "Page/Body2/Column0/TextLine40/TextRun0"
+            },
+            {
+              "dh": 0,
+              "disp": 0.04000000000030468,
+              "dw": 0,
+              "dx": 0,
+              "dy": -0.04000000000030468,
+              "nodeType": "TextLine",
+              "path": "Page/Body2/Column0/TextLine33"
+            },
+            {
+              "dh": 0,
+              "disp": 0.04000000000030468,
+              "dw": 0,
+              "dx": 0,
+              "dy": -0.04000000000030468,
+              "nodeType": "TextRun",
+              "path": "Page/Body2/Column0/TextLine33/TextRun0"
+            },
+            {
+              "dh": 0,
+              "disp": 0.040000000000020464,
+              "dw": 0,
+              "dx": 0,
+              "dy": -0.040000000000020464,
+              "nodeType": "TextLine",
+              "path": "Page/Body2/Column0/TextLine5"
+            },
+            {
+              "dh": 0,
+              "disp": 0.040000000000020464,
+              "dw": 0,
+              "dx": 0,
+              "dy": -0.040000000000020464,
+              "nodeType": "TextRun",
+              "path": "Page/Body2/Column0/TextLine5/TextRun0"
+            }
+          ],
+          "typeDeltas": []
+        },
+        {
+          "maxDisp": 28,
+          "meanDisp": 0.25329463792141593,
+          "nodeCountA": 201,
+          "nodeCountB": 201,
+          "page": 13,
+          "structTextrunPm1": false,
+          "structureMismatch": false,
+          "topDeltas": [
+            {
+              "dh": 0,
+              "disp": 28,
+              "dw": 28,
+              "dx": 0,
+              "dy": 0,
+              "nodeType": "TextRun",
+              "path": "Page/Body2/Column0/TextLine2/TextRun0"
+            },
+            {
+              "dh": 0,
+              "disp": 7.872222222222263,
+              "dw": 7.872222222222263,
+              "dx": 1,
+              "dy": 0,
+              "nodeType": "TextRun",
+              "path": "Page/Body2/Column0/TextLine3/TextRun1"
+            },
+            {
+              "dh": 0,
+              "disp": 6,
+              "dw": 6,
+              "dx": 0,
+              "dy": 0,
+              "nodeType": "TextRun",
+              "path": "Page/Body2/Column0/TextLine1/TextRun0"
+            },
+            {
+              "dh": 0,
+              "disp": 6,
+              "dw": -6,
+              "dx": 6,
+              "dy": 0,
+              "nodeType": "TextRun",
+              "path": "Page/Body2/Column0/TextLine1/TextRun1"
+            },
+            {
+              "dh": 0,
+              "disp": 1,
+              "dw": 1,
+              "dx": 0,
+              "dy": 0,
+              "nodeType": "TextRun",
+              "path": "Page/Body2/Column0/TextLine3/TextRun0"
+            },
+            {
+              "dh": 0,
+              "disp": 0.02666666666658557,
+              "dw": 0,
+              "dx": 0,
+              "dy": -0.02666666666658557,
+              "nodeType": "TextLine",
+              "path": "Page/Body2/Column0/TextLine8"
+            },
+            {
+              "dh": 0,
+              "disp": 0.02666666666658557,
+              "dw": 0,
+              "dx": 0,
+              "dy": -0.02666666666658557,
+              "nodeType": "TextRun",
+              "path": "Page/Body2/Column0/TextLine8/TextRun0"
+            },
+            {
+              "dh": 0,
+              "disp": 0.02666666666658557,
+              "dw": 0,
+              "dx": 0,
+              "dy": -0.02666666666658557,
+              "nodeType": "TextRun",
+              "path": "Page/Body2/Column0/TextLine8/TextRun1"
+            },
+            {
+              "dh": 0,
+              "disp": 0.02666666666658557,
+              "dw": 0,
+              "dx": 0,
+              "dy": -0.02666666666658557,
+              "nodeType": "TextRun",
+              "path": "Page/Body2/Column0/TextLine8/TextRun2"
+            },
+            {
+              "dh": 0,
+              "disp": 0.02666666666658557,
+              "dw": 0,
+              "dx": 0,
+              "dy": -0.02666666666658557,
+              "nodeType": "TextRun",
+              "path": "Page/Body2/Column0/TextLine8/TextRun3"
+            },
+            {
+              "dh": 0,
+              "disp": 0.02666666666658557,
+              "dw": 0,
+              "dx": 0,
+              "dy": -0.02666666666658557,
+              "nodeType": "TextRun",
+              "path": "Page/Body2/Column0/TextLine8/TextRun4"
+            },
+            {
+              "dh": 0,
+              "disp": 0.026666666666528727,
+              "dw": 0,
+              "dx": 0,
+              "dy": -0.026666666666528727,
+              "nodeType": "TextLine",
+              "path": "Page/Body2/Column0/TextLine11"
+            },
+            {
+              "dh": 0,
+              "disp": 0.026666666666528727,
+              "dw": 0,
+              "dx": 0,
+              "dy": -0.026666666666528727,
+              "nodeType": "TextRun",
+              "path": "Page/Body2/Column0/TextLine11/TextRun0"
+            },
+            {
+              "dh": 0,
+              "disp": 0.013333333333321207,
+              "dw": 0,
+              "dx": 0,
+              "dy": -0.013333333333321207,
+              "nodeType": "Cell",
+              "path": "Page/Body2/Column0/Table9/Cell23"
+            },
+            {
+              "dh": 0,
+              "disp": 0.013333333333321207,
+              "dw": 0,
+              "dx": 0,
+              "dy": -0.013333333333321207,
+              "nodeType": "TextLine",
+              "path": "Page/Body2/Column0/Table9/Cell23/TextLine0"
+            },
+            {
+              "dh": 0,
+              "disp": 0.013333333333321207,
+              "dw": 0,
+              "dx": 0,
+              "dy": -0.013333333333321207,
+              "nodeType": "TextRun",
+              "path": "Page/Body2/Column0/Table9/Cell23/TextLine0/TextRun0"
+            },
+            {
+              "dh": 0,
+              "disp": 0.013333333333321207,
+              "dw": 0,
+              "dx": 0,
+              "dy": -0.013333333333321207,
+              "nodeType": "Cell",
+              "path": "Page/Body2/Column0/Table9/Cell24"
+            },
+            {
+              "dh": 0,
+              "disp": 0.013333333333321207,
+              "dw": 0,
+              "dx": 0,
+              "dy": -0.013333333333321207,
+              "nodeType": "TextLine",
+              "path": "Page/Body2/Column0/Table9/Cell24/TextLine0"
+            },
+            {
+              "dh": 0,
+              "disp": 0.013333333333321207,
+              "dw": 0,
+              "dx": 0,
+              "dy": -0.013333333333321207,
+              "nodeType": "TextRun",
+              "path": "Page/Body2/Column0/Table9/Cell24/TextLine0/TextRun0"
+            },
+            {
+              "dh": 0,
+              "disp": 0.013333333333321207,
+              "dw": 0,
+              "dx": 0,
+              "dy": -0.013333333333321207,
+              "nodeType": "Cell",
+              "path": "Page/Body2/Column0/Table9/Cell25"
+            }
+          ],
+          "typeDeltas": []
+        }
+      ],
+      "regression": true,
+      "schemaVersion": "1.0",
+      "sourceA": "/Users/sangbumnam/AI_Agents_git/GEPA_Document_Engineering/templates/plan/reference.hwp",
+      "sourceB": "/Users/sangbumnam/AI_Agents_git/GEPA_Document_Engineering/templates/plan/reference.hwpx",
+      "status": "STRUCT_MISMATCH",
+      "structPages": 3,
+      "threshold": 1,
+      "untrustedContent": false,
+      "untrustedFields": [],
+      "via": null,
+      "worstPage": 4
+    }
+  },
+  "info": {
+    "fonts": [
+      "굴림체",
+      "돋움",
+      "맑은 고딕",
+      "양재난초체M",
+      "함초롬돋움",
+      "함초롬바탕",
+      "휴먼명조",
+      "HY헤드라인M",
+      "신명 태명조",
+      "옥수수",
+      "태 가는 헤드라인T",
+      "한양견고딕",
+      "한양중고딕",
+      "-윤명조150",
+      "굴림체",
+      "돋움",
+      "맑은 고딕",
+      "양재난초체M",
+      "함초롬돋움",
+      "함초롬바탕",
+      "휴먼명조",
+      "HY헤드라인M",
+      "신명 태명조",
+      "옥수수",
+      "한양견고딕",
+      "한양중고딕",
+      "HCI Hollyhock",
+      "HCI Poppy",
+      "-윤명조150",
+      "굴림체",
+      "돋움",
+      "맑은 고딕",
+      "양재난초체M",
+      "함초롬돋움",
+      "함초롬바탕",
+      "휴먼명조",
+      "HY헤드라인M",
+      "신명 태명조",
+      "한양신명조",
+      "한양중고딕",
+      "-윤명조150",
+      "굴림체",
+      "돋움",
+      "맑은 고딕",
+      "양재난초체M",
+      "함초롬돋움",
+      "함초롬바탕",
+      "휴먼명조",
+      "HY헤드라인M",
+      "신명 태명조",
+      "한양신명조",
+      "한양중고딕",
+      "-윤명조150",
+      "굴림체",
+      "돋움",
+      "맑은 고딕",
+      "양재난초체M",
+      "함초롬돋움",
+      "함초롬바탕",
+      "휴먼명조",
+      "HY헤드라인M",
+      "한양신명조",
+      "-윤명조150",
+      "굴림체",
+      "돋움",
+      "맑은 고딕",
+      "양재난초체M",
+      "함초롬돋움",
+      "함초롬바탕",
+      "휴먼명조",
+      "HY헤드라인M",
+      "신명 견명조",
+      "한양신명조",
+      "한양중고딕",
+      "-윤명조150",
+      "굴림체",
+      "돋움",
+      "맑은 고딕",
+      "양재난초체M",
+      "함초롬돋움",
+      "함초롬바탕",
+      "휴먼명조",
+      "HY헤드라인M",
+      "명조",
+      "-윤명조150"
+    ],
+    "format": "hwpx",
+    "lastSavedWith": {
+      "confidence": "metadata",
+      "product": "hancom-office-2020",
+      "version": "11.0.0.3524"
+    },
+    "pageCount": 14,
+    "paraCount": 204,
+    "printMethod": null,
+    "printMethodImpliesNup": false,
+    "schemaVersion": "1.0",
+    "sections": 1,
+    "sizeBytes": 311574,
+    "source": "/Users/sangbumnam/AI_Agents_git/GEPA_Document_Engineering/templates/plan/reference.hwpx",
+    "title": "등록번호",
+    "untrustedContent": true,
+    "untrustedFields": [
+      "title",
+      "fonts[]"
+    ],
+    "version": "5.1.0.0",
+    "warnings": []
+  },
+  "entries": [
+    "mimetype",
+    "version.xml",
+    "Contents/header.xml",
+    "Contents/section0.xml",
+    "Preview/PrvText.txt",
+    "Preview/PrvImage.png",
+    "settings.xml",
+    "META-INF/container.rdf",
+    "BinData/image1.bmp",
+    "BinData/image2.png",
+    "BinData/image3.png",
+    "BinData/image4.jpg",
+    "Contents/content.hpf",
+    "META-INF/container.xml",
+    "META-INF/manifest.xml"
+  ],
+  "headerCounts": {
+    "fontface": 7,
+    "font": 85,
+    "charPr": 163,
+    "paraPr": 100,
+    "borderFill": 99,
+    "style": 26
+  }
+}

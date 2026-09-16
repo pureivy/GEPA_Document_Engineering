@@ -1,0 +1,7 @@
+{
+  "tool_name": "WebFetch",
+  "tool_input_preview": "{\"url\":\"https://www.law.go.kr/DRF/lawSearch.do?OC=test&target=ordin&query=경상북도 수출&display=50&type=XML\",\"prompt\":\"검색 결과에서 경상북도(광역자치단체 본청) 소관 자치법규 중 명칭에 '수출', '통상', '중소기업', '무역', '해외'가 포함된 조례의 정확한 명칭, 자...",
+  "error": "socket hang up",
+  "timestamp": "2026-09-15T02:16:41.546Z",
+  "retry_count": 1
+}

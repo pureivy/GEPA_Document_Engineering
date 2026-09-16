@@ -1,0 +1,366 @@
+<!-- para 2 -->
+<hp:p id="38" paraPrIDRef="24" styleIDRef="0" pageBreak="0" columnBreak="0" merged="0"><hp:run charPrIDRef="15"><hp:t></hp:t></hp:run><hp:linesegarray><hp:lineseg textpos="0" vertpos="17887" vertsize="2400" textheight="2400" baseline="2040" spacing="0" horzpos="0" horzsize="48188" flags="393216"/></hp:linesegarray></hp:p>
+<!-- para 3 -->
+<hp:p id="39" paraPrIDRef="24" styleIDRef="0" pageBreak="0" columnBreak="0" merged="0"><hp:run charPrIDRef="15"><hp:t></hp:t></hp:run><hp:linesegarray><hp:lineseg textpos="0" vertpos="20287" vertsize="2400" textheight="2400" baseline="2040" spacing="0" horzpos="0" horzsize="48188" flags="393216"/></hp:linesegarray></hp:p>
+<!-- para 4 -->
+<hp:p id="40" paraPrIDRef="24" styleIDRef="0" pageBreak="0" columnBreak="0" merged="0"><hp:run charPrIDRef="15"><hp:ctrl><hp:fieldBegin id="1670023824" type="CLICK_HERE" name="표지" editable="1" dirty="1"><hp:parameters cnt="1" name=""><hp:stringParam name="Command">Clickhere:set:44:Direction:wstring:2:표지 HelpState:wstring:0:  </hp:stringParam></hp:parameters></hp:fieldBegin></hp:ctrl></hp:run></hp:p>
+<!-- para 5 -->
+<hp:p id="41" paraPrIDRef="24" styleIDRef="0" pageBreak="0" columnBreak="0" merged="0"><hp:run charPrIDRef="15"><hp:t></hp:t></hp:run></hp:p>
+<!-- para 6 -->
+<hp:p id="43" paraPrIDRef="24" styleIDRef="0" pageBreak="0" columnBreak="0" merged="0"><hp:run charPrIDRef="15"><hp:container id="1670023832" zOrder="2" numberingType="PICTURE" textWrap="BEHIND_TEXT" textFlow="BOTH_SIDES" lock="0" dropcapstyle="None" href="" groupLevel="0" instid="1670023832"><hp:offset x="4294965849" y="0"/><hp:orgSz width="48190" height="9777"/><hp:curSz width="45296" height="8985"/><hp:flip horizontal="0" vertical="0"/><hp:rotationInfo angle="0" centerX="22648" centerY="4492" rotateimage="0"/><hp:renderingInfo><hc:transMatrix e1="1" e2="0" e3="-1447" e4="0" e5="1" e6="0"/><hc:scaMatrix e1="0.93994606" e2="0" e3="1447" e4="0" e5="0.91899353" e6="0"/><hc:rotMatrix e1="1" e2="0" e3="0" e4="0" e5="1" e6="0"/></hp:renderingInfo><hp:pic id="0" zOrder="0" numberingType="NONE" textWrap="SQUARE" textFlow="BOTH_SIDES" lock="0" dropcapstyle="None" href="" groupLevel="1" instid="596282010" reverse="0"><hp:offset x="4294965849" y="0"/><hp:orgSz width="49680" height="10080"/><hp:curSz width="46696" height="9263"/><hp:flip horizontal="0" vertical="0"/><hp:rotationInfo angle="0" centerX="22648" centerY="4492" rotateimage="0"/><hp:renderingInfo><hc:transMatrix e1="1" e2="0" e3="-1447" e4="0" e5="1" e6="0"/><hc:scaMatrix e1="0.93994606" e2="0" e3="1447" e4="0" e5="0.91899353" e6="0"/><hc:rotMatrix e1="1" e2="0" e3="0" e4="0" e5="1" e6="0"/><hc:scaMatrix e1="0.9700081" e2="0" e3="0" e4="0" e5="0.9699405" e6="0"/><hc:rotMatrix e1="1" e2="0" e3="0" e4="0" e5="1" e6="0"/></hp:renderingInfo><hp:imgRect><hc:pt0 x="0" y="0"/><hc:pt1 x="49680" y="0"/><hc:pt2 x="49680" y="10080"/><hc:pt3 x="0" y="10080"/></hp:imgRect><hp:imgClip left="0" right="49680" top="0" bottom="10080"/><hp:inMargin left="0" right="0" top="0" bottom="0"/><hp:imgDim dimwidth="49680" dimheight="10080"/><hc:img binaryItemIDRef="image1" bright="0" contrast="0" effect="REAL_PIC" alpha="0"/><hp:effects></hp:effects><hp:sz width="0" widthRelTo="ABSOLUTE" height="0" heightRelTo="ABSOLUTE" protect="0"/><hp:pos treatAsChar="0" affectLSpacing="0" flowWithText="0" allowOverlap="0" holdAnchorAndSO="0" vertRelTo="PAPER" horzRelTo="PAPER" vertAlign="TOP" horzAlign="LEFT" vertOffset="0" horzOffset="0"/><hp:outMargin left="0" right="0" top="0" bottom="0"/></hp:pic><hp:rect id="0" zOrder="0" numberingType="NONE" textWrap="SQUARE" textFlow="BOTH_SIDES" lock="0" dropcapstyle="None" href="" groupLevel="1" instid="596282011" ratio="0"><hp:offset x="881" y="4294963827"/><hp:orgSz width="36642" height="6630"/><hp:curSz width="34441" height="6092"/><hp:flip horizontal="0" vertical="0"/><hp:rotationInfo angle="0" centerX="21942" centerY="3909" rotateimage="0"/><hp:renderingInfo><hc:transMatrix e1="1" e2="0" e3="881" e4="0" e5="1" e6="-3469"/><hc:scaMatrix e1="0.93994606" e2="0" e3="1307.1945" e4="0" e5="0.91899353" e6="281.01135"/><hc:rotMatrix e1="1" e2="0" e3="0" e4="0" e5="1" e6="0"/><hc:scaMatrix e1="1.274177" e2="0" e3="-1578.122" e4="0" e5="1.283056" e6="4128.7827"/><hc:rotMatrix e1="1" e2="0" e3="0" e4="0" e5="1" e6="0"/></hp:renderingInfo><hp:lineShape color="#800080" width="28" style="NONE" endCap="FLAT" headStyle="NORMAL" tailStyle="CONCAVE_ARROW" headfill="1" tailfill="1" headSz="MEDIUM_MEDIUM" tailSz="SMALL_SMALL" outlineStyle="NORMAL" alpha="0"/><hp:shadow type="NONE" color="#B2B2B2" offsetX="0" offsetY="0" alpha="0"/><hp:drawText lastWidth="43884" name="" editable="0"><hp:subList id="" textDirection="HORIZONTAL" lineWrap="BREAK" vertAlign="CENTER" linkListIDRef="0" linkListNextIDRef="0" textWidth="0" textHeight="0" hasTextRef="0" hasNumRef="0"><hp:p id="42" paraPrIDRef="26" styleIDRef="0" pageBreak="0" columnBreak="0" merged="0"><hp:run charPrIDRef="20"><hp:ctrl><hp:fieldBegin id="1670023836" type="CLICK_HERE" name="결재제목" editable="1" dirty="1"><hp:parameters cnt="1" name=""><hp:stringParam name="Command">Clickhere:set:46:Direction:wstring:4:결재제목 HelpState:wstring:0:  </hp:stringParam></hp:parameters></hp:fieldBegin></hp:ctrl><hp:t>2026년 안동시 수출기업 역량강화 지원사업 사업계획(안)</hp:t></hp:run><hp:run charPrIDRef="19"><hp:ctrl><hp:fieldEnd beginIDRef="1670023836"/></hp:ctrl></hp:run><hp:linesegarray><hp:lineseg textpos="0" vertpos="500" vertsize="2000" textheight="2000" baseline="1700" spacing="400" horzpos="0" horzsize="43884" flags="393216"/><hp:lineseg textpos="33" vertpos="2900" vertsize="2000" textheight="2000" baseline="1700" spacing="400" horzpos="0" horzsize="43884" flags="393216"/></hp:linesegarray></hp:p></hp:subList></hp:drawText><hc:pt0 x="0" y="0"/><hc:pt1 x="36642" y="0"/><hc:pt2 x="36642" y="6630"/><hc:pt3 x="0" y="6630"/><hp:sz width="0" widthRelTo="ABSOLUTE" height="0" heightRelTo="ABSOLUTE" protect="0"/><hp:pos treatAsChar="0" affectLSpacing="0" flowWithText="0" allowOverlap="0" holdAnchorAndSO="0" vertRelTo="PAPER" horzRelTo="PAPER" vertAlign="TOP" horzAlign="LEFT" vertOffset="0" horzOffset="0"/><hp:outMargin left="0" right="0" top="0" bottom="0"/></hp:rect><hp:sz width="45296" widthRelTo="ABSOLUTE" height="8985" heightRelTo="ABSOLUTE" protect="0"/><hp:pos treatAsChar="1" affectLSpacing="0" flowWithText="0" allowOverlap="0" holdAnchorAndSO="0" vertRelTo="PARA" horzRelTo="PARA" vertAlign="TOP" horzAlign="LEFT" vertOffset="0" horzOffset="0"/><hp:outMargin left="0" right="0" top="0" bottom="0"/></hp:container></hp:run><hp:linesegarray><hp:lineseg textpos="0" vertpos="27487" vertsize="8985" textheight="8985" baseline="7637" spacing="0" horzpos="0" horzsize="48188" flags="393216"/></hp:linesegarray></hp:p>
+<!-- para 7 -->
+<hp:p id="44" paraPrIDRef="24" styleIDRef="0" pageBreak="0" columnBreak="0" merged="0"><hp:run charPrIDRef="15"><hp:t></hp:t></hp:run></hp:p>
+<!-- para 8 -->
+<hp:p id="45" paraPrIDRef="24" styleIDRef="0" pageBreak="0" columnBreak="0" merged="0"><hp:run charPrIDRef="15"><hp:t></hp:t></hp:run></hp:p>
+<!-- para 9 -->
+<hp:p id="46" paraPrIDRef="25" styleIDRef="0" pageBreak="0" columnBreak="0" merged="0"><hp:run charPrIDRef="15"><hp:t></hp:t></hp:run></hp:p>
+<!-- para 10 -->
+<hp:p id="47" paraPrIDRef="25" styleIDRef="0" pageBreak="0" columnBreak="0" merged="0"><hp:run charPrIDRef="15"><hp:t></hp:t></hp:run></hp:p>
+<!-- para 11 -->
+<hp:p id="48" paraPrIDRef="25" styleIDRef="0" pageBreak="0" columnBreak="0" merged="0"><hp:run charPrIDRef="15"><hp:t></hp:t></hp:run></hp:p>
+<!-- para 12 -->
+<hp:p id="49" paraPrIDRef="25" styleIDRef="0" pageBreak="0" columnBreak="0" merged="0"><hp:run charPrIDRef="15"><hp:t></hp:t></hp:run></hp:p>
+<!-- para 13 -->
+<hp:p id="50" paraPrIDRef="25" styleIDRef="0" pageBreak="0" columnBreak="0" merged="0"><hp:run charPrIDRef="15"><hp:t></hp:t></hp:run></hp:p>
+<!-- para 14 -->
+<hp:p id="51" paraPrIDRef="25" styleIDRef="0" pageBreak="0" columnBreak="0" merged="0"><hp:run charPrIDRef="15"><hp:t></hp:t></hp:run></hp:p>
+<!-- para 15 -->
+<hp:p id="52" paraPrIDRef="25" styleIDRef="0" pageBreak="0" columnBreak="0" merged="0"><hp:run charPrIDRef="15"><hp:t></hp:t></hp:run></hp:p>
+<!-- para 16 -->
+<hp:p id="53" paraPrIDRef="25" styleIDRef="0" pageBreak="0" columnBreak="0" merged="0"><hp:run charPrIDRef="15"><hp:t></hp:t></hp:run></hp:p>
+<!-- para 17 -->
+<hp:p id="54" paraPrIDRef="25" styleIDRef="0" pageBreak="0" columnBreak="0" merged="0"><hp:run charPrIDRef="15"><hp:t></hp:t></hp:run></hp:p>
+<!-- para 18 -->
+<hp:p id="55" paraPrIDRef="25" styleIDRef="0" pageBreak="0" columnBreak="0" merged="0"><hp:run charPrIDRef="15"><hp:t></hp:t></hp:run></hp:p>
+<!-- para 19 -->
+<hp:p id="56" paraPrIDRef="25" styleIDRef="0" pageBreak="0" columnBreak="0" merged="0"><hp:run charPrIDRef="15"><hp:pic id="1670023837" zOrder="3" numberingType="PICTURE" textWrap="TOP_AND_BOTTOM" textFlow="BOTH_SIDES" lock="0" dropcapstyle="None" href="" groupLevel="0" instid="596282014" reverse="0"><hp:offset x="0" y="0"/><hp:orgSz width="87180" height="12540"/><hp:curSz width="26154" height="3762"/><hp:flip horizontal="0" vertical="0"/><hp:rotationInfo angle="0" centerX="13077" centerY="1881" rotateimage="0"/><hp:renderingInfo><hc:transMatrix e1="1" e2="0" e3="0" e4="0" e5="1" e6="0"/><hc:scaMatrix e1="0.3" e2="0" e3="0" e4="0" e5="0.3" e6="0"/><hc:rotMatrix e1="1" e2="0" e3="0" e4="0" e5="1" e6="0"/></hp:renderingInfo><hp:imgRect><hc:pt0 x="0" y="0"/><hc:pt1 x="87180" y="0"/><hc:pt2 x="87180" y="12540"/><hc:pt3 x="0" y="12540"/></hp:imgRect><hp:imgClip left="0" right="87180" top="0" bottom="12540"/><hp:inMargin left="0" right="0" top="0" bottom="0"/><hp:imgDim dimwidth="87180" dimheight="12540"/><hc:img binaryItemIDRef="image2" bright="0" contrast="0" effect="REAL_PIC" alpha="0"/><hp:effects></hp:effects><hp:sz width="26154" widthRelTo="ABSOLUTE" height="3762" heightRelTo="ABSOLUTE" protect="0"/><hp:pos treatAsChar="1" affectLSpacing="0" flowWithText="1" allowOverlap="0" holdAnchorAndSO="0" vertRelTo="PARA" horzRelTo="PARA" vertAlign="TOP" horzAlign="LEFT" vertOffset="0" horzOffset="0"/><hp:outMargin left="0" right="0" top="0" bottom="0"/></hp:pic><hp:ctrl><hp:fieldEnd beginIDRef="1670023824"/></hp:ctrl></hp:run><hp:linesegarray><hp:lineseg textpos="0" vertpos="65272" vertsize="3762" textheight="3762" baseline="3198" spacing="0" horzpos="0" horzsize="48188" flags="393216"/></hp:linesegarray></hp:p>
+<!-- para 22 -->
+<hp:p id="123" paraPrIDRef="46" styleIDRef="0" pageBreak="0" columnBreak="0" merged="0"><hp:run charPrIDRef="64"><hp:t></hp:t></hp:run></hp:p>
+<!-- para 24 -->
+<hp:p id="127" paraPrIDRef="46" styleIDRef="0" pageBreak="0" columnBreak="0" merged="0"><hp:run charPrIDRef="30"><hp:t></hp:t></hp:run></hp:p>
+<!-- para 25 -->
+<hp:p id="128" paraPrIDRef="46" styleIDRef="0" pageBreak="0" columnBreak="0" merged="0"><hp:run charPrIDRef="66"><hp:t>□ </hp:t></hp:run><hp:run charPrIDRef="67"><hp:t>추진배경</hp:t><hp:ctrl><hp:newNum num="1" numType="PAGE"/></hp:ctrl></hp:run></hp:p>
+<!-- para 26 -->
+<hp:p id="129" paraPrIDRef="46" styleIDRef="0" pageBreak="0" columnBreak="0" merged="0"><hp:run charPrIDRef="68"><hp:t></hp:t></hp:run></hp:p>
+<!-- para 27 -->
+<hp:p id="130" paraPrIDRef="50" styleIDRef="0" pageBreak="0" columnBreak="0" merged="0"><hp:run charPrIDRef="69"><hp:t> </hp:t></hp:run><hp:run charPrIDRef="70"><hp:t>ㅇ </hp:t></hp:run><hp:run charPrIDRef="71"><hp:t>안동</hp:t></hp:run><hp:run charPrIDRef="72"><hp:t>시 수출 유망 중소기업을 발굴·지원하여 수출 저변 확대 및 지역</hp:t></hp:run><hp:run charPrIDRef="73"><hp:t> 유망기업 육성 체제 활성화 도모 </hp:t></hp:run></hp:p>
+<!-- para 28 -->
+<hp:p id="131" paraPrIDRef="51" styleIDRef="0" pageBreak="0" columnBreak="0" merged="0"><hp:run charPrIDRef="74"><hp:t></hp:t></hp:run></hp:p>
+<!-- para 29 -->
+<hp:p id="132" paraPrIDRef="50" styleIDRef="0" pageBreak="0" columnBreak="0" merged="0"><hp:run charPrIDRef="70"><hp:t> ㅇ </hp:t></hp:run><hp:run charPrIDRef="73"><hp:t>중소기업들이 세계시장에 눈을 돌리게 함으로써 새로운 수출 동력으로 작용하여 글로벌 강소기업 육성이라는 정부정책에 적극 동참</hp:t></hp:run><hp:linesegarray><hp:lineseg textpos="0" vertpos="26479" vertsize="1500" textheight="1500" baseline="1275" spacing="524" horzpos="0" horzsize="48188" flags="393216"/><hp:lineseg textpos="37" vertpos="28503" vertsize="1500" textheight="1500" baseline="1275" spacing="524" horzpos="0" horzsize="48188" flags="1441792"/></hp:linesegarray></hp:p>
+<!-- para 30 -->
+<hp:p id="133" paraPrIDRef="51" styleIDRef="0" pageBreak="0" columnBreak="0" merged="0"><hp:run charPrIDRef="75"><hp:t></hp:t></hp:run><hp:linesegarray><hp:lineseg textpos="0" vertpos="30527" vertsize="800" textheight="800" baseline="680" spacing="280" horzpos="0" horzsize="48188" flags="393216"/></hp:linesegarray></hp:p>
+<!-- para 31 -->
+<hp:p id="134" paraPrIDRef="52" styleIDRef="0" pageBreak="0" columnBreak="0" merged="0"><hp:run charPrIDRef="70"><hp:t> ㅇ </hp:t></hp:run><hp:run charPrIDRef="76"><hp:t>성장잠재력이 높은 중소기업을 선정하여 지원 시 크게 도약할 수 있고,</hp:t></hp:run><hp:run charPrIDRef="77"><hp:t> </hp:t></hp:run><hp:run charPrIDRef="72"><hp:t>일자리 창출 효과가 큰 기업들을 대상으로 한다는 점에서 차별적인 강점</hp:t></hp:run><hp:run charPrIDRef="77"><hp:t>을 가짐</hp:t></hp:run></hp:p>
+<!-- para 32 -->
+<hp:p id="135" paraPrIDRef="52" styleIDRef="0" pageBreak="0" columnBreak="0" merged="0"><hp:run charPrIDRef="78"><hp:t></hp:t></hp:run></hp:p>
+<!-- para 33 -->
+<hp:p id="136" paraPrIDRef="52" styleIDRef="0" pageBreak="0" columnBreak="0" merged="0"><hp:run charPrIDRef="77"><hp:t> ㅇ </hp:t></hp:run><hp:run charPrIDRef="158"><hp:t>국책사업 추진 가속화 및 산업단지의 지속적 지원에도 불구하고 중소기업의 수출 기반 취약</hp:t></hp:run></hp:p>
+<!-- para 34 -->
+<hp:p id="137" paraPrIDRef="52" styleIDRef="0" pageBreak="0" columnBreak="0" merged="0"><hp:run charPrIDRef="78"><hp:t></hp:t></hp:run></hp:p>
+<!-- para 35 -->
+<hp:p id="138" paraPrIDRef="52" styleIDRef="0" pageBreak="0" columnBreak="0" merged="0"><hp:run charPrIDRef="77"><hp:t> ㅇ </hp:t></hp:run><hp:run charPrIDRef="72"><hp:t>수도권 규제 완화 정책 등의 문제로 지역기업들의 새로운 성장동력인 수출 경쟁력 강화가 절실</hp:t></hp:run></hp:p>
+<!-- para 36 -->
+<hp:p id="139" paraPrIDRef="51" styleIDRef="0" pageBreak="0" columnBreak="0" merged="0"><hp:run charPrIDRef="79"><hp:t></hp:t></hp:run></hp:p>
+<!-- para 37 -->
+<hp:p id="140" paraPrIDRef="51" styleIDRef="0" pageBreak="0" columnBreak="0" merged="0"><hp:run charPrIDRef="80"><hp:t></hp:t></hp:run></hp:p>
+<!-- para 38 -->
+<hp:p id="141" paraPrIDRef="46" styleIDRef="0" pageBreak="0" columnBreak="0" merged="0"><hp:run charPrIDRef="66"><hp:t>□</hp:t></hp:run><hp:run charPrIDRef="67"><hp:t> 지원현황</hp:t></hp:run></hp:p>
+<!-- para 39 -->
+<hp:p id="142" paraPrIDRef="46" styleIDRef="0" pageBreak="0" columnBreak="0" merged="0"><hp:run charPrIDRef="81"><hp:t></hp:t></hp:run></hp:p>
+<!-- para 40 -->
+<hp:p id="143" paraPrIDRef="53" styleIDRef="0" pageBreak="0" columnBreak="0" merged="0"><hp:run charPrIDRef="82"><hp:t> ㅇ 사업대상: 안동시 소재 중소기업(제조업 또는 무역업)</hp:t></hp:run></hp:p>
+<!-- para 41 -->
+<hp:p id="144" paraPrIDRef="53" styleIDRef="0" pageBreak="0" columnBreak="0" merged="0"><hp:run charPrIDRef="83"><hp:t></hp:t></hp:run></hp:p>
+<!-- para 42 -->
+<hp:p id="145" paraPrIDRef="53" styleIDRef="0" pageBreak="0" columnBreak="0" merged="0"><hp:run charPrIDRef="82"><hp:t> ㅇ 지원내용: 수출 매뉴얼 또는 직불금 지원(기업당 최대3백만원) </hp:t></hp:run></hp:p>
+<!-- para 43 -->
+<hp:p id="146" paraPrIDRef="53" styleIDRef="0" pageBreak="0" columnBreak="0" merged="0"><hp:run charPrIDRef="84"><hp:t></hp:t></hp:run></hp:p>
+<!-- para 46 -->
+<hp:p id="172" paraPrIDRef="46" styleIDRef="0" pageBreak="0" columnBreak="0" merged="0"><hp:run charPrIDRef="88"><hp:t></hp:t></hp:run></hp:p>
+<!-- para 47 -->
+<hp:p id="173" paraPrIDRef="46" styleIDRef="0" pageBreak="0" columnBreak="0" merged="0"><hp:run charPrIDRef="66"><hp:t>□</hp:t></hp:run><hp:run charPrIDRef="67"><hp:t> 사업개요</hp:t></hp:run><hp:linesegarray><hp:lineseg textpos="0" vertpos="5266" vertsize="1500" textheight="1500" baseline="1275" spacing="524" horzpos="0" horzsize="48188" flags="393216"/></hp:linesegarray></hp:p>
+<!-- para 48 -->
+<hp:p id="174" paraPrIDRef="51" styleIDRef="0" pageBreak="0" columnBreak="0" merged="0"><hp:run charPrIDRef="83"><hp:t></hp:t></hp:run></hp:p>
+<!-- para 49 -->
+<hp:p id="175" paraPrIDRef="51" styleIDRef="0" pageBreak="0" columnBreak="0" merged="0"><hp:run charPrIDRef="39"><hp:t> ㅇ 사 업 명: 안동시 수출기업 역량강화 지원사업</hp:t></hp:run></hp:p>
+<!-- para 50 -->
+<hp:p id="176" paraPrIDRef="51" styleIDRef="0" pageBreak="0" columnBreak="0" merged="0"><hp:run charPrIDRef="89"><hp:t></hp:t></hp:run></hp:p>
+<!-- para 51 -->
+<hp:p id="177" paraPrIDRef="51" styleIDRef="0" pageBreak="0" columnBreak="0" merged="0"><hp:run charPrIDRef="39"><hp:t> ㅇ 사업기간: 2026. 7월 ~ 12월</hp:t></hp:run></hp:p>
+<!-- para 52 -->
+<hp:p id="178" paraPrIDRef="51" styleIDRef="0" pageBreak="0" columnBreak="0" merged="0"><hp:run charPrIDRef="89"><hp:t></hp:t></hp:run></hp:p>
+<!-- para 53 -->
+<hp:p id="179" paraPrIDRef="51" styleIDRef="0" pageBreak="0" columnBreak="0" merged="0"><hp:run charPrIDRef="39"><hp:t> ㅇ 사 업 비: 금60,000천원(시비)</hp:t></hp:run></hp:p>
+<!-- para 54 -->
+<hp:p id="180" paraPrIDRef="51" styleIDRef="0" pageBreak="0" columnBreak="0" merged="0"><hp:run charPrIDRef="89"><hp:t></hp:t></hp:run></hp:p>
+<!-- para 55 -->
+<hp:p id="181" paraPrIDRef="51" styleIDRef="0" pageBreak="0" columnBreak="0" merged="0"><hp:run charPrIDRef="39"><hp:t> ㅇ 지원대상: 안동시 소재 중소기업(제조업 또는 무역업)</hp:t></hp:run></hp:p>
+<!-- para 56 -->
+<hp:p id="182" paraPrIDRef="51" styleIDRef="0" pageBreak="0" columnBreak="0" merged="0"><hp:run charPrIDRef="89"><hp:t></hp:t></hp:run></hp:p>
+<!-- para 57 -->
+<hp:p id="183" paraPrIDRef="51" styleIDRef="0" pageBreak="0" columnBreak="0" merged="0"><hp:run charPrIDRef="39"><hp:t> ㅇ 사업규모: 18개사 내외 </hp:t></hp:run><hp:run charPrIDRef="90"><hp:t>※ 사업예산 범위 내 추가 선정할 수 있음</hp:t></hp:run></hp:p>
+<!-- para 58 -->
+<hp:p id="184" paraPrIDRef="51" styleIDRef="0" pageBreak="0" columnBreak="0" merged="0"><hp:run charPrIDRef="89"><hp:t></hp:t></hp:run></hp:p>
+<!-- para 59 -->
+<hp:p id="185" paraPrIDRef="51" styleIDRef="0" pageBreak="0" columnBreak="0" merged="0"><hp:run charPrIDRef="39"><hp:t> ㅇ 지원내용</hp:t></hp:run></hp:p>
+<!-- para 60 -->
+<hp:p id="186" paraPrIDRef="38" styleIDRef="0" pageBreak="0" columnBreak="0" merged="0"><hp:run charPrIDRef="38"><hp:t></hp:t></hp:run></hp:p>
+<!-- para 61 -->
+<hp:p id="187" paraPrIDRef="38" styleIDRef="0" pageBreak="0" columnBreak="0" merged="0"><hp:run charPrIDRef="39"><hp:t>   ❶ 수출 매뉴얼 4개분야 11개사업 지원(기업당 최대 3백만원)</hp:t></hp:run></hp:p>
+<!-- para 62 -->
+<hp:p id="188" paraPrIDRef="38" styleIDRef="0" pageBreak="0" columnBreak="0" merged="0"><hp:run charPrIDRef="40"><hp:t></hp:t></hp:run></hp:p>
+<!-- para 63 -->
+<hp:p id="189" paraPrIDRef="39" styleIDRef="0" pageBreak="0" columnBreak="0" merged="0"><hp:run charPrIDRef="41"><hp:t>     * 총 소요금액(공급가액 기준) 80% 지원, 20% 수혜기업 자부담, 부가세 별도</hp:t></hp:run></hp:p>
+<!-- para 64 -->
+<hp:p id="190" paraPrIDRef="38" styleIDRef="0" pageBreak="0" columnBreak="0" merged="0"><hp:run charPrIDRef="38"><hp:t></hp:t></hp:run></hp:p>
+<!-- para 65 -->
+<hp:p id="191" paraPrIDRef="38" styleIDRef="0" pageBreak="0" columnBreak="0" merged="0"><hp:run charPrIDRef="39"><hp:t>   ❷ </hp:t></hp:run><hp:run charPrIDRef="91"><hp:t>당해연도 수출실적 1만불당 1백만원 직불금 지원</hp:t></hp:run><hp:run charPrIDRef="92"><hp:t>(기업당 최대 3백만원)</hp:t></hp:run></hp:p>
+<!-- para 66 -->
+<hp:p id="192" paraPrIDRef="38" styleIDRef="0" pageBreak="0" columnBreak="0" merged="0"><hp:run charPrIDRef="93"><hp:t></hp:t></hp:run></hp:p>
+<!-- para 67 -->
+<hp:p id="193" paraPrIDRef="51" styleIDRef="0" pageBreak="0" columnBreak="0" merged="0"><hp:run charPrIDRef="39"><hp:t>ㅇ 지원한도: 각 사업당 최대 3백만원 지원(중복가능)</hp:t></hp:run></hp:p>
+<!-- para 68 -->
+<hp:p id="194" paraPrIDRef="38" styleIDRef="0" pageBreak="0" columnBreak="0" merged="0"><hp:run charPrIDRef="94"><hp:t></hp:t></hp:run></hp:p>
+<!-- para 69 -->
+<hp:p id="195" paraPrIDRef="46" styleIDRef="0" pageBreak="0" columnBreak="0" merged="0"><hp:run charPrIDRef="66"><hp:t>□</hp:t></hp:run><hp:run charPrIDRef="67"><hp:t> 추진절차</hp:t></hp:run></hp:p>
+<!-- para 70 -->
+<hp:p id="196" paraPrIDRef="55" styleIDRef="0" pageBreak="0" columnBreak="0" merged="0"><hp:run charPrIDRef="95"><hp:t></hp:t></hp:run></hp:p>
+<!-- para 72 -->
+<hp:p id="240" paraPrIDRef="33" styleIDRef="25" pageBreak="0" columnBreak="0" merged="0"><hp:run charPrIDRef="27"><hp:t> * 사업추진 상황에 따라 일정이 변경될 수 있음</hp:t></hp:run></hp:p>
+<!-- para 74 -->
+<hp:p id="245" paraPrIDRef="46" styleIDRef="0" pageBreak="0" columnBreak="0" merged="0"><hp:run charPrIDRef="64"><hp:t></hp:t></hp:run></hp:p>
+<!-- para 76 -->
+<hp:p id="248" paraPrIDRef="46" styleIDRef="0" pageBreak="0" columnBreak="0" merged="0"><hp:run charPrIDRef="88"><hp:t></hp:t></hp:run></hp:p>
+<!-- para 77 -->
+<hp:p id="249" paraPrIDRef="46" styleIDRef="0" pageBreak="0" columnBreak="0" merged="0"><hp:run charPrIDRef="66"><hp:t>□</hp:t></hp:run><hp:run charPrIDRef="67"><hp:t> 사업내용</hp:t></hp:run></hp:p>
+<!-- para 78 -->
+<hp:p id="250" paraPrIDRef="46" styleIDRef="0" pageBreak="0" columnBreak="0" merged="0"><hp:run charPrIDRef="100"><hp:t></hp:t></hp:run></hp:p>
+<!-- para 79 -->
+<hp:p id="251" paraPrIDRef="46" styleIDRef="0" pageBreak="0" columnBreak="0" merged="0"><hp:run charPrIDRef="101"><hp:t> ㅇ 지원내용: </hp:t></hp:run><hp:run charPrIDRef="39"><hp:t>수출 매뉴얼 4개분야 11개사업 지원</hp:t></hp:run></hp:p>
+<!-- para 80 -->
+<hp:p id="252" paraPrIDRef="46" styleIDRef="0" pageBreak="0" columnBreak="0" merged="0"><hp:run charPrIDRef="102"><hp:t></hp:t></hp:run></hp:p>
+<!-- para 81 -->
+<hp:p id="253" paraPrIDRef="46" styleIDRef="0" pageBreak="0" columnBreak="0" merged="0"><hp:run charPrIDRef="101"><hp:t> ㅇ 지원규모: 9개사 내외</hp:t></hp:run></hp:p>
+<!-- para 82 -->
+<hp:p id="254" paraPrIDRef="46" styleIDRef="0" pageBreak="0" columnBreak="0" merged="0"><hp:run charPrIDRef="103"><hp:t></hp:t></hp:run></hp:p>
+<!-- para 83 -->
+<hp:p id="255" paraPrIDRef="46" styleIDRef="0" pageBreak="0" columnBreak="0" merged="0"><hp:run charPrIDRef="101"><hp:t> ㅇ 지원금액: </hp:t></hp:run><hp:run charPrIDRef="39"><hp:t>기업당 최대 3백만원 </hp:t></hp:run><hp:run charPrIDRef="104"><hp:t>* 총 소요금액 80% 지원, 기업부담 20%, 부가세 제외</hp:t></hp:run></hp:p>
+<!-- para 84 -->
+<hp:p id="256" paraPrIDRef="46" styleIDRef="0" pageBreak="0" columnBreak="0" merged="0"><hp:run charPrIDRef="103"><hp:t></hp:t></hp:run></hp:p>
+<!-- para 85 -->
+<hp:p id="257" paraPrIDRef="46" styleIDRef="0" pageBreak="0" columnBreak="0" merged="0"><hp:run charPrIDRef="101"><hp:t>   - 최대 지원금은 범위 내 매뉴얼 사업을 복수로 선택 신청가능</hp:t></hp:run></hp:p>
+<!-- para 86 -->
+<hp:p id="258" paraPrIDRef="46" styleIDRef="0" pageBreak="0" columnBreak="0" merged="0"><hp:run charPrIDRef="103"><hp:t></hp:t></hp:run></hp:p>
+<!-- para 87 -->
+<hp:p id="259" paraPrIDRef="46" styleIDRef="0" pageBreak="0" columnBreak="0" merged="0"><hp:run charPrIDRef="101"><hp:t>   - 매뉴얼 사업별 사업비가 지원한도를 초과할 경우 기업 부담 </hp:t></hp:run></hp:p>
+<!-- para 88 -->
+<hp:p id="260" paraPrIDRef="46" styleIDRef="0" pageBreak="0" columnBreak="0" merged="0"><hp:run charPrIDRef="102"><hp:t></hp:t></hp:run></hp:p>
+<!-- para 89 -->
+<hp:p id="261" paraPrIDRef="46" styleIDRef="0" pageBreak="0" columnBreak="0" merged="0"><hp:run charPrIDRef="101"><hp:t> ㅇ 지원자격</hp:t></hp:run></hp:p>
+<!-- para 91 -->
+<hp:p id="294" paraPrIDRef="46" styleIDRef="0" pageBreak="1" columnBreak="0" merged="0"><hp:run charPrIDRef="66"><hp:t>□</hp:t></hp:run><hp:run charPrIDRef="67"><hp:t> 지원분야</hp:t></hp:run></hp:p>
+<!-- para 92 -->
+<hp:p id="295" paraPrIDRef="46" styleIDRef="0" pageBreak="0" columnBreak="0" merged="0"><hp:run charPrIDRef="100"><hp:t></hp:t></hp:run></hp:p>
+<!-- para 93 -->
+<hp:p id="296" paraPrIDRef="65" styleIDRef="0" pageBreak="0" columnBreak="0" merged="0"><hp:run charPrIDRef="82"><hp:t>ㅇ 세부지원내용: 4개 분야, 11개 매뉴얼 사업</hp:t></hp:run></hp:p>
+<!-- para 95 -->
+<hp:p id="334" paraPrIDRef="70" styleIDRef="0" pageBreak="0" columnBreak="0" merged="0"><hp:run charPrIDRef="117"><hp:t> ※</hp:t></hp:run><hp:run charPrIDRef="118"><hp:t>2026년 안동시 강소기업 육성 기반구축 사업 동일 매뉴얼(</hp:t></hp:run><hp:run charPrIDRef="119"><hp:t>①</hp:t></hp:run><hp:run charPrIDRef="120"><hp:t> , </hp:t></hp:run><hp:run charPrIDRef="121"><hp:t>② </hp:t></hp:run><hp:run charPrIDRef="120"><hp:t>, </hp:t></hp:run><hp:run charPrIDRef="117"><hp:t>④</hp:t></hp:run><hp:run charPrIDRef="122"><hp:t>, </hp:t></hp:run><hp:run charPrIDRef="117"><hp:t>⑤,</hp:t></hp:run><hp:run charPrIDRef="122"><hp:t> </hp:t></hp:run><hp:run charPrIDRef="117"><hp:t>⑪</hp:t></hp:run><hp:run charPrIDRef="122"><hp:t>)</hp:t></hp:run><hp:run charPrIDRef="123"><hp:t>참가기업 중복 신청 불가(그외 매뉴얼 신청가능)</hp:t></hp:run></hp:p>
+<!-- para 96 -->
+<hp:p id="335" paraPrIDRef="71" styleIDRef="0" pageBreak="0" columnBreak="0" merged="0"><hp:run charPrIDRef="117"><hp:t> ※</hp:t></hp:run><hp:run charPrIDRef="123"><hp:t>기업마케팅지원 ⑦, ⑧, ⑨, </hp:t></hp:run><hp:run charPrIDRef="117"><hp:t>⑩의 경우 근거 서류 제출 시 당해연도 소급적용 가능</hp:t></hp:run></hp:p>
+<!-- para 97 -->
+<hp:p id="336" paraPrIDRef="46" styleIDRef="0" pageBreak="1" columnBreak="0" merged="0"><hp:run charPrIDRef="66"><hp:t>□</hp:t></hp:run><hp:run charPrIDRef="67"><hp:t> 참여기업 모집</hp:t></hp:run></hp:p>
+<!-- para 98 -->
+<hp:p id="337" paraPrIDRef="51" styleIDRef="0" pageBreak="0" columnBreak="0" merged="0"><hp:run charPrIDRef="89"><hp:t></hp:t></hp:run></hp:p>
+<!-- para 99 -->
+<hp:p id="338" paraPrIDRef="51" styleIDRef="0" pageBreak="0" columnBreak="0" merged="0"><hp:run charPrIDRef="39"><hp:t> ㅇ 공고기간: 2026. 07. ~ (3주 정도)</hp:t></hp:run></hp:p>
+<!-- para 100 -->
+<hp:p id="339" paraPrIDRef="51" styleIDRef="0" pageBreak="0" columnBreak="0" merged="0"><hp:run charPrIDRef="89"><hp:t></hp:t></hp:run></hp:p>
+<!-- para 101 -->
+<hp:p id="340" paraPrIDRef="51" styleIDRef="0" pageBreak="0" columnBreak="0" merged="0"><hp:run charPrIDRef="39"><hp:t> ㅇ 공고방법: 경상북도경제진흥원, 안동시 및 유관기관 홈페이지 공고 </hp:t></hp:run></hp:p>
+<!-- para 102 -->
+<hp:p id="341" paraPrIDRef="51" styleIDRef="0" pageBreak="0" columnBreak="0" merged="0"><hp:run charPrIDRef="89"><hp:t></hp:t></hp:run></hp:p>
+<!-- para 103 -->
+<hp:p id="342" paraPrIDRef="51" styleIDRef="0" pageBreak="0" columnBreak="0" merged="0"><hp:run charPrIDRef="39"><hp:t> ㅇ 신청방법: 우편 접수 또는 이메일 접수</hp:t></hp:run></hp:p>
+<!-- para 104 -->
+<hp:p id="343" paraPrIDRef="51" styleIDRef="0" pageBreak="0" columnBreak="0" merged="0"><hp:run charPrIDRef="89"><hp:t></hp:t></hp:run></hp:p>
+<!-- para 105 -->
+<hp:p id="344" paraPrIDRef="72" styleIDRef="0" pageBreak="0" columnBreak="0" merged="0"><hp:run charPrIDRef="39"><hp:t> ㅇ 제출서류</hp:t></hp:run></hp:p>
+<!-- para 107 -->
+<hp:p id="388" paraPrIDRef="73" styleIDRef="0" pageBreak="0" columnBreak="0" merged="0"><hp:run charPrIDRef="89"><hp:t></hp:t></hp:run></hp:p>
+<!-- para 108 -->
+<hp:p id="389" paraPrIDRef="46" styleIDRef="0" pageBreak="0" columnBreak="0" merged="0"><hp:run charPrIDRef="66"><hp:t>□</hp:t></hp:run><hp:run charPrIDRef="67"><hp:t> 참여기업 선정</hp:t></hp:run></hp:p>
+<!-- para 109 -->
+<hp:p id="390" paraPrIDRef="51" styleIDRef="0" pageBreak="0" columnBreak="0" merged="0"><hp:run charPrIDRef="89"><hp:t></hp:t></hp:run></hp:p>
+<!-- para 110 -->
+<hp:p id="391" paraPrIDRef="51" styleIDRef="0" pageBreak="0" columnBreak="0" merged="0"><hp:run charPrIDRef="39"><hp:t> ㅇ 선정방법: 평가기준표에 따라 서면평가</hp:t></hp:run></hp:p>
+<!-- para 111 -->
+<hp:p id="392" paraPrIDRef="51" styleIDRef="0" pageBreak="0" columnBreak="0" merged="0"><hp:run charPrIDRef="38"><hp:t></hp:t></hp:run></hp:p>
+<!-- para 112 -->
+<hp:p id="393" paraPrIDRef="51" styleIDRef="0" pageBreak="0" columnBreak="0" merged="0"><hp:run charPrIDRef="39"><hp:t>   - 서면평가 고득점 순으로 9개사 내외 선정 </hp:t></hp:run></hp:p>
+<!-- para 113 -->
+<hp:p id="394" paraPrIDRef="51" styleIDRef="0" pageBreak="0" columnBreak="0" merged="0"><hp:run charPrIDRef="125"><hp:t></hp:t></hp:run></hp:p>
+<!-- para 114 -->
+<hp:p id="395" paraPrIDRef="74" styleIDRef="0" pageBreak="0" columnBreak="0" merged="0"><hp:run charPrIDRef="39"><hp:t>    </hp:t></hp:run><hp:run charPrIDRef="126"><hp:t>※ 동점시 수출실적&gt;매출성장률&gt;매출액&gt;재무구조의안정성&gt;우대지원</hp:t></hp:run><hp:run charPrIDRef="127"><hp:t> </hp:t></hp:run><hp:run charPrIDRef="126"><hp:t>순으로 참여기업 우선 선정</hp:t></hp:run></hp:p>
+<!-- para 115 -->
+<hp:p id="396" paraPrIDRef="51" styleIDRef="0" pageBreak="0" columnBreak="0" merged="0"><hp:run charPrIDRef="38"><hp:t></hp:t></hp:run></hp:p>
+<!-- para 116 -->
+<hp:p id="397" paraPrIDRef="51" styleIDRef="0" pageBreak="0" columnBreak="0" merged="0"><hp:run charPrIDRef="39"><hp:t>   - 기타 당해연도 유사사업 참여기업의 경우 선정 제외</hp:t></hp:run></hp:p>
+<!-- para 117 -->
+<hp:p id="398" paraPrIDRef="51" styleIDRef="0" pageBreak="0" columnBreak="0" merged="0"><hp:run charPrIDRef="125"><hp:t></hp:t></hp:run></hp:p>
+<!-- para 118 -->
+<hp:p id="399" paraPrIDRef="75" styleIDRef="0" pageBreak="0" columnBreak="0" merged="0"><hp:run charPrIDRef="123"><hp:t>     ※ 단, 선정기업 사업규모에 따라 최종 선정기업 수 변동 가능</hp:t></hp:run></hp:p>
+<!-- para 119 -->
+<hp:p id="400" paraPrIDRef="51" styleIDRef="0" pageBreak="1" columnBreak="0" merged="0"><hp:run charPrIDRef="89"><hp:t></hp:t></hp:run></hp:p>
+<!-- para 120 -->
+<hp:p id="401" paraPrIDRef="51" styleIDRef="0" pageBreak="0" columnBreak="0" merged="0"><hp:run charPrIDRef="39"><hp:t> ㅇ 평가기준(정량평가)</hp:t></hp:run></hp:p>
+<!-- para 122 -->
+<hp:p id="509" paraPrIDRef="70" styleIDRef="0" pageBreak="0" columnBreak="0" merged="0"><hp:run charPrIDRef="117"><hp:t>    ※ 관련서류 미제출시 최저점 부여</hp:t></hp:run><hp:run charPrIDRef="123"><hp:t></hp:t></hp:run></hp:p>
+<!-- para 124 -->
+<hp:p id="512" paraPrIDRef="46" styleIDRef="0" pageBreak="0" columnBreak="0" merged="0"><hp:run charPrIDRef="88"><hp:t></hp:t></hp:run><hp:linesegarray><hp:lineseg textpos="0" vertpos="3435" vertsize="1000" textheight="1000" baseline="850" spacing="352" horzpos="0" horzsize="48188" flags="393216"/></hp:linesegarray></hp:p>
+<!-- para 125 -->
+<hp:p id="513" paraPrIDRef="46" styleIDRef="0" pageBreak="0" columnBreak="0" merged="0"><hp:run charPrIDRef="66"><hp:t>□</hp:t></hp:run><hp:run charPrIDRef="67"><hp:t> 사업내용</hp:t></hp:run></hp:p>
+<!-- para 126 -->
+<hp:p id="514" paraPrIDRef="46" styleIDRef="0" pageBreak="0" columnBreak="0" merged="0"><hp:run charPrIDRef="100"><hp:t></hp:t></hp:run></hp:p>
+<!-- para 127 -->
+<hp:p id="515" paraPrIDRef="46" styleIDRef="0" pageBreak="0" columnBreak="0" merged="0"><hp:run charPrIDRef="101"><hp:t> ㅇ 지원내용: </hp:t></hp:run><hp:run charPrIDRef="39"><hp:t>당해연도 수출실적 1만불당 1백만원 직불금 지원</hp:t></hp:run></hp:p>
+<!-- para 128 -->
+<hp:p id="516" paraPrIDRef="46" styleIDRef="0" pageBreak="0" columnBreak="0" merged="0"><hp:run charPrIDRef="102"><hp:t></hp:t></hp:run></hp:p>
+<!-- para 129 -->
+<hp:p id="517" paraPrIDRef="46" styleIDRef="0" pageBreak="0" columnBreak="0" merged="0"><hp:run charPrIDRef="101"><hp:t> ㅇ 지원규모: 9개사 내외</hp:t></hp:run></hp:p>
+<!-- para 130 -->
+<hp:p id="518" paraPrIDRef="46" styleIDRef="0" pageBreak="0" columnBreak="0" merged="0"><hp:run charPrIDRef="103"><hp:t></hp:t></hp:run></hp:p>
+<!-- para 131 -->
+<hp:p id="519" paraPrIDRef="46" styleIDRef="0" pageBreak="0" columnBreak="0" merged="0"><hp:run charPrIDRef="101"><hp:t> ㅇ 지원금액: </hp:t></hp:run><hp:run charPrIDRef="39"><hp:t>기업당 최대 3백만원</hp:t></hp:run></hp:p>
+<!-- para 132 -->
+<hp:p id="520" paraPrIDRef="46" styleIDRef="0" pageBreak="0" columnBreak="0" merged="0"><hp:run charPrIDRef="102"><hp:t></hp:t></hp:run></hp:p>
+<!-- para 133 -->
+<hp:p id="521" paraPrIDRef="46" styleIDRef="0" pageBreak="0" columnBreak="0" merged="0"><hp:run charPrIDRef="101"><hp:t> ㅇ 지원자격</hp:t></hp:run></hp:p>
+<!-- para 135 -->
+<hp:p id="568" paraPrIDRef="46" styleIDRef="0" pageBreak="1" columnBreak="0" merged="0"><hp:run charPrIDRef="66"><hp:t>□</hp:t></hp:run><hp:run charPrIDRef="67"><hp:t> 참여기업 모집 및 선정</hp:t></hp:run></hp:p>
+<!-- para 136 -->
+<hp:p id="569" paraPrIDRef="51" styleIDRef="0" pageBreak="0" columnBreak="0" merged="0"><hp:run charPrIDRef="89"><hp:t></hp:t></hp:run></hp:p>
+<!-- para 137 -->
+<hp:p id="570" paraPrIDRef="51" styleIDRef="0" pageBreak="0" columnBreak="0" merged="0"><hp:run charPrIDRef="39"><hp:t> ㅇ 공고기간: 2026. 07. ~ 예산 소진시까지(선착순)</hp:t></hp:run></hp:p>
+<!-- para 138 -->
+<hp:p id="571" paraPrIDRef="51" styleIDRef="0" pageBreak="0" columnBreak="0" merged="0"><hp:run charPrIDRef="89"><hp:t></hp:t></hp:run></hp:p>
+<!-- para 139 -->
+<hp:p id="572" paraPrIDRef="51" styleIDRef="0" pageBreak="0" columnBreak="0" merged="0"><hp:run charPrIDRef="39"><hp:t> ㅇ 공고방법: 경제진흥원, 안동시 및 유관기관 홈페이지 공고 </hp:t></hp:run></hp:p>
+<!-- para 140 -->
+<hp:p id="573" paraPrIDRef="51" styleIDRef="0" pageBreak="0" columnBreak="0" merged="0"><hp:run charPrIDRef="89"><hp:t></hp:t></hp:run></hp:p>
+<!-- para 141 -->
+<hp:p id="574" paraPrIDRef="51" styleIDRef="0" pageBreak="0" columnBreak="0" merged="0"><hp:run charPrIDRef="39"><hp:t> ㅇ 신청방법: 우편 접수 또는 이메일 접수</hp:t></hp:run></hp:p>
+<!-- para 142 -->
+<hp:p id="575" paraPrIDRef="51" styleIDRef="0" pageBreak="0" columnBreak="0" merged="0"><hp:run charPrIDRef="89"><hp:t></hp:t></hp:run></hp:p>
+<!-- para 143 -->
+<hp:p id="576" paraPrIDRef="72" styleIDRef="0" pageBreak="0" columnBreak="0" merged="0"><hp:run charPrIDRef="39"><hp:t> ㅇ 제출서류</hp:t></hp:run></hp:p>
+<!-- para 145 -->
+<hp:p id="618" paraPrIDRef="73" styleIDRef="0" pageBreak="0" columnBreak="0" merged="0"><hp:run charPrIDRef="89"><hp:t></hp:t></hp:run></hp:p>
+<!-- para 146 -->
+<hp:p id="619" paraPrIDRef="46" styleIDRef="0" pageBreak="0" columnBreak="0" merged="0"><hp:run charPrIDRef="66"><hp:t>□</hp:t></hp:run><hp:run charPrIDRef="67"><hp:t> 참여기업 선정</hp:t></hp:run></hp:p>
+<!-- para 147 -->
+<hp:p id="620" paraPrIDRef="51" styleIDRef="0" pageBreak="0" columnBreak="0" merged="0"><hp:run charPrIDRef="89"><hp:t></hp:t></hp:run></hp:p>
+<!-- para 148 -->
+<hp:p id="621" paraPrIDRef="51" styleIDRef="0" pageBreak="0" columnBreak="0" merged="0"><hp:run charPrIDRef="39"><hp:t> ㅇ 선정방법: 서류를 모두 구비한 기업순으로 선착순 선정</hp:t></hp:run></hp:p>
+<!-- para 149 -->
+<hp:p id="622" paraPrIDRef="91" styleIDRef="0" pageBreak="0" columnBreak="0" merged="0"><hp:run charPrIDRef="117"><hp:t>   ※ 수출금액이 1만불이 미달된 경우 누적 1만불이 되는 달에 1백만원을 신청할 수 있으며 수출실적은 누적해서 관리되므로 매 1만불 넘을시 마다 추가 신청 가능</hp:t></hp:run></hp:p>
+<!-- para 151 -->
+<hp:p id="627" paraPrIDRef="38" styleIDRef="0" pageBreak="0" columnBreak="0" merged="0"><hp:run charPrIDRef="94"><hp:t></hp:t></hp:run></hp:p>
+<!-- para 152 -->
+<hp:p id="628" paraPrIDRef="58" styleIDRef="0" pageBreak="0" columnBreak="0" merged="0"><hp:run charPrIDRef="150"><hp:t>󰊱 수출매뉴얼 지원</hp:t></hp:run></hp:p>
+<!-- para 153 -->
+<hp:p id="629" paraPrIDRef="51" styleIDRef="0" pageBreak="0" columnBreak="0" merged="0"><hp:run charPrIDRef="82"><hp:t> ㅇ 지원금 지급</hp:t></hp:run></hp:p>
+<!-- para 154 -->
+<hp:p id="630" paraPrIDRef="51" styleIDRef="0" pageBreak="0" columnBreak="0" merged="0"><hp:run charPrIDRef="149"><hp:t></hp:t></hp:run></hp:p>
+<!-- para 155 -->
+<hp:p id="631" paraPrIDRef="38" styleIDRef="0" pageBreak="0" columnBreak="0" merged="0"><hp:run charPrIDRef="82"><hp:t>   - 지원금 지급 방법: 사업완료 후 지급(선정기업 선지출 후 정산)</hp:t></hp:run></hp:p>
+<!-- para 156 -->
+<hp:p id="632" paraPrIDRef="51" styleIDRef="0" pageBreak="0" columnBreak="0" merged="0"><hp:run charPrIDRef="149"><hp:t></hp:t></hp:run></hp:p>
+<!-- para 157 -->
+<hp:p id="633" paraPrIDRef="38" styleIDRef="0" pageBreak="0" columnBreak="0" merged="0"><hp:run charPrIDRef="82"><hp:t>   - 지원금 신청서류</hp:t></hp:run></hp:p>
+<!-- para 158 -->
+<hp:p id="634" paraPrIDRef="38" styleIDRef="0" pageBreak="0" columnBreak="0" merged="0"><hp:run charPrIDRef="79"><hp:t></hp:t></hp:run></hp:p>
+<!-- para 159 -->
+<hp:p id="635" paraPrIDRef="38" styleIDRef="0" pageBreak="0" columnBreak="0" merged="0"><hp:run charPrIDRef="82"><hp:t>    · 사업추진완료 공문</hp:t></hp:run></hp:p>
+<!-- para 160 -->
+<hp:p id="636" paraPrIDRef="38" styleIDRef="0" pageBreak="0" columnBreak="0" merged="0"><hp:run charPrIDRef="79"><hp:t></hp:t></hp:run><hp:linesegarray><hp:lineseg textpos="0" vertpos="17762" vertsize="300" textheight="300" baseline="255" spacing="104" horzpos="0" horzsize="48188" flags="393216"/></hp:linesegarray></hp:p>
+<!-- para 161 -->
+<hp:p id="637" paraPrIDRef="38" styleIDRef="0" pageBreak="0" columnBreak="0" merged="0"><hp:run charPrIDRef="82"><hp:t>    · 사업추진 완료보고서(정산서 포함), 지원금 청구서</hp:t></hp:run></hp:p>
+<!-- para 162 -->
+<hp:p id="638" paraPrIDRef="38" styleIDRef="0" pageBreak="0" columnBreak="0" merged="0"><hp:run charPrIDRef="79"><hp:t></hp:t></hp:run></hp:p>
+<!-- para 163 -->
+<hp:p id="639" paraPrIDRef="38" styleIDRef="0" pageBreak="0" columnBreak="0" merged="0"><hp:run charPrIDRef="82"><hp:t>    · 해당 증빙자료(견적서, 거래내역서, 입금증, 결과물 등)</hp:t></hp:run></hp:p>
+<!-- para 164 -->
+<hp:p id="640" paraPrIDRef="38" styleIDRef="0" pageBreak="0" columnBreak="0" merged="0"><hp:run charPrIDRef="79"><hp:t></hp:t></hp:run></hp:p>
+<!-- para 165 -->
+<hp:p id="641" paraPrIDRef="38" styleIDRef="0" pageBreak="0" columnBreak="0" merged="0"><hp:run charPrIDRef="82"><hp:t>    · 기타 진흥원에서 요청하는 서류</hp:t></hp:run></hp:p>
+<!-- para 166 -->
+<hp:p id="642" paraPrIDRef="38" styleIDRef="0" pageBreak="0" columnBreak="0" merged="0"><hp:run charPrIDRef="83"><hp:t></hp:t></hp:run></hp:p>
+<!-- para 167 -->
+<hp:p id="643" paraPrIDRef="51" styleIDRef="0" pageBreak="0" columnBreak="0" merged="0"><hp:run charPrIDRef="82"><hp:t> ㅇ 지원금 지급 제외 또는 환수</hp:t></hp:run></hp:p>
+<!-- para 168 -->
+<hp:p id="644" paraPrIDRef="51" styleIDRef="0" pageBreak="0" columnBreak="0" merged="0"><hp:run charPrIDRef="149"><hp:t></hp:t></hp:run></hp:p>
+<!-- para 169 -->
+<hp:p id="645" paraPrIDRef="38" styleIDRef="0" pageBreak="0" columnBreak="0" merged="0"><hp:run charPrIDRef="82"><hp:t>   - 지출증빙서류 미제출 및 제출서류가 사실과 다른 경우</hp:t></hp:run></hp:p>
+<!-- para 170 -->
+<hp:p id="646" paraPrIDRef="51" styleIDRef="0" pageBreak="0" columnBreak="0" merged="0"><hp:run charPrIDRef="149"><hp:t></hp:t></hp:run></hp:p>
+<!-- para 171 -->
+<hp:p id="647" paraPrIDRef="38" styleIDRef="0" pageBreak="0" columnBreak="0" merged="0"><hp:run charPrIDRef="82"><hp:t>   - 타 지원사업과 중복수혜가 있는 경우</hp:t></hp:run></hp:p>
+<!-- para 172 -->
+<hp:p id="648" paraPrIDRef="51" styleIDRef="0" pageBreak="0" columnBreak="0" merged="0"><hp:run charPrIDRef="149"><hp:t></hp:t></hp:run></hp:p>
+<!-- para 173 -->
+<hp:p id="649" paraPrIDRef="38" styleIDRef="0" pageBreak="0" columnBreak="0" merged="0"><hp:run charPrIDRef="82"><hp:t>   - 신청기업이 아닌 타 기업 명의로 개발(참가)한 경우</hp:t></hp:run></hp:p>
+<!-- para 174 -->
+<hp:p id="650" paraPrIDRef="51" styleIDRef="0" pageBreak="0" columnBreak="0" merged="0"><hp:run charPrIDRef="149"><hp:t></hp:t></hp:run></hp:p>
+<!-- para 175 -->
+<hp:p id="651" paraPrIDRef="38" styleIDRef="0" pageBreak="0" columnBreak="0" merged="0"><hp:run charPrIDRef="82"><hp:t>   - 기타 증빙서류가 모호한 경우 등</hp:t></hp:run></hp:p>
+<!-- para 176 -->
+<hp:p id="652" paraPrIDRef="38" styleIDRef="0" pageBreak="0" columnBreak="0" merged="0"><hp:run charPrIDRef="94"><hp:t></hp:t></hp:run></hp:p>
+<!-- para 177 -->
+<hp:p id="653" paraPrIDRef="58" styleIDRef="0" pageBreak="0" columnBreak="0" merged="0"><hp:run charPrIDRef="150"><hp:t>󰊲 수출직불금 지원</hp:t></hp:run></hp:p>
+<!-- para 178 -->
+<hp:p id="654" paraPrIDRef="38" styleIDRef="0" pageBreak="0" columnBreak="0" merged="0"><hp:run charPrIDRef="83"><hp:t></hp:t></hp:run></hp:p>
+<!-- para 179 -->
+<hp:p id="655" paraPrIDRef="51" styleIDRef="0" pageBreak="0" columnBreak="0" merged="0"><hp:run charPrIDRef="82"><hp:t> ㅇ 지원금 지급</hp:t></hp:run></hp:p>
+<!-- para 180 -->
+<hp:p id="656" paraPrIDRef="51" styleIDRef="0" pageBreak="0" columnBreak="0" merged="0"><hp:run charPrIDRef="149"><hp:t></hp:t></hp:run></hp:p>
+<!-- para 181 -->
+<hp:p id="657" paraPrIDRef="38" styleIDRef="0" pageBreak="0" columnBreak="0" merged="0"><hp:run charPrIDRef="82"><hp:t>   - 자격조건 및 신청서류 검토 후 지급</hp:t></hp:run></hp:p>
+<!-- para 182 -->
+<hp:p id="658" paraPrIDRef="51" styleIDRef="0" pageBreak="0" columnBreak="0" merged="0"><hp:run charPrIDRef="149"><hp:t></hp:t></hp:run></hp:p>
+<!-- para 183 -->
+<hp:p id="659" paraPrIDRef="38" styleIDRef="0" pageBreak="0" columnBreak="0" merged="0"><hp:run charPrIDRef="82"><hp:t>   - 유사사업 중복참여 확인 후 지원금 지급</hp:t></hp:run></hp:p>
+<!-- para 184 -->
+<hp:p id="660" paraPrIDRef="38" styleIDRef="0" pageBreak="0" columnBreak="0" merged="0"><hp:run charPrIDRef="83"><hp:t></hp:t></hp:run></hp:p>
+<!-- para 185 -->
+<hp:p id="661" paraPrIDRef="51" styleIDRef="0" pageBreak="0" columnBreak="0" merged="0"><hp:run charPrIDRef="82"><hp:t> ㅇ 지원금 지급 제외 또는 환수</hp:t></hp:run></hp:p>
+<!-- para 186 -->
+<hp:p id="662" paraPrIDRef="51" styleIDRef="0" pageBreak="0" columnBreak="0" merged="0"><hp:run charPrIDRef="149"><hp:t></hp:t></hp:run></hp:p>
+<!-- para 187 -->
+<hp:p id="663" paraPrIDRef="38" styleIDRef="0" pageBreak="0" columnBreak="0" merged="0"><hp:run charPrIDRef="82"><hp:t>   - 증빙서류 미제출 및 제출서류가 사실과 다른 경우</hp:t></hp:run></hp:p>
+<!-- para 188 -->
+<hp:p id="664" paraPrIDRef="51" styleIDRef="0" pageBreak="0" columnBreak="0" merged="0"><hp:run charPrIDRef="149"><hp:t></hp:t></hp:run></hp:p>
+<!-- para 189 -->
+<hp:p id="665" paraPrIDRef="38" styleIDRef="0" pageBreak="0" columnBreak="0" merged="0"><hp:run charPrIDRef="82"><hp:t>   - 타 지원사업과 중복수혜가 있는 경우</hp:t></hp:run></hp:p>
+<!-- para 190 -->
+<hp:p id="666" paraPrIDRef="51" styleIDRef="0" pageBreak="0" columnBreak="0" merged="0"><hp:run charPrIDRef="149"><hp:t></hp:t></hp:run><hp:linesegarray><hp:lineseg textpos="0" vertpos="61118" vertsize="600" textheight="600" baseline="510" spacing="212" horzpos="0" horzsize="48188" flags="393216"/></hp:linesegarray></hp:p>
+<!-- para 191 -->
+<hp:p id="667" paraPrIDRef="38" styleIDRef="0" pageBreak="0" columnBreak="0" merged="0"><hp:run charPrIDRef="82"><hp:t>   - 신청기업이 아닌 타 기업 명의로 참가한 경우</hp:t></hp:run></hp:p>
+<!-- para 192 -->
+<hp:p id="668" paraPrIDRef="51" styleIDRef="0" pageBreak="0" columnBreak="0" merged="0"><hp:run charPrIDRef="149"><hp:t></hp:t></hp:run><hp:linesegarray><hp:lineseg textpos="0" vertpos="63954" vertsize="600" textheight="600" baseline="510" spacing="212" horzpos="0" horzsize="48188" flags="393216"/></hp:linesegarray></hp:p>
+<!-- para 193 -->
+<hp:p id="669" paraPrIDRef="38" styleIDRef="0" pageBreak="0" columnBreak="0" merged="0"><hp:run charPrIDRef="82"><hp:t>   - 기타 증빙서류가 모호한 경우 등</hp:t></hp:run></hp:p>
+<!-- para 195 -->
+<hp:p id="674" paraPrIDRef="92" styleIDRef="0" pageBreak="0" columnBreak="0" merged="0"><hp:run charPrIDRef="82"><hp:t> ㅇ </hp:t></hp:run><hp:run charPrIDRef="151"><hp:t>기업 수출 지원을 통한 대외 성장을 선도하고 궁극적으로 경쟁력있는 글로벌 수출 전문기업 육성</hp:t></hp:run></hp:p>
+<!-- para 196 -->
+<hp:p id="675" paraPrIDRef="93" styleIDRef="0" pageBreak="0" columnBreak="0" merged="0"><hp:run charPrIDRef="82"><hp:t> ㅇ </hp:t></hp:run><hp:run charPrIDRef="152"><hp:t>안동시 소재 기업들이 지속적 성장을 영위할 수 있는 실질적 지원 사업 시행에 따라 안동시 중소기업이 글로벌 시장에서의 대응력 제고</hp:t></hp:run></hp:p>
+<!-- para 197 -->
+<hp:p id="676" paraPrIDRef="93" styleIDRef="0" pageBreak="0" columnBreak="0" merged="0"><hp:run charPrIDRef="80"><hp:t></hp:t></hp:run></hp:p>
+<!-- para 199 -->
+<hp:p id="681" paraPrIDRef="38" styleIDRef="0" pageBreak="0" columnBreak="0" merged="0"><hp:run charPrIDRef="149"><hp:t></hp:t></hp:run></hp:p>
+<!-- para 200 -->
+<hp:p id="682" paraPrIDRef="94" styleIDRef="0" pageBreak="0" columnBreak="0" merged="0"><hp:run charPrIDRef="82"><hp:t> ㅇ 소요예산: 금60,000,000원</hp:t></hp:run><hp:run charPrIDRef="153"><hp:t>(금육천만원)</hp:t></hp:run></hp:p>
+<!-- para 202 -->
+<hp:p id="717" paraPrIDRef="99" styleIDRef="0" pageBreak="0" columnBreak="0" merged="0"><hp:run charPrIDRef="157"><hp:t> ㅇ </hp:t></hp:run><hp:run charPrIDRef="82"><hp:t>예산과목: 관)사업비용  항)영업비용  세항)대행사업비</hp:t></hp:run></hp:p>
+<!-- para 203 -->
+<hp:p id="718" paraPrIDRef="94" styleIDRef="0" pageBreak="0" columnBreak="0" merged="0"><hp:run charPrIDRef="82"><hp:t>             목)안동시 수출기업 역량강화 지원사업</hp:t></hp:run><hp:run charPrIDRef="16"><hp:ctrl><hp:fieldEnd beginIDRef="1670023748"/></hp:ctrl></hp:run></hp:p>

@@ -1,0 +1,38 @@
+{
+  "family": "press",
+  "para": {
+    "headerAnchor": { "paraPr": 110, "charPr": 107 },
+    "logoCell": { "paraPr": 49, "charPr": 59 },
+    "logotypeCell": { "paraPr": 50, "charPr": 60 },
+    "headerDate": { "paraPr": 51, "charPr": 108 },
+    "headerLabel": { "paraPr": 11, "charPr": 46 },
+    "headerValue": { "paraPr": 11, "charPr": 47 },
+    "titleAnchor": { "paraPr": 111, "charPr": 110 },
+    "pressTitle": { "paraPr": 109, "charPr": 113 },
+    "pressSubtitle": { "paraPr": 109, "charPr": 116 },
+    "pressLead": { "paraPr": 112, "charPr": 114 },
+    "pressBody": { "paraPr": 114, "charPr": 114 },
+    "pressBodyBold": { "paraPr": 114, "charPr": 118 },
+    "plain": { "paraPr": 114, "charPr": 114 },
+    "blank": { "paraPr": 114, "charPr": 114 },
+    "tableAnchor": { "paraPr": 114, "charPr": 114 },
+    "bulletBoxFirst": { "paraPr": 115, "charPr": 119 },
+    "bulletBoxItem": { "paraPr": 116, "charPr": 119 }
+  },
+  "borderFill": {
+    "grid": 4,
+    "headerLogo": 10,
+    "headerLogotype": 14,
+    "headerLabelTop": 8,
+    "headerLabelMid": 13,
+    "headerLabelBottom": 9,
+    "headerValueTop": 11,
+    "headerValueLeft": 12,
+    "headerValueRight": 5,
+    "headerValueSpan": 16,
+    "headerValueBottom": 6,
+    "titleBox": 15,
+    "bulletBoxFrame": 19,
+    "bulletBoxCell": 20
+  }
+}

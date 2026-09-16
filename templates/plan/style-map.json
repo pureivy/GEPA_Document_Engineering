@@ -1,0 +1,33 @@
+{
+  "family": "plan",
+  "para": {
+    "blank": { "paraPr": 46, "charPr": 30 },
+    "tableAnchor": { "paraPr": 46, "charPr": 28 },
+    "approvalAnchor": { "paraPr": 21, "charPr": 15 },
+    "coverSpacer": { "paraPr": 24, "charPr": 15 },
+    "coverTitle": { "paraPr": 34, "charPr": 20 },
+    "chapterNumeral": { "paraPr": 31, "charPr": 25 },
+    "chapterTitle": { "paraPr": 48, "charPr": 58 },
+    "chipTitle": { "paraPr": 58, "charPr": 66 },
+    "summaryBox": { "paraPr": 32, "charPr": 26 },
+    "body1": { "paraPr": 46, "charPr": 66 },
+    "body2": { "paraPr": 52, "charPr": 70 },
+    "body3": { "paraPr": 52, "charPr": 70 },
+    "body4": { "paraPr": 52, "charPr": 70 },
+    "plain": { "paraPr": 46, "charPr": 70 },
+    "note": { "paraPr": 46, "charPr": 27 },
+    "footnote": { "paraPr": 33, "charPr": 27 },
+    "unitCaption": { "paraPr": 20, "charPr": 154 },
+    "annexHeading": { "paraPr": 34, "charPr": 55 },
+    "attachmentHeading": { "paraPr": 46, "charPr": 30 }
+  },
+  "borderFill": {
+    "tableFrame": 3,
+    "none": 10,
+    "chapterNumeral": 32,
+    "chapterSpacer": 33,
+    "chapterTitle": 34,
+    "summaryBox": 35,
+    "chip": 51
+  }
+}

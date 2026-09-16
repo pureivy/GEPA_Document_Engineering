@@ -1,0 +1,26 @@
+{
+  "version": 1,
+  "entries": {
+    "4ecd58ef84034b7e1917a175c21453b3a8f04484d19a273fd4cc0a71dfa34998": {
+      "last_emitted_at_ms": 1789460408091,
+      "message": "Spawning agent: researcher (inherit) | Task: 법령·조례·지침 근거 조사"
+    },
+    "a1b88080adc4faa1184ab27a94804d0c3de942a9390edf59c136ddd1c77db666": {
+      "last_emitted_at_ms": 1789460386495,
+      "message": "Spawning agent: researcher (inherit) | Task: 유사·선행 사업 및 급식 단가 조사"
+    },
+    "59944c25783cc383469dad1ac97f8ce3867899ca38a335d8666fe4d99a292a38": {
+      "last_emitted_at_ms": 1789460363840,
+      "message": "Spawning agent: researcher (inherit) | Task: 경북 노인·경로당 현황 통계 조사"
+    },
+    "459c54e5f35d6a58dcd90d2aecc21fa6d1f35d241bc5b134c506f87dc7b6d67b": {
+      "last_emitted_at_ms": 1789460176046,
+      "message": "Combine searches in parallel when investigating multiple patterns."
+    },
+    "466399dafa2d20f60587180bad0a07358eb7f2bce724df0ff682f038ad33f5ad": {
+      "last_emitted_at_ms": 1789460174905,
+      "message": "Read multiple files in parallel when possible for faster analysis."
+    }
+  },
+  "updated_at": "2026-09-15T08:20:08.091Z"
+}

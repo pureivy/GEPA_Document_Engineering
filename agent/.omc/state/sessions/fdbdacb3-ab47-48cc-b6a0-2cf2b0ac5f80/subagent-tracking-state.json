@@ -1,0 +1,43 @@
+{
+  "agents": [
+    {
+      "agent_id": "aac3970d618e4e705",
+      "agent_type": "researcher",
+      "started_at": "2026-09-15T00:50:23.161Z",
+      "parent_mode": "none",
+      "status": "running"
+    },
+    {
+      "agent_id": "a25cad8e48239ad57",
+      "agent_type": "researcher",
+      "started_at": "2026-09-15T00:50:47.033Z",
+      "parent_mode": "none",
+      "status": "running"
+    },
+    {
+      "agent_id": "a6ec2010973710300",
+      "agent_type": "researcher",
+      "started_at": "2026-09-15T00:51:11.438Z",
+      "parent_mode": "none",
+      "status": "running"
+    },
+    {
+      "agent_id": "a24dc5adca1f36ad8",
+      "agent_type": "researcher",
+      "started_at": "2026-09-15T01:06:01.134Z",
+      "parent_mode": "none",
+      "status": "running"
+    },
+    {
+      "agent_id": "a48f06f2076cb544b",
+      "agent_type": "researcher",
+      "started_at": "2026-09-15T01:06:20.917Z",
+      "parent_mode": "none",
+      "status": "running"
+    }
+  ],
+  "total_spawned": 5,
+  "total_completed": 0,
+  "total_failed": 0,
+  "last_updated": "2026-09-15T01:06:21.020Z"
+}

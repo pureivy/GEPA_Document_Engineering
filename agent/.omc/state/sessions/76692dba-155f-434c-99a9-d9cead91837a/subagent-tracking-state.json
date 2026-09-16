@@ -1,0 +1,33 @@
+{
+  "agents": [
+    {
+      "agent_id": "a5124bd45375689dd",
+      "agent_type": "researcher",
+      "started_at": "2026-09-15T08:19:23.950Z",
+      "parent_mode": "none",
+      "status": "completed",
+      "completed_at": "2026-09-15T08:32:56.855Z",
+      "duration_ms": 812905
+    },
+    {
+      "agent_id": "a5fc15b2466727748",
+      "agent_type": "researcher",
+      "started_at": "2026-09-15T08:19:46.581Z",
+      "parent_mode": "none",
+      "status": "completed",
+      "completed_at": "2026-09-15T08:33:14.306Z",
+      "duration_ms": 807725
+    },
+    {
+      "agent_id": "a48548d4ef86c7c08",
+      "agent_type": "researcher",
+      "started_at": "2026-09-15T08:20:08.172Z",
+      "parent_mode": "none",
+      "status": "running"
+    }
+  ],
+  "total_spawned": 3,
+  "total_completed": 2,
+  "total_failed": 0,
+  "last_updated": "2026-09-15T08:33:14.407Z"
+}

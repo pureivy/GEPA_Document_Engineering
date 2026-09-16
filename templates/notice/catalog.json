@@ -1,0 +1,5550 @@
+{
+  "family": "notice",
+  "counts": {
+    "charPr": 128,
+    "paraPr": 88,
+    "borderFill": 57,
+    "style": 19
+  },
+  "fonts": {
+    "HANGUL": {
+      "0": "굴림",
+      "1": "돋움",
+      "2": "맑은 고딕",
+      "3": "바탕",
+      "4": "서울한강체 M",
+      "5": "휴먼명조",
+      "6": "HY헤드라인M",
+      "7": "한양중고딕",
+      "8": "#신문태명",
+      "9": "태-물방울R"
+    },
+    "LATIN": {
+      "0": "굴림",
+      "1": "돋움",
+      "2": "맑은 고딕",
+      "3": "바탕",
+      "4": "서울한강체 M",
+      "5": "HY헤드라인M",
+      "6": "#신문태명",
+      "7": "한양중고딕",
+      "8": "HCI Poppy",
+      "9": "태-물방울R"
+    },
+    "HANJA": {
+      "0": "굴림",
+      "1": "돋움",
+      "2": "맑은 고딕",
+      "3": "바탕",
+      "4": "서울한강체 M",
+      "5": "한컴바탕",
+      "6": "HY헤드라인M",
+      "7": "#태명조",
+      "8": "한양신명조",
+      "9": "한양중고딕",
+      "10": "태-물방울R"
+    },
+    "JAPANESE": {
+      "0": "굴림",
+      "1": "돋움",
+      "2": "맑은 고딕",
+      "3": "바탕",
+      "4": "서울한강체 M",
+      "5": "한컴바탕",
+      "6": "HY헤드라인M",
+      "7": "#태명조",
+      "8": "한양신명조",
+      "9": "한양중고딕",
+      "10": "태-물방울R"
+    },
+    "OTHER": {
+      "0": "굴림",
+      "1": "돋움",
+      "2": "맑은 고딕",
+      "3": "바탕",
+      "4": "서울한강체 M",
+      "5": "한컴바탕",
+      "6": "HY헤드라인M",
+      "7": "한양신명조",
+      "8": "태-물방울R"
+    },
+    "SYMBOL": {
+      "0": "굴림",
+      "1": "돋움",
+      "2": "맑은 고딕",
+      "3": "바탕",
+      "4": "서울한강체 M",
+      "5": "한컴바탕",
+      "6": "HY헤드라인M",
+      "7": "#태명조",
+      "8": "한양신명조",
+      "9": "한양중고딕",
+      "10": "태-물방울R"
+    },
+    "USER": {
+      "0": "굴림",
+      "1": "돋움",
+      "2": "맑은 고딕",
+      "3": "바탕",
+      "4": "서울한강체 M",
+      "5": "한컴바탕",
+      "6": "HY헤드라인M",
+      "7": "명조",
+      "8": "태-물방울R"
+    }
+  },
+  "charPr": [
+    {
+      "id": 0,
+      "pt": 16,
+      "hangul": "HY헤드라인M",
+      "latin": "HY헤드라인M",
+      "bold": false,
+      "italic": false,
+      "color": "#000000",
+      "spacing": 0,
+      "ratio": 100,
+      "underline": "NONE",
+      "fontRefs": {
+        "HANGUL": 6,
+        "LATIN": 5,
+        "HANJA": 6,
+        "JAPANESE": 6,
+        "OTHER": 6,
+        "SYMBOL": 6,
+        "USER": 6
+      },
+      "sig": "HY헤드라인M|HY헤드라인M|16|||#000000|0|100|NONE"
+    },
+    {
+      "id": 1,
+      "pt": 11,
+      "hangul": "맑은 고딕",
+      "latin": "맑은 고딕",
+      "bold": false,
+      "italic": false,
+      "color": "#000000",
+      "spacing": -1,
+      "ratio": 100,
+      "underline": "NONE",
+      "fontRefs": {
+        "HANGUL": 2,
+        "LATIN": 2,
+        "HANJA": 2,
+        "JAPANESE": 2,
+        "OTHER": 2,
+        "SYMBOL": 2,
+        "USER": 2
+      },
+      "sig": "맑은 고딕|맑은 고딕|11|||#000000|-1|100|NONE"
+    },
+    {
+      "id": 2,
+      "pt": 11,
+      "hangul": "맑은 고딕",
+      "latin": "맑은 고딕",
+      "bold": false,
+      "italic": false,
+      "color": "#000000",
+      "spacing": 0,
+      "ratio": 100,
+      "underline": "NONE",
+      "fontRefs": {
+        "HANGUL": 2,
+        "LATIN": 2,
+        "HANJA": 5,
+        "JAPANESE": 5,
+        "OTHER": 5,
+        "SYMBOL": 5,
+        "USER": 5
+      },
+      "sig": "맑은 고딕|맑은 고딕|11|||#000000|0|100|NONE"
+    },
+    {
+      "id": 3,
+      "pt": 13,
+      "hangul": "휴먼명조",
+      "latin": "HCI Poppy",
+      "bold": true,
+      "italic": false,
+      "color": "#000000",
+      "spacing": 0,
+      "ratio": 100,
+      "underline": "NONE",
+      "fontRefs": {
+        "HANGUL": 5,
+        "LATIN": 8,
+        "HANJA": 8,
+        "JAPANESE": 8,
+        "OTHER": 7,
+        "SYMBOL": 8,
+        "USER": 7
+      },
+      "sig": "휴먼명조|HCI Poppy|13|B||#000000|0|100|NONE"
+    },
+    {
+      "id": 4,
+      "pt": 10,
+      "hangul": "휴먼명조",
+      "latin": "HCI Poppy",
+      "bold": false,
+      "italic": false,
+      "color": "#000000",
+      "spacing": 0,
+      "ratio": 100,
+      "underline": "NONE",
+      "fontRefs": {
+        "HANGUL": 5,
+        "LATIN": 8,
+        "HANJA": 8,
+        "JAPANESE": 8,
+        "OTHER": 7,
+        "SYMBOL": 8,
+        "USER": 7
+      },
+      "sig": "휴먼명조|HCI Poppy|10|||#000000|0|100|NONE"
+    },
+    {
+      "id": 5,
+      "pt": 13,
+      "hangul": "휴먼명조",
+      "latin": "HCI Poppy",
+      "bold": false,
+      "italic": false,
+      "color": "#000000",
+      "spacing": 0,
+      "ratio": 100,
+      "underline": "NONE",
+      "fontRefs": {
+        "HANGUL": 5,
+        "LATIN": 8,
+        "HANJA": 8,
+        "JAPANESE": 8,
+        "OTHER": 7,
+        "SYMBOL": 8,
+        "USER": 7
+      },
+      "sig": "휴먼명조|HCI Poppy|13|||#000000|0|100|NONE"
+    },
+    {
+      "id": 6,
+      "pt": 11,
+      "hangul": "맑은 고딕",
+      "latin": "맑은 고딕",
+      "bold": false,
+      "italic": false,
+      "color": "#000000",
+      "spacing": 0,
+      "ratio": 100,
+      "underline": "NONE",
+      "fontRefs": {
+        "HANGUL": 2,
+        "LATIN": 2,
+        "HANJA": 2,
+        "JAPANESE": 2,
+        "OTHER": 2,
+        "SYMBOL": 2,
+        "USER": 2
+      },
+      "sig": "맑은 고딕|맑은 고딕|11|||#000000|0|100|NONE"
+    },
+    {
+      "id": 7,
+      "pt": 11,
+      "hangul": "맑은 고딕",
+      "latin": "맑은 고딕",
+      "bold": true,
+      "italic": false,
+      "color": "#000000",
+      "spacing": 0,
+      "ratio": 100,
+      "underline": "NONE",
+      "fontRefs": {
+        "HANGUL": 2,
+        "LATIN": 2,
+        "HANJA": 2,
+        "JAPANESE": 2,
+        "OTHER": 2,
+        "SYMBOL": 2,
+        "USER": 2
+      },
+      "sig": "맑은 고딕|맑은 고딕|11|B||#000000|0|100|NONE"
+    },
+    {
+      "id": 8,
+      "pt": 13,
+      "hangul": "휴먼명조",
+      "latin": "HCI Poppy",
+      "bold": false,
+      "italic": false,
+      "color": "#000000",
+      "spacing": 0,
+      "ratio": 100,
+      "underline": "NONE",
+      "fontRefs": {
+        "HANGUL": 5,
+        "LATIN": 8,
+        "HANJA": 8,
+        "JAPANESE": 8,
+        "OTHER": 7,
+        "SYMBOL": 8,
+        "USER": 7
+      },
+      "sig": "휴먼명조|HCI Poppy|13|||#000000|0|100|NONE"
+    },
+    {
+      "id": 9,
+      "pt": 13,
+      "hangul": "휴먼명조",
+      "latin": "HCI Poppy",
+      "bold": false,
+      "italic": false,
+      "color": "#000000",
+      "spacing": -3,
+      "ratio": 100,
+      "underline": "NONE",
+      "fontRefs": {
+        "HANGUL": 5,
+        "LATIN": 8,
+        "HANJA": 8,
+        "JAPANESE": 8,
+        "OTHER": 7,
+        "SYMBOL": 8,
+        "USER": 7
+      },
+      "sig": "휴먼명조|HCI Poppy|13|||#000000|-3|100|NONE"
+    },
+    {
+      "id": 10,
+      "pt": 10,
+      "hangul": "바탕",
+      "latin": "바탕",
+      "bold": false,
+      "italic": false,
+      "color": "#000000",
+      "spacing": 0,
+      "ratio": 100,
+      "underline": "NONE",
+      "fontRefs": {
+        "HANGUL": 3,
+        "LATIN": 3,
+        "HANJA": 3,
+        "JAPANESE": 3,
+        "OTHER": 3,
+        "SYMBOL": 3,
+        "USER": 3
+      },
+      "sig": "바탕|바탕|10|||#000000|0|100|NONE"
+    },
+    {
+      "id": 11,
+      "pt": 15,
+      "hangul": "휴먼명조",
+      "latin": "HCI Poppy",
+      "bold": true,
+      "italic": false,
+      "color": "#000000",
+      "spacing": 0,
+      "ratio": 100,
+      "underline": "NONE",
+      "fontRefs": {
+        "HANGUL": 5,
+        "LATIN": 8,
+        "HANJA": 8,
+        "JAPANESE": 8,
+        "OTHER": 7,
+        "SYMBOL": 8,
+        "USER": 7
+      },
+      "sig": "휴먼명조|HCI Poppy|15|B||#000000|0|100|NONE"
+    },
+    {
+      "id": 12,
+      "pt": 12,
+      "hangul": "한양중고딕",
+      "latin": "한양중고딕",
+      "bold": true,
+      "italic": false,
+      "color": "#000000",
+      "spacing": 0,
+      "ratio": 100,
+      "underline": "NONE",
+      "fontRefs": {
+        "HANGUL": 7,
+        "LATIN": 7,
+        "HANJA": 9,
+        "JAPANESE": 9,
+        "OTHER": 7,
+        "SYMBOL": 9,
+        "USER": 7
+      },
+      "sig": "한양중고딕|한양중고딕|12|B||#000000|0|100|NONE"
+    },
+    {
+      "id": 13,
+      "pt": 13,
+      "hangul": "휴먼명조",
+      "latin": "HCI Poppy",
+      "bold": true,
+      "italic": false,
+      "color": "#000000",
+      "spacing": 0,
+      "ratio": 100,
+      "underline": "NONE",
+      "fontRefs": {
+        "HANGUL": 5,
+        "LATIN": 8,
+        "HANJA": 8,
+        "JAPANESE": 8,
+        "OTHER": 7,
+        "SYMBOL": 8,
+        "USER": 7
+      },
+      "sig": "휴먼명조|HCI Poppy|13|B||#000000|0|100|NONE"
+    },
+    {
+      "id": 14,
+      "pt": 13,
+      "hangul": "휴먼명조",
+      "latin": "HCI Poppy",
+      "bold": true,
+      "italic": false,
+      "color": "#000000",
+      "spacing": -4,
+      "ratio": 100,
+      "underline": "NONE",
+      "fontRefs": {
+        "HANGUL": 5,
+        "LATIN": 8,
+        "HANJA": 8,
+        "JAPANESE": 8,
+        "OTHER": 7,
+        "SYMBOL": 8,
+        "USER": 7
+      },
+      "sig": "휴먼명조|HCI Poppy|13|B||#000000|-4|100|NONE"
+    },
+    {
+      "id": 15,
+      "pt": 11,
+      "hangul": "맑은 고딕",
+      "latin": "맑은 고딕",
+      "bold": true,
+      "italic": false,
+      "color": "#000000",
+      "spacing": 0,
+      "ratio": 100,
+      "underline": "NONE",
+      "fontRefs": {
+        "HANGUL": 2,
+        "LATIN": 2,
+        "HANJA": 2,
+        "JAPANESE": 2,
+        "OTHER": 2,
+        "SYMBOL": 2,
+        "USER": 2
+      },
+      "sig": "맑은 고딕|맑은 고딕|11|B||#000000|0|100|NONE"
+    },
+    {
+      "id": 16,
+      "pt": 11,
+      "hangul": "맑은 고딕",
+      "latin": "맑은 고딕",
+      "bold": false,
+      "italic": false,
+      "color": "#000000",
+      "spacing": 0,
+      "ratio": 100,
+      "underline": "NONE",
+      "fontRefs": {
+        "HANGUL": 2,
+        "LATIN": 2,
+        "HANJA": 2,
+        "JAPANESE": 2,
+        "OTHER": 2,
+        "SYMBOL": 2,
+        "USER": 2
+      },
+      "sig": "맑은 고딕|맑은 고딕|11|||#000000|0|100|NONE"
+    },
+    {
+      "id": 17,
+      "pt": 15,
+      "hangul": "HY헤드라인M",
+      "latin": "HY헤드라인M",
+      "bold": false,
+      "italic": false,
+      "color": "#000000",
+      "spacing": 0,
+      "ratio": 100,
+      "underline": "NONE",
+      "fontRefs": {
+        "HANGUL": 6,
+        "LATIN": 5,
+        "HANJA": 6,
+        "JAPANESE": 6,
+        "OTHER": 6,
+        "SYMBOL": 6,
+        "USER": 6
+      },
+      "sig": "HY헤드라인M|HY헤드라인M|15|||#000000|0|100|NONE"
+    },
+    {
+      "id": 18,
+      "pt": 10,
+      "hangul": "바탕",
+      "latin": "바탕",
+      "bold": false,
+      "italic": false,
+      "color": "#000000",
+      "spacing": 0,
+      "ratio": 100,
+      "underline": "NONE",
+      "fontRefs": {
+        "HANGUL": 3,
+        "LATIN": 3,
+        "HANJA": 3,
+        "JAPANESE": 3,
+        "OTHER": 3,
+        "SYMBOL": 3,
+        "USER": 3
+      },
+      "sig": "바탕|바탕|10|||#000000|0|100|NONE"
+    },
+    {
+      "id": 19,
+      "pt": 10,
+      "hangul": "굴림",
+      "latin": "굴림",
+      "bold": false,
+      "italic": false,
+      "color": "#000000",
+      "spacing": 0,
+      "ratio": 100,
+      "underline": "NONE",
+      "fontRefs": {
+        "HANGUL": 0,
+        "LATIN": 0,
+        "HANJA": 0,
+        "JAPANESE": 0,
+        "OTHER": 0,
+        "SYMBOL": 0,
+        "USER": 0
+      },
+      "sig": "굴림|굴림|10|||#000000|0|100|NONE"
+    },
+    {
+      "id": 20,
+      "pt": 9,
+      "hangul": "바탕",
+      "latin": "바탕",
+      "bold": false,
+      "italic": false,
+      "color": "#000000",
+      "spacing": -5,
+      "ratio": 95,
+      "underline": "NONE",
+      "fontRefs": {
+        "HANGUL": 3,
+        "LATIN": 3,
+        "HANJA": 3,
+        "JAPANESE": 3,
+        "OTHER": 3,
+        "SYMBOL": 3,
+        "USER": 3
+      },
+      "sig": "바탕|바탕|9|||#000000|-5|95|NONE"
+    },
+    {
+      "id": 21,
+      "pt": 9,
+      "hangul": "굴림",
+      "latin": "굴림",
+      "bold": false,
+      "italic": false,
+      "color": "#000000",
+      "spacing": -2,
+      "ratio": 98,
+      "underline": "NONE",
+      "fontRefs": {
+        "HANGUL": 0,
+        "LATIN": 0,
+        "HANJA": 0,
+        "JAPANESE": 0,
+        "OTHER": 0,
+        "SYMBOL": 0,
+        "USER": 0
+      },
+      "sig": "굴림|굴림|9|||#000000|-2|98|NONE"
+    },
+    {
+      "id": 22,
+      "pt": 14,
+      "hangul": "#신문태명",
+      "latin": "#신문태명",
+      "bold": false,
+      "italic": false,
+      "color": "#000000",
+      "spacing": 0,
+      "ratio": 100,
+      "underline": "NONE",
+      "fontRefs": {
+        "HANGUL": 8,
+        "LATIN": 6,
+        "HANJA": 7,
+        "JAPANESE": 7,
+        "OTHER": 7,
+        "SYMBOL": 7,
+        "USER": 7
+      },
+      "sig": "#신문태명|#신문태명|14|||#000000|0|100|NONE"
+    },
+    {
+      "id": 23,
+      "pt": 13,
+      "hangul": "휴먼명조",
+      "latin": "HCI Poppy",
+      "bold": false,
+      "italic": false,
+      "color": "#000000",
+      "spacing": 0,
+      "ratio": 100,
+      "underline": "NONE",
+      "fontRefs": {
+        "HANGUL": 5,
+        "LATIN": 8,
+        "HANJA": 3,
+        "JAPANESE": 3,
+        "OTHER": 3,
+        "SYMBOL": 3,
+        "USER": 3
+      },
+      "sig": "휴먼명조|HCI Poppy|13|||#000000|0|100|NONE"
+    },
+    {
+      "id": 24,
+      "pt": 16,
+      "hangul": "휴먼명조",
+      "latin": "HCI Poppy",
+      "bold": false,
+      "italic": false,
+      "color": "#000000",
+      "spacing": 0,
+      "ratio": 100,
+      "underline": "NONE",
+      "fontRefs": {
+        "HANGUL": 5,
+        "LATIN": 8,
+        "HANJA": 8,
+        "JAPANESE": 8,
+        "OTHER": 7,
+        "SYMBOL": 8,
+        "USER": 7
+      },
+      "sig": "휴먼명조|HCI Poppy|16|||#000000|0|100|NONE"
+    },
+    {
+      "id": 25,
+      "pt": 5,
+      "hangul": "서울한강체 M",
+      "latin": "서울한강체 M",
+      "bold": false,
+      "italic": false,
+      "color": "#000000",
+      "spacing": 0,
+      "ratio": 100,
+      "underline": "NONE",
+      "fontRefs": {
+        "HANGUL": 4,
+        "LATIN": 4,
+        "HANJA": 4,
+        "JAPANESE": 4,
+        "OTHER": 4,
+        "SYMBOL": 4,
+        "USER": 4
+      },
+      "sig": "서울한강체 M|서울한강체 M|5|||#000000|0|100|NONE"
+    },
+    {
+      "id": 26,
+      "pt": 15,
+      "hangul": "서울한강체 M",
+      "latin": "서울한강체 M",
+      "bold": false,
+      "italic": false,
+      "color": "#000000",
+      "spacing": 0,
+      "ratio": 100,
+      "underline": "NONE",
+      "fontRefs": {
+        "HANGUL": 4,
+        "LATIN": 4,
+        "HANJA": 4,
+        "JAPANESE": 4,
+        "OTHER": 4,
+        "SYMBOL": 4,
+        "USER": 4
+      },
+      "sig": "서울한강체 M|서울한강체 M|15|||#000000|0|100|NONE"
+    },
+    {
+      "id": 27,
+      "pt": 15,
+      "hangul": "서울한강체 M",
+      "latin": "서울한강체 M",
+      "bold": false,
+      "italic": false,
+      "color": "#000000",
+      "spacing": -2,
+      "ratio": 100,
+      "underline": "NONE",
+      "fontRefs": {
+        "HANGUL": 4,
+        "LATIN": 4,
+        "HANJA": 4,
+        "JAPANESE": 4,
+        "OTHER": 4,
+        "SYMBOL": 4,
+        "USER": 4
+      },
+      "sig": "서울한강체 M|서울한강체 M|15|||#000000|-2|100|NONE"
+    },
+    {
+      "id": 28,
+      "pt": 16,
+      "hangul": "서울한강체 M",
+      "latin": "서울한강체 M",
+      "bold": true,
+      "italic": false,
+      "color": "#000000",
+      "spacing": 0,
+      "ratio": 100,
+      "underline": "NONE",
+      "fontRefs": {
+        "HANGUL": 4,
+        "LATIN": 4,
+        "HANJA": 4,
+        "JAPANESE": 4,
+        "OTHER": 4,
+        "SYMBOL": 4,
+        "USER": 4
+      },
+      "sig": "서울한강체 M|서울한강체 M|16|B||#000000|0|100|NONE"
+    },
+    {
+      "id": 29,
+      "pt": 15,
+      "hangul": "서울한강체 M",
+      "latin": "서울한강체 M",
+      "bold": false,
+      "italic": false,
+      "color": "#000000",
+      "spacing": 0,
+      "ratio": 100,
+      "underline": "NONE",
+      "fontRefs": {
+        "HANGUL": 4,
+        "LATIN": 4,
+        "HANJA": 4,
+        "JAPANESE": 4,
+        "OTHER": 4,
+        "SYMBOL": 4,
+        "USER": 4
+      },
+      "sig": "서울한강체 M|서울한강체 M|15|||#000000|0|100|NONE"
+    },
+    {
+      "id": 30,
+      "pt": 2,
+      "hangul": "바탕",
+      "latin": "바탕",
+      "bold": false,
+      "italic": false,
+      "color": "#000000",
+      "spacing": 0,
+      "ratio": 100,
+      "underline": "NONE",
+      "fontRefs": {
+        "HANGUL": 3,
+        "LATIN": 3,
+        "HANJA": 3,
+        "JAPANESE": 3,
+        "OTHER": 3,
+        "SYMBOL": 3,
+        "USER": 3
+      },
+      "sig": "바탕|바탕|2|||#000000|0|100|NONE"
+    },
+    {
+      "id": 31,
+      "pt": 13,
+      "hangul": "휴먼명조",
+      "latin": "HCI Poppy",
+      "bold": true,
+      "italic": false,
+      "color": "#000000",
+      "spacing": 0,
+      "ratio": 100,
+      "underline": "NONE",
+      "fontRefs": {
+        "HANGUL": 5,
+        "LATIN": 8,
+        "HANJA": 8,
+        "JAPANESE": 8,
+        "OTHER": 7,
+        "SYMBOL": 8,
+        "USER": 7
+      },
+      "sig": "휴먼명조|HCI Poppy|13|B||#000000|0|100|NONE"
+    },
+    {
+      "id": 32,
+      "pt": 13,
+      "hangul": "휴먼명조",
+      "latin": "HCI Poppy",
+      "bold": true,
+      "italic": false,
+      "color": "#000000",
+      "spacing": -1,
+      "ratio": 100,
+      "underline": "NONE",
+      "fontRefs": {
+        "HANGUL": 5,
+        "LATIN": 8,
+        "HANJA": 8,
+        "JAPANESE": 8,
+        "OTHER": 7,
+        "SYMBOL": 8,
+        "USER": 7
+      },
+      "sig": "휴먼명조|HCI Poppy|13|B||#000000|-1|100|NONE"
+    },
+    {
+      "id": 33,
+      "pt": 8,
+      "hangul": "휴먼명조",
+      "latin": "HCI Poppy",
+      "bold": false,
+      "italic": false,
+      "color": "#000000",
+      "spacing": 0,
+      "ratio": 100,
+      "underline": "NONE",
+      "fontRefs": {
+        "HANGUL": 5,
+        "LATIN": 8,
+        "HANJA": 8,
+        "JAPANESE": 8,
+        "OTHER": 7,
+        "SYMBOL": 8,
+        "USER": 7
+      },
+      "sig": "휴먼명조|HCI Poppy|8|||#000000|0|100|NONE"
+    },
+    {
+      "id": 34,
+      "pt": 13,
+      "hangul": "서울한강체 M",
+      "latin": "서울한강체 M",
+      "bold": false,
+      "italic": false,
+      "color": "#000000",
+      "spacing": 0,
+      "ratio": 100,
+      "underline": "NONE",
+      "fontRefs": {
+        "HANGUL": 4,
+        "LATIN": 4,
+        "HANJA": 4,
+        "JAPANESE": 4,
+        "OTHER": 4,
+        "SYMBOL": 4,
+        "USER": 4
+      },
+      "sig": "서울한강체 M|서울한강체 M|13|||#000000|0|100|NONE"
+    },
+    {
+      "id": 35,
+      "pt": 13,
+      "hangul": "휴먼명조",
+      "latin": "HCI Poppy",
+      "bold": false,
+      "italic": false,
+      "color": "#000000",
+      "spacing": -5,
+      "ratio": 100,
+      "underline": "NONE",
+      "fontRefs": {
+        "HANGUL": 5,
+        "LATIN": 8,
+        "HANJA": 8,
+        "JAPANESE": 8,
+        "OTHER": 7,
+        "SYMBOL": 8,
+        "USER": 7
+      },
+      "sig": "휴먼명조|HCI Poppy|13|||#000000|-5|100|NONE"
+    },
+    {
+      "id": 36,
+      "pt": 8,
+      "hangul": "휴먼명조",
+      "latin": "HCI Poppy",
+      "bold": false,
+      "italic": false,
+      "color": "#000000",
+      "spacing": -5,
+      "ratio": 100,
+      "underline": "NONE",
+      "fontRefs": {
+        "HANGUL": 5,
+        "LATIN": 8,
+        "HANJA": 8,
+        "JAPANESE": 8,
+        "OTHER": 7,
+        "SYMBOL": 8,
+        "USER": 7
+      },
+      "sig": "휴먼명조|HCI Poppy|8|||#000000|-5|100|NONE"
+    },
+    {
+      "id": 37,
+      "pt": 13,
+      "hangul": "휴먼명조",
+      "latin": "HCI Poppy",
+      "bold": false,
+      "italic": false,
+      "color": "#000000",
+      "spacing": 0,
+      "ratio": 100,
+      "underline": "NONE",
+      "fontRefs": {
+        "HANGUL": 5,
+        "LATIN": 8,
+        "HANJA": 8,
+        "JAPANESE": 8,
+        "OTHER": 7,
+        "SYMBOL": 8,
+        "USER": 7
+      },
+      "sig": "휴먼명조|HCI Poppy|13|||#000000|0|100|NONE"
+    },
+    {
+      "id": 38,
+      "pt": 13,
+      "hangul": "휴먼명조",
+      "latin": "HCI Poppy",
+      "bold": false,
+      "italic": false,
+      "color": "#0059FF",
+      "spacing": 0,
+      "ratio": 100,
+      "underline": "NONE",
+      "fontRefs": {
+        "HANGUL": 5,
+        "LATIN": 8,
+        "HANJA": 8,
+        "JAPANESE": 8,
+        "OTHER": 7,
+        "SYMBOL": 8,
+        "USER": 7
+      },
+      "sig": "휴먼명조|HCI Poppy|13|||#0059FF|0|100|NONE"
+    },
+    {
+      "id": 39,
+      "pt": 12,
+      "hangul": "굴림",
+      "latin": "굴림",
+      "bold": false,
+      "italic": false,
+      "color": "#000000",
+      "spacing": 0,
+      "ratio": 100,
+      "underline": "NONE",
+      "fontRefs": {
+        "HANGUL": 0,
+        "LATIN": 0,
+        "HANJA": 0,
+        "JAPANESE": 0,
+        "OTHER": 0,
+        "SYMBOL": 0,
+        "USER": 0
+      },
+      "sig": "굴림|굴림|12|||#000000|0|100|NONE"
+    },
+    {
+      "id": 40,
+      "pt": 6,
+      "hangul": "휴먼명조",
+      "latin": "HCI Poppy",
+      "bold": false,
+      "italic": false,
+      "color": "#000000",
+      "spacing": 0,
+      "ratio": 100,
+      "underline": "NONE",
+      "fontRefs": {
+        "HANGUL": 5,
+        "LATIN": 8,
+        "HANJA": 8,
+        "JAPANESE": 8,
+        "OTHER": 7,
+        "SYMBOL": 8,
+        "USER": 7
+      },
+      "sig": "휴먼명조|HCI Poppy|6|||#000000|0|100|NONE"
+    },
+    {
+      "id": 41,
+      "pt": 8,
+      "hangul": "휴먼명조",
+      "latin": "HCI Poppy",
+      "bold": false,
+      "italic": false,
+      "color": "#000000",
+      "spacing": 0,
+      "ratio": 100,
+      "underline": "NONE",
+      "fontRefs": {
+        "HANGUL": 5,
+        "LATIN": 8,
+        "HANJA": 8,
+        "JAPANESE": 8,
+        "OTHER": 7,
+        "SYMBOL": 8,
+        "USER": 7
+      },
+      "sig": "휴먼명조|HCI Poppy|8|||#000000|0|100|NONE"
+    },
+    {
+      "id": 42,
+      "pt": 13,
+      "hangul": "휴먼명조",
+      "latin": "HCI Poppy",
+      "bold": false,
+      "italic": false,
+      "color": "#000000",
+      "spacing": -13,
+      "ratio": 100,
+      "underline": "NONE",
+      "fontRefs": {
+        "HANGUL": 5,
+        "LATIN": 8,
+        "HANJA": 8,
+        "JAPANESE": 8,
+        "OTHER": 7,
+        "SYMBOL": 8,
+        "USER": 7
+      },
+      "sig": "휴먼명조|HCI Poppy|13|||#000000|-13|100|NONE"
+    },
+    {
+      "id": 43,
+      "pt": 10,
+      "hangul": "휴먼명조",
+      "latin": "HCI Poppy",
+      "bold": false,
+      "italic": false,
+      "color": "#000000",
+      "spacing": 0,
+      "ratio": 100,
+      "underline": "NONE",
+      "fontRefs": {
+        "HANGUL": 5,
+        "LATIN": 8,
+        "HANJA": 8,
+        "JAPANESE": 8,
+        "OTHER": 7,
+        "SYMBOL": 8,
+        "USER": 7
+      },
+      "sig": "휴먼명조|HCI Poppy|10|||#000000|0|100|NONE"
+    },
+    {
+      "id": 44,
+      "pt": 11,
+      "hangul": "한양중고딕",
+      "latin": "한양중고딕",
+      "bold": false,
+      "italic": false,
+      "color": "#000000",
+      "spacing": -1,
+      "ratio": 100,
+      "underline": "NONE",
+      "fontRefs": {
+        "HANGUL": 7,
+        "LATIN": 7,
+        "HANJA": 9,
+        "JAPANESE": 9,
+        "OTHER": 7,
+        "SYMBOL": 9,
+        "USER": 7
+      },
+      "sig": "한양중고딕|한양중고딕|11|||#000000|-1|100|NONE"
+    },
+    {
+      "id": 45,
+      "pt": 10,
+      "hangul": "한양중고딕",
+      "latin": "한양중고딕",
+      "bold": false,
+      "italic": false,
+      "color": "#000000",
+      "spacing": -1,
+      "ratio": 100,
+      "underline": "NONE",
+      "fontRefs": {
+        "HANGUL": 7,
+        "LATIN": 7,
+        "HANJA": 9,
+        "JAPANESE": 9,
+        "OTHER": 7,
+        "SYMBOL": 9,
+        "USER": 7
+      },
+      "sig": "한양중고딕|한양중고딕|10|||#000000|-1|100|NONE"
+    },
+    {
+      "id": 46,
+      "pt": 13,
+      "hangul": "태-물방울R",
+      "latin": "태-물방울R",
+      "bold": false,
+      "italic": false,
+      "color": "#000000",
+      "spacing": 0,
+      "ratio": 100,
+      "underline": "NONE",
+      "fontRefs": {
+        "HANGUL": 9,
+        "LATIN": 9,
+        "HANJA": 10,
+        "JAPANESE": 10,
+        "OTHER": 8,
+        "SYMBOL": 10,
+        "USER": 8
+      },
+      "sig": "태-물방울R|태-물방울R|13|||#000000|0|100|NONE"
+    },
+    {
+      "id": 47,
+      "pt": 8,
+      "hangul": "휴먼명조",
+      "latin": "HCI Poppy",
+      "bold": true,
+      "italic": false,
+      "color": "#000000",
+      "spacing": 0,
+      "ratio": 100,
+      "underline": "NONE",
+      "fontRefs": {
+        "HANGUL": 5,
+        "LATIN": 8,
+        "HANJA": 8,
+        "JAPANESE": 8,
+        "OTHER": 7,
+        "SYMBOL": 8,
+        "USER": 7
+      },
+      "sig": "휴먼명조|HCI Poppy|8|B||#000000|0|100|NONE"
+    },
+    {
+      "id": 48,
+      "pt": 10,
+      "hangul": "돋움",
+      "latin": "돋움",
+      "bold": false,
+      "italic": false,
+      "color": "#000000",
+      "spacing": 0,
+      "ratio": 100,
+      "underline": "NONE",
+      "fontRefs": {
+        "HANGUL": 1,
+        "LATIN": 1,
+        "HANJA": 1,
+        "JAPANESE": 1,
+        "OTHER": 1,
+        "SYMBOL": 1,
+        "USER": 1
+      },
+      "sig": "돋움|돋움|10|||#000000|0|100|NONE"
+    },
+    {
+      "id": 49,
+      "pt": 12,
+      "hangul": "휴먼명조",
+      "latin": "HCI Poppy",
+      "bold": true,
+      "italic": false,
+      "color": "#000000",
+      "spacing": 0,
+      "ratio": 100,
+      "underline": "NONE",
+      "fontRefs": {
+        "HANGUL": 5,
+        "LATIN": 8,
+        "HANJA": 8,
+        "JAPANESE": 8,
+        "OTHER": 7,
+        "SYMBOL": 8,
+        "USER": 7
+      },
+      "sig": "휴먼명조|HCI Poppy|12|B||#000000|0|100|NONE"
+    },
+    {
+      "id": 50,
+      "pt": 26,
+      "hangul": "HY헤드라인M",
+      "latin": "HY헤드라인M",
+      "bold": false,
+      "italic": false,
+      "color": "#000000",
+      "spacing": 0,
+      "ratio": 100,
+      "underline": "NONE",
+      "fontRefs": {
+        "HANGUL": 6,
+        "LATIN": 5,
+        "HANJA": 6,
+        "JAPANESE": 6,
+        "OTHER": 6,
+        "SYMBOL": 6,
+        "USER": 6
+      },
+      "sig": "HY헤드라인M|HY헤드라인M|26|||#000000|0|100|NONE"
+    },
+    {
+      "id": 51,
+      "pt": 20,
+      "hangul": "HY헤드라인M",
+      "latin": "HY헤드라인M",
+      "bold": false,
+      "italic": false,
+      "color": "#000000",
+      "spacing": 0,
+      "ratio": 100,
+      "underline": "NONE",
+      "fontRefs": {
+        "HANGUL": 6,
+        "LATIN": 5,
+        "HANJA": 6,
+        "JAPANESE": 6,
+        "OTHER": 6,
+        "SYMBOL": 6,
+        "USER": 6
+      },
+      "sig": "HY헤드라인M|HY헤드라인M|20|||#000000|0|100|NONE"
+    },
+    {
+      "id": 52,
+      "pt": 13,
+      "hangul": "휴먼명조",
+      "latin": "HCI Poppy",
+      "bold": false,
+      "italic": false,
+      "color": "#000000",
+      "spacing": -5,
+      "ratio": 100,
+      "underline": "NONE",
+      "fontRefs": {
+        "HANGUL": 5,
+        "LATIN": 8,
+        "HANJA": 8,
+        "JAPANESE": 8,
+        "OTHER": 7,
+        "SYMBOL": 8,
+        "USER": 7
+      },
+      "sig": "휴먼명조|HCI Poppy|13|||#000000|-5|100|NONE"
+    },
+    {
+      "id": 53,
+      "pt": 12,
+      "hangul": "한양중고딕",
+      "latin": "한양중고딕",
+      "bold": false,
+      "italic": false,
+      "color": "#000000",
+      "spacing": 0,
+      "ratio": 100,
+      "underline": "NONE",
+      "fontRefs": {
+        "HANGUL": 7,
+        "LATIN": 7,
+        "HANJA": 9,
+        "JAPANESE": 9,
+        "OTHER": 7,
+        "SYMBOL": 9,
+        "USER": 7
+      },
+      "sig": "한양중고딕|한양중고딕|12|||#000000|0|100|NONE"
+    },
+    {
+      "id": 54,
+      "pt": 13,
+      "hangul": "휴먼명조",
+      "latin": "HCI Poppy",
+      "bold": false,
+      "italic": false,
+      "color": "#000000",
+      "spacing": -1,
+      "ratio": 100,
+      "underline": "NONE",
+      "fontRefs": {
+        "HANGUL": 5,
+        "LATIN": 8,
+        "HANJA": 8,
+        "JAPANESE": 8,
+        "OTHER": 7,
+        "SYMBOL": 8,
+        "USER": 7
+      },
+      "sig": "휴먼명조|HCI Poppy|13|||#000000|-1|100|NONE"
+    },
+    {
+      "id": 55,
+      "pt": 8,
+      "hangul": "휴먼명조",
+      "latin": "HCI Poppy",
+      "bold": false,
+      "italic": false,
+      "color": "#000000",
+      "spacing": 0,
+      "ratio": 100,
+      "underline": "NONE",
+      "fontRefs": {
+        "HANGUL": 5,
+        "LATIN": 8,
+        "HANJA": 8,
+        "JAPANESE": 8,
+        "OTHER": 7,
+        "SYMBOL": 8,
+        "USER": 7
+      },
+      "sig": "휴먼명조|HCI Poppy|8|||#000000|0|100|NONE"
+    },
+    {
+      "id": 56,
+      "pt": 10,
+      "hangul": "서울한강체 M",
+      "latin": "서울한강체 M",
+      "bold": false,
+      "italic": false,
+      "color": "#000000",
+      "spacing": 0,
+      "ratio": 100,
+      "underline": "NONE",
+      "fontRefs": {
+        "HANGUL": 4,
+        "LATIN": 4,
+        "HANJA": 4,
+        "JAPANESE": 4,
+        "OTHER": 4,
+        "SYMBOL": 4,
+        "USER": 4
+      },
+      "sig": "서울한강체 M|서울한강체 M|10|||#000000|0|100|NONE"
+    },
+    {
+      "id": 57,
+      "pt": 6,
+      "hangul": "휴먼명조",
+      "latin": "HCI Poppy",
+      "bold": false,
+      "italic": false,
+      "color": "#000000",
+      "spacing": 0,
+      "ratio": 100,
+      "underline": "NONE",
+      "fontRefs": {
+        "HANGUL": 5,
+        "LATIN": 8,
+        "HANJA": 8,
+        "JAPANESE": 8,
+        "OTHER": 7,
+        "SYMBOL": 8,
+        "USER": 7
+      },
+      "sig": "휴먼명조|HCI Poppy|6|||#000000|0|100|NONE"
+    },
+    {
+      "id": 58,
+      "pt": 11,
+      "hangul": "굴림",
+      "latin": "굴림",
+      "bold": false,
+      "italic": false,
+      "color": "#000000",
+      "spacing": -4,
+      "ratio": 100,
+      "underline": "NONE",
+      "fontRefs": {
+        "HANGUL": 0,
+        "LATIN": 0,
+        "HANJA": 0,
+        "JAPANESE": 0,
+        "OTHER": 0,
+        "SYMBOL": 0,
+        "USER": 0
+      },
+      "sig": "굴림|굴림|11|||#000000|-4|100|NONE"
+    },
+    {
+      "id": 59,
+      "pt": 11,
+      "hangul": "굴림",
+      "latin": "굴림",
+      "bold": false,
+      "italic": false,
+      "color": "#000000",
+      "spacing": -6,
+      "ratio": 100,
+      "underline": "NONE",
+      "fontRefs": {
+        "HANGUL": 0,
+        "LATIN": 0,
+        "HANJA": 0,
+        "JAPANESE": 0,
+        "OTHER": 0,
+        "SYMBOL": 0,
+        "USER": 0
+      },
+      "sig": "굴림|굴림|11|||#000000|-6|100|NONE"
+    },
+    {
+      "id": 60,
+      "pt": 8,
+      "hangul": "휴먼명조",
+      "latin": "HCI Poppy",
+      "bold": false,
+      "italic": false,
+      "color": "#000000",
+      "spacing": -5,
+      "ratio": 100,
+      "underline": "NONE",
+      "fontRefs": {
+        "HANGUL": 5,
+        "LATIN": 8,
+        "HANJA": 8,
+        "JAPANESE": 8,
+        "OTHER": 7,
+        "SYMBOL": 8,
+        "USER": 7
+      },
+      "sig": "휴먼명조|HCI Poppy|8|||#000000|-5|100|NONE"
+    },
+    {
+      "id": 61,
+      "pt": 13,
+      "hangul": "한양중고딕",
+      "latin": "한양중고딕",
+      "bold": false,
+      "italic": false,
+      "color": "#000000",
+      "spacing": -1,
+      "ratio": 100,
+      "underline": "NONE",
+      "fontRefs": {
+        "HANGUL": 7,
+        "LATIN": 7,
+        "HANJA": 9,
+        "JAPANESE": 9,
+        "OTHER": 7,
+        "SYMBOL": 9,
+        "USER": 7
+      },
+      "sig": "한양중고딕|한양중고딕|13|||#000000|-1|100|NONE"
+    },
+    {
+      "id": 62,
+      "pt": 13,
+      "hangul": "한양중고딕",
+      "latin": "한양중고딕",
+      "bold": false,
+      "italic": false,
+      "color": "#000000",
+      "spacing": 0,
+      "ratio": 100,
+      "underline": "NONE",
+      "fontRefs": {
+        "HANGUL": 7,
+        "LATIN": 7,
+        "HANJA": 9,
+        "JAPANESE": 9,
+        "OTHER": 7,
+        "SYMBOL": 9,
+        "USER": 7
+      },
+      "sig": "한양중고딕|한양중고딕|13|||#000000|0|100|NONE"
+    },
+    {
+      "id": 63,
+      "pt": 13,
+      "hangul": "한양중고딕",
+      "latin": "한양중고딕",
+      "bold": false,
+      "italic": false,
+      "color": "#000000",
+      "spacing": -1,
+      "ratio": 100,
+      "underline": "NONE",
+      "fontRefs": {
+        "HANGUL": 7,
+        "LATIN": 7,
+        "HANJA": 9,
+        "JAPANESE": 9,
+        "OTHER": 7,
+        "SYMBOL": 9,
+        "USER": 7
+      },
+      "sig": "한양중고딕|한양중고딕|13|||#000000|-1|100|NONE"
+    },
+    {
+      "id": 64,
+      "pt": 13,
+      "hangul": "한양중고딕",
+      "latin": "한양중고딕",
+      "bold": false,
+      "italic": false,
+      "color": "#000000",
+      "spacing": -5,
+      "ratio": 100,
+      "underline": "NONE",
+      "fontRefs": {
+        "HANGUL": 7,
+        "LATIN": 7,
+        "HANJA": 9,
+        "JAPANESE": 9,
+        "OTHER": 7,
+        "SYMBOL": 9,
+        "USER": 7
+      },
+      "sig": "한양중고딕|한양중고딕|13|||#000000|-5|100|NONE"
+    },
+    {
+      "id": 65,
+      "pt": 15,
+      "hangul": "한양중고딕",
+      "latin": "한양중고딕",
+      "bold": true,
+      "italic": false,
+      "color": "#000000",
+      "spacing": -5,
+      "ratio": 100,
+      "underline": "NONE",
+      "fontRefs": {
+        "HANGUL": 7,
+        "LATIN": 7,
+        "HANJA": 9,
+        "JAPANESE": 9,
+        "OTHER": 7,
+        "SYMBOL": 9,
+        "USER": 7
+      },
+      "sig": "한양중고딕|한양중고딕|15|B||#000000|-5|100|NONE"
+    },
+    {
+      "id": 66,
+      "pt": 6,
+      "hangul": "서울한강체 M",
+      "latin": "서울한강체 M",
+      "bold": false,
+      "italic": false,
+      "color": "#000000",
+      "spacing": 0,
+      "ratio": 100,
+      "underline": "NONE",
+      "fontRefs": {
+        "HANGUL": 4,
+        "LATIN": 4,
+        "HANJA": 4,
+        "JAPANESE": 4,
+        "OTHER": 4,
+        "SYMBOL": 4,
+        "USER": 4
+      },
+      "sig": "서울한강체 M|서울한강체 M|6|||#000000|0|100|NONE"
+    },
+    {
+      "id": 67,
+      "pt": 8,
+      "hangul": "한양중고딕",
+      "latin": "한양중고딕",
+      "bold": false,
+      "italic": false,
+      "color": "#000000",
+      "spacing": -1,
+      "ratio": 100,
+      "underline": "NONE",
+      "fontRefs": {
+        "HANGUL": 7,
+        "LATIN": 7,
+        "HANJA": 9,
+        "JAPANESE": 9,
+        "OTHER": 7,
+        "SYMBOL": 9,
+        "USER": 7
+      },
+      "sig": "한양중고딕|한양중고딕|8|||#000000|-1|100|NONE"
+    },
+    {
+      "id": 68,
+      "pt": 12,
+      "hangul": "한양중고딕",
+      "latin": "한양중고딕",
+      "bold": false,
+      "italic": false,
+      "color": "#000000",
+      "spacing": 0,
+      "ratio": 100,
+      "underline": "NONE",
+      "fontRefs": {
+        "HANGUL": 7,
+        "LATIN": 7,
+        "HANJA": 9,
+        "JAPANESE": 9,
+        "OTHER": 7,
+        "SYMBOL": 9,
+        "USER": 7
+      },
+      "sig": "한양중고딕|한양중고딕|12|||#000000|0|100|NONE"
+    },
+    {
+      "id": 69,
+      "pt": 13,
+      "hangul": "휴먼명조",
+      "latin": "HCI Poppy",
+      "bold": false,
+      "italic": false,
+      "color": "#000000",
+      "spacing": -10,
+      "ratio": 100,
+      "underline": "NONE",
+      "fontRefs": {
+        "HANGUL": 5,
+        "LATIN": 8,
+        "HANJA": 8,
+        "JAPANESE": 8,
+        "OTHER": 7,
+        "SYMBOL": 8,
+        "USER": 7
+      },
+      "sig": "휴먼명조|HCI Poppy|13|||#000000|-10|100|NONE"
+    },
+    {
+      "id": 70,
+      "pt": 13,
+      "hangul": "휴먼명조",
+      "latin": "HCI Poppy",
+      "bold": false,
+      "italic": false,
+      "color": "#000000",
+      "spacing": -9,
+      "ratio": 100,
+      "underline": "NONE",
+      "fontRefs": {
+        "HANGUL": 5,
+        "LATIN": 8,
+        "HANJA": 8,
+        "JAPANESE": 8,
+        "OTHER": 7,
+        "SYMBOL": 8,
+        "USER": 7
+      },
+      "sig": "휴먼명조|HCI Poppy|13|||#000000|-9|100|NONE"
+    },
+    {
+      "id": 71,
+      "pt": 11,
+      "hangul": "맑은 고딕",
+      "latin": "맑은 고딕",
+      "bold": false,
+      "italic": false,
+      "color": "#000000",
+      "spacing": -7,
+      "ratio": 100,
+      "underline": "NONE",
+      "fontRefs": {
+        "HANGUL": 2,
+        "LATIN": 2,
+        "HANJA": 2,
+        "JAPANESE": 2,
+        "OTHER": 2,
+        "SYMBOL": 2,
+        "USER": 2
+      },
+      "sig": "맑은 고딕|맑은 고딕|11|||#000000|-7|100|NONE"
+    },
+    {
+      "id": 72,
+      "pt": 6,
+      "hangul": "휴먼명조",
+      "latin": "HCI Poppy",
+      "bold": true,
+      "italic": false,
+      "color": "#000000",
+      "spacing": 0,
+      "ratio": 100,
+      "underline": "NONE",
+      "fontRefs": {
+        "HANGUL": 5,
+        "LATIN": 8,
+        "HANJA": 8,
+        "JAPANESE": 8,
+        "OTHER": 7,
+        "SYMBOL": 8,
+        "USER": 7
+      },
+      "sig": "휴먼명조|HCI Poppy|6|B||#000000|0|100|NONE"
+    },
+    {
+      "id": 73,
+      "pt": 11,
+      "hangul": "한양중고딕",
+      "latin": "한양중고딕",
+      "bold": false,
+      "italic": false,
+      "color": "#000000",
+      "spacing": 0,
+      "ratio": 100,
+      "underline": "NONE",
+      "fontRefs": {
+        "HANGUL": 7,
+        "LATIN": 7,
+        "HANJA": 9,
+        "JAPANESE": 9,
+        "OTHER": 7,
+        "SYMBOL": 9,
+        "USER": 7
+      },
+      "sig": "한양중고딕|한양중고딕|11|||#000000|0|100|NONE"
+    },
+    {
+      "id": 74,
+      "pt": 11,
+      "hangul": "한양중고딕",
+      "latin": "한양중고딕",
+      "bold": false,
+      "italic": false,
+      "color": "#000000",
+      "spacing": 0,
+      "ratio": 100,
+      "underline": "NONE",
+      "fontRefs": {
+        "HANGUL": 7,
+        "LATIN": 7,
+        "HANJA": 9,
+        "JAPANESE": 9,
+        "OTHER": 7,
+        "SYMBOL": 9,
+        "USER": 7
+      },
+      "sig": "한양중고딕|한양중고딕|11|||#000000|0|100|NONE"
+    },
+    {
+      "id": 75,
+      "pt": 20,
+      "hangul": "HY헤드라인M",
+      "latin": "HY헤드라인M",
+      "bold": false,
+      "italic": false,
+      "color": "#000000",
+      "spacing": 0,
+      "ratio": 100,
+      "underline": "NONE",
+      "fontRefs": {
+        "HANGUL": 6,
+        "LATIN": 5,
+        "HANJA": 6,
+        "JAPANESE": 6,
+        "OTHER": 6,
+        "SYMBOL": 6,
+        "USER": 6
+      },
+      "sig": "HY헤드라인M|HY헤드라인M|20|||#000000|0|100|NONE"
+    },
+    {
+      "id": 76,
+      "pt": 15,
+      "hangul": "HY헤드라인M",
+      "latin": "HY헤드라인M",
+      "bold": false,
+      "italic": false,
+      "color": "#000000",
+      "spacing": 0,
+      "ratio": 100,
+      "underline": "NONE",
+      "fontRefs": {
+        "HANGUL": 6,
+        "LATIN": 5,
+        "HANJA": 6,
+        "JAPANESE": 6,
+        "OTHER": 6,
+        "SYMBOL": 6,
+        "USER": 6
+      },
+      "sig": "HY헤드라인M|HY헤드라인M|15|||#000000|0|100|NONE"
+    },
+    {
+      "id": 77,
+      "pt": 15,
+      "hangul": "HY헤드라인M",
+      "latin": "HY헤드라인M",
+      "bold": false,
+      "italic": false,
+      "color": "#0000FF",
+      "spacing": 0,
+      "ratio": 100,
+      "underline": "NONE",
+      "fontRefs": {
+        "HANGUL": 6,
+        "LATIN": 5,
+        "HANJA": 6,
+        "JAPANESE": 6,
+        "OTHER": 6,
+        "SYMBOL": 6,
+        "USER": 6
+      },
+      "sig": "HY헤드라인M|HY헤드라인M|15|||#0000FF|0|100|NONE"
+    },
+    {
+      "id": 78,
+      "pt": 13,
+      "hangul": "휴먼명조",
+      "latin": "HCI Poppy",
+      "bold": false,
+      "italic": false,
+      "color": "#000000",
+      "spacing": -2,
+      "ratio": 100,
+      "underline": "NONE",
+      "fontRefs": {
+        "HANGUL": 5,
+        "LATIN": 8,
+        "HANJA": 8,
+        "JAPANESE": 8,
+        "OTHER": 7,
+        "SYMBOL": 8,
+        "USER": 7
+      },
+      "sig": "휴먼명조|HCI Poppy|13|||#000000|-2|100|NONE"
+    },
+    {
+      "id": 79,
+      "pt": 13,
+      "hangul": "휴먼명조",
+      "latin": "HCI Poppy",
+      "bold": false,
+      "italic": false,
+      "color": "#000000",
+      "spacing": -5,
+      "ratio": 100,
+      "underline": "NONE",
+      "fontRefs": {
+        "HANGUL": 5,
+        "LATIN": 8,
+        "HANJA": 8,
+        "JAPANESE": 8,
+        "OTHER": 7,
+        "SYMBOL": 8,
+        "USER": 7
+      },
+      "sig": "휴먼명조|HCI Poppy|13|||#000000|-5|100|NONE"
+    },
+    {
+      "id": 80,
+      "pt": 13,
+      "hangul": "한양중고딕",
+      "latin": "한양중고딕",
+      "bold": false,
+      "italic": false,
+      "color": "#000000",
+      "spacing": -1,
+      "ratio": 100,
+      "underline": "NONE",
+      "fontRefs": {
+        "HANGUL": 7,
+        "LATIN": 7,
+        "HANJA": 9,
+        "JAPANESE": 9,
+        "OTHER": 7,
+        "SYMBOL": 9,
+        "USER": 7
+      },
+      "sig": "한양중고딕|한양중고딕|13|||#000000|-1|100|NONE"
+    },
+    {
+      "id": 81,
+      "pt": 13,
+      "hangul": "한양중고딕",
+      "latin": "한양중고딕",
+      "bold": false,
+      "italic": false,
+      "color": "#000000",
+      "spacing": 0,
+      "ratio": 100,
+      "underline": "NONE",
+      "fontRefs": {
+        "HANGUL": 7,
+        "LATIN": 7,
+        "HANJA": 9,
+        "JAPANESE": 9,
+        "OTHER": 7,
+        "SYMBOL": 9,
+        "USER": 7
+      },
+      "sig": "한양중고딕|한양중고딕|13|||#000000|0|100|NONE"
+    },
+    {
+      "id": 82,
+      "pt": 13,
+      "hangul": "휴먼명조",
+      "latin": "HCI Poppy",
+      "bold": false,
+      "italic": false,
+      "color": "#000000",
+      "spacing": -3,
+      "ratio": 100,
+      "underline": "NONE",
+      "fontRefs": {
+        "HANGUL": 5,
+        "LATIN": 8,
+        "HANJA": 8,
+        "JAPANESE": 8,
+        "OTHER": 7,
+        "SYMBOL": 8,
+        "USER": 7
+      },
+      "sig": "휴먼명조|HCI Poppy|13|||#000000|-3|100|NONE"
+    },
+    {
+      "id": 83,
+      "pt": 4,
+      "hangul": "휴먼명조",
+      "latin": "HCI Poppy",
+      "bold": false,
+      "italic": false,
+      "color": "#000000",
+      "spacing": 0,
+      "ratio": 100,
+      "underline": "NONE",
+      "fontRefs": {
+        "HANGUL": 5,
+        "LATIN": 8,
+        "HANJA": 8,
+        "JAPANESE": 8,
+        "OTHER": 7,
+        "SYMBOL": 8,
+        "USER": 7
+      },
+      "sig": "휴먼명조|HCI Poppy|4|||#000000|0|100|NONE"
+    },
+    {
+      "id": 84,
+      "pt": 11,
+      "hangul": "맑은 고딕",
+      "latin": "맑은 고딕",
+      "bold": true,
+      "italic": false,
+      "color": "#000000",
+      "spacing": -5,
+      "ratio": 95,
+      "underline": "NONE",
+      "fontRefs": {
+        "HANGUL": 2,
+        "LATIN": 2,
+        "HANJA": 2,
+        "JAPANESE": 2,
+        "OTHER": 2,
+        "SYMBOL": 2,
+        "USER": 2
+      },
+      "sig": "맑은 고딕|맑은 고딕|11|B||#000000|-5|95|NONE"
+    },
+    {
+      "id": 85,
+      "pt": 10,
+      "hangul": "맑은 고딕",
+      "latin": "맑은 고딕",
+      "bold": true,
+      "italic": false,
+      "color": "#000000",
+      "spacing": 0,
+      "ratio": 100,
+      "underline": "NONE",
+      "fontRefs": {
+        "HANGUL": 2,
+        "LATIN": 2,
+        "HANJA": 2,
+        "JAPANESE": 2,
+        "OTHER": 2,
+        "SYMBOL": 2,
+        "USER": 2
+      },
+      "sig": "맑은 고딕|맑은 고딕|10|B||#000000|0|100|NONE"
+    },
+    {
+      "id": 86,
+      "pt": 10,
+      "hangul": "맑은 고딕",
+      "latin": "맑은 고딕",
+      "bold": false,
+      "italic": false,
+      "color": "#000000",
+      "spacing": 0,
+      "ratio": 100,
+      "underline": "NONE",
+      "fontRefs": {
+        "HANGUL": 2,
+        "LATIN": 2,
+        "HANJA": 2,
+        "JAPANESE": 2,
+        "OTHER": 2,
+        "SYMBOL": 2,
+        "USER": 2
+      },
+      "sig": "맑은 고딕|맑은 고딕|10|||#000000|0|100|NONE"
+    },
+    {
+      "id": 87,
+      "pt": 10,
+      "hangul": "맑은 고딕",
+      "latin": "맑은 고딕",
+      "bold": false,
+      "italic": false,
+      "color": "#000000",
+      "spacing": -13,
+      "ratio": 100,
+      "underline": "NONE",
+      "fontRefs": {
+        "HANGUL": 2,
+        "LATIN": 2,
+        "HANJA": 2,
+        "JAPANESE": 2,
+        "OTHER": 2,
+        "SYMBOL": 2,
+        "USER": 2
+      },
+      "sig": "맑은 고딕|맑은 고딕|10|||#000000|-13|100|NONE"
+    },
+    {
+      "id": 88,
+      "pt": 10,
+      "hangul": "맑은 고딕",
+      "latin": "맑은 고딕",
+      "bold": false,
+      "italic": false,
+      "color": "#000000",
+      "spacing": -5,
+      "ratio": 100,
+      "underline": "NONE",
+      "fontRefs": {
+        "HANGUL": 2,
+        "LATIN": 2,
+        "HANJA": 2,
+        "JAPANESE": 2,
+        "OTHER": 2,
+        "SYMBOL": 2,
+        "USER": 2
+      },
+      "sig": "맑은 고딕|맑은 고딕|10|||#000000|-5|100|NONE"
+    },
+    {
+      "id": 89,
+      "pt": 10,
+      "hangul": "맑은 고딕",
+      "latin": "맑은 고딕",
+      "bold": false,
+      "italic": false,
+      "color": "#000000",
+      "spacing": -1,
+      "ratio": 100,
+      "underline": "NONE",
+      "fontRefs": {
+        "HANGUL": 2,
+        "LATIN": 2,
+        "HANJA": 2,
+        "JAPANESE": 2,
+        "OTHER": 2,
+        "SYMBOL": 2,
+        "USER": 2
+      },
+      "sig": "맑은 고딕|맑은 고딕|10|||#000000|-1|100|NONE"
+    },
+    {
+      "id": 90,
+      "pt": 10,
+      "hangul": "맑은 고딕",
+      "latin": "맑은 고딕",
+      "bold": false,
+      "italic": false,
+      "color": "#000000",
+      "spacing": -16,
+      "ratio": 100,
+      "underline": "NONE",
+      "fontRefs": {
+        "HANGUL": 2,
+        "LATIN": 2,
+        "HANJA": 2,
+        "JAPANESE": 2,
+        "OTHER": 2,
+        "SYMBOL": 2,
+        "USER": 2
+      },
+      "sig": "맑은 고딕|맑은 고딕|10|||#000000|-16|100|NONE"
+    },
+    {
+      "id": 91,
+      "pt": 10,
+      "hangul": "맑은 고딕",
+      "latin": "맑은 고딕",
+      "bold": false,
+      "italic": false,
+      "color": "#000000",
+      "spacing": -21,
+      "ratio": 100,
+      "underline": "NONE",
+      "fontRefs": {
+        "HANGUL": 2,
+        "LATIN": 2,
+        "HANJA": 2,
+        "JAPANESE": 2,
+        "OTHER": 2,
+        "SYMBOL": 2,
+        "USER": 2
+      },
+      "sig": "맑은 고딕|맑은 고딕|10|||#000000|-21|100|NONE"
+    },
+    {
+      "id": 92,
+      "pt": 12,
+      "hangul": "한양중고딕",
+      "latin": "한양중고딕",
+      "bold": false,
+      "italic": false,
+      "color": "#000000",
+      "spacing": 0,
+      "ratio": 100,
+      "underline": "NONE",
+      "fontRefs": {
+        "HANGUL": 7,
+        "LATIN": 7,
+        "HANJA": 9,
+        "JAPANESE": 9,
+        "OTHER": 7,
+        "SYMBOL": 9,
+        "USER": 7
+      },
+      "sig": "한양중고딕|한양중고딕|12|||#000000|0|100|NONE"
+    },
+    {
+      "id": 93,
+      "pt": 12,
+      "hangul": "한양중고딕",
+      "latin": "한양중고딕",
+      "bold": false,
+      "italic": false,
+      "color": "#000000",
+      "spacing": -4,
+      "ratio": 100,
+      "underline": "NONE",
+      "fontRefs": {
+        "HANGUL": 7,
+        "LATIN": 7,
+        "HANJA": 9,
+        "JAPANESE": 9,
+        "OTHER": 7,
+        "SYMBOL": 9,
+        "USER": 7
+      },
+      "sig": "한양중고딕|한양중고딕|12|||#000000|-4|100|NONE"
+    },
+    {
+      "id": 94,
+      "pt": 12,
+      "hangul": "한양중고딕",
+      "latin": "한양중고딕",
+      "bold": false,
+      "italic": false,
+      "color": "#000000",
+      "spacing": -16,
+      "ratio": 100,
+      "underline": "NONE",
+      "fontRefs": {
+        "HANGUL": 7,
+        "LATIN": 7,
+        "HANJA": 9,
+        "JAPANESE": 9,
+        "OTHER": 7,
+        "SYMBOL": 9,
+        "USER": 7
+      },
+      "sig": "한양중고딕|한양중고딕|12|||#000000|-16|100|NONE"
+    },
+    {
+      "id": 95,
+      "pt": 12,
+      "hangul": "한양중고딕",
+      "latin": "한양중고딕",
+      "bold": false,
+      "italic": false,
+      "color": "#000000",
+      "spacing": -8,
+      "ratio": 100,
+      "underline": "NONE",
+      "fontRefs": {
+        "HANGUL": 7,
+        "LATIN": 7,
+        "HANJA": 9,
+        "JAPANESE": 9,
+        "OTHER": 7,
+        "SYMBOL": 9,
+        "USER": 7
+      },
+      "sig": "한양중고딕|한양중고딕|12|||#000000|-8|100|NONE"
+    },
+    {
+      "id": 96,
+      "pt": 12,
+      "hangul": "한양중고딕",
+      "latin": "한양중고딕",
+      "bold": false,
+      "italic": false,
+      "color": "#000000",
+      "spacing": -13,
+      "ratio": 100,
+      "underline": "NONE",
+      "fontRefs": {
+        "HANGUL": 7,
+        "LATIN": 7,
+        "HANJA": 9,
+        "JAPANESE": 9,
+        "OTHER": 7,
+        "SYMBOL": 9,
+        "USER": 7
+      },
+      "sig": "한양중고딕|한양중고딕|12|||#000000|-13|100|NONE"
+    },
+    {
+      "id": 97,
+      "pt": 12,
+      "hangul": "한양중고딕",
+      "latin": "한양중고딕",
+      "bold": false,
+      "italic": false,
+      "color": "#000000",
+      "spacing": 5,
+      "ratio": 100,
+      "underline": "NONE",
+      "fontRefs": {
+        "HANGUL": 7,
+        "LATIN": 7,
+        "HANJA": 9,
+        "JAPANESE": 9,
+        "OTHER": 7,
+        "SYMBOL": 9,
+        "USER": 7
+      },
+      "sig": "한양중고딕|한양중고딕|12|||#000000|5|100|NONE"
+    },
+    {
+      "id": 98,
+      "pt": 12,
+      "hangul": "한양중고딕",
+      "latin": "한양중고딕",
+      "bold": false,
+      "italic": false,
+      "color": "#000000",
+      "spacing": -9,
+      "ratio": 100,
+      "underline": "NONE",
+      "fontRefs": {
+        "HANGUL": 7,
+        "LATIN": 7,
+        "HANJA": 9,
+        "JAPANESE": 9,
+        "OTHER": 7,
+        "SYMBOL": 9,
+        "USER": 7
+      },
+      "sig": "한양중고딕|한양중고딕|12|||#000000|-9|100|NONE"
+    },
+    {
+      "id": 99,
+      "pt": 16,
+      "hangul": "HY헤드라인M",
+      "latin": "HY헤드라인M",
+      "bold": false,
+      "italic": false,
+      "color": "#FF0000",
+      "spacing": 0,
+      "ratio": 100,
+      "underline": "NONE",
+      "fontRefs": {
+        "HANGUL": 6,
+        "LATIN": 5,
+        "HANJA": 6,
+        "JAPANESE": 6,
+        "OTHER": 6,
+        "SYMBOL": 6,
+        "USER": 6
+      },
+      "sig": "HY헤드라인M|HY헤드라인M|16|||#FF0000|0|100|NONE"
+    },
+    {
+      "id": 100,
+      "pt": 11,
+      "hangul": "맑은 고딕",
+      "latin": "맑은 고딕",
+      "bold": true,
+      "italic": false,
+      "color": "#000000",
+      "spacing": 0,
+      "ratio": 100,
+      "underline": "NONE",
+      "fontRefs": {
+        "HANGUL": 2,
+        "LATIN": 2,
+        "HANJA": 2,
+        "JAPANESE": 2,
+        "OTHER": 2,
+        "SYMBOL": 2,
+        "USER": 2
+      },
+      "sig": "맑은 고딕|맑은 고딕|11|B||#000000|0|100|NONE"
+    },
+    {
+      "id": 101,
+      "pt": 10,
+      "hangul": "한양중고딕",
+      "latin": "한양중고딕",
+      "bold": false,
+      "italic": false,
+      "color": "#000000",
+      "spacing": -10,
+      "ratio": 100,
+      "underline": "NONE",
+      "fontRefs": {
+        "HANGUL": 7,
+        "LATIN": 7,
+        "HANJA": 9,
+        "JAPANESE": 9,
+        "OTHER": 7,
+        "SYMBOL": 9,
+        "USER": 7
+      },
+      "sig": "한양중고딕|한양중고딕|10|||#000000|-10|100|NONE"
+    },
+    {
+      "id": 102,
+      "pt": 6,
+      "hangul": "한양중고딕",
+      "latin": "한양중고딕",
+      "bold": false,
+      "italic": false,
+      "color": "#000000",
+      "spacing": -10,
+      "ratio": 100,
+      "underline": "NONE",
+      "fontRefs": {
+        "HANGUL": 7,
+        "LATIN": 7,
+        "HANJA": 9,
+        "JAPANESE": 9,
+        "OTHER": 7,
+        "SYMBOL": 9,
+        "USER": 7
+      },
+      "sig": "한양중고딕|한양중고딕|6|||#000000|-10|100|NONE"
+    },
+    {
+      "id": 103,
+      "pt": 10,
+      "hangul": "맑은 고딕",
+      "latin": "맑은 고딕",
+      "bold": false,
+      "italic": false,
+      "color": "#000000",
+      "spacing": -5,
+      "ratio": 100,
+      "underline": "NONE",
+      "fontRefs": {
+        "HANGUL": 2,
+        "LATIN": 2,
+        "HANJA": 2,
+        "JAPANESE": 2,
+        "OTHER": 2,
+        "SYMBOL": 2,
+        "USER": 2
+      },
+      "sig": "맑은 고딕|맑은 고딕|10|||#000000|-5|100|NONE"
+    },
+    {
+      "id": 104,
+      "pt": 10,
+      "hangul": "맑은 고딕",
+      "latin": "맑은 고딕",
+      "bold": false,
+      "italic": false,
+      "color": "#000000",
+      "spacing": 0,
+      "ratio": 100,
+      "underline": "NONE",
+      "fontRefs": {
+        "HANGUL": 2,
+        "LATIN": 2,
+        "HANJA": 2,
+        "JAPANESE": 2,
+        "OTHER": 2,
+        "SYMBOL": 2,
+        "USER": 2
+      },
+      "sig": "맑은 고딕|맑은 고딕|10|||#000000|0|100|NONE"
+    },
+    {
+      "id": 105,
+      "pt": 11,
+      "hangul": "한양중고딕",
+      "latin": "한양중고딕",
+      "bold": false,
+      "italic": false,
+      "color": "#000000",
+      "spacing": 0,
+      "ratio": 100,
+      "underline": "NONE",
+      "fontRefs": {
+        "HANGUL": 7,
+        "LATIN": 7,
+        "HANJA": 9,
+        "JAPANESE": 3,
+        "OTHER": 3,
+        "SYMBOL": 3,
+        "USER": 3
+      },
+      "sig": "한양중고딕|한양중고딕|11|||#000000|0|100|NONE"
+    },
+    {
+      "id": 106,
+      "pt": 6,
+      "hangul": "한양중고딕",
+      "latin": "한양중고딕",
+      "bold": false,
+      "italic": false,
+      "color": "#000000",
+      "spacing": 0,
+      "ratio": 100,
+      "underline": "NONE",
+      "fontRefs": {
+        "HANGUL": 7,
+        "LATIN": 7,
+        "HANJA": 9,
+        "JAPANESE": 3,
+        "OTHER": 3,
+        "SYMBOL": 3,
+        "USER": 3
+      },
+      "sig": "한양중고딕|한양중고딕|6|||#000000|0|100|NONE"
+    },
+    {
+      "id": 107,
+      "pt": 9,
+      "hangul": "맑은 고딕",
+      "latin": "맑은 고딕",
+      "bold": true,
+      "italic": false,
+      "color": "#000000",
+      "spacing": -1,
+      "ratio": 100,
+      "underline": "NONE",
+      "fontRefs": {
+        "HANGUL": 2,
+        "LATIN": 2,
+        "HANJA": 2,
+        "JAPANESE": 2,
+        "OTHER": 2,
+        "SYMBOL": 2,
+        "USER": 2
+      },
+      "sig": "맑은 고딕|맑은 고딕|9|B||#000000|-1|100|NONE"
+    },
+    {
+      "id": 108,
+      "pt": 11,
+      "hangul": "맑은 고딕",
+      "latin": "맑은 고딕",
+      "bold": false,
+      "italic": false,
+      "color": "#000000",
+      "spacing": -9,
+      "ratio": 100,
+      "underline": "NONE",
+      "fontRefs": {
+        "HANGUL": 2,
+        "LATIN": 2,
+        "HANJA": 2,
+        "JAPANESE": 2,
+        "OTHER": 2,
+        "SYMBOL": 2,
+        "USER": 2
+      },
+      "sig": "맑은 고딕|맑은 고딕|11|||#000000|-9|100|NONE"
+    },
+    {
+      "id": 109,
+      "pt": 11,
+      "hangul": "맑은 고딕",
+      "latin": "맑은 고딕",
+      "bold": false,
+      "italic": false,
+      "color": "#FF0000",
+      "spacing": 0,
+      "ratio": 100,
+      "underline": "NONE",
+      "fontRefs": {
+        "HANGUL": 2,
+        "LATIN": 2,
+        "HANJA": 2,
+        "JAPANESE": 2,
+        "OTHER": 2,
+        "SYMBOL": 2,
+        "USER": 2
+      },
+      "sig": "맑은 고딕|맑은 고딕|11|||#FF0000|0|100|NONE"
+    },
+    {
+      "id": 110,
+      "pt": 6,
+      "hangul": "한양중고딕",
+      "latin": "한양중고딕",
+      "bold": false,
+      "italic": false,
+      "color": "#000000",
+      "spacing": 0,
+      "ratio": 100,
+      "underline": "NONE",
+      "fontRefs": {
+        "HANGUL": 7,
+        "LATIN": 7,
+        "HANJA": 9,
+        "JAPANESE": 9,
+        "OTHER": 7,
+        "SYMBOL": 9,
+        "USER": 7
+      },
+      "sig": "한양중고딕|한양중고딕|6|||#000000|0|100|NONE"
+    },
+    {
+      "id": 111,
+      "pt": 11,
+      "hangul": "맑은 고딕",
+      "latin": "맑은 고딕",
+      "bold": false,
+      "italic": false,
+      "color": "#000000",
+      "spacing": -3,
+      "ratio": 100,
+      "underline": "NONE",
+      "fontRefs": {
+        "HANGUL": 2,
+        "LATIN": 2,
+        "HANJA": 2,
+        "JAPANESE": 2,
+        "OTHER": 2,
+        "SYMBOL": 2,
+        "USER": 2
+      },
+      "sig": "맑은 고딕|맑은 고딕|11|||#000000|-3|100|NONE"
+    },
+    {
+      "id": 112,
+      "pt": 9,
+      "hangul": "한양중고딕",
+      "latin": "한양중고딕",
+      "bold": false,
+      "italic": false,
+      "color": "#000000",
+      "spacing": 3,
+      "ratio": 100,
+      "underline": "NONE",
+      "fontRefs": {
+        "HANGUL": 7,
+        "LATIN": 7,
+        "HANJA": 9,
+        "JAPANESE": 9,
+        "OTHER": 7,
+        "SYMBOL": 9,
+        "USER": 7
+      },
+      "sig": "한양중고딕|한양중고딕|9|||#000000|3|100|NONE"
+    },
+    {
+      "id": 113,
+      "pt": 6,
+      "hangul": "한양중고딕",
+      "latin": "한양중고딕",
+      "bold": false,
+      "italic": false,
+      "color": "#000000",
+      "spacing": 3,
+      "ratio": 100,
+      "underline": "NONE",
+      "fontRefs": {
+        "HANGUL": 7,
+        "LATIN": 7,
+        "HANJA": 9,
+        "JAPANESE": 9,
+        "OTHER": 7,
+        "SYMBOL": 9,
+        "USER": 7
+      },
+      "sig": "한양중고딕|한양중고딕|6|||#000000|3|100|NONE"
+    },
+    {
+      "id": 114,
+      "pt": 9,
+      "hangul": "맑은 고딕",
+      "latin": "맑은 고딕",
+      "bold": false,
+      "italic": false,
+      "color": "#000000",
+      "spacing": -4,
+      "ratio": 100,
+      "underline": "NONE",
+      "fontRefs": {
+        "HANGUL": 2,
+        "LATIN": 2,
+        "HANJA": 2,
+        "JAPANESE": 2,
+        "OTHER": 2,
+        "SYMBOL": 2,
+        "USER": 2
+      },
+      "sig": "맑은 고딕|맑은 고딕|9|||#000000|-4|100|NONE"
+    },
+    {
+      "id": 115,
+      "pt": 9,
+      "hangul": "맑은 고딕",
+      "latin": "맑은 고딕",
+      "bold": false,
+      "italic": false,
+      "color": "#000000",
+      "spacing": -14,
+      "ratio": 100,
+      "underline": "NONE",
+      "fontRefs": {
+        "HANGUL": 2,
+        "LATIN": 2,
+        "HANJA": 2,
+        "JAPANESE": 2,
+        "OTHER": 2,
+        "SYMBOL": 2,
+        "USER": 2
+      },
+      "sig": "맑은 고딕|맑은 고딕|9|||#000000|-14|100|NONE"
+    },
+    {
+      "id": 116,
+      "pt": 9,
+      "hangul": "맑은 고딕",
+      "latin": "맑은 고딕",
+      "bold": false,
+      "italic": false,
+      "color": "#000000",
+      "spacing": -18,
+      "ratio": 100,
+      "underline": "NONE",
+      "fontRefs": {
+        "HANGUL": 2,
+        "LATIN": 2,
+        "HANJA": 2,
+        "JAPANESE": 2,
+        "OTHER": 2,
+        "SYMBOL": 2,
+        "USER": 2
+      },
+      "sig": "맑은 고딕|맑은 고딕|9|||#000000|-18|100|NONE"
+    },
+    {
+      "id": 117,
+      "pt": 9,
+      "hangul": "맑은 고딕",
+      "latin": "맑은 고딕",
+      "bold": false,
+      "italic": false,
+      "color": "#000000",
+      "spacing": -6,
+      "ratio": 100,
+      "underline": "NONE",
+      "fontRefs": {
+        "HANGUL": 2,
+        "LATIN": 2,
+        "HANJA": 2,
+        "JAPANESE": 2,
+        "OTHER": 2,
+        "SYMBOL": 2,
+        "USER": 2
+      },
+      "sig": "맑은 고딕|맑은 고딕|9|||#000000|-6|100|NONE"
+    },
+    {
+      "id": 118,
+      "pt": 10,
+      "hangul": "맑은 고딕",
+      "latin": "맑은 고딕",
+      "bold": false,
+      "italic": false,
+      "color": "#000000",
+      "spacing": -22,
+      "ratio": 100,
+      "underline": "NONE",
+      "fontRefs": {
+        "HANGUL": 2,
+        "LATIN": 2,
+        "HANJA": 2,
+        "JAPANESE": 2,
+        "OTHER": 2,
+        "SYMBOL": 2,
+        "USER": 2
+      },
+      "sig": "맑은 고딕|맑은 고딕|10|||#000000|-22|100|NONE"
+    },
+    {
+      "id": 119,
+      "pt": 10,
+      "hangul": "맑은 고딕",
+      "latin": "맑은 고딕",
+      "bold": false,
+      "italic": false,
+      "color": "#000000",
+      "spacing": -19,
+      "ratio": 100,
+      "underline": "NONE",
+      "fontRefs": {
+        "HANGUL": 2,
+        "LATIN": 2,
+        "HANJA": 2,
+        "JAPANESE": 2,
+        "OTHER": 2,
+        "SYMBOL": 2,
+        "USER": 2
+      },
+      "sig": "맑은 고딕|맑은 고딕|10|||#000000|-19|100|NONE"
+    },
+    {
+      "id": 120,
+      "pt": 10,
+      "hangul": "맑은 고딕",
+      "latin": "맑은 고딕",
+      "bold": false,
+      "italic": false,
+      "color": "#000000",
+      "spacing": -7,
+      "ratio": 100,
+      "underline": "NONE",
+      "fontRefs": {
+        "HANGUL": 2,
+        "LATIN": 2,
+        "HANJA": 2,
+        "JAPANESE": 2,
+        "OTHER": 2,
+        "SYMBOL": 2,
+        "USER": 2
+      },
+      "sig": "맑은 고딕|맑은 고딕|10|||#000000|-7|100|NONE"
+    },
+    {
+      "id": 121,
+      "pt": 9,
+      "hangul": "한양중고딕",
+      "latin": "한양중고딕",
+      "bold": false,
+      "italic": false,
+      "color": "#000000",
+      "spacing": 0,
+      "ratio": 100,
+      "underline": "NONE",
+      "fontRefs": {
+        "HANGUL": 7,
+        "LATIN": 7,
+        "HANJA": 9,
+        "JAPANESE": 9,
+        "OTHER": 7,
+        "SYMBOL": 9,
+        "USER": 7
+      },
+      "sig": "한양중고딕|한양중고딕|9|||#000000|0|100|NONE"
+    },
+    {
+      "id": 122,
+      "pt": 13,
+      "hangul": "휴먼명조",
+      "latin": "HCI Poppy",
+      "bold": false,
+      "italic": false,
+      "color": "#000000",
+      "spacing": 4,
+      "ratio": 100,
+      "underline": "NONE",
+      "fontRefs": {
+        "HANGUL": 5,
+        "LATIN": 8,
+        "HANJA": 8,
+        "JAPANESE": 8,
+        "OTHER": 7,
+        "SYMBOL": 8,
+        "USER": 7
+      },
+      "sig": "휴먼명조|HCI Poppy|13|||#000000|4|100|NONE"
+    },
+    {
+      "id": 123,
+      "pt": 13,
+      "hangul": "휴먼명조",
+      "latin": "HCI Poppy",
+      "bold": false,
+      "italic": false,
+      "color": "#000000",
+      "spacing": 6,
+      "ratio": 100,
+      "underline": "NONE",
+      "fontRefs": {
+        "HANGUL": 5,
+        "LATIN": 8,
+        "HANJA": 8,
+        "JAPANESE": 8,
+        "OTHER": 7,
+        "SYMBOL": 8,
+        "USER": 7
+      },
+      "sig": "휴먼명조|HCI Poppy|13|||#000000|6|100|NONE"
+    },
+    {
+      "id": 124,
+      "pt": 14,
+      "hangul": "HY헤드라인M",
+      "latin": "HY헤드라인M",
+      "bold": false,
+      "italic": false,
+      "color": "#000000",
+      "spacing": 0,
+      "ratio": 100,
+      "underline": "NONE",
+      "fontRefs": {
+        "HANGUL": 6,
+        "LATIN": 5,
+        "HANJA": 6,
+        "JAPANESE": 6,
+        "OTHER": 6,
+        "SYMBOL": 6,
+        "USER": 6
+      },
+      "sig": "HY헤드라인M|HY헤드라인M|14|||#000000|0|100|NONE"
+    },
+    {
+      "id": 125,
+      "pt": 15,
+      "hangul": "휴먼명조",
+      "latin": "HCI Poppy",
+      "bold": false,
+      "italic": false,
+      "color": "#000000",
+      "spacing": 0,
+      "ratio": 95,
+      "underline": "NONE",
+      "fontRefs": {
+        "HANGUL": 5,
+        "LATIN": 8,
+        "HANJA": 8,
+        "JAPANESE": 8,
+        "OTHER": 7,
+        "SYMBOL": 8,
+        "USER": 7
+      },
+      "sig": "휴먼명조|HCI Poppy|15|||#000000|0|95|NONE"
+    },
+    {
+      "id": 126,
+      "pt": 12,
+      "hangul": "한양중고딕",
+      "latin": "한양중고딕",
+      "bold": false,
+      "italic": false,
+      "color": "#000000",
+      "spacing": -14,
+      "ratio": 90,
+      "underline": "NONE",
+      "fontRefs": {
+        "HANGUL": 7,
+        "LATIN": 7,
+        "HANJA": 9,
+        "JAPANESE": 9,
+        "OTHER": 7,
+        "SYMBOL": 9,
+        "USER": 7
+      },
+      "sig": "한양중고딕|한양중고딕|12|||#000000|-14|90|NONE"
+    },
+    {
+      "id": 127,
+      "pt": 12,
+      "hangul": "한양중고딕",
+      "latin": "한양중고딕",
+      "bold": false,
+      "italic": false,
+      "color": "#3057B9",
+      "spacing": -14,
+      "ratio": 90,
+      "underline": "NONE",
+      "fontRefs": {
+        "HANGUL": 7,
+        "LATIN": 7,
+        "HANJA": 9,
+        "JAPANESE": 9,
+        "OTHER": 7,
+        "SYMBOL": 9,
+        "USER": 7
+      },
+      "sig": "한양중고딕|한양중고딕|12|||#3057B9|-14|90|NONE"
+    }
+  ],
+  "paraPr": [
+    {
+      "id": 0,
+      "align": "JUSTIFY",
+      "lineSpacingType": "PERCENT",
+      "lineSpacing": 160,
+      "intent": 0,
+      "left": 0,
+      "right": 0,
+      "prev": 0,
+      "next": 0,
+      "keepWithNext": false,
+      "sig": "JUSTIFY|PERCENT|160|0|0|0|0|0|"
+    },
+    {
+      "id": 1,
+      "align": "CENTER",
+      "lineSpacingType": "PERCENT",
+      "lineSpacing": 100,
+      "intent": 0,
+      "left": 0,
+      "right": 0,
+      "prev": 0,
+      "next": 0,
+      "keepWithNext": false,
+      "sig": "CENTER|PERCENT|100|0|0|0|0|0|"
+    },
+    {
+      "id": 2,
+      "align": "JUSTIFY",
+      "lineSpacingType": "PERCENT",
+      "lineSpacing": 160,
+      "intent": 0,
+      "left": 0,
+      "right": 0,
+      "prev": 0,
+      "next": 0,
+      "keepWithNext": false,
+      "sig": "JUSTIFY|PERCENT|160|0|0|0|0|0|"
+    },
+    {
+      "id": 3,
+      "align": "JUSTIFY",
+      "lineSpacingType": "PERCENT",
+      "lineSpacing": 120,
+      "intent": 0,
+      "left": 0,
+      "right": 0,
+      "prev": 0,
+      "next": 0,
+      "keepWithNext": false,
+      "sig": "JUSTIFY|PERCENT|120|0|0|0|0|0|"
+    },
+    {
+      "id": 4,
+      "align": "JUSTIFY",
+      "lineSpacingType": "PERCENT",
+      "lineSpacing": 160,
+      "intent": 0,
+      "left": 0,
+      "right": 0,
+      "prev": 0,
+      "next": 0,
+      "keepWithNext": false,
+      "sig": "JUSTIFY|PERCENT|160|0|0|0|0|0|"
+    },
+    {
+      "id": 5,
+      "align": "CENTER",
+      "lineSpacingType": "PERCENT",
+      "lineSpacing": 130,
+      "intent": 0,
+      "left": 0,
+      "right": 0,
+      "prev": 0,
+      "next": 0,
+      "keepWithNext": false,
+      "sig": "CENTER|PERCENT|130|0|0|0|0|0|"
+    },
+    {
+      "id": 6,
+      "align": "JUSTIFY",
+      "lineSpacingType": "PERCENT",
+      "lineSpacing": 130,
+      "intent": 0,
+      "left": 0,
+      "right": 0,
+      "prev": 0,
+      "next": 0,
+      "keepWithNext": false,
+      "sig": "JUSTIFY|PERCENT|130|0|0|0|0|0|"
+    },
+    {
+      "id": 7,
+      "align": "JUSTIFY",
+      "lineSpacingType": "PERCENT",
+      "lineSpacing": 160,
+      "intent": 0,
+      "left": 3000,
+      "right": 0,
+      "prev": 0,
+      "next": 0,
+      "keepWithNext": false,
+      "sig": "JUSTIFY|PERCENT|160|0|3000|0|0|0|"
+    },
+    {
+      "id": 8,
+      "align": "JUSTIFY",
+      "lineSpacingType": "PERCENT",
+      "lineSpacing": 130,
+      "intent": -2624,
+      "left": 0,
+      "right": 0,
+      "prev": 0,
+      "next": 0,
+      "keepWithNext": false,
+      "sig": "JUSTIFY|PERCENT|130|-2624|0|0|0|0|"
+    },
+    {
+      "id": 9,
+      "align": "JUSTIFY",
+      "lineSpacingType": "PERCENT",
+      "lineSpacing": 160,
+      "intent": 0,
+      "left": 0,
+      "right": 0,
+      "prev": 0,
+      "next": 0,
+      "keepWithNext": false,
+      "sig": "JUSTIFY|PERCENT|160|0|0|0|0|0|"
+    },
+    {
+      "id": 10,
+      "align": "JUSTIFY",
+      "lineSpacingType": "PERCENT",
+      "lineSpacing": 160,
+      "intent": 0,
+      "left": 0,
+      "right": 0,
+      "prev": 0,
+      "next": 0,
+      "keepWithNext": false,
+      "sig": "JUSTIFY|PERCENT|160|0|0|0|0|0|"
+    },
+    {
+      "id": 11,
+      "align": "JUSTIFY",
+      "lineSpacingType": "PERCENT",
+      "lineSpacing": 160,
+      "intent": 0,
+      "left": 0,
+      "right": 0,
+      "prev": 0,
+      "next": 0,
+      "keepWithNext": false,
+      "sig": "JUSTIFY|PERCENT|160|0|0|0|0|0|"
+    },
+    {
+      "id": 12,
+      "align": "JUSTIFY",
+      "lineSpacingType": "PERCENT",
+      "lineSpacing": 160,
+      "intent": 0,
+      "left": 0,
+      "right": 0,
+      "prev": 0,
+      "next": 0,
+      "keepWithNext": false,
+      "sig": "JUSTIFY|PERCENT|160|0|0|0|0|0|"
+    },
+    {
+      "id": 13,
+      "align": "JUSTIFY",
+      "lineSpacingType": "PERCENT",
+      "lineSpacing": 160,
+      "intent": 0,
+      "left": 0,
+      "right": 0,
+      "prev": 0,
+      "next": 0,
+      "keepWithNext": false,
+      "sig": "JUSTIFY|PERCENT|160|0|0|0|0|0|"
+    },
+    {
+      "id": 14,
+      "align": "JUSTIFY",
+      "lineSpacingType": "PERCENT",
+      "lineSpacing": 160,
+      "intent": 0,
+      "left": 0,
+      "right": 0,
+      "prev": 0,
+      "next": 0,
+      "keepWithNext": false,
+      "sig": "JUSTIFY|PERCENT|160|0|0|0|0|0|"
+    },
+    {
+      "id": 15,
+      "align": "JUSTIFY",
+      "lineSpacingType": "PERCENT",
+      "lineSpacing": 160,
+      "intent": 0,
+      "left": 0,
+      "right": 0,
+      "prev": 0,
+      "next": 0,
+      "keepWithNext": false,
+      "sig": "JUSTIFY|PERCENT|160|0|0|0|0|0|"
+    },
+    {
+      "id": 16,
+      "align": "JUSTIFY",
+      "lineSpacingType": "PERCENT",
+      "lineSpacing": 150,
+      "intent": 0,
+      "left": 0,
+      "right": 0,
+      "prev": 0,
+      "next": 0,
+      "keepWithNext": false,
+      "sig": "JUSTIFY|PERCENT|150|0|0|0|0|0|"
+    },
+    {
+      "id": 17,
+      "align": "LEFT",
+      "lineSpacingType": "PERCENT",
+      "lineSpacing": 160,
+      "intent": 0,
+      "left": 0,
+      "right": 0,
+      "prev": 0,
+      "next": 0,
+      "keepWithNext": false,
+      "sig": "LEFT|PERCENT|160|0|0|0|0|0|"
+    },
+    {
+      "id": 18,
+      "align": "JUSTIFY",
+      "lineSpacingType": "PERCENT",
+      "lineSpacing": 125,
+      "intent": 0,
+      "left": 0,
+      "right": 0,
+      "prev": 0,
+      "next": 0,
+      "keepWithNext": false,
+      "sig": "JUSTIFY|PERCENT|125|0|0|0|0|0|"
+    },
+    {
+      "id": 19,
+      "align": "JUSTIFY",
+      "lineSpacingType": "PERCENT",
+      "lineSpacing": 120,
+      "intent": 0,
+      "left": 0,
+      "right": 0,
+      "prev": 0,
+      "next": 0,
+      "keepWithNext": false,
+      "sig": "JUSTIFY|PERCENT|120|0|0|0|0|0|"
+    },
+    {
+      "id": 20,
+      "align": "CENTER",
+      "lineSpacingType": "PERCENT",
+      "lineSpacing": 125,
+      "intent": 0,
+      "left": 0,
+      "right": 0,
+      "prev": 0,
+      "next": 0,
+      "keepWithNext": false,
+      "sig": "CENTER|PERCENT|125|0|0|0|0|0|"
+    },
+    {
+      "id": 21,
+      "align": "JUSTIFY",
+      "lineSpacingType": "PERCENT",
+      "lineSpacing": 155,
+      "intent": -8388,
+      "left": 0,
+      "right": 0,
+      "prev": 0,
+      "next": 0,
+      "keepWithNext": false,
+      "sig": "JUSTIFY|PERCENT|155|-8388|0|0|0|0|"
+    },
+    {
+      "id": 22,
+      "align": "DISTRIBUTE",
+      "lineSpacingType": "PERCENT",
+      "lineSpacing": 160,
+      "intent": 0,
+      "left": 0,
+      "right": 0,
+      "prev": 0,
+      "next": 0,
+      "keepWithNext": false,
+      "sig": "DISTRIBUTE|PERCENT|160|0|0|0|0|0|"
+    },
+    {
+      "id": 23,
+      "align": "CENTER",
+      "lineSpacingType": "PERCENT",
+      "lineSpacing": 105,
+      "intent": 0,
+      "left": 0,
+      "right": 0,
+      "prev": 0,
+      "next": 0,
+      "keepWithNext": false,
+      "sig": "CENTER|PERCENT|105|0|0|0|0|0|"
+    },
+    {
+      "id": 24,
+      "align": "RIGHT",
+      "lineSpacingType": "PERCENT",
+      "lineSpacing": 150,
+      "intent": 3000,
+      "left": 0,
+      "right": 0,
+      "prev": 0,
+      "next": 0,
+      "keepWithNext": false,
+      "sig": "RIGHT|PERCENT|150|3000|0|0|0|0|"
+    },
+    {
+      "id": 25,
+      "align": "JUSTIFY",
+      "lineSpacingType": "PERCENT",
+      "lineSpacing": 160,
+      "intent": -4112,
+      "left": 0,
+      "right": 0,
+      "prev": 0,
+      "next": 0,
+      "keepWithNext": false,
+      "sig": "JUSTIFY|PERCENT|160|-4112|0|0|0|0|"
+    },
+    {
+      "id": 26,
+      "align": "CENTER",
+      "lineSpacingType": "PERCENT",
+      "lineSpacing": 150,
+      "intent": 3000,
+      "left": 0,
+      "right": 0,
+      "prev": 0,
+      "next": 0,
+      "keepWithNext": false,
+      "sig": "CENTER|PERCENT|150|3000|0|0|0|0|"
+    },
+    {
+      "id": 27,
+      "align": "DISTRIBUTE",
+      "lineSpacingType": "PERCENT",
+      "lineSpacing": 100,
+      "intent": 0,
+      "left": 0,
+      "right": 0,
+      "prev": 0,
+      "next": 0,
+      "keepWithNext": false,
+      "sig": "DISTRIBUTE|PERCENT|100|0|0|0|0|0|"
+    },
+    {
+      "id": 28,
+      "align": "JUSTIFY",
+      "lineSpacingType": "PERCENT",
+      "lineSpacing": 180,
+      "intent": -10708,
+      "left": 0,
+      "right": 0,
+      "prev": 0,
+      "next": 0,
+      "keepWithNext": false,
+      "sig": "JUSTIFY|PERCENT|180|-10708|0|0|0|0|"
+    },
+    {
+      "id": 29,
+      "align": "JUSTIFY",
+      "lineSpacingType": "PERCENT",
+      "lineSpacing": 0,
+      "intent": 0,
+      "left": 0,
+      "right": 0,
+      "prev": 0,
+      "next": 0,
+      "keepWithNext": false,
+      "sig": "JUSTIFY|PERCENT|0|0|0|0|0|0|"
+    },
+    {
+      "id": 30,
+      "align": "JUSTIFY",
+      "lineSpacingType": "PERCENT",
+      "lineSpacing": 160,
+      "intent": -5176,
+      "left": 0,
+      "right": 0,
+      "prev": 0,
+      "next": 0,
+      "keepWithNext": false,
+      "sig": "JUSTIFY|PERCENT|160|-5176|0|0|0|0|"
+    },
+    {
+      "id": 31,
+      "align": "JUSTIFY",
+      "lineSpacingType": "PERCENT",
+      "lineSpacing": 150,
+      "intent": -4120,
+      "left": 0,
+      "right": 0,
+      "prev": 0,
+      "next": 0,
+      "keepWithNext": false,
+      "sig": "JUSTIFY|PERCENT|150|-4120|0|0|0|0|"
+    },
+    {
+      "id": 32,
+      "align": "CENTER",
+      "lineSpacingType": "PERCENT",
+      "lineSpacing": 160,
+      "intent": 0,
+      "left": 0,
+      "right": 0,
+      "prev": 0,
+      "next": 0,
+      "keepWithNext": false,
+      "sig": "CENTER|PERCENT|160|0|0|0|0|0|"
+    },
+    {
+      "id": 33,
+      "align": "JUSTIFY",
+      "lineSpacingType": "PERCENT",
+      "lineSpacing": 160,
+      "intent": -5218,
+      "left": 0,
+      "right": 0,
+      "prev": 0,
+      "next": 0,
+      "keepWithNext": false,
+      "sig": "JUSTIFY|PERCENT|160|-5218|0|0|0|0|"
+    },
+    {
+      "id": 34,
+      "align": "JUSTIFY",
+      "lineSpacingType": "PERCENT",
+      "lineSpacing": 150,
+      "intent": -4962,
+      "left": 0,
+      "right": 0,
+      "prev": 0,
+      "next": 0,
+      "keepWithNext": false,
+      "sig": "JUSTIFY|PERCENT|150|-4962|0|0|0|0|"
+    },
+    {
+      "id": 35,
+      "align": "JUSTIFY",
+      "lineSpacingType": "PERCENT",
+      "lineSpacing": 160,
+      "intent": -4688,
+      "left": 0,
+      "right": 0,
+      "prev": 0,
+      "next": 0,
+      "keepWithNext": false,
+      "sig": "JUSTIFY|PERCENT|160|-4688|0|0|0|0|"
+    },
+    {
+      "id": 36,
+      "align": "JUSTIFY",
+      "lineSpacingType": "PERCENT",
+      "lineSpacing": 160,
+      "intent": -5210,
+      "left": 0,
+      "right": 0,
+      "prev": 0,
+      "next": 0,
+      "keepWithNext": false,
+      "sig": "JUSTIFY|PERCENT|160|-5210|0|0|0|0|"
+    },
+    {
+      "id": 37,
+      "align": "JUSTIFY",
+      "lineSpacingType": "PERCENT",
+      "lineSpacing": 160,
+      "intent": -4970,
+      "left": 0,
+      "right": 0,
+      "prev": 0,
+      "next": 0,
+      "keepWithNext": false,
+      "sig": "JUSTIFY|PERCENT|160|-4970|0|0|0|0|"
+    },
+    {
+      "id": 38,
+      "align": "JUSTIFY",
+      "lineSpacingType": "PERCENT",
+      "lineSpacing": 160,
+      "intent": -6082,
+      "left": 0,
+      "right": 0,
+      "prev": 0,
+      "next": 0,
+      "keepWithNext": false,
+      "sig": "JUSTIFY|PERCENT|160|-6082|0|0|0|0|"
+    },
+    {
+      "id": 39,
+      "align": "JUSTIFY",
+      "lineSpacingType": "PERCENT",
+      "lineSpacing": 153,
+      "intent": -4602,
+      "left": 0,
+      "right": 0,
+      "prev": 0,
+      "next": 0,
+      "keepWithNext": false,
+      "sig": "JUSTIFY|PERCENT|153|-4602|0|0|0|0|"
+    },
+    {
+      "id": 40,
+      "align": "JUSTIFY",
+      "lineSpacingType": "PERCENT",
+      "lineSpacing": 160,
+      "intent": -3918,
+      "left": 0,
+      "right": 0,
+      "prev": 0,
+      "next": 0,
+      "keepWithNext": false,
+      "sig": "JUSTIFY|PERCENT|160|-3918|0|0|0|0|"
+    },
+    {
+      "id": 41,
+      "align": "CENTER",
+      "lineSpacingType": "PERCENT",
+      "lineSpacing": 175,
+      "intent": 0,
+      "left": 0,
+      "right": 0,
+      "prev": 0,
+      "next": 0,
+      "keepWithNext": false,
+      "sig": "CENTER|PERCENT|175|0|0|0|0|0|"
+    },
+    {
+      "id": 42,
+      "align": "RIGHT",
+      "lineSpacingType": "PERCENT",
+      "lineSpacing": 100,
+      "intent": 0,
+      "left": 0,
+      "right": 0,
+      "prev": 0,
+      "next": 0,
+      "keepWithNext": false,
+      "sig": "RIGHT|PERCENT|100|0|0|0|0|0|"
+    },
+    {
+      "id": 43,
+      "align": "CENTER",
+      "lineSpacingType": "PERCENT",
+      "lineSpacing": 100,
+      "intent": 0,
+      "left": 0,
+      "right": 0,
+      "prev": 0,
+      "next": 0,
+      "keepWithNext": false,
+      "sig": "CENTER|PERCENT|100|0|0|0|0|0|"
+    },
+    {
+      "id": 44,
+      "align": "JUSTIFY",
+      "lineSpacingType": "PERCENT",
+      "lineSpacing": 130,
+      "intent": -6070,
+      "left": 0,
+      "right": 0,
+      "prev": 0,
+      "next": 0,
+      "keepWithNext": false,
+      "sig": "JUSTIFY|PERCENT|130|-6070|0|0|0|0|"
+    },
+    {
+      "id": 45,
+      "align": "JUSTIFY",
+      "lineSpacingType": "PERCENT",
+      "lineSpacing": 180,
+      "intent": -4970,
+      "left": 0,
+      "right": 0,
+      "prev": 0,
+      "next": 0,
+      "keepWithNext": false,
+      "sig": "JUSTIFY|PERCENT|180|-4970|0|0|0|0|"
+    },
+    {
+      "id": 46,
+      "align": "JUSTIFY",
+      "lineSpacingType": "PERCENT",
+      "lineSpacing": 180,
+      "intent": -6070,
+      "left": 0,
+      "right": 0,
+      "prev": 0,
+      "next": 0,
+      "keepWithNext": false,
+      "sig": "JUSTIFY|PERCENT|180|-6070|0|0|0|0|"
+    },
+    {
+      "id": 47,
+      "align": "JUSTIFY",
+      "lineSpacingType": "PERCENT",
+      "lineSpacing": 160,
+      "intent": -6506,
+      "left": 0,
+      "right": 0,
+      "prev": 0,
+      "next": 0,
+      "keepWithNext": false,
+      "sig": "JUSTIFY|PERCENT|160|-6506|0|0|0|0|"
+    },
+    {
+      "id": 48,
+      "align": "JUSTIFY",
+      "lineSpacingType": "PERCENT",
+      "lineSpacing": 160,
+      "intent": -5090,
+      "left": 0,
+      "right": 0,
+      "prev": 0,
+      "next": 0,
+      "keepWithNext": false,
+      "sig": "JUSTIFY|PERCENT|160|-5090|0|0|0|0|"
+    },
+    {
+      "id": 49,
+      "align": "JUSTIFY",
+      "lineSpacingType": "PERCENT",
+      "lineSpacing": 170,
+      "intent": -5490,
+      "left": 0,
+      "right": 0,
+      "prev": 0,
+      "next": 0,
+      "keepWithNext": false,
+      "sig": "JUSTIFY|PERCENT|170|-5490|0|0|0|0|"
+    },
+    {
+      "id": 50,
+      "align": "JUSTIFY",
+      "lineSpacingType": "PERCENT",
+      "lineSpacing": 160,
+      "intent": -5194,
+      "left": 0,
+      "right": 0,
+      "prev": 0,
+      "next": 0,
+      "keepWithNext": false,
+      "sig": "JUSTIFY|PERCENT|160|-5194|0|0|0|0|"
+    },
+    {
+      "id": 51,
+      "align": "JUSTIFY",
+      "lineSpacingType": "PERCENT",
+      "lineSpacing": 130,
+      "intent": -4970,
+      "left": 0,
+      "right": 0,
+      "prev": 0,
+      "next": 0,
+      "keepWithNext": false,
+      "sig": "JUSTIFY|PERCENT|130|-4970|0|0|0|0|"
+    },
+    {
+      "id": 52,
+      "align": "JUSTIFY",
+      "lineSpacingType": "PERCENT",
+      "lineSpacing": 160,
+      "intent": -5200,
+      "left": 0,
+      "right": 0,
+      "prev": 0,
+      "next": 0,
+      "keepWithNext": false,
+      "sig": "JUSTIFY|PERCENT|160|-5200|0|0|0|0|"
+    },
+    {
+      "id": 53,
+      "align": "JUSTIFY",
+      "lineSpacingType": "PERCENT",
+      "lineSpacing": 160,
+      "intent": -7000,
+      "left": 0,
+      "right": 0,
+      "prev": 0,
+      "next": 0,
+      "keepWithNext": false,
+      "sig": "JUSTIFY|PERCENT|160|-7000|0|0|0|0|"
+    },
+    {
+      "id": 54,
+      "align": "JUSTIFY",
+      "lineSpacingType": "PERCENT",
+      "lineSpacing": 160,
+      "intent": -5490,
+      "left": 0,
+      "right": 0,
+      "prev": 0,
+      "next": 0,
+      "keepWithNext": false,
+      "sig": "JUSTIFY|PERCENT|160|-5490|0|0|0|0|"
+    },
+    {
+      "id": 55,
+      "align": "JUSTIFY",
+      "lineSpacingType": "PERCENT",
+      "lineSpacing": 160,
+      "intent": -5344,
+      "left": 0,
+      "right": 0,
+      "prev": 0,
+      "next": 0,
+      "keepWithNext": false,
+      "sig": "JUSTIFY|PERCENT|160|-5344|0|0|0|0|"
+    },
+    {
+      "id": 56,
+      "align": "CENTER",
+      "lineSpacingType": "PERCENT",
+      "lineSpacing": 150,
+      "intent": 0,
+      "left": 0,
+      "right": 0,
+      "prev": 0,
+      "next": 0,
+      "keepWithNext": false,
+      "sig": "CENTER|PERCENT|150|0|0|0|0|0|"
+    },
+    {
+      "id": 57,
+      "align": "CENTER",
+      "lineSpacingType": "PERCENT",
+      "lineSpacing": 150,
+      "intent": -2696,
+      "left": 0,
+      "right": -200,
+      "prev": 0,
+      "next": 0,
+      "keepWithNext": false,
+      "sig": "CENTER|PERCENT|150|-2696|0|-200|0|0|"
+    },
+    {
+      "id": 58,
+      "align": "JUSTIFY",
+      "lineSpacingType": "PERCENT",
+      "lineSpacing": 130,
+      "intent": -2696,
+      "left": 0,
+      "right": -200,
+      "prev": 0,
+      "next": 0,
+      "keepWithNext": false,
+      "sig": "JUSTIFY|PERCENT|130|-2696|0|-200|0|0|"
+    },
+    {
+      "id": 59,
+      "align": "JUSTIFY",
+      "lineSpacingType": "PERCENT",
+      "lineSpacing": 160,
+      "intent": -17792,
+      "left": 0,
+      "right": 0,
+      "prev": 0,
+      "next": 0,
+      "keepWithNext": false,
+      "sig": "JUSTIFY|PERCENT|160|-17792|0|0|0|0|"
+    },
+    {
+      "id": 60,
+      "align": "JUSTIFY",
+      "lineSpacingType": "PERCENT",
+      "lineSpacing": 160,
+      "intent": -18516,
+      "left": 0,
+      "right": 0,
+      "prev": 0,
+      "next": 0,
+      "keepWithNext": false,
+      "sig": "JUSTIFY|PERCENT|160|-18516|0|0|0|0|"
+    },
+    {
+      "id": 61,
+      "align": "JUSTIFY",
+      "lineSpacingType": "PERCENT",
+      "lineSpacing": 150,
+      "intent": 0,
+      "left": 0,
+      "right": 0,
+      "prev": 0,
+      "next": 0,
+      "keepWithNext": false,
+      "sig": "JUSTIFY|PERCENT|150|0|0|0|0|0|"
+    },
+    {
+      "id": 62,
+      "align": "JUSTIFY",
+      "lineSpacingType": "PERCENT",
+      "lineSpacing": 150,
+      "intent": -5576,
+      "left": 0,
+      "right": 0,
+      "prev": 0,
+      "next": 0,
+      "keepWithNext": false,
+      "sig": "JUSTIFY|PERCENT|150|-5576|0|0|0|0|"
+    },
+    {
+      "id": 63,
+      "align": "JUSTIFY",
+      "lineSpacingType": "PERCENT",
+      "lineSpacing": 150,
+      "intent": -5192,
+      "left": 0,
+      "right": 0,
+      "prev": 0,
+      "next": 0,
+      "keepWithNext": false,
+      "sig": "JUSTIFY|PERCENT|150|-5192|0|0|0|0|"
+    },
+    {
+      "id": 64,
+      "align": "JUSTIFY",
+      "lineSpacingType": "PERCENT",
+      "lineSpacing": 160,
+      "intent": -4042,
+      "left": 0,
+      "right": 0,
+      "prev": 0,
+      "next": 0,
+      "keepWithNext": false,
+      "sig": "JUSTIFY|PERCENT|160|-4042|0|0|0|0|"
+    },
+    {
+      "id": 65,
+      "align": "JUSTIFY",
+      "lineSpacingType": "PERCENT",
+      "lineSpacing": 160,
+      "intent": -5192,
+      "left": 0,
+      "right": 0,
+      "prev": 0,
+      "next": 0,
+      "keepWithNext": false,
+      "sig": "JUSTIFY|PERCENT|160|-5192|0|0|0|0|"
+    },
+    {
+      "id": 66,
+      "align": "JUSTIFY",
+      "lineSpacingType": "PERCENT",
+      "lineSpacing": 160,
+      "intent": -5294,
+      "left": 0,
+      "right": 0,
+      "prev": 0,
+      "next": 0,
+      "keepWithNext": false,
+      "sig": "JUSTIFY|PERCENT|160|-5294|0|0|0|0|"
+    },
+    {
+      "id": 67,
+      "align": "JUSTIFY",
+      "lineSpacingType": "PERCENT",
+      "lineSpacing": 160,
+      "intent": -6700,
+      "left": 0,
+      "right": 0,
+      "prev": 0,
+      "next": 0,
+      "keepWithNext": false,
+      "sig": "JUSTIFY|PERCENT|160|-6700|0|0|0|0|"
+    },
+    {
+      "id": 68,
+      "align": "LEFT",
+      "lineSpacingType": "PERCENT",
+      "lineSpacing": 160,
+      "intent": 0,
+      "left": 0,
+      "right": 0,
+      "prev": 0,
+      "next": 0,
+      "keepWithNext": false,
+      "sig": "LEFT|PERCENT|160|0|0|0|0|0|"
+    },
+    {
+      "id": 69,
+      "align": "LEFT",
+      "lineSpacingType": "PERCENT",
+      "lineSpacing": 160,
+      "intent": -7600,
+      "left": 0,
+      "right": 0,
+      "prev": 1000,
+      "next": 0,
+      "keepWithNext": false,
+      "sig": "LEFT|PERCENT|160|-7600|0|0|1000|0|"
+    },
+    {
+      "id": 70,
+      "align": "JUSTIFY",
+      "lineSpacingType": "PERCENT",
+      "lineSpacing": 130,
+      "intent": 0,
+      "left": 0,
+      "right": 0,
+      "prev": 0,
+      "next": 0,
+      "keepWithNext": false,
+      "sig": "JUSTIFY|PERCENT|130|0|0|0|0|0|"
+    },
+    {
+      "id": 71,
+      "align": "CENTER",
+      "lineSpacingType": "PERCENT",
+      "lineSpacing": 130,
+      "intent": 0,
+      "left": 0,
+      "right": 0,
+      "prev": 0,
+      "next": 0,
+      "keepWithNext": false,
+      "sig": "CENTER|PERCENT|130|0|0|0|0|0|"
+    },
+    {
+      "id": 72,
+      "align": "JUSTIFY",
+      "lineSpacingType": "PERCENT",
+      "lineSpacing": 160,
+      "intent": -18792,
+      "left": 0,
+      "right": 0,
+      "prev": 0,
+      "next": 0,
+      "keepWithNext": false,
+      "sig": "JUSTIFY|PERCENT|160|-18792|0|0|0|0|"
+    },
+    {
+      "id": 73,
+      "align": "JUSTIFY",
+      "lineSpacingType": "PERCENT",
+      "lineSpacing": 160,
+      "intent": -3600,
+      "left": 0,
+      "right": 0,
+      "prev": 0,
+      "next": 0,
+      "keepWithNext": false,
+      "sig": "JUSTIFY|PERCENT|160|-3600|0|0|0|0|"
+    },
+    {
+      "id": 74,
+      "align": "CENTER",
+      "lineSpacingType": "PERCENT",
+      "lineSpacing": 120,
+      "intent": 0,
+      "left": 0,
+      "right": 0,
+      "prev": 0,
+      "next": 0,
+      "keepWithNext": false,
+      "sig": "CENTER|PERCENT|120|0|0|0|0|0|"
+    },
+    {
+      "id": 75,
+      "align": "JUSTIFY",
+      "lineSpacingType": "PERCENT",
+      "lineSpacing": 120,
+      "intent": 1036,
+      "left": 0,
+      "right": 0,
+      "prev": 0,
+      "next": 0,
+      "keepWithNext": false,
+      "sig": "JUSTIFY|PERCENT|120|1036|0|0|0|0|"
+    },
+    {
+      "id": 76,
+      "align": "JUSTIFY",
+      "lineSpacingType": "PERCENT",
+      "lineSpacing": 130,
+      "intent": -2800,
+      "left": 0,
+      "right": 0,
+      "prev": 0,
+      "next": 0,
+      "keepWithNext": false,
+      "sig": "JUSTIFY|PERCENT|130|-2800|0|0|0|0|"
+    },
+    {
+      "id": 77,
+      "align": "LEFT",
+      "lineSpacingType": "PERCENT",
+      "lineSpacing": 150,
+      "intent": 0,
+      "left": 0,
+      "right": 0,
+      "prev": 0,
+      "next": 0,
+      "keepWithNext": false,
+      "sig": "LEFT|PERCENT|150|0|0|0|0|0|"
+    },
+    {
+      "id": 78,
+      "align": "CENTER",
+      "lineSpacingType": "PERCENT",
+      "lineSpacing": 160,
+      "intent": -2896,
+      "left": 0,
+      "right": 0,
+      "prev": 0,
+      "next": 0,
+      "keepWithNext": false,
+      "sig": "CENTER|PERCENT|160|-2896|0|0|0|0|"
+    },
+    {
+      "id": 79,
+      "align": "JUSTIFY",
+      "lineSpacingType": "PERCENT",
+      "lineSpacing": 120,
+      "intent": 1040,
+      "left": 0,
+      "right": 0,
+      "prev": 0,
+      "next": 0,
+      "keepWithNext": false,
+      "sig": "JUSTIFY|PERCENT|120|1040|0|0|0|0|"
+    },
+    {
+      "id": 80,
+      "align": "CENTER",
+      "lineSpacingType": "PERCENT",
+      "lineSpacing": 130,
+      "intent": -2896,
+      "left": 0,
+      "right": 0,
+      "prev": 0,
+      "next": 0,
+      "keepWithNext": false,
+      "sig": "CENTER|PERCENT|130|-2896|0|0|0|0|"
+    },
+    {
+      "id": 81,
+      "align": "JUSTIFY",
+      "lineSpacingType": "PERCENT",
+      "lineSpacing": 140,
+      "intent": 0,
+      "left": 1040,
+      "right": 0,
+      "prev": 0,
+      "next": 0,
+      "keepWithNext": false,
+      "sig": "JUSTIFY|PERCENT|140|0|1040|0|0|0|"
+    },
+    {
+      "id": 82,
+      "align": "JUSTIFY",
+      "lineSpacingType": "PERCENT",
+      "lineSpacing": 50,
+      "intent": 0,
+      "left": 1040,
+      "right": 0,
+      "prev": 0,
+      "next": 0,
+      "keepWithNext": false,
+      "sig": "JUSTIFY|PERCENT|50|0|1040|0|0|0|"
+    },
+    {
+      "id": 83,
+      "align": "LEFT",
+      "lineSpacingType": "PERCENT",
+      "lineSpacing": 140,
+      "intent": -1576,
+      "left": 0,
+      "right": 0,
+      "prev": 0,
+      "next": 0,
+      "keepWithNext": false,
+      "sig": "LEFT|PERCENT|140|-1576|0|0|0|0|"
+    },
+    {
+      "id": 84,
+      "align": "LEFT",
+      "lineSpacingType": "PERCENT",
+      "lineSpacing": 120,
+      "intent": -1560,
+      "left": 0,
+      "right": 0,
+      "prev": 0,
+      "next": 0,
+      "keepWithNext": false,
+      "sig": "LEFT|PERCENT|120|-1560|0|0|0|0|"
+    },
+    {
+      "id": 85,
+      "align": "JUSTIFY",
+      "lineSpacingType": "PERCENT",
+      "lineSpacing": 160,
+      "intent": -5206,
+      "left": 0,
+      "right": 0,
+      "prev": 0,
+      "next": 0,
+      "keepWithNext": false,
+      "sig": "JUSTIFY|PERCENT|160|-5206|0|0|0|0|"
+    },
+    {
+      "id": 86,
+      "align": "CENTER",
+      "lineSpacingType": "PERCENT",
+      "lineSpacing": 130,
+      "intent": -2696,
+      "left": 0,
+      "right": -200,
+      "prev": 0,
+      "next": 0,
+      "keepWithNext": false,
+      "sig": "CENTER|PERCENT|130|-2696|0|-200|0|0|"
+    },
+    {
+      "id": 87,
+      "align": "JUSTIFY",
+      "lineSpacingType": "PERCENT",
+      "lineSpacing": 135,
+      "intent": -8488,
+      "left": 0,
+      "right": 0,
+      "prev": 0,
+      "next": 0,
+      "keepWithNext": false,
+      "sig": "JUSTIFY|PERCENT|135|-8488|0|0|0|0|"
+    }
+  ],
+  "borderFill": [
+    {
+      "id": 1,
+      "left": {
+        "type": "NONE",
+        "width": "0.1 mm",
+        "color": "#000000"
+      },
+      "right": {
+        "type": "NONE",
+        "width": "0.1 mm",
+        "color": "#000000"
+      },
+      "top": {
+        "type": "NONE",
+        "width": "0.1 mm",
+        "color": "#000000"
+      },
+      "bottom": {
+        "type": "NONE",
+        "width": "0.1 mm",
+        "color": "#000000"
+      },
+      "fill": null,
+      "gradient": null,
+      "sig": "NONE|NONE|NONE|NONE||"
+    },
+    {
+      "id": 2,
+      "left": {
+        "type": "NONE",
+        "width": "0.1 mm",
+        "color": "#000000"
+      },
+      "right": {
+        "type": "NONE",
+        "width": "0.1 mm",
+        "color": "#000000"
+      },
+      "top": {
+        "type": "NONE",
+        "width": "0.1 mm",
+        "color": "#000000"
+      },
+      "bottom": {
+        "type": "NONE",
+        "width": "0.1 mm",
+        "color": "#000000"
+      },
+      "fill": "NONE",
+      "gradient": null,
+      "sig": "NONE|NONE|NONE|NONE|NONE|"
+    },
+    {
+      "id": 3,
+      "left": {
+        "type": "NONE",
+        "width": "0.1 mm",
+        "color": "#000000"
+      },
+      "right": {
+        "type": "NONE",
+        "width": "0.1 mm",
+        "color": "#000000"
+      },
+      "top": {
+        "type": "NONE",
+        "width": "0.1 mm",
+        "color": "#000000"
+      },
+      "bottom": {
+        "type": "NONE",
+        "width": "0.1 mm",
+        "color": "#000000"
+      },
+      "fill": "NONE",
+      "gradient": null,
+      "sig": "NONE|NONE|NONE|NONE|NONE|"
+    },
+    {
+      "id": 4,
+      "left": {
+        "type": "SOLID",
+        "width": "0.12 mm",
+        "color": "#000000"
+      },
+      "right": {
+        "type": "SOLID",
+        "width": "0.12 mm",
+        "color": "#000000"
+      },
+      "top": {
+        "type": "SOLID",
+        "width": "0.12 mm",
+        "color": "#000000"
+      },
+      "bottom": {
+        "type": "SOLID",
+        "width": "0.12 mm",
+        "color": "#000000"
+      },
+      "fill": null,
+      "gradient": null,
+      "sig": "SOLID 0.12 mm #000000|SOLID 0.12 mm #000000|SOLID 0.12 mm #000000|SOLID 0.12 mm #000000||"
+    },
+    {
+      "id": 5,
+      "left": {
+        "type": "NONE",
+        "width": "0.1 mm",
+        "color": "#000000"
+      },
+      "right": {
+        "type": "NONE",
+        "width": "0.1 mm",
+        "color": "#000000"
+      },
+      "top": {
+        "type": "NONE",
+        "width": "0.1 mm",
+        "color": "#000000"
+      },
+      "bottom": {
+        "type": "NONE",
+        "width": "0.1 mm",
+        "color": "#000000"
+      },
+      "fill": "NONE",
+      "gradient": null,
+      "sig": "NONE|NONE|NONE|NONE|NONE|"
+    },
+    {
+      "id": 6,
+      "left": {
+        "type": "NONE",
+        "width": "0.12 mm",
+        "color": "#000000"
+      },
+      "right": {
+        "type": "NONE",
+        "width": "0.12 mm",
+        "color": "#000000"
+      },
+      "top": {
+        "type": "NONE",
+        "width": "0.12 mm",
+        "color": "#000000"
+      },
+      "bottom": {
+        "type": "NONE",
+        "width": "0.12 mm",
+        "color": "#000000"
+      },
+      "fill": null,
+      "gradient": null,
+      "sig": "NONE|NONE|NONE|NONE||"
+    },
+    {
+      "id": 7,
+      "left": {
+        "type": "NONE",
+        "width": "0.12 mm",
+        "color": "#000000"
+      },
+      "right": {
+        "type": "SOLID",
+        "width": "0.12 mm",
+        "color": "#000000"
+      },
+      "top": {
+        "type": "SOLID",
+        "width": "0.12 mm",
+        "color": "#000000"
+      },
+      "bottom": {
+        "type": "SOLID",
+        "width": "0.12 mm",
+        "color": "#000000"
+      },
+      "fill": null,
+      "gradient": null,
+      "sig": "NONE|SOLID 0.12 mm #000000|SOLID 0.12 mm #000000|SOLID 0.12 mm #000000||"
+    },
+    {
+      "id": 8,
+      "left": {
+        "type": "SOLID",
+        "width": "0.12 mm",
+        "color": "#000000"
+      },
+      "right": {
+        "type": "NONE",
+        "width": "0.12 mm",
+        "color": "#000000"
+      },
+      "top": {
+        "type": "SOLID",
+        "width": "0.12 mm",
+        "color": "#000000"
+      },
+      "bottom": {
+        "type": "SOLID",
+        "width": "0.12 mm",
+        "color": "#000000"
+      },
+      "fill": null,
+      "gradient": null,
+      "sig": "SOLID 0.12 mm #000000|NONE|SOLID 0.12 mm #000000|SOLID 0.12 mm #000000||"
+    },
+    {
+      "id": 9,
+      "left": {
+        "type": "SOLID",
+        "width": "0.12 mm",
+        "color": "#000000"
+      },
+      "right": {
+        "type": "SOLID",
+        "width": "0.12 mm",
+        "color": "#000000"
+      },
+      "top": {
+        "type": "SOLID",
+        "width": "0.1 mm",
+        "color": "#000000"
+      },
+      "bottom": {
+        "type": "SOLID",
+        "width": "0.12 mm",
+        "color": "#000000"
+      },
+      "fill": null,
+      "gradient": null,
+      "sig": "SOLID 0.12 mm #000000|SOLID 0.12 mm #000000|SOLID 0.1 mm #000000|SOLID 0.12 mm #000000||"
+    },
+    {
+      "id": 10,
+      "left": {
+        "type": "SOLID",
+        "width": "0.4 mm",
+        "color": "#808080"
+      },
+      "right": {
+        "type": "SOLID",
+        "width": "0.4 mm",
+        "color": "#808080"
+      },
+      "top": {
+        "type": "NONE",
+        "width": "0.12 mm",
+        "color": "#000000"
+      },
+      "bottom": {
+        "type": "NONE",
+        "width": "0.4 mm",
+        "color": "#808080"
+      },
+      "fill": null,
+      "gradient": null,
+      "sig": "SOLID 0.4 mm #808080|SOLID 0.4 mm #808080|NONE|NONE||"
+    },
+    {
+      "id": 11,
+      "left": {
+        "type": "NONE",
+        "width": "0.12 mm",
+        "color": "#000000"
+      },
+      "right": {
+        "type": "NONE",
+        "width": "0.12 mm",
+        "color": "#000000"
+      },
+      "top": {
+        "type": "SOLID",
+        "width": "0.4 mm",
+        "color": "#47B0BB"
+      },
+      "bottom": {
+        "type": "SOLID",
+        "width": "0.4 mm",
+        "color": "#47B0BB"
+      },
+      "fill": null,
+      "gradient": null,
+      "sig": "NONE|NONE|SOLID 0.4 mm #47B0BB|SOLID 0.4 mm #47B0BB||"
+    },
+    {
+      "id": 12,
+      "left": {
+        "type": "SOLID",
+        "width": "0.1 mm",
+        "color": "#7F7F7F"
+      },
+      "right": {
+        "type": "SOLID",
+        "width": "0.1 mm",
+        "color": "#7F7F7F"
+      },
+      "top": {
+        "type": "SOLID",
+        "width": "0.1 mm",
+        "color": "#7F7F7F"
+      },
+      "bottom": {
+        "type": "SOLID",
+        "width": "0.1 mm",
+        "color": "#7F7F7F"
+      },
+      "fill": null,
+      "gradient": null,
+      "sig": "SOLID 0.1 mm #7F7F7F|SOLID 0.1 mm #7F7F7F|SOLID 0.1 mm #7F7F7F|SOLID 0.1 mm #7F7F7F||"
+    },
+    {
+      "id": 13,
+      "left": {
+        "type": "NONE",
+        "width": "0.12 mm",
+        "color": "#000000"
+      },
+      "right": {
+        "type": "NONE",
+        "width": "0.12 mm",
+        "color": "#000000"
+      },
+      "top": {
+        "type": "NONE",
+        "width": "0.12 mm",
+        "color": "#000000"
+      },
+      "bottom": {
+        "type": "NONE",
+        "width": "0.12 mm",
+        "color": "#000000"
+      },
+      "fill": null,
+      "gradient": {
+        "colors": [
+          "#47B0BB",
+          "#D0EAED"
+        ],
+        "angle": "90"
+      },
+      "sig": "NONE|NONE|NONE|NONE||G:#47B0BB>#D0EAED@90"
+    },
+    {
+      "id": 14,
+      "left": {
+        "type": "DASH",
+        "width": "0.12 mm",
+        "color": "#000000"
+      },
+      "right": {
+        "type": "DASH",
+        "width": "0.12 mm",
+        "color": "#000000"
+      },
+      "top": {
+        "type": "DASH",
+        "width": "0.12 mm",
+        "color": "#000000"
+      },
+      "bottom": {
+        "type": "DASH",
+        "width": "0.12 mm",
+        "color": "#000000"
+      },
+      "fill": "#FBFAF7",
+      "gradient": null,
+      "sig": "DASH 0.12 mm #000000|DASH 0.12 mm #000000|DASH 0.12 mm #000000|DASH 0.12 mm #000000|#FBFAF7|"
+    },
+    {
+      "id": 15,
+      "left": {
+        "type": "NONE",
+        "width": "0.12 mm",
+        "color": "#000000"
+      },
+      "right": {
+        "type": "NONE",
+        "width": "0.12 mm",
+        "color": "#000000"
+      },
+      "top": {
+        "type": "SOLID",
+        "width": "0.4 mm",
+        "color": "#47B0BB"
+      },
+      "bottom": {
+        "type": "DASH",
+        "width": "0.12 mm",
+        "color": "#000000"
+      },
+      "fill": "#E7F4F6",
+      "gradient": null,
+      "sig": "NONE|NONE|SOLID 0.4 mm #47B0BB|DASH 0.12 mm #000000|#E7F4F6|"
+    },
+    {
+      "id": 16,
+      "left": {
+        "type": "NONE",
+        "width": "0.12 mm",
+        "color": "#000000"
+      },
+      "right": {
+        "type": "NONE",
+        "width": "0.12 mm",
+        "color": "#000000"
+      },
+      "top": {
+        "type": "SOLID",
+        "width": "0.4 mm",
+        "color": "#47B0BB"
+      },
+      "bottom": {
+        "type": "DASH",
+        "width": "0.12 mm",
+        "color": "#000000"
+      },
+      "fill": null,
+      "gradient": null,
+      "sig": "NONE|NONE|SOLID 0.4 mm #47B0BB|DASH 0.12 mm #000000||"
+    },
+    {
+      "id": 17,
+      "left": {
+        "type": "NONE",
+        "width": "0.12 mm",
+        "color": "#000000"
+      },
+      "right": {
+        "type": "NONE",
+        "width": "0.12 mm",
+        "color": "#000000"
+      },
+      "top": {
+        "type": "DASH",
+        "width": "0.12 mm",
+        "color": "#000000"
+      },
+      "bottom": {
+        "type": "DASH",
+        "width": "0.12 mm",
+        "color": "#000000"
+      },
+      "fill": "#E7F4F6",
+      "gradient": null,
+      "sig": "NONE|NONE|DASH 0.12 mm #000000|DASH 0.12 mm #000000|#E7F4F6|"
+    },
+    {
+      "id": 18,
+      "left": {
+        "type": "NONE",
+        "width": "0.12 mm",
+        "color": "#000000"
+      },
+      "right": {
+        "type": "NONE",
+        "width": "0.12 mm",
+        "color": "#000000"
+      },
+      "top": {
+        "type": "DASH",
+        "width": "0.12 mm",
+        "color": "#000000"
+      },
+      "bottom": {
+        "type": "DASH",
+        "width": "0.12 mm",
+        "color": "#000000"
+      },
+      "fill": null,
+      "gradient": null,
+      "sig": "NONE|NONE|DASH 0.12 mm #000000|DASH 0.12 mm #000000||"
+    },
+    {
+      "id": 19,
+      "left": {
+        "type": "NONE",
+        "width": "0.12 mm",
+        "color": "#000000"
+      },
+      "right": {
+        "type": "NONE",
+        "width": "0.12 mm",
+        "color": "#000000"
+      },
+      "top": {
+        "type": "DASH",
+        "width": "0.12 mm",
+        "color": "#000000"
+      },
+      "bottom": {
+        "type": "SOLID",
+        "width": "0.4 mm",
+        "color": "#47B0BB"
+      },
+      "fill": "#E7F4F6",
+      "gradient": null,
+      "sig": "NONE|NONE|DASH 0.12 mm #000000|SOLID 0.4 mm #47B0BB|#E7F4F6|"
+    },
+    {
+      "id": 20,
+      "left": {
+        "type": "NONE",
+        "width": "0.12 mm",
+        "color": "#000000"
+      },
+      "right": {
+        "type": "NONE",
+        "width": "0.12 mm",
+        "color": "#000000"
+      },
+      "top": {
+        "type": "DASH",
+        "width": "0.12 mm",
+        "color": "#000000"
+      },
+      "bottom": {
+        "type": "SOLID",
+        "width": "0.4 mm",
+        "color": "#47B0BB"
+      },
+      "fill": null,
+      "gradient": null,
+      "sig": "NONE|NONE|DASH 0.12 mm #000000|SOLID 0.4 mm #47B0BB||"
+    },
+    {
+      "id": 21,
+      "left": {
+        "type": "NONE",
+        "width": "0.12 mm",
+        "color": "#000000"
+      },
+      "right": {
+        "type": "NONE",
+        "width": "0.12 mm",
+        "color": "#000000"
+      },
+      "top": {
+        "type": "NONE",
+        "width": "0.12 mm",
+        "color": "#000000"
+      },
+      "bottom": {
+        "type": "DASH",
+        "width": "0.12 mm",
+        "color": "#000000"
+      },
+      "fill": "#E7F4F6",
+      "gradient": null,
+      "sig": "NONE|NONE|NONE|DASH 0.12 mm #000000|#E7F4F6|"
+    },
+    {
+      "id": 22,
+      "left": {
+        "type": "NONE",
+        "width": "0.12 mm",
+        "color": "#000000"
+      },
+      "right": {
+        "type": "NONE",
+        "width": "0.12 mm",
+        "color": "#000000"
+      },
+      "top": {
+        "type": "NONE",
+        "width": "0.12 mm",
+        "color": "#000000"
+      },
+      "bottom": {
+        "type": "DASH",
+        "width": "0.12 mm",
+        "color": "#000000"
+      },
+      "fill": null,
+      "gradient": null,
+      "sig": "NONE|NONE|NONE|DASH 0.12 mm #000000||"
+    },
+    {
+      "id": 23,
+      "left": {
+        "type": "SOLID",
+        "width": "0.4 mm",
+        "color": "#808080"
+      },
+      "right": {
+        "type": "SOLID",
+        "width": "0.4 mm",
+        "color": "#808080"
+      },
+      "top": {
+        "type": "SOLID",
+        "width": "0.4 mm",
+        "color": "#808080"
+      },
+      "bottom": {
+        "type": "NONE",
+        "width": "0.12 mm",
+        "color": "#000000"
+      },
+      "fill": "#BFBFBF",
+      "gradient": null,
+      "sig": "SOLID 0.4 mm #808080|SOLID 0.4 mm #808080|SOLID 0.4 mm #808080|NONE|#BFBFBF|"
+    },
+    {
+      "id": 24,
+      "left": {
+        "type": "SOLID",
+        "width": "0.4 mm",
+        "color": "#808080"
+      },
+      "right": {
+        "type": "SOLID",
+        "width": "0.4 mm",
+        "color": "#808080"
+      },
+      "top": {
+        "type": "NONE",
+        "width": "0.12 mm",
+        "color": "#000000"
+      },
+      "bottom": {
+        "type": "SOLID",
+        "width": "0.4 mm",
+        "color": "#808080"
+      },
+      "fill": "#DFE6F7",
+      "gradient": null,
+      "sig": "SOLID 0.4 mm #808080|SOLID 0.4 mm #808080|NONE|SOLID 0.4 mm #808080|#DFE6F7|"
+    },
+    {
+      "id": 25,
+      "left": {
+        "type": "NONE",
+        "width": "0.12 mm",
+        "color": "#000000"
+      },
+      "right": {
+        "type": "SOLID",
+        "width": "0.12 mm",
+        "color": "#000000"
+      },
+      "top": {
+        "type": "SOLID",
+        "width": "0.12 mm",
+        "color": "#000000"
+      },
+      "bottom": {
+        "type": "SOLID",
+        "width": "0.5 mm",
+        "color": "#000000"
+      },
+      "fill": null,
+      "gradient": null,
+      "sig": "NONE|SOLID 0.12 mm #000000|SOLID 0.12 mm #000000|SOLID 0.5 mm #000000||"
+    },
+    {
+      "id": 26,
+      "left": {
+        "type": "SOLID",
+        "width": "0.12 mm",
+        "color": "#000000"
+      },
+      "right": {
+        "type": "SOLID",
+        "width": "0.12 mm",
+        "color": "#000000"
+      },
+      "top": {
+        "type": "SOLID",
+        "width": "0.12 mm",
+        "color": "#000000"
+      },
+      "bottom": {
+        "type": "SOLID",
+        "width": "0.5 mm",
+        "color": "#000000"
+      },
+      "fill": null,
+      "gradient": null,
+      "sig": "SOLID 0.12 mm #000000|SOLID 0.12 mm #000000|SOLID 0.12 mm #000000|SOLID 0.5 mm #000000||"
+    },
+    {
+      "id": 27,
+      "left": {
+        "type": "SOLID",
+        "width": "0.12 mm",
+        "color": "#000000"
+      },
+      "right": {
+        "type": "NONE",
+        "width": "0.12 mm",
+        "color": "#000000"
+      },
+      "top": {
+        "type": "SOLID",
+        "width": "0.12 mm",
+        "color": "#000000"
+      },
+      "bottom": {
+        "type": "SOLID",
+        "width": "0.5 mm",
+        "color": "#000000"
+      },
+      "fill": null,
+      "gradient": null,
+      "sig": "SOLID 0.12 mm #000000|NONE|SOLID 0.12 mm #000000|SOLID 0.5 mm #000000||"
+    },
+    {
+      "id": 28,
+      "left": {
+        "type": "NONE",
+        "width": "0.12 mm",
+        "color": "#000000"
+      },
+      "right": {
+        "type": "SOLID",
+        "width": "0.12 mm",
+        "color": "#000000"
+      },
+      "top": {
+        "type": "SOLID",
+        "width": "0.1 mm",
+        "color": "#000000"
+      },
+      "bottom": {
+        "type": "SOLID",
+        "width": "0.12 mm",
+        "color": "#000000"
+      },
+      "fill": null,
+      "gradient": null,
+      "sig": "NONE|SOLID 0.12 mm #000000|SOLID 0.1 mm #000000|SOLID 0.12 mm #000000||"
+    },
+    {
+      "id": 29,
+      "left": {
+        "type": "NONE",
+        "width": "0.12 mm",
+        "color": "#000000"
+      },
+      "right": {
+        "type": "SOLID",
+        "width": "0.12 mm",
+        "color": "#000000"
+      },
+      "top": {
+        "type": "SOLID",
+        "width": "0.5 mm",
+        "color": "#000000"
+      },
+      "bottom": {
+        "type": "SOLID",
+        "width": "0.1 mm",
+        "color": "#000000"
+      },
+      "fill": "#DFE6F7",
+      "gradient": null,
+      "sig": "NONE|SOLID 0.12 mm #000000|SOLID 0.5 mm #000000|SOLID 0.1 mm #000000|#DFE6F7|"
+    },
+    {
+      "id": 30,
+      "left": {
+        "type": "SOLID",
+        "width": "0.12 mm",
+        "color": "#000000"
+      },
+      "right": {
+        "type": "SOLID",
+        "width": "0.12 mm",
+        "color": "#000000"
+      },
+      "top": {
+        "type": "SOLID",
+        "width": "0.5 mm",
+        "color": "#000000"
+      },
+      "bottom": {
+        "type": "SOLID",
+        "width": "0.1 mm",
+        "color": "#000000"
+      },
+      "fill": "#DFE6F7",
+      "gradient": null,
+      "sig": "SOLID 0.12 mm #000000|SOLID 0.12 mm #000000|SOLID 0.5 mm #000000|SOLID 0.1 mm #000000|#DFE6F7|"
+    },
+    {
+      "id": 31,
+      "left": {
+        "type": "SOLID",
+        "width": "0.12 mm",
+        "color": "#000000"
+      },
+      "right": {
+        "type": "NONE",
+        "width": "0.12 mm",
+        "color": "#000000"
+      },
+      "top": {
+        "type": "SOLID",
+        "width": "0.1 mm",
+        "color": "#000000"
+      },
+      "bottom": {
+        "type": "SOLID",
+        "width": "0.12 mm",
+        "color": "#000000"
+      },
+      "fill": null,
+      "gradient": null,
+      "sig": "SOLID 0.12 mm #000000|NONE|SOLID 0.1 mm #000000|SOLID 0.12 mm #000000||"
+    },
+    {
+      "id": 32,
+      "left": {
+        "type": "SOLID",
+        "width": "0.12 mm",
+        "color": "#000000"
+      },
+      "right": {
+        "type": "NONE",
+        "width": "0.12 mm",
+        "color": "#000000"
+      },
+      "top": {
+        "type": "SOLID",
+        "width": "0.5 mm",
+        "color": "#000000"
+      },
+      "bottom": {
+        "type": "SOLID",
+        "width": "0.1 mm",
+        "color": "#000000"
+      },
+      "fill": "#DFE6F7",
+      "gradient": null,
+      "sig": "SOLID 0.12 mm #000000|NONE|SOLID 0.5 mm #000000|SOLID 0.1 mm #000000|#DFE6F7|"
+    },
+    {
+      "id": 33,
+      "left": {
+        "type": "NONE",
+        "width": "0.12 mm",
+        "color": "#000000"
+      },
+      "right": {
+        "type": "NONE",
+        "width": "0.12 mm",
+        "color": "#000000"
+      },
+      "top": {
+        "type": "NONE",
+        "width": "0.12 mm",
+        "color": "#000000"
+      },
+      "bottom": {
+        "type": "NONE",
+        "width": "0.12 mm",
+        "color": "#000000"
+      },
+      "fill": null,
+      "gradient": null,
+      "sig": "NONE|NONE|NONE|NONE||"
+    },
+    {
+      "id": 34,
+      "left": {
+        "type": "NONE",
+        "width": "0.12 mm",
+        "color": "#000000"
+      },
+      "right": {
+        "type": "SOLID",
+        "width": "0.12 mm",
+        "color": "#000000"
+      },
+      "top": {
+        "type": "SOLID",
+        "width": "0.12 mm",
+        "color": "#000000"
+      },
+      "bottom": {
+        "type": "SOLID",
+        "width": "0.12 mm",
+        "color": "#000000"
+      },
+      "fill": null,
+      "gradient": null,
+      "sig": "NONE|SOLID 0.12 mm #000000|SOLID 0.12 mm #000000|SOLID 0.12 mm #000000||"
+    },
+    {
+      "id": 35,
+      "left": {
+        "type": "SOLID",
+        "width": "0.12 mm",
+        "color": "#000000"
+      },
+      "right": {
+        "type": "SOLID",
+        "width": "0.12 mm",
+        "color": "#000000"
+      },
+      "top": {
+        "type": "SOLID",
+        "width": "0.12 mm",
+        "color": "#000000"
+      },
+      "bottom": {
+        "type": "SOLID",
+        "width": "0.12 mm",
+        "color": "#000000"
+      },
+      "fill": null,
+      "gradient": null,
+      "sig": "SOLID 0.12 mm #000000|SOLID 0.12 mm #000000|SOLID 0.12 mm #000000|SOLID 0.12 mm #000000||"
+    },
+    {
+      "id": 36,
+      "left": {
+        "type": "SOLID",
+        "width": "0.12 mm",
+        "color": "#000000"
+      },
+      "right": {
+        "type": "NONE",
+        "width": "0.12 mm",
+        "color": "#000000"
+      },
+      "top": {
+        "type": "SOLID",
+        "width": "0.12 mm",
+        "color": "#000000"
+      },
+      "bottom": {
+        "type": "SOLID",
+        "width": "0.4 mm",
+        "color": "#000000"
+      },
+      "fill": null,
+      "gradient": null,
+      "sig": "SOLID 0.12 mm #000000|NONE|SOLID 0.12 mm #000000|SOLID 0.4 mm #000000||"
+    },
+    {
+      "id": 37,
+      "left": {
+        "type": "NONE",
+        "width": "0.12 mm",
+        "color": "#000000"
+      },
+      "right": {
+        "type": "SOLID",
+        "width": "0.12 mm",
+        "color": "#000000"
+      },
+      "top": {
+        "type": "SOLID",
+        "width": "0.12 mm",
+        "color": "#000000"
+      },
+      "bottom": {
+        "type": "SOLID",
+        "width": "0.4 mm",
+        "color": "#000000"
+      },
+      "fill": null,
+      "gradient": null,
+      "sig": "NONE|SOLID 0.12 mm #000000|SOLID 0.12 mm #000000|SOLID 0.4 mm #000000||"
+    },
+    {
+      "id": 38,
+      "left": {
+        "type": "SOLID",
+        "width": "0.12 mm",
+        "color": "#000000"
+      },
+      "right": {
+        "type": "SOLID",
+        "width": "0.12 mm",
+        "color": "#000000"
+      },
+      "top": {
+        "type": "SOLID",
+        "width": "0.12 mm",
+        "color": "#000000"
+      },
+      "bottom": {
+        "type": "SOLID",
+        "width": "0.4 mm",
+        "color": "#000000"
+      },
+      "fill": null,
+      "gradient": null,
+      "sig": "SOLID 0.12 mm #000000|SOLID 0.12 mm #000000|SOLID 0.12 mm #000000|SOLID 0.4 mm #000000||"
+    },
+    {
+      "id": 39,
+      "left": {
+        "type": "NONE",
+        "width": "0.12 mm",
+        "color": "#000000"
+      },
+      "right": {
+        "type": "SOLID",
+        "width": "0.12 mm",
+        "color": "#000000"
+      },
+      "top": {
+        "type": "SOLID",
+        "width": "0.4 mm",
+        "color": "#000000"
+      },
+      "bottom": {
+        "type": "SOLID",
+        "width": "0.12 mm",
+        "color": "#000000"
+      },
+      "fill": "#DFE6F7",
+      "gradient": null,
+      "sig": "NONE|SOLID 0.12 mm #000000|SOLID 0.4 mm #000000|SOLID 0.12 mm #000000|#DFE6F7|"
+    },
+    {
+      "id": 40,
+      "left": {
+        "type": "SOLID",
+        "width": "0.12 mm",
+        "color": "#000000"
+      },
+      "right": {
+        "type": "SOLID",
+        "width": "0.12 mm",
+        "color": "#000000"
+      },
+      "top": {
+        "type": "SOLID",
+        "width": "0.4 mm",
+        "color": "#000000"
+      },
+      "bottom": {
+        "type": "SOLID",
+        "width": "0.12 mm",
+        "color": "#000000"
+      },
+      "fill": "#DFE6F7",
+      "gradient": null,
+      "sig": "SOLID 0.12 mm #000000|SOLID 0.12 mm #000000|SOLID 0.4 mm #000000|SOLID 0.12 mm #000000|#DFE6F7|"
+    },
+    {
+      "id": 41,
+      "left": {
+        "type": "SOLID",
+        "width": "0.12 mm",
+        "color": "#000000"
+      },
+      "right": {
+        "type": "NONE",
+        "width": "0.12 mm",
+        "color": "#000000"
+      },
+      "top": {
+        "type": "SOLID",
+        "width": "0.4 mm",
+        "color": "#000000"
+      },
+      "bottom": {
+        "type": "SOLID",
+        "width": "0.12 mm",
+        "color": "#000000"
+      },
+      "fill": "#DFE6F7",
+      "gradient": null,
+      "sig": "SOLID 0.12 mm #000000|NONE|SOLID 0.4 mm #000000|SOLID 0.12 mm #000000|#DFE6F7|"
+    },
+    {
+      "id": 42,
+      "left": {
+        "type": "SOLID",
+        "width": "0.12 mm",
+        "color": "#000000"
+      },
+      "right": {
+        "type": "NONE",
+        "width": "0.12 mm",
+        "color": "#000000"
+      },
+      "top": {
+        "type": "SOLID",
+        "width": "0.12 mm",
+        "color": "#000000"
+      },
+      "bottom": {
+        "type": "SOLID",
+        "width": "0.12 mm",
+        "color": "#000000"
+      },
+      "fill": null,
+      "gradient": null,
+      "sig": "SOLID 0.12 mm #000000|NONE|SOLID 0.12 mm #000000|SOLID 0.12 mm #000000||"
+    },
+    {
+      "id": 43,
+      "left": {
+        "type": "NONE",
+        "width": "0.2 mm",
+        "color": "#342DBE"
+      },
+      "right": {
+        "type": "SOLID",
+        "width": "0.12 mm",
+        "color": "#3A3C84"
+      },
+      "top": {
+        "type": "SOLID",
+        "width": "0.4 mm",
+        "color": "#3A3C84"
+      },
+      "bottom": {
+        "type": "SOLID",
+        "width": "0.12 mm",
+        "color": "#3A3C84"
+      },
+      "fill": "#D9D9D9",
+      "gradient": null,
+      "sig": "NONE|SOLID 0.12 mm #3A3C84|SOLID 0.4 mm #3A3C84|SOLID 0.12 mm #3A3C84|#D9D9D9|"
+    },
+    {
+      "id": 44,
+      "left": {
+        "type": "SOLID",
+        "width": "0.12 mm",
+        "color": "#3A3C84"
+      },
+      "right": {
+        "type": "SOLID",
+        "width": "0.12 mm",
+        "color": "#3A3C84"
+      },
+      "top": {
+        "type": "SOLID",
+        "width": "0.4 mm",
+        "color": "#3A3C84"
+      },
+      "bottom": {
+        "type": "SOLID",
+        "width": "0.12 mm",
+        "color": "#3A3C84"
+      },
+      "fill": "#D9D9D9",
+      "gradient": null,
+      "sig": "SOLID 0.12 mm #3A3C84|SOLID 0.12 mm #3A3C84|SOLID 0.4 mm #3A3C84|SOLID 0.12 mm #3A3C84|#D9D9D9|"
+    },
+    {
+      "id": 45,
+      "left": {
+        "type": "SOLID",
+        "width": "0.12 mm",
+        "color": "#3A3C84"
+      },
+      "right": {
+        "type": "NONE",
+        "width": "0.2 mm",
+        "color": "#342DBE"
+      },
+      "top": {
+        "type": "SOLID",
+        "width": "0.4 mm",
+        "color": "#3A3C84"
+      },
+      "bottom": {
+        "type": "SOLID",
+        "width": "0.12 mm",
+        "color": "#3A3C84"
+      },
+      "fill": "#D9D9D9",
+      "gradient": null,
+      "sig": "SOLID 0.12 mm #3A3C84|NONE|SOLID 0.4 mm #3A3C84|SOLID 0.12 mm #3A3C84|#D9D9D9|"
+    },
+    {
+      "id": 46,
+      "left": {
+        "type": "NONE",
+        "width": "0.2 mm",
+        "color": "#342DBE"
+      },
+      "right": {
+        "type": "SOLID",
+        "width": "0.12 mm",
+        "color": "#3A3C84"
+      },
+      "top": {
+        "type": "SOLID",
+        "width": "0.12 mm",
+        "color": "#3A3C84"
+      },
+      "bottom": {
+        "type": "SOLID",
+        "width": "0.12 mm",
+        "color": "#3A3C84"
+      },
+      "fill": "#FFFFFF",
+      "gradient": null,
+      "sig": "NONE|SOLID 0.12 mm #3A3C84|SOLID 0.12 mm #3A3C84|SOLID 0.12 mm #3A3C84|#FFFFFF|"
+    },
+    {
+      "id": 47,
+      "left": {
+        "type": "SOLID",
+        "width": "0.12 mm",
+        "color": "#000000"
+      },
+      "right": {
+        "type": "NONE",
+        "width": "0.12 mm",
+        "color": "#000000"
+      },
+      "top": {
+        "type": "SOLID",
+        "width": "0.12 mm",
+        "color": "#3A3C84"
+      },
+      "bottom": {
+        "type": "SOLID",
+        "width": "0.12 mm",
+        "color": "#000000"
+      },
+      "fill": null,
+      "gradient": null,
+      "sig": "SOLID 0.12 mm #000000|NONE|SOLID 0.12 mm #3A3C84|SOLID 0.12 mm #000000||"
+    },
+    {
+      "id": 48,
+      "left": {
+        "type": "SOLID",
+        "width": "0.25 mm",
+        "color": "#000000"
+      },
+      "right": {
+        "type": "SOLID",
+        "width": "0.12 mm",
+        "color": "#CCCCCC"
+      },
+      "top": {
+        "type": "SOLID",
+        "width": "0.25 mm",
+        "color": "#000000"
+      },
+      "bottom": {
+        "type": "SOLID",
+        "width": "0.12 mm",
+        "color": "#CCCCCC"
+      },
+      "fill": "#D9D9D9",
+      "gradient": null,
+      "sig": "SOLID 0.25 mm #000000|SOLID 0.12 mm #CCCCCC|SOLID 0.25 mm #000000|SOLID 0.12 mm #CCCCCC|#D9D9D9|"
+    },
+    {
+      "id": 49,
+      "left": {
+        "type": "SOLID",
+        "width": "0.12 mm",
+        "color": "#CCCCCC"
+      },
+      "right": {
+        "type": "SOLID",
+        "width": "0.12 mm",
+        "color": "#CCCCCC"
+      },
+      "top": {
+        "type": "SOLID",
+        "width": "0.25 mm",
+        "color": "#000000"
+      },
+      "bottom": {
+        "type": "SOLID",
+        "width": "0.12 mm",
+        "color": "#CCCCCC"
+      },
+      "fill": "#D9D9D9",
+      "gradient": null,
+      "sig": "SOLID 0.12 mm #CCCCCC|SOLID 0.12 mm #CCCCCC|SOLID 0.25 mm #000000|SOLID 0.12 mm #CCCCCC|#D9D9D9|"
+    },
+    {
+      "id": 50,
+      "left": {
+        "type": "SOLID",
+        "width": "0.12 mm",
+        "color": "#CCCCCC"
+      },
+      "right": {
+        "type": "SOLID",
+        "width": "0.25 mm",
+        "color": "#000000"
+      },
+      "top": {
+        "type": "SOLID",
+        "width": "0.25 mm",
+        "color": "#000000"
+      },
+      "bottom": {
+        "type": "SOLID",
+        "width": "0.12 mm",
+        "color": "#CCCCCC"
+      },
+      "fill": "#D9D9D9",
+      "gradient": null,
+      "sig": "SOLID 0.12 mm #CCCCCC|SOLID 0.25 mm #000000|SOLID 0.25 mm #000000|SOLID 0.12 mm #CCCCCC|#D9D9D9|"
+    },
+    {
+      "id": 51,
+      "left": {
+        "type": "SOLID",
+        "width": "0.25 mm",
+        "color": "#000000"
+      },
+      "right": {
+        "type": "SOLID",
+        "width": "0.12 mm",
+        "color": "#CCCCCC"
+      },
+      "top": {
+        "type": "SOLID",
+        "width": "0.12 mm",
+        "color": "#CCCCCC"
+      },
+      "bottom": {
+        "type": "SOLID",
+        "width": "0.25 mm",
+        "color": "#000000"
+      },
+      "fill": null,
+      "gradient": null,
+      "sig": "SOLID 0.25 mm #000000|SOLID 0.12 mm #CCCCCC|SOLID 0.12 mm #CCCCCC|SOLID 0.25 mm #000000||"
+    },
+    {
+      "id": 52,
+      "left": {
+        "type": "SOLID",
+        "width": "0.12 mm",
+        "color": "#CCCCCC"
+      },
+      "right": {
+        "type": "SOLID",
+        "width": "0.12 mm",
+        "color": "#CCCCCC"
+      },
+      "top": {
+        "type": "SOLID",
+        "width": "0.12 mm",
+        "color": "#CCCCCC"
+      },
+      "bottom": {
+        "type": "SOLID",
+        "width": "0.25 mm",
+        "color": "#000000"
+      },
+      "fill": null,
+      "gradient": null,
+      "sig": "SOLID 0.12 mm #CCCCCC|SOLID 0.12 mm #CCCCCC|SOLID 0.12 mm #CCCCCC|SOLID 0.25 mm #000000||"
+    },
+    {
+      "id": 53,
+      "left": {
+        "type": "SOLID",
+        "width": "0.12 mm",
+        "color": "#CCCCCC"
+      },
+      "right": {
+        "type": "SOLID",
+        "width": "0.25 mm",
+        "color": "#000000"
+      },
+      "top": {
+        "type": "SOLID",
+        "width": "0.12 mm",
+        "color": "#CCCCCC"
+      },
+      "bottom": {
+        "type": "SOLID",
+        "width": "0.25 mm",
+        "color": "#000000"
+      },
+      "fill": null,
+      "gradient": null,
+      "sig": "SOLID 0.12 mm #CCCCCC|SOLID 0.25 mm #000000|SOLID 0.12 mm #CCCCCC|SOLID 0.25 mm #000000||"
+    },
+    {
+      "id": 54,
+      "left": {
+        "type": "SOLID",
+        "width": "0.12 mm",
+        "color": "#3A3C84"
+      },
+      "right": {
+        "type": "NONE",
+        "width": "0.2 mm",
+        "color": "#342DBE"
+      },
+      "top": {
+        "type": "SOLID",
+        "width": "0.12 mm",
+        "color": "#3A3C84"
+      },
+      "bottom": {
+        "type": "SOLID",
+        "width": "0.12 mm",
+        "color": "#3A3C84"
+      },
+      "fill": "#FFFFFF",
+      "gradient": null,
+      "sig": "SOLID 0.12 mm #3A3C84|NONE|SOLID 0.12 mm #3A3C84|SOLID 0.12 mm #3A3C84|#FFFFFF|"
+    },
+    {
+      "id": 55,
+      "left": {
+        "type": "SOLID",
+        "width": "0.12 mm",
+        "color": "#3A3C84"
+      },
+      "right": {
+        "type": "SOLID",
+        "width": "0.12 mm",
+        "color": "#3A3C84"
+      },
+      "top": {
+        "type": "SOLID",
+        "width": "0.12 mm",
+        "color": "#3A3C84"
+      },
+      "bottom": {
+        "type": "SOLID",
+        "width": "0.12 mm",
+        "color": "#3A3C84"
+      },
+      "fill": "#FFFFFF",
+      "gradient": null,
+      "sig": "SOLID 0.12 mm #3A3C84|SOLID 0.12 mm #3A3C84|SOLID 0.12 mm #3A3C84|SOLID 0.12 mm #3A3C84|#FFFFFF|"
+    },
+    {
+      "id": 56,
+      "left": {
+        "type": "NONE",
+        "width": "0.2 mm",
+        "color": "#342DBE"
+      },
+      "right": {
+        "type": "SOLID",
+        "width": "0.12 mm",
+        "color": "#3A3C84"
+      },
+      "top": {
+        "type": "SOLID",
+        "width": "0.12 mm",
+        "color": "#3A3C84"
+      },
+      "bottom": {
+        "type": "SOLID",
+        "width": "0.4 mm",
+        "color": "#3A3C84"
+      },
+      "fill": "#D9D9D9",
+      "gradient": null,
+      "sig": "NONE|SOLID 0.12 mm #3A3C84|SOLID 0.12 mm #3A3C84|SOLID 0.4 mm #3A3C84|#D9D9D9|"
+    },
+    {
+      "id": 57,
+      "left": {
+        "type": "SOLID",
+        "width": "0.12 mm",
+        "color": "#3A3C84"
+      },
+      "right": {
+        "type": "NONE",
+        "width": "0.2 mm",
+        "color": "#342DBE"
+      },
+      "top": {
+        "type": "SOLID",
+        "width": "0.12 mm",
+        "color": "#3A3C84"
+      },
+      "bottom": {
+        "type": "SOLID",
+        "width": "0.4 mm",
+        "color": "#3A3C84"
+      },
+      "fill": "#D9D9D9",
+      "gradient": null,
+      "sig": "SOLID 0.12 mm #3A3C84|NONE|SOLID 0.12 mm #3A3C84|SOLID 0.4 mm #3A3C84|#D9D9D9|"
+    }
+  ]
+}

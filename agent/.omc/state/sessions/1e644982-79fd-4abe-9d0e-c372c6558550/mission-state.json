@@ -1,0 +1,81 @@
+{
+  "updatedAt": "2026-09-15T02:11:54.378Z",
+  "missions": [
+    {
+      "id": "session:1e644982-79fd-4abe-9d0e-c372c6558550:none",
+      "source": "session",
+      "name": "none",
+      "objective": "Session mission",
+      "createdAt": "2026-09-15T02:11:17.658Z",
+      "updatedAt": "2026-09-15T02:11:54.378Z",
+      "status": "running",
+      "workerCount": 3,
+      "taskCounts": {
+        "total": 3,
+        "pending": 0,
+        "blocked": 0,
+        "inProgress": 3,
+        "completed": 0,
+        "failed": 0
+      },
+      "agents": [
+        {
+          "name": "researcher:af88a9c",
+          "role": "researcher",
+          "ownership": "af88a9c4c40e00b94",
+          "status": "running",
+          "currentStep": null,
+          "latestUpdate": null,
+          "completedSummary": null,
+          "updatedAt": "2026-09-15T02:11:17.658Z"
+        },
+        {
+          "name": "researcher:ae4dfea",
+          "role": "researcher",
+          "ownership": "ae4dfeacd28f9ef9c",
+          "status": "running",
+          "currentStep": null,
+          "latestUpdate": null,
+          "completedSummary": null,
+          "updatedAt": "2026-09-15T02:11:36.766Z"
+        },
+        {
+          "name": "researcher:a14d5e4",
+          "role": "researcher",
+          "ownership": "a14d5e480d04e3a83",
+          "status": "running",
+          "currentStep": null,
+          "latestUpdate": null,
+          "completedSummary": null,
+          "updatedAt": "2026-09-15T02:11:54.378Z"
+        }
+      ],
+      "timeline": [
+        {
+          "id": "session-start:af88a9c4c40e00b94:2026-09-15T02:11:17.658Z",
+          "at": "2026-09-15T02:11:17.658Z",
+          "kind": "update",
+          "agent": "researcher:af88a9c",
+          "detail": "started researcher:af88a9c",
+          "sourceKey": "session-start:af88a9c4c40e00b94"
+        },
+        {
+          "id": "session-start:ae4dfeacd28f9ef9c:2026-09-15T02:11:36.766Z",
+          "at": "2026-09-15T02:11:36.766Z",
+          "kind": "update",
+          "agent": "researcher:ae4dfea",
+          "detail": "started researcher:ae4dfea",
+          "sourceKey": "session-start:ae4dfeacd28f9ef9c"
+        },
+        {
+          "id": "session-start:a14d5e480d04e3a83:2026-09-15T02:11:54.378Z",
+          "at": "2026-09-15T02:11:54.378Z",
+          "kind": "update",
+          "agent": "researcher:a14d5e4",
+          "detail": "started researcher:a14d5e4",
+          "sourceKey": "session-start:a14d5e480d04e3a83"
+        }
+      ]
+    }
+  ]
+}
