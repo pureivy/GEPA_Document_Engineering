@@ -32,7 +32,16 @@ function NewProjectDialog({ onClose, onCreated }: { onClose: () => void; onCreat
 
   const set = <K extends keyof NewProjectInput>(k: K, v: NewProjectInput[K]) => setForm((f) => ({ ...f, [k]: v }));
   const setContact = (k: keyof NewProjectInput["contact"], v: string) => setForm((f) => ({ ...f, contact: { ...f.contact, [k]: v } }));
-  const valid = form.title.trim() && form.topic.trim() && form.contact.부서명.trim() && form.contact.전화.trim() && form.contact.이메일.trim();
+  // with an uploaded 기존 사업계획서 the title/topic can be derived from the file + 변경 사항; the contact is always needed for the documents
+  const contactOk = !!(form.contact.부서명.trim() && form.contact.전화.trim() && form.contact.이메일.trim());
+  const valid = contactOk && (refFile ? true : !!(form.title.trim() && form.topic.trim()));
+  const missing = [
+    ...(!refFile && !form.title.trim() ? ["제목"] : []),
+    ...(!refFile && !form.topic.trim() ? ["주제"] : []),
+    ...(!form.contact.부서명.trim() ? ["부서명"] : []),
+    ...(!form.contact.전화.trim() ? ["전화"] : []),
+    ...(!form.contact.이메일.trim() ? ["이메일"] : []),
+  ];
 
   const submit = async () => {
     if (!valid) return;
@@ -43,7 +52,10 @@ function NewProjectDialog({ onClose, onCreated }: { onClose: () => void; onCreat
       if (!contact.담당자?.trim()) delete contact.담당자;
       if (!contact.우편주소?.trim()) delete contact.우편주소;
       setPhase("create");
-      const p = await api.createProject({ ...form, contact });
+      const baseName = refFile ? refFile.name.replace(/\.[A-Za-z0-9]+$/, "") : "";
+      const title = form.title.trim() || baseName;
+      const topic = form.topic.trim() || (refFile ? `기존 사업계획서(${refFile.name})를 기준으로 갱신${changes.trim() ? ` — 바뀌는 내용: ${changes.trim()}` : ""}` : "");
+      const p = await api.createProject({ ...form, title, topic, contact });
       if (refFile) {
         setPhase("upload");
         await api.uploadReference(p.id, refFile, changes, autoRun, planResearch);
@@ -69,17 +81,18 @@ function NewProjectDialog({ onClose, onCreated }: { onClose: () => void; onCreat
           <Button variant="outline" onClick={onClose} disabled={busy}>
             취소
           </Button>
-          <Button variant="primary" onClick={() => void submit()} disabled={!valid} loading={busy}>
+          {!valid ? <span className="mr-2 self-center text-[11px] text-slate-500">입력 필요: {missing.join(", ")}</span> : null}
+          <Button variant="primary" onClick={() => void submit()} disabled={!valid} loading={busy} title={valid ? undefined : `입력 필요: ${missing.join(", ")}`}>
             {phase === "upload" ? "업로드·분석 중…" : refFile && autoRun ? "만들고 자동 실행" : "만들기"}
           </Button>
         </>
       }
     >
       <div className="grid gap-4">
-        <Field label="제목" required>
+        <Field label="제목" required={!refFile} hint={refFile ? "비우면 파일 이름을 제목으로 씁니다" : undefined}>
           <Input placeholder="예) 2026년 안동시 수출기업 역량강화 지원사업" value={form.title} onChange={(e) => set("title", e.target.value)} autoFocus />
         </Field>
-        <Field label="주제" hint="자유 서술 — 목적, 대상, 지원 내용, 예산 규모 등" required>
+        <Field label="주제" hint={refFile ? "비우면 기존 계획서와 바뀌는 내용으로 채웁니다" : "자유 서술 — 목적, 대상, 지원 내용, 예산 규모 등"} required={!refFile}>
           <Textarea rows={5} placeholder="예) 안동시 소재 수출 유망 중소기업 20개사에 수출용 홍보물 제작·마케팅·디자인 개발을 기업당 최대 300만원 지원. 7월 공고, 8월 선정, 10월 말까지 지원." value={form.topic} onChange={(e) => set("topic", e.target.value)} />
         </Field>
         <div className="grid grid-cols-2 gap-4">
