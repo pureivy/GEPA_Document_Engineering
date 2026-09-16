@@ -75,14 +75,14 @@ export function parseLooseDate(s: string): Date | null {
   return Number.isNaN(d.getTime()) ? null : d;
 }
 
-/** 기간: 2026. 7. 1. ~ 7. 15. (same year → month/day only on the right) */
+/** 기간: 2026. 7. 1.~7. 15. (편람: 물결표는 앞말·뒷말에 붙인다; same year → month/day only on the right) */
 export function govPeriod(from: string | Date, to: string | Date): string {
   const a = typeof from === "string" ? parseLooseDate(from) : from;
   const b = typeof to === "string" ? parseLooseDate(to) : to;
   if (!a || !b) throw new Error("govPeriod: cannot parse dates");
   const left = `${a.getFullYear()}. ${a.getMonth() + 1}. ${a.getDate()}.`;
   const right = a.getFullYear() === b.getFullYear() ? `${b.getMonth() + 1}. ${b.getDate()}.` : `${b.getFullYear()}. ${b.getMonth() + 1}. ${b.getDate()}.`;
-  return `${left} ~ ${right}`;
+  return `${left}~${right}`;
 }
 
 /** 증감 표기: 30명→40명으로 33% 증가(10명↑) / 감소(…↓); decimals for non-integer inputs */

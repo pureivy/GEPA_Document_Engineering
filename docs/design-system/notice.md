@@ -394,7 +394,7 @@ Same BIN0001 asset in all five.
 3. Page-1 **안내박스**: 1×1 table, 168–169mm wide, **dotted 0.12mm #000000** border,
    pale fill, containing `□ 접수방법` / `□ 문의` / `□ 선정결과 통보` with 15pt bold headings
    and 13–14pt items. Present in all five, identical skeleton.
-4. **Page break after the box**, then the GEPA logo (BIN0001) inline left, ~76–95mm wide.
+4. GEPA logo (BIN0001, 92.3 × 13.3 mm) **pinned to the bottom of page 1** (out-of-flow picture: `treatAsChar=0`, `vertRelTo=PAGE vertAlign=BOTTOM`, `horzRelTo=PAGE horzAlign=CENTER`; `image.position: "pageBottom"`), then the page break (user decision 2026-09-16). The 안내박스 no longer carries the 이의제기 sentence (it stays in 9. 기타 유의사항).
 5. `□ / ㅇ (or ○/❍/◦) / - / ※ / *` bullet ladder rendered with **literal leading spaces**,
    margin-left 0, justified, ratio line spacing.
 6. Every 공고문 opens its body with a **1. 사업개요 / 모집개요** table (≈170mm) using the

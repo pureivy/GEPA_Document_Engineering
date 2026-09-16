@@ -62,7 +62,7 @@ export function planFixture(): DocModel {
   return {
     version: 1, family: "plan",
     meta: { 제목: "2026년 안동시 수출기업 역량강화 지원사업 사업계획(안)", 연도: "2026", 부서: "북부지소", 등록번호: "북부지소-939",
-      결재: { 등록일자: "2026. 7. 14.", 결재일자: "2026. 7. 20.", 공개구분: "공개" }, numbering: "roman", lineSpacing: 135, body1Font: "hyHeadlineBold", house: "gepa" },
+      결재: { 등록일자: "2026. 7. 14.", 결재일자: "2026. 7. 20.", 공개구분: "공개" }, numbering: "roman", lineSpacing: 160, body1Font: "hyHeadlineBold", house: "gepa", ladder: "gov" },
     blocks: [
       { id: "b01", k: "approvalBlock" },
       { id: "b02", k: "coverTitle", inlines: T("2026년 안동시 수출기업 역량강화 지원사업 사업계획(안)") },

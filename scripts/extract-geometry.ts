@@ -24,5 +24,8 @@ writeFileSync(join(gdir, "index.json"), JSON.stringify(tables, null, 2));
 // also dump every top-level paragraph without a table for reference (cover lines, body lines)
 const plain = paras.map((p, i) => ({ i, xml: serialize(p) })).filter((x) => !x.xml.includes("<hp:tbl"));
 writeFileSync(join(gdir, "paragraphs.xml"), plain.map((x) => `<!-- para ${x.i} -->\n${x.xml}`).join("\n"));
+// plan cover pieces (docs/design-system/plan.md): grouped-shape title (para 6), spacer (7/18), bottom logo (19)
+const COVER_ALIASES: Record<string, Record<string, number>> = { plan: { "cover-title": 6, "cover-blank": 7, "cover-blank2": 18, "cover-logo": 19 } };
+for (const [name, idx] of Object.entries(COVER_ALIASES[family] ?? {})) writeFileSync(join(gdir, `${name}.xml`), serialize(paras[idx]));
 console.log(`${family}: ${tables.length} top-level tables, ${paras.length} paragraphs`);
 for (const t of tables) console.log(`  t${String(t.tableIndex).padStart(2, "0")} para=${t.paraIndex} ${t.rowCnt}x${t.colCnt} w=${t.width} h=${t.height} tac=${t.treatAsChar} | ${t.preview}`);

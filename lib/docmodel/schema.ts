@@ -119,7 +119,16 @@ export const BlockSchema = z.discriminatedUnion("k", [
   }),
   z.object({ ...Base, k: z.literal("blank"), role: z.enum(["blank", "blankSmall"]).optional() }),
   z.object({ ...Base, k: z.literal("pageBreak") }),
-  z.object({ ...Base, k: z.literal("image"), asset: z.string(), widthMm: z.number().optional(), heightMm: z.number().optional(), align: z.enum(["left", "center"]).optional() }),
+  z.object({
+    ...Base,
+    k: z.literal("image"),
+    asset: z.string(),
+    widthMm: z.number().optional(),
+    heightMm: z.number().optional(),
+    align: z.enum(["left", "center"]).optional(),
+    /** "pageBottom" = 쪽 아래 고정(글자처럼 취급 안 함, 쪽 기준 아래 정렬) — 공고문 1쪽 로고 */
+    position: z.enum(["inline", "pageBottom"]).optional(),
+  }),
   z.object({
     ...Base,
     k: z.literal("table"),
@@ -197,6 +206,12 @@ export const PlanMetaSchema = z.object({
     .optional(),
   요약: z.object({ 사업개요: z.string(), 추진일정: z.string(), 기대효과: z.string() }).optional(),
   numbering: z.enum(["roman", "arabic"]).default("roman"),
+  /**
+   * 항목 들여쓰기 사다리. "gov"(기본) = 행정업무운영 편람: 첫째 항목 왼쪽 기본선, 이후 2타씩
+   * (□0 ㅇ2 -4 ·6). "gepa" = 참고 문서 관행(□1 ㅇ2 -3 ·4). docs/design-system/gov-manual.md §3.
+   */
+  ladder: z.enum(["gepa", "gov"]).default("gov"),
+  /** 본문 줄간격 % (user, 2026-09-16: 160) */
   lineSpacing: z.number().default(160),
   body1Font: z.enum(["humanMyeongjoBold", "hyHeadlineBold"]).default("humanMyeongjoBold"),
   /**

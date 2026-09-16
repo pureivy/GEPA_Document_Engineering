@@ -5,6 +5,7 @@
 import { createHash } from "node:crypto";
 import { existsSync, mkdirSync, readFileSync, readdirSync, writeFileSync, rmSync } from "node:fs";
 import { join } from "node:path";
+import { lintGovStyle } from "../docmodel/govLint";
 import { buildHwpx, type BuildOptions } from "./build";
 import { validateHwpx, renderPagesSvg } from "./validate";
 import { embedPreview } from "./preview";
@@ -30,6 +31,8 @@ export async function exportStageDoc(stageDir: string, doc: DocModel, opts: Buil
   let bytes = built.bytes;
   let svgs: string[] = [];
   const warnings = built.report.warnings.map((w) => (w.blockId ? `[${w.blockId}] ${w.message}` : w.message));
+  // 행정업무운영 편람 작성 기준(docs/design-system/gov-manual.md) — deterministic checks, non-blocking
+  for (const i of lintGovStyle(doc)) warnings.push(`[편람${i.severity === "info" ? "·참고" : ""}·${i.rule}]${i.blockId ? ` [${i.blockId}]` : ""} ${i.message}${i.fix ? ` → ${i.fix}` : ""}`);
   if (v.ok) {
     try {
       svgs = await renderPagesSvg(built.bytes);

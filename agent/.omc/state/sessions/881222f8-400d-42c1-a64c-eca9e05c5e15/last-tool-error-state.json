@@ -1,7 +1,0 @@
-{
-  "tool_name": "Bash",
-  "tool_input_preview": "{\"command\":\"for flag in \\\"\\\" \\\"--setting-sources project\\\"; do printf \\\"%-28s \\\" \\\"[$flag]\\\"; env -u CLAUDECODE -u CLAUDE_PID -u CLAUDE_EFFORT $(env | grep -o \\\"^CLAUDE_CODE_[A-Z_]*\\\" | sed 's/^/-u /'...",
-  "error": "Exit code 1\n[]                           A-YES\nB-YES\n[--setting-sources project]  Traceback (most recent call last):\n  File \"<string>\", line 1, in <module>\n    import sys,json;d=json.loads(sys.stdin.read());print(d.get('result'))\n                      ~~~~~~~~~~^^^^^^^^^^^^^^^^^^\n  File \"/opt/homebrew/Cellar/python@3.14/3.14.7/Frameworks/Python.framework/Versions/3.14/lib/python3.14/json/__init__.py\", line 352, in loads\n    return _default_decoder.decode(s)\n           ~~~~~~~~~~~~~~~~~~~~~~~^^^\n...",
-  "timestamp": "2026-09-16T01:03:01.290Z",
-  "retry_count": 2
-}

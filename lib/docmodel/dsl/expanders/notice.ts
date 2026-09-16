@@ -2,7 +2,7 @@
  * 공고문 expander (grammar rule 13): the 6-1 skeleton's fixed front part is synthesized from
  * front-matter so the writer model only authors sections 3+.
  *
- *   noticeHeader → infoBox(meta.접수) → pageBreak → image logo → sectionBar 1 모집개요 →
+ *   noticeHeader → infoBox(meta.접수) → image logo(page-bottom) → pageBreak → sectionBar 1 모집개요 →
  *   overviewTable(meta.모집개요) → sectionBar 2 지원절차 → procedureFlow(meta.절차도) →
  *   note ※ 상기 일정은 추진 상황에 따라 변경될 수 있음
  */
@@ -34,10 +34,8 @@ export function noticeInfoBox(meta: NoticeMeta): Extract<BlockInput, { k: "infoB
       },
       {
         heading: NOTICE_안내박스.문의.heading,
-        items: [
-          [text(NOTICE_안내박스.문의.작성문의), { t: "br" }, text(fill(NOTICE_안내박스.문의.작성문의_2행, vars))],
-          [text(NOTICE_안내박스.문의.이의제기)],
-        ],
+        // 이의제기 문구는 본문 "9. 기타 유의사항"의 {{boilerplate:이의제기}}로만 두고 안내박스에서는 뺀다(user 2026-09-16: 안내박스 항목 축소)
+        items: [[text(NOTICE_안내박스.문의.작성문의), { t: "br" }, text(fill(NOTICE_안내박스.문의.작성문의_2행, vars))]],
       },
       { heading: NOTICE_안내박스.선정결과통보.heading, items: [[text(a.선정결과통보)]] },
     ],
@@ -61,12 +59,10 @@ export function noticeProcedureFlow(meta: NoticeMeta): Extract<BlockInput, { k: 
 }
 
 export function noticePrelude(meta: NoticeMeta): BlockInput[] {
-  const blocks: BlockInput[] = [
-    { k: "noticeHeader" },
-    noticeInfoBox(meta),
-    { k: "pageBreak" },
-  ];
-  if (meta.로고 !== false) blocks.push({ k: "image", asset: NOTICE_LOGO.asset, widthMm: NOTICE_LOGO.widthMm, heightMm: NOTICE_LOGO.heightMm, align: "left" });
+  // 표지(1쪽): 공고 머리 → 안내박스 → GEPA 로고(쪽 아래 고정) → 쪽 나눔 (user 2026-09-16: 로고는 반드시 1쪽 하단에)
+  const blocks: BlockInput[] = [{ k: "noticeHeader" }, noticeInfoBox(meta)];
+  if (meta.로고 !== false) blocks.push({ k: "image", asset: NOTICE_LOGO.asset, widthMm: NOTICE_LOGO.widthMm, heightMm: NOTICE_LOGO.heightMm, align: "center", position: "pageBottom" });
+  blocks.push({ k: "pageBreak" });
   blocks.push(
     { k: "sectionBar", number: 1, title: "모집개요" },
     noticeOverviewTable(meta),

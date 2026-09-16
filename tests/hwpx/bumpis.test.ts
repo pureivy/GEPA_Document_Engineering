@@ -37,16 +37,16 @@ describe("범정부오피스(범피스) 프로필", () => {
     expect(v.errors).toEqual([]);
   }, 60_000);
 
-  it("uses the 범피스 ladder: □0 ○1 -3, notes 4 under ○, glyph ㅇ→○", async () => {
+  it("uses the 편람 2타 ladder under the 범피스 profile: □0 ○2 -4, notes 4 under ○, glyph ㅇ→○", async () => {
     const text = await extractText(bytes);
     const lines = text.split("\n");
     const find = (s: string) => lines.find((l) => l.includes(s)) ?? "";
     const lead = (l: string) => l.length - l.trimStart().length;
     expect(lead(find("□ 회의개요"))).toBe(0);
-    expect(find("목적:")).toMatch(/^ ○ /);
+    expect(find("목적:")).toMatch(/^  ○ /);
     expect(lead(find("* 중앙행정기관"))).toBe(4);
     expect(lead(find("※ 기관별"))).toBe(4);
-    expect(lead(find("- 세부내용"))).toBe(3);
+    expect(lead(find("- 세부내용"))).toBe(4);
   });
 
   it("applies fonts (□ HY헤드라인M 16, ※ 맑은 고딕 12), page margins (bottom 10mm) and 0.5mm table header rules", () => {

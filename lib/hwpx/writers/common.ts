@@ -1,9 +1,9 @@
 /** Block handlers shared by all families: paragraphs, blanks, page breaks, images, generic tables. */
-import type { XmlNode } from "../xml";
+import { findAll, type XmlNode } from "../xml";
 import type { WriterContext } from "./context";
 import type { Block, Cell, Inline, ParaRole, TableStyle, Row, Family } from "../../docmodel/schema";
 import { inlineText } from "../../docmodel/schema";
-import { leadingSpaces } from "../../docmodel/indent";
+import { leadingSpaces, noteIndentUnder, type Ladder } from "../../docmodel/indent";
 import { table, cellInteriorWidth, type CellSpec, type RowSpec } from "../emit/table";
 import { sumFormula } from "../emit/paragraph";
 import { pictureFrom, pictureSize } from "../emit/picture";
@@ -31,6 +31,10 @@ export interface FamilyStyle {
   hangingIndent: boolean;
   /** which leading-space ladder to use (defaults to the document family) */
   indentFamily?: Family;
+  /** "gov" = 행정업무운영 편람 2타 사다리(□0 ㅇ2 -4 ·6); default "gepa" = reference-document habit */
+  ladder?: Ladder;
+  /** 문단 위 간격 (HWPUNIT, 100 = 1pt) per level: □ / ㅇ / everything else (- · ※ * plain) */
+  spaceBefore?: { body1: number; body2: number; other: number };
   /** glyph substitutions at emit time, e.g. { "ㅇ": "○" } for the 범정부 profile */
   glyphMap?: Record<string, string>;
 }
@@ -40,10 +44,12 @@ export function bodyStyle(ctx: WriterContext, fs: FamilyStyle, b: ParaBlock): { 
   const rawGlyph = b.glyph && b.glyph !== "none" ? b.glyph : undefined;
   const glyph = rawGlyph ? ((fs.glyphMap?.[rawGlyph] ?? rawGlyph) as typeof rawGlyph) : undefined;
   const indentFamily = fs.indentFamily ?? ctx.family;
-  let indent = b.indent ?? leadingSpaces(indentFamily, b.glyph, b.role);
-  // house idiom: a ※ / * note that follows a 2nd/3rd-level item is indented under that item
-  if (b.indent === undefined && (glyph === "※" || glyph === "*") && (ctx.prevGlyph === "ㅇ" || ctx.prevGlyph === "○" || ctx.prevGlyph === "◦" || ctx.prevGlyph === "-")) {
-    indent = indentFamily === "plan" ? 3 : 4;
+  const ladder = fs.ladder ?? "gepa";
+  let indent = b.indent ?? leadingSpaces(indentFamily, b.glyph, b.role, ladder);
+  // house idiom / 편람: a ※ / * note that follows an item is indented under that item's text
+  if (b.indent === undefined && (glyph === "※" || glyph === "*")) {
+    const under = noteIndentUnder(indentFamily, ctx.prevGlyph, ladder);
+    if (under !== undefined) indent = under;
   }
   if (glyph && glyph !== "※" && glyph !== "*") ctx.prevGlyph = glyph;
   const spaces = " ".repeat(indent);
@@ -89,11 +95,12 @@ export function bodyStyle(ctx: WriterContext, fs: FamilyStyle, b: ParaBlock): { 
   }
   // paragraph shape
   let paraPr: number;
-  const useMapped = mapped && !b.align && (!fs.hangingIndent || !glyph || role === "footnote");
+  const useMapped = mapped && !b.align && !fs.spaceBefore && (!fs.hangingIndent || !glyph || role === "footnote");
   if (useMapped) paraPr = mapped.paraPr;
   else {
     const spec: ParaSpec = { align: align ?? "JUSTIFY", lineSpacing: role === "footnote" ? 150 : fs.bodyLineSpacing };
     if (role === "unitCaption") spec.align = "RIGHT";
+    if (fs.spaceBefore) spec.prev = role === "body1" ? fs.spaceBefore.body1 : role === "body2" ? fs.spaceBefore.body2 : fs.spaceBefore.other;
     if (fs.hangingIndent && glyph && role !== "footnote") spec.hanging = ctx.textWidth(prefix, base.pt);
     paraPr = ctx.reg.paraPr(spec);
   }
@@ -138,6 +145,14 @@ export function emitImage(ctx: WriterContext, fs: FamilyStyle, b: ImageBlock): X
   const pic = pictureFrom(ref, { id: ctx.ids.nextShapeId(), instid: ctx.ids.nextShapeId(), zOrder: ctx.ids.nextZOrder() }, width);
   const { height } = pictureSize(pic);
   const r = ctx.roleOr("logoAnchor", { para: { align: b.align === "center" ? "CENTER" : "LEFT", lineSpacing: fs.bodyLineSpacing }, char: { font: "body", pt: fs.bodyPt } });
+  if (b.position === "pageBottom") {
+    // out-of-flow picture pinned to the bottom of the page (쪽 기준), horizontally per `align`; the anchor paragraph stays empty
+    const pos = findAll(pic, "hp:pos")[0];
+    if (pos) Object.assign(pos.attrs, { treatAsChar: "0", flowWithText: "0", allowOverlap: "0", vertRelTo: "PAGE", vertAlign: "BOTTOM", vertOffset: "0", horzRelTo: "PAGE", horzAlign: b.align === "center" ? "CENTER" : "LEFT", horzOffset: "0" });
+    pic.attrs.textWrap = "TOP_AND_BOTTOM";
+    const paraPr = ctx.reg.paraPr({ align: "LEFT", lineSpacing: 100 });
+    return ctx.para({ paraPr, runs: [{ charPr: r.charPr, nodes: [pic] }], vertsize: 1000, lineSpacing: 100 });
+  }
   const paraPr = b.align === "center" ? ctx.reg.paraPr({ align: "CENTER", lineSpacing: 160 }) : r.paraPr;
   return ctx.para({ paraPr, runs: [{ charPr: r.charPr, nodes: [pic] }], vertsize: height, lineSpacing: 120 });
 }

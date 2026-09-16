@@ -44,7 +44,7 @@ export function writeNotice(ctx: WriterContext, doc: NoticeDoc): XmlNode[] {
         out.push(overviewTable(ctx, b));
         break;
       case "procedureFlow":
-        out.push(procedureFlow(ctx, b));
+        out.push(...procedureFlow(ctx, b));
         break;
       case "para":
         out.push(emitPara(ctx, fs, b));
@@ -228,8 +228,18 @@ function overviewTable(ctx: WriterContext, b: Extract<Block, { k: "overviewTable
 
 // ---- 지원절차 절차도 --------------------------------------------------------------------
 
-export function procedureFlow(ctx: WriterContext, b: Extract<Block, { k: "procedureFlow" }>): XmlNode {
+/**
+ * 절차도. 단계가 5개를 넘으면 두 줄로 나눠 그린다(user, 2026-09-16) — 첫 줄 ⌈n/2⌉단계, 둘째 줄 나머지;
+ * 각 줄은 독립된 표라 칸 너비가 넉넉해진다.
+ */
+export function procedureFlow(ctx: WriterContext, b: Extract<Block, { k: "procedureFlow" }>): XmlNode[] {
   const stages = b.stages.length ? b.stages : [{ name: "모집공고", when: "" }];
+  if (stages.length <= 5) return [flowRow(ctx, stages, false)];
+  const first = Math.ceil(stages.length / 2);
+  return [flowRow(ctx, stages.slice(0, first), true), flowRow(ctx, stages.slice(first), false)];
+}
+
+function flowRow(ctx: WriterContext, stages: { name: string; when: string }[], continues: boolean): XmlNode {
   const n = stages.length;
   const totalWidth = 48144;
   const arrowW = 2590;
@@ -247,19 +257,22 @@ export function procedureFlow(ctx: WriterContext, b: Extract<Block, { k: "proced
   const bfHeader = ctx.reg.borderFill({ l: grey(), r: grey(), t: grey(), b: "none", fill: "#BFBFBF" });
   const bfValue = ctx.reg.borderFill({ l: grey(), r: grey(), t: "none", b: grey(), fill: "#DFE6F7" });
   const bfArrow = ctx.reg.borderFill({ l: grey(), r: grey(), t: "none", b: "none" });
-  const chevronRef = ctx.tpl.pics["image2"];
+  // the chevron picture is image2 of the notice template only; the plan template's image2 is the GEPA logo (user report 2026-09-16)
+  const chevronRef = ctx.family === "notice" ? ctx.tpl.pics["image2"] : undefined;
   const row0: RowSpec = { height: 3097, cells: [] };
   const row1: RowSpec = { height: 2881, cells: [] };
   stages.forEach((s, i) => {
     const col = i * 2;
-    row0.cells.push({ col, borderFill: bfHeader, margin, paragraphs: [ctx.cellPara({ paraPr: header.paraPr, runs: [{ charPr: header.charPr, text: s.name }], vertsize: 1100, lineSpacing: 130, horzsize: cellInteriorWidth(cols[col], margin) })] });
+    // a continued row ends its last stage with a trailing arrow marker so the reader knows it goes on
+    const name = continues && i === n - 1 ? `${s.name} ⇩` : s.name;
+    row0.cells.push({ col, borderFill: bfHeader, margin, paragraphs: [ctx.cellPara({ paraPr: header.paraPr, runs: [{ charPr: header.charPr, text: name }], vertsize: 1100, lineSpacing: 130, horzsize: cellInteriorWidth(cols[col], margin) })] });
     row1.cells.push({ col, borderFill: bfValue, margin, paragraphs: [ctx.cellPara({ paraPr: value.paraPr, runs: [{ charPr: value.charPr, text: s.when }], vertsize: 1100, lineSpacing: 130, horzsize: cellInteriorWidth(cols[col], margin) })] });
     if (i < n - 1) {
       const nodes = chevronRef ? [pictureFrom(chevronRef, { id: ctx.ids.nextShapeId(), instid: ctx.ids.nextShapeId(), zOrder: ctx.ids.nextZOrder() })] : [];
       row0.cells.push({ col: col + 1, rowSpan: 2, borderFill: bfArrow, margin, paragraphs: [ctx.cellPara({ paraPr: value.paraPr, runs: [{ charPr: value.charPr, nodes, text: chevronRef ? undefined : "⇒" }], vertsize: 1417, lineSpacing: 130, horzsize: cellInteriorWidth(cols[col + 1], margin) })] });
     }
   });
-  const tbl = table({ id: ctx.ids.nextShapeId(), zOrder: ctx.ids.nextZOrder(), cols, rows: [row0, row1], borderFill: ctx.reg.gridBorderFill(), inMargin: margin, outMargin: { l: 140, r: 140, t: 140, b: 140 } });
+  const tbl = table({ id: ctx.ids.nextShapeId(), zOrder: ctx.ids.nextZOrder(), cols, rows: [row0, row1], borderFill: ctx.reg.gridBorderFill(), inMargin: margin, outMargin: { l: 140, r: 140, t: 140, b: continues ? 420 : 140 } });
   const anchor = ctx.roleOr("tableAnchor", { para: { align: "JUSTIFY", lineSpacing: 160 }, char: { font: "body", pt: 13 } });
   return ctx.para({ paraPr: anchor.paraPr, runs: [{ charPr: anchor.charPr, nodes: [tbl] }], vertsize: 5978, lineSpacing: 100 });
 }

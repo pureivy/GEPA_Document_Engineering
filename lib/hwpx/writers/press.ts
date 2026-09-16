@@ -114,7 +114,7 @@ export function writePress(ctx: WriterContext, doc: PressDoc): XmlNode[] {
         out.push(...emitTable(ctx, fs, b));
         break;
       case "procedureFlow":
-        out.push(procedureFlow(ctx, b));
+        out.push(...procedureFlow(ctx, b));
         break;
       case "attachmentList": {
         const r = ctx.roleOr("pressBody", { para: { align: "JUSTIFY", lineSpacing: 180 }, char: BODY_CHAR });

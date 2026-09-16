@@ -1,7 +1,7 @@
 import { describe, expect, it } from "vitest";
 import { parseDsl } from "../../lib/docmodel/dsl";
 import { DocModelSchema, type Block } from "../../lib/docmodel/schema";
-import { NOTICE_기타유의사항, NOTICE_참여제한대상, NOTICE_지급방법, NOTICE_이의제기 } from "../../lib/docmodel/boilerplate";
+import { NOTICE_기타유의사항, NOTICE_참여제한대상, NOTICE_지급방법 } from "../../lib/docmodel/boilerplate";
 import { fixture, kinds, paras, plain, tables } from "./helpers";
 
 const { doc, warnings } = parseDsl(fixture("notice"));
@@ -18,7 +18,7 @@ describe("notice example (B.3)", () => {
   });
 
   it("prepends the synthesized skeleton in the rule-13 order", () => {
-    expect(kinds(doc).slice(0, 9)).toEqual(["noticeHeader", "infoBox", "pageBreak", "image", "sectionBar", "overviewTable", "sectionBar", "procedureFlow", "para"]);
+    expect(kinds(doc).slice(0, 9)).toEqual(["noticeHeader", "infoBox", "image", "pageBreak", "sectionBar", "overviewTable", "sectionBar", "procedureFlow", "para"]);
     const bars = doc.blocks.filter((b): b is Extract<Block, { k: "sectionBar" }> => b.k === "sectionBar");
     expect(bars.map((b) => [b.number, b.title])).toEqual([
       [1, "모집개요"],
@@ -35,8 +35,8 @@ describe("notice example (B.3)", () => {
     expect(note.role).toBe("note");
     expect(note.glyph).toBe("※");
     expect(plain(note)).toBe("상기 일정은 추진 상황에 따라 변경될 수 있음");
-    const img = doc.blocks[3] as Extract<Block, { k: "image" }>;
-    expect(img).toMatchObject({ asset: "logo", widthMm: 92.3, heightMm: 13.3, align: "left" });
+    const img = doc.blocks[2] as Extract<Block, { k: "image" }>;
+    expect(img).toMatchObject({ asset: "logo", widthMm: 92.3, heightMm: 13.3, align: "center", position: "pageBottom" });
   });
 
   it("builds the 안내박스 from meta.접수 with the §8 wording", () => {
@@ -45,7 +45,7 @@ describe("notice example (B.3)", () => {
     expect(box.groups[0].items[0]).toEqual([{ t: "text", text: "이메일 접수: gepa_north@naver.com" }]);
     expect(box.groups[0].items[1]).toEqual([{ t: "text", text: "우편(등기): 경상북도 안동시 북순환로 387, 2층 경상북도경제진흥원" }]);
     expect(box.groups[1].items[0]).toEqual([{ t: "text", text: "사업 및 신청서 작성 문의: " }, { t: "br" }, { t: "text", text: "북부지소 ☎ 054-900-3801 (E-mail) gepa_north@naver.com" }]);
-    expect(box.groups[1].items[1]).toEqual([{ t: "text", text: NOTICE_이의제기 }]);
+    expect(box.groups[1].items).toHaveLength(1); // 이의제기 문구는 안내박스에서 제외(2026-09-16)
     expect(box.groups[2].items[0]).toEqual([{ t: "text", text: "기업별 개별통보(필요시 접수 홈페이지 공고)" }]);
   });
 
@@ -148,7 +148,7 @@ describe("notice example (B.3)", () => {
   });
 
   it("handles <pagebreak>, [별첨] headings and collapses blank lines", () => {
-    const i = doc.blocks.findIndex((b) => b.k === "pageBreak" && b.id !== "b003");
+    const i = doc.blocks.findIndex((b, idx) => b.k === "pageBreak" && idx > 4); // skip the cover page break (index 3)
     expect(i).toBeGreaterThan(0);
     expect(doc.blocks[i + 1]).toMatchObject({ k: "para", role: "attachmentHeading", inlines: [{ t: "text", text: "[별첨1]정량평가 기준" }] });
     for (let j = 1; j < doc.blocks.length; j++) expect(doc.blocks[j].k === "blank" && doc.blocks[j - 1].k === "blank").toBe(false);

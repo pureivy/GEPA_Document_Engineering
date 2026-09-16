@@ -1,5 +1,5 @@
 /** 사업계획서 writer: DocModel(plan) → paragraphs using the file-5 house geometry. */
-import { type XmlNode } from "../xml";
+import { el, findAll, childrenNamed, type XmlNode } from "../xml";
 import type { PlanDoc, Block } from "../../docmodel/schema";
 import { inlineText } from "../../docmodel/schema";
 import { WriterContext } from "./context";
@@ -10,6 +10,10 @@ import { procedureFlow } from "./notice";
 
 const NAVY = "#003366";
 const CHIP_FILL = "#DFE6F7";
+
+/** 문단 위 간격 (user, 2026-09-16): □ 10pt / ㅇ 5pt / 나머지 3pt; 장 제목 밴드 20pt (쪽 처음이면 0) */
+const PLAN_SPACE_BEFORE = { body1: 1000, body2: 500, other: 300 };
+const CHAPTER_SPACE_BEFORE = 2000;
 
 export function planStyle(doc: PlanDoc): FamilyStyle {
   if (doc.meta.house === "bumpis") {
@@ -27,18 +31,29 @@ export function planStyle(doc: PlanDoc): FamilyStyle {
       tableHeaderRuleMm: 0.5,
       hangingIndent: true,
       indentFamily: "notice",
+      ladder: doc.meta.ladder,
+      spaceBefore: PLAN_SPACE_BEFORE,
       glyphMap: { "ㅇ": "○", "◦": "○" },
     };
   }
+  // 기본(GEPA) 프로필도 글꼴·크기·표 서식은 범피스 1100일차 매뉴얼을 따른다(user, 2026-09-16):
+  // □ HY헤드라인M 16, ○ 휴먼명조 15, ※/* 맑은 고딕 12, 표 맑은 고딕 + 연파랑 머리글 + 0.5mm 상·하 굵은 선, 아래 여백 10mm.
+  // 표지(결재란·사업명 상자·로고)·장 밴드·절 칩·목적 박스는 GEPA 참고 문서 모양을 유지한다.
   return {
-    bodyPt: 15,
+    bodyPt: 14, // user 2026-09-16: 본문(○ - ·) 14pt
     bodyLineSpacing: doc.meta.lineSpacing ?? 160,
-    body1Bold: true,
-    body1Font: doc.meta.body1Font === "hyHeadlineBold" ? "heading" : "body",
+    body1Bold: false,
+    body1Font: "heading",
+    body1Pt: 16,
     notePt: 12,
-    tableHeaderFill: "#D9D9D9",
+    noteFont: "table",
+    tableHeaderFill: "#DFE6F7",
     tableFontPt: 11,
+    tableHeaderRuleMm: 0.5,
     hangingIndent: true,
+    ladder: doc.meta.ladder,
+    spaceBefore: PLAN_SPACE_BEFORE,
+    glyphMap: { "ㅇ": "○", "◦": "○" },
   };
 }
 
@@ -47,8 +62,10 @@ export function writePlan(ctx: WriterContext, doc: PlanDoc): XmlNode[] {
   const fs = planStyle(doc);
   const bumpis = doc.meta.house === "bumpis";
   let chipNo = 0;
+  let lastWasCover = false;
   for (const b of doc.blocks) {
     if (b.k === "sectionChip" && bumpis && !/^\d+$/.test(b.label)) chipNo++;
+    if (b.k !== "chapterBand" && b.k !== "pageBreak" && b.k !== "blank") lastWasCover = b.k === "coverTitle" || b.k === "approvalBlock";
     switch (b.k) {
       case "approvalBlock":
         if (bumpis && !hasApprovalMeta(doc)) break; // 범정부 1쪽 보고서: 결재란 없이 제목 상자
@@ -58,7 +75,8 @@ export function writePlan(ctx: WriterContext, doc: PlanDoc): XmlNode[] {
         out.push(...(bumpis ? boxedTitle(ctx, b) : coverTitle(ctx, fs, b)));
         break;
       case "chapterBand":
-        out.push(chapterBand(ctx, b.numeral, b.title));
+        // 문단 위 20pt, but 0 when the band opens a page (after a page break or as the first body block)
+        out.push(chapterBand(ctx, b.numeral, b.title, ctx.pendingPageBreak || out.length === 0 || lastWasCover ? 0 : CHAPTER_SPACE_BEFORE));
         break;
       case "sectionChip":
         out.push(bumpis ? numberedChip(ctx, /^\d+$/.test(b.label) ? b.label : String(chipNo), b.title) : sectionChip(ctx, b.label, b.title));
@@ -67,7 +85,7 @@ export function writePlan(ctx: WriterContext, doc: PlanDoc): XmlNode[] {
         out.push(bumpis ? textBox(ctx, b) : summaryBox(ctx, b));
         break;
       case "procedureFlow":
-        out.push(procedureFlow(ctx, b));
+        out.push(...procedureFlow(ctx, b));
         break;
       case "para":
         out.push(emitPara(ctx, fs, b));
@@ -143,22 +161,52 @@ function approvalBlock(ctx: WriterContext, doc: PlanDoc): XmlNode[] {
   return out;
 }
 
+/**
+ * 표지 (user, 2026-09-16): 결재란 아래 4줄 여백 → 참고 문서의 제목 상자(그룹 도형: 주황 꺾쇠·파란 밑줄 그림 +
+ * 제목 글상자)를 복제해 사업명을 넣고 → 12줄 여백 → 하단 GEPA 로고(참고 문서 para 19). 요약 칩은 쓰지 않는다.
+ * geometry 조각이 없으면 예전 방식(가운데 정렬 제목 문단)으로 떨어진다.
+ */
 function coverTitle(ctx: WriterContext, fs: FamilyStyle, b: Extract<Block, { k: "coverTitle" }>): XmlNode[] {
   const out: XmlNode[] = [];
+  const titleFrag = loadGeometry(ctx.tpl.dir, "cover-title");
+  const logoFrag = loadGeometry(ctx.tpl.dir, "cover-logo");
+  const blankFrag = loadGeometry(ctx.tpl.dir, "cover-blank");
+  const blank2Frag = loadGeometry(ctx.tpl.dir, "cover-blank2");
   const spacer = ctx.roleOr("coverSpacer", { para: { align: "LEFT", lineSpacing: 100 }, char: { font: "body", pt: 24 } });
+  const blankPara = (frag: XmlNode | undefined) =>
+    frag ? cloneFragment(frag, ctx.ids) : ctx.para({ paraPr: spacer.paraPr, runs: [{ charPr: spacer.charPr, text: "" }], vertsize: 2400, lineSpacing: 100 });
+  const text = inlineText(b.inlines).replace(/\n/g, " ");
+  if (titleFrag && logoFrag) {
+    for (let i = 0; i < 4; i++) out.push(blankPara(blankFrag));
+    const title = cloneFragment(titleFrag, ctx.ids);
+    // the title lives in the rect's drawText; replace the CLICK_HERE field runs with one plain run
+    const rect = findAll(title, "hp:rect")[0];
+    const p = rect ? findAll(rect, "hp:p")[0] : undefined;
+    if (p) {
+      const charPr = childrenNamed(p, "hp:run").find((r) => findAll(r, "hp:t").length > 0)?.attrs.charPrIDRef ?? "20";
+      p.children = [el("hp:run", { charPrIDRef: charPr }, [el("hp:t", {}, [text])])];
+    }
+    if (ctx.pendingPageBreak) title.attrs.pageBreak = "1";
+    ctx.pendingPageBreak = false;
+    out.push(title);
+    for (let i = 0; i < 11; i++) out.push(blankPara(blankFrag));
+    out.push(blankPara(blank2Frag));
+    out.push(cloneFragment(logoFrag, ctx.ids));
+    return out;
+  }
   const title = ctx.roleOr("coverTitle", { para: { align: "CENTER", lineSpacing: 160 }, char: { font: "heading", pt: 20, color: "#000094" } });
   const pt = b.sizePt ?? 20;
-  for (let i = 0; i < 3; i++) out.push(ctx.para({ paraPr: spacer.paraPr, runs: [{ charPr: spacer.charPr, text: "" }], vertsize: 2400, lineSpacing: 100 }));
+  for (let i = 0; i < 3; i++) out.push(blankPara(undefined));
   const runs = ctx.runsFor(b.inlines, { font: "heading", pt, color: "#000094" }, pt === 20 ? title.charPr : undefined);
   out.push(ctx.para({ paraPr: title.paraPr, runs, vertsize: pt * 100, lineSpacing: 160 }));
-  for (let i = 0; i < 2; i++) out.push(ctx.para({ paraPr: spacer.paraPr, runs: [{ charPr: spacer.charPr, text: "" }], vertsize: 2400, lineSpacing: 100 }));
+  for (let i = 0; i < 2; i++) out.push(blankPara(undefined));
   void fs;
   return out;
 }
 
 // ---- 장 제목 밴드 (Ⅰ | | 제목) ---------------------------------------------------------
 
-export function chapterBand(ctx: WriterContext, numeral: string, title: string): XmlNode {
+export function chapterBand(ctx: WriterContext, numeral: string, title: string, spaceBefore = 0): XmlNode {
   const cols = [2986, 563, 44557];
   const margin = { l: 141, r: 141, t: 141, b: 141 };
   const numeralRole = ctx.roleOr("chapterNumeral", { para: { align: "CENTER", lineSpacing: 160 }, char: { font: "heading", pt: 20, bold: true, color: "#FFFFFF" } });
@@ -189,7 +237,8 @@ export function chapterBand(ctx: WriterContext, numeral: string, title: string):
     pageBreak: "NONE",
   });
   const anchor = ctx.roleOr("tableAnchor", { para: { align: "JUSTIFY", lineSpacing: 135 }, char: { font: "heading", pt: 16 } });
-  return ctx.para({ paraPr: anchor.paraPr, runs: [{ charPr: anchor.charPr, nodes: [tbl] }], vertsize: h, lineSpacing: 100 });
+  const paraPr = spaceBefore > 0 ? ctx.reg.paraPr({ align: "JUSTIFY", lineSpacing: 135, prev: spaceBefore }) : anchor.paraPr;
+  return ctx.para({ paraPr, runs: [{ charPr: anchor.charPr, nodes: [tbl] }], vertsize: h, lineSpacing: 100 });
 }
 
 // ---- 절 제목 칩 (1×1 light-blue band, file-5 style) ------------------------------------
@@ -311,7 +360,8 @@ function numberedChip(ctx: WriterContext, label: string, title: string): XmlNode
     outMargin: { l: 140, r: 140, t: 283, b: 140 },
   });
   const anchor = ctx.roleOr("tableAnchor", { para: { align: "JUSTIFY", lineSpacing: 135 }, char: { font: "heading", pt: 16 } });
-  return ctx.para({ paraPr: anchor.paraPr, runs: [{ charPr: anchor.charPr, nodes: [tbl] }], vertsize: h, lineSpacing: 100 });
+  const paraPr = anchor.paraPr;
+  return ctx.para({ paraPr, runs: [{ charPr: anchor.charPr, nodes: [tbl] }], vertsize: h, lineSpacing: 100 });
 }
 
 /** 글상자: 남색 이중선 상자 (매뉴얼 6p·14p) */

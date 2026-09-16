@@ -79,9 +79,16 @@ describe("buildHwpx — plan", () => {
     expect(p0.indexOf("<hp:secPr ")).toBeLessThan(p0.indexOf("<hp:pageNum "));
     expect(sec).not.toMatch(/<hp:run charPrIDRef="\d+"><\/hp:run>/);
   });
-  it("ladder for plan is □1 ㅇ2 -3 ·4 ※1", async () => {
+  it("ladder for plan defaults to the 편람 2타 ladder □0 ㅇ2 -4 ·6 (※ two more than the item it annotates)", async () => {
     const text = await extractText(bytes);
     const body = text.slice(text.indexOf("□ 추진배경") - 1);
+    expect(leadingSpaceSeq(body).slice(0, 5)).toEqual([0, 2, 4, 6, 8]);
+  });
+  it("ladder: gepa keeps the reference habit □1 ㅇ2 -3 ·4 ※1", async () => {
+    const doc = planFixture();
+    (doc.meta as { ladder?: string }).ladder = "gepa";
+    const text = await extractText(buildHwpx(doc, { now: NOW }).bytes);
+    const body = text.split("\n").filter((l) => /^ *[□ㅇ○\-·※]/.test(l)).join("\n");
     expect(leadingSpaceSeq(body).slice(0, 5)).toEqual([1, 2, 3, 4, 1]);
     expect(text).toContain("끝.");
   });

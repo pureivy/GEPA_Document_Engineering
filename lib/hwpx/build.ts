@@ -53,8 +53,8 @@ export function buildHwpx(doc: DocModel, opts: BuildOptions = {}): BuildResult {
   if (paras.length === 0) paras = [ctx.para({ paraPr: 0, runs: [{ charPr: 0, text: "" }] })];
   // section properties live in the first run of the first paragraph
   const secPrRun = clone(tpl.secPrRun);
-  if (doc.family === "plan" && doc.meta.house === "bumpis") {
-    // 범정부오피스 용지 여백: 위 15 / 아래 10 / 좌·우 20 mm, 머리말·꼬리말 10 mm
+  if (doc.family === "plan") {
+    // 범정부오피스(범피스) 용지 여백: 위 15 / 아래 10 / 좌·우 20 mm, 머리말·꼬리말 10 mm — 모든 계획서에 적용(user, 2026-09-16)
     const margin = findFirst(secPrRun, "hp:margin");
     if (margin) Object.assign(margin.attrs, { top: "4252", bottom: "2835", left: "5669", right: "5669", header: "2835", footer: "2835" });
   }
