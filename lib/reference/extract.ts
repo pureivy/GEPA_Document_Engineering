@@ -7,7 +7,7 @@
  *   .docx  → word/document.xml (w:t runs, paragraphs → lines)
  *   .md/.txt → as is (UTF-8)
  */
-import { spawnSync } from "node:child_process";
+import { pdftotextBin, rhwpBin, spawnCommandSync as spawnSync } from "../platform";
 import { mkdtempSync, readFileSync, rmSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
@@ -58,13 +58,14 @@ function decodeEntities(s: string): string {
   return s.replace(/&lt;/g, "<").replace(/&gt;/g, ">").replace(/&quot;/g, '"').replace(/&apos;/g, "'").replace(/&#(\d+);/g, (_, d) => String.fromCodePoint(Number(d))).replace(/&amp;/g, "&");
 }
 
-export function hwpToHwpx(bytes: Uint8Array, rhwpBin = join(process.cwd(), "bin", "rhwp")): Uint8Array {
+export function hwpToHwpx(bytes: Uint8Array, bin = rhwpBin()): Uint8Array {
   const dir = mkdtempSync(join(tmpdir(), "gepa-ref-"));
   try {
     const src = join(dir, "in.hwp");
     const dst = join(dir, "out.hwpx");
     writeFileSync(src, bytes);
-    const r = spawnSync(rhwpBin, ["export-hwpx", src, dst], { encoding: "utf8", maxBuffer: 64 * 1024 * 1024 });
+    const r = spawnSync(bin, ["export-hwpx", src, dst], { encoding: "utf8", maxBuffer: 64 * 1024 * 1024 });
+    if (r.error && (r.error as NodeJS.ErrnoException).code === "ENOENT") throw new Error(`HWP 변환 도구(rhwp)가 없습니다: ${bin} — https://github.com/edwardkim/rhwp/releases 의 실행 파일을 bin/ 에 두거나 RHWP_BIN 을 설정하세요`);
     if (r.status !== 0) throw new Error(`rhwp export-hwpx failed (${r.status}): ${(r.stderr || r.stdout || "").slice(0, 300)}`);
     return new Uint8Array(readFileSync(dst));
   } finally {
@@ -72,13 +73,13 @@ export function hwpToHwpx(bytes: Uint8Array, rhwpBin = join(process.cwd(), "bin"
   }
 }
 
-export function pdfText(bytes: Uint8Array, bin = process.env.PDFTOTEXT_BIN ?? "pdftotext"): string {
+export function pdfText(bytes: Uint8Array, bin = pdftotextBin()): string {
   const dir = mkdtempSync(join(tmpdir(), "gepa-ref-"));
   try {
     const src = join(dir, "in.pdf");
     writeFileSync(src, bytes);
     const r = spawnSync(bin, ["-layout", "-enc", "UTF-8", src, "-"], { encoding: "utf8", maxBuffer: 64 * 1024 * 1024 });
-    if (r.error && (r.error as NodeJS.ErrnoException).code === "ENOENT") throw new Error("PDF 텍스트 추출 도구(pdftotext)가 없습니다 — `brew install poppler` 후 다시 시도하세요");
+    if (r.error && (r.error as NodeJS.ErrnoException).code === "ENOENT") throw new Error("PDF 텍스트 추출 도구(pdftotext)가 없습니다 — macOS `brew install poppler`, Windows는 poppler 릴리스를 풀고 PATH 또는 PDFTOTEXT_BIN 에 지정하세요");
     if (r.status !== 0) throw new Error(`pdftotext failed (${r.status}): ${(r.stderr || "").slice(0, 300)}`);
     // pdftotext -layout pads columns with spaces and separates pages with form feeds
     return r.stdout.replace(/\f/g, "\n\n").replace(/[ \t]{3,}/g, "  ");

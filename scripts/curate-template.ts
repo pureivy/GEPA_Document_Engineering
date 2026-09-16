@@ -6,7 +6,8 @@
  * Usage: pnpm tsx scripts/curate-template.ts <notice|plan|press> [--allow-lineseg-diff] [--from-hwpx]
  *   --from-hwpx: the family ships a Hancom-saved reference.hwpx (press) — unzip it verbatim instead of converting the .hwp.
  */
-import { spawnSync } from "node:child_process";
+import { spawnCommandSync as spawnSync } from "../lib/platform";
+import { rhwpBin } from "../lib/platform";
 import { existsSync, mkdirSync, readFileSync, rmSync, writeFileSync } from "node:fs";
 import { join } from "node:path";
 import { unzipSync } from "fflate";
@@ -16,7 +17,7 @@ const allowLinesegDiff = process.argv.includes("--allow-lineseg-diff");
 const fromHwpx = process.argv.includes("--from-hwpx");
 if (!family) throw new Error("usage: curate-template.ts <family> [--allow-lineseg-diff]");
 
-const RHWP = process.env.RHWP_BIN ?? join(process.cwd(), "bin", "rhwp");
+const RHWP = rhwpBin();
 const dir = join(process.cwd(), "templates", family);
 const refHwp = join(dir, "reference.hwp");
 const refHwpx = join(dir, "reference.hwpx");

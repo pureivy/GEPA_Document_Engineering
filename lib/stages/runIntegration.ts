@@ -7,7 +7,7 @@
  * Research runs stream `research/notes.md` content instead of a DocModel.
  */
 import { existsSync, readFileSync } from "node:fs";
-import { join, resolve } from "node:path";
+import { join, resolve, dirname } from "node:path";
 import { DocExtractor, extractDocFromText } from "../agents/docExtractor";
 import { WriteStreamDecoder } from "../agents/writeStream";
 import { getRunManager, type StartRunInput } from "../agents/runManager";
@@ -67,7 +67,7 @@ function availableDataTools(env: Record<string, string | undefined> = process.en
 
 export function startStageRun(opts: StartStageRunOptions): { runId: string; sessionId: string } {
   const rm = getRunManager();
-  const workspaceDir = stageDir(opts.project.id, "research").replace(/\/research$/, "");
+  const workspaceDir = dirname(stageDir(opts.project.id, "research"));
   const researchCapable = opts.stage === "research" || opts.stage === "plan";
   // public-data MCP server + read-only wiki snapshot for the stages that research
   let mcpConfigPath: string | undefined;

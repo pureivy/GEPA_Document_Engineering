@@ -5,21 +5,29 @@
 한글 작업 과정이 브라우저에서 실시간으로 보이고, 웹에서 수정한 뒤 HWPX/PDF로 저장할 수 있다.
 
 ## 요구 사항
-- macOS (Apple Silicon), Node 22, pnpm 10
+- **macOS, Windows 10/11, Linux** 중 하나 · Node 22 · pnpm 10 (개발·검증은 macOS Apple Silicon에서 했고, Windows·Linux는 아래 절차대로 설치하면 동작하도록 만들었으나 실기 확인은 아직 macOS뿐이다)
 - **Claude Code CLI**(구독 로그인, `claude login` 1회). Claude API 키는 사용하지 않는다.
-- 한컴오피스 한글(선택: 실제 폰트 미리보기 및 최종 열림 확인용)
+- **rhwp CLI**(HWP→HWPX 변환, PDF 내보내기): https://github.com/edwardkim/rhwp/releases 의 v0.8.6 실행 파일 — macOS `rhwp`, Windows `rhwp.exe`, Linux `rhwp` — 를 `bin/`에 둔다(또는 `RHWP_BIN`으로 경로 지정).
+- **poppler `pdftotext`**(선택: PDF 사업계획서 업로드용) — macOS `brew install poppler`, Windows는 poppler 릴리스를 풀고 PATH 또는 `PDFTOTEXT_BIN`에 지정, Linux `apt install poppler-utils`.
+- 한컴오피스 한글(선택: 실제 폰트 미리보기 및 최종 열림 확인용). 폰트가 없으면 브라우저 미리보기만 노토 글꼴로 대체되고 생성되는 HWPX는 영향이 없다.
 
 ## 설치
 ```bash
 pnpm install
-pnpm tsx scripts/setup-fonts.ts          # 한컴 번들 폰트 → public/fonts (로컬 미리보기용, git 제외)
-# bin/rhwp : https://github.com/edwardkim/rhwp/releases (v0.8.6 macos-aarch64) 의 rhwp 바이너리를 bin/에 복사
+pnpm tsx scripts/setup-fonts.ts          # 설치된 한컴 폰트 → public/fonts (로컬 미리보기용, git 제외; OS별 폰트 폴더를 자동 검색)
+# bin/rhwp(.exe) : https://github.com/edwardkim/rhwp/releases 의 실행 파일을 bin/에 복사
 pnpm setup:templates                     # hwp→hwpx 변환·검증, 스타일 카탈로그, 표 기하 스냅샷, 에이전트 스킬 동기화
-cp .env.example .env.local
+cp .env.example .env.local               # Windows PowerShell: Copy-Item .env.example .env.local
 pnpm dev                                 # http://localhost:3000
 ```
 `lib/agents/*` 를 수정한 뒤에는 dev 서버를 재시작한다(실행 관리자가 globalThis 에 상주).
 참고 `.hwp` 원본 2종은 `templates/notice/reference.hwp`, `templates/plan/reference.hwp` 에 둔다(git 제외).
+
+### Windows 참고
+- Claude Code CLI는 네이티브 설치(`%USERPROFILE%\.local\bin\claude.exe`)나 npm 전역 설치(`%APPDATA%\npm\claude.cmd`) 모두 찾는다. 다른 곳에 있으면 `CLAUDE_BIN`에 전체 경로를 적는다.
+- 환경변수로 포트 등을 바꿀 때: PowerShell `$env:PORT=3117; pnpm dev`, cmd `set PORT=3117 && pnpm dev`.
+- `scripts/hancom-check.sh`(한글에서 열림 확인)와 교육영상 제작 스크립트는 macOS 전용 개발 도구다. 생성된 HWPX는 Windows 한글에서 직접 열어 확인한다.
+- 줄바꿈은 `.gitattributes`로 LF 고정이다(골든 비교가 바이트 단위).
 
 ## 구조
 - `lib/docmodel` — DocModel(zod) · GEPA DSL 파서(스트리밍) · 직렬화

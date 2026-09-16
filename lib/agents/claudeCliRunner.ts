@@ -7,10 +7,8 @@
  * API billing, and so the nested-session guard of the CLI does not trip when the web server
  * itself was started from inside a Claude Code session.
  */
-import { spawn, type ChildProcess } from "node:child_process";
-import { existsSync } from "node:fs";
-import { homedir } from "node:os";
-import path from "node:path";
+import type { ChildProcess } from "node:child_process";
+import { resolveClaudeBin as resolvePlatformClaudeBin, spawnCommand } from "../platform";
 import readline from "node:readline";
 import type { AgentEvent, AgentRunner, RunSpec } from "./runner";
 import { DEFAULT_MODEL, KILL_GRACE_MS } from "./limits";
@@ -57,12 +55,9 @@ export function buildChildEnv(
 }
 
 /** Resolve the CLI binary: `CLAUDE_BIN` env → `~/.local/bin/claude` if it exists → `claude` on PATH. */
-export function resolveClaudeBin(env: NodeJS.ProcessEnv = process.env): string {
-  const fromEnv = env.CLAUDE_BIN?.trim();
-  if (fromEnv) return fromEnv.startsWith("~/") ? path.join(homedir(), fromEnv.slice(2)) : fromEnv;
-  const local = path.join(homedir(), ".local", "bin", "claude");
-  if (existsSync(local)) return local;
-  return "claude";
+/** See lib/platform.ts — CLAUDE_BIN, ~/.local/bin/claude[.exe], %APPDATA%\npm\claude.cmd, PATH. */
+export function resolveClaudeBin(env: Record<string, string | undefined> = process.env): string {
+  return resolvePlatformClaudeBin(env);
 }
 
 /**
@@ -225,7 +220,7 @@ export class ClaudeCliRunner implements AgentRunner {
     const startedAt = Date.now();
     let child: ChildProcess;
     try {
-      child = spawn(bin, args, {
+      child = spawnCommand(bin, args, {
         cwd: spec.cwd,
         env,
         stdio: ["pipe", "pipe", "pipe"],

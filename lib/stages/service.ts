@@ -3,8 +3,8 @@
  * version history. Used by the stage API routes and by the run manager's doc extractor.
  */
 import { existsSync, mkdirSync, readFileSync, writeFileSync, statSync } from "node:fs";
-import { join } from "node:path";
-import { spawnSync } from "node:child_process";
+import { isAbsolute, join } from "node:path";
+import { rhwpBin, spawnCommandSync as spawnSync } from "../platform";
 import { DocModelSchema, type DocModel } from "../docmodel/schema";
 import { parseDsl } from "../docmodel/dsl";
 import { toDsl } from "../docmodel/serialize/toDsl";
@@ -14,7 +14,7 @@ import { db, schema } from "../db/client";
 import { desc, and, eq } from "drizzle-orm";
 
 export function dataDir(): string {
-  return process.env.DATA_DIR ? (process.env.DATA_DIR.startsWith("/") ? process.env.DATA_DIR : join(process.cwd(), process.env.DATA_DIR)) : join(process.cwd(), "data");
+  return process.env.DATA_DIR ? (isAbsolute(process.env.DATA_DIR) ? process.env.DATA_DIR : join(process.cwd(), process.env.DATA_DIR)) : join(process.cwd(), "data");
 }
 export function projectDir(projectId: string): string {
   const d = join(dataDir(), "projects", projectId);
@@ -110,7 +110,7 @@ export function pdfPath(projectId: string, stage: Stage): string | null {
   const hp = hwpxPath(projectId, stage);
   if (!hp) return null;
   const out = join(stageDir(projectId, stage), "out.pdf");
-  const rhwp = process.env.RHWP_BIN ? (process.env.RHWP_BIN.startsWith("/") ? process.env.RHWP_BIN : join(process.cwd(), process.env.RHWP_BIN)) : join(process.cwd(), "bin", "rhwp");
+  const rhwp = rhwpBin();
   if (!existsSync(rhwp)) return null;
   const stale = !existsSync(out) || statMs(out) < statMs(hp);
   if (stale) {

@@ -1,0 +1,9 @@
+# Keep LF everywhere (golden text comparisons and DSL fixtures are byte-exact); binaries untouched
+* text=auto eol=lf
+*.hwpx binary
+*.hwp binary
+*.png binary
+*.jpg binary
+*.bmp binary
+*.pdf binary
+*.ttf binary

@@ -5,10 +5,70 @@
  *
  * Usage: pnpm tsx scripts/setup-fonts.ts
  */
-import { existsSync, mkdirSync, copyFileSync, writeFileSync } from "node:fs";
-import { join } from "node:path";
+import { existsSync, mkdirSync, copyFileSync, writeFileSync, readdirSync, statSync } from "node:fs";
+import { join, basename } from "node:path";
+import { homedir } from "node:os";
 
-const HANCOM = "/Applications/Hancom Office HWP.app/Contents/Resources/Hnc/Shared/TTF";
+/**
+ * Where the Hancom fonts live per OS. macOS: inside the app bundle. Windows: the 한컴오피스
+ * install folder (HNC\…\Fonts or …\TTF) and the system font folders. Linux: ~/.fonts, /usr/share/fonts.
+ * Files are matched by name (case-insensitive) anywhere below these roots, so the exact
+ * sub-folder layout of a given 한컴오피스 version does not matter.
+ */
+const FONT_ROOTS: string[] = (() => {
+  const env = process.env;
+  if (process.platform === "win32")
+    return [
+      ...[env.ProgramFiles, env["ProgramFiles(x86)"]].filter(Boolean).map((r) => join(r as string, "HNC")),
+      ...[env.ProgramFiles, env["ProgramFiles(x86)"]].filter(Boolean).map((r) => join(r as string, "Hnc")),
+      join(env.SystemRoot ?? "C:\\Windows", "Fonts"),
+      env.LOCALAPPDATA ? join(env.LOCALAPPDATA, "Microsoft", "Windows", "Fonts") : "",
+    ].filter(Boolean);
+  if (process.platform === "darwin") return ["/Applications/Hancom Office HWP.app/Contents/Resources/Hnc/Shared/TTF", join(homedir(), "Library", "Fonts"), "/Library/Fonts"];
+  return [join(homedir(), ".fonts"), join(homedir(), ".local", "share", "fonts"), "/usr/share/fonts", "/usr/local/share/fonts"];
+})();
+const HANCOM = FONT_ROOTS[0];
+
+/** Find a font file by name below the roots (depth-limited walk; first hit wins). */
+function findFont(fileName: string): string | null {
+  const want = fileName.toLowerCase();
+  const walk = (dir: string, depth: number): string | null => {
+    if (depth > 6 || !existsSync(dir)) return null;
+    let entries: string[];
+    try {
+      entries = readdirSync(dir);
+    } catch {
+      return null;
+    }
+    for (const e of entries) {
+      const p = join(dir, e);
+      let st;
+      try {
+        st = statSync(p);
+      } catch {
+        continue;
+      }
+      if (st.isFile() && e.toLowerCase() === want) return p;
+    }
+    for (const e of entries) {
+      const p = join(dir, e);
+      try {
+        if (statSync(p).isDirectory()) {
+          const r = walk(p, depth + 1);
+          if (r) return r;
+        }
+      } catch {
+        /* skip */
+      }
+    }
+    return null;
+  };
+  for (const root of FONT_ROOTS) {
+    const r = walk(root, 0);
+    if (r) return r;
+  }
+  return null;
+}
 const OUT = join(process.cwd(), "public", "fonts");
 
 // family (as written in HWPX <hh:font face="…">) → source file inside the Hancom bundle
@@ -38,9 +98,10 @@ const copied: string[] = [];
 const missing: string[] = [];
 
 for (const f of FONTS) {
-  const src = join(HANCOM, f.src);
-  if (!existsSync(src)) {
-    missing.push(`${f.family} (${src})`);
+  const direct = join(HANCOM, f.src);
+  const src = existsSync(direct) ? direct : findFont(basename(f.src));
+  if (!src) {
+    missing.push(`${f.family} (${basename(f.src)} — 검색 경로: ${FONT_ROOTS.join(", ")})`);
     continue;
   }
   copyFileSync(src, join(OUT, f.file));

@@ -5,7 +5,7 @@
  */
 import { readFileSync, writeFileSync, mkdirSync, existsSync } from "node:fs";
 import { join } from "node:path";
-import { spawnSync } from "node:child_process";
+import { rhwpBin, spawnCommandSync as spawnSync } from "../lib/platform";
 import { parseDsl } from "../lib/docmodel/dsl";
 import { buildHwpx } from "../lib/hwpx/build";
 import { validateHwpx, extractText } from "../lib/hwpx/validate";
@@ -51,7 +51,7 @@ async function main() {
     console.log(`ladder entries: reference ${lr.length}, generated ${lg.length}, mismatched positions ${ladderMismatch}`);
   }
   // rhwp verify + render-diff (informational)
-  const rhwp = join(process.cwd(), "bin", "rhwp");
+  const rhwp = rhwpBin();
   if (existsSync(rhwp)) {
     const ver = spawnSync(rhwp, ["verify", out, "--expect-min-pages", "5", "--expect-contains", "1. 모집개요", "--expect-contains", "www.gepa.kr", "--expect-contains", "기업게좌"], { encoding: "utf8" });
     console.log("rhwp verify:", ver.stdout.trim().split("\n").pop());
