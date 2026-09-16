@@ -7,6 +7,7 @@ import { emitBlank, emitImage, emitPara, emitTable, splitInlinesByNewline, type 
 import { table, cellInteriorWidth } from "../emit/table";
 import { loadGeometry, cloneFragment, setCellText } from "../geometry";
 import { procedureFlow } from "./notice";
+import { approvalLineFor } from "../../org";
 
 const NAVY = "#003366";
 const CHIP_FILL = "#DFE6F7";
@@ -40,7 +41,7 @@ export function planStyle(doc: PlanDoc): FamilyStyle {
   // □ HY헤드라인M 16, ○ 휴먼명조 15, ※/* 맑은 고딕 12, 표 맑은 고딕 + 연파랑 머리글 + 0.5mm 상·하 굵은 선, 아래 여백 10mm.
   // 표지(결재란·사업명 상자·로고)·장 밴드·절 칩·목적 박스는 GEPA 참고 문서 모양을 유지한다.
   return {
-    bodyPt: 14, // user 2026-09-16: 본문(○ - ·) 14pt
+    bodyPt: 13, // user 2026-09-16: 본문(○ - ·) 13pt (14 → 13)
     bodyLineSpacing: doc.meta.lineSpacing ?? 160,
     body1Bold: false,
     body1Font: "heading",
@@ -121,7 +122,6 @@ export function writePlan(ctx: WriterContext, doc: PlanDoc): XmlNode[] {
 
 // ---- 결재란 (cloned from the reference: 1×2 logo table + 12×11 approval grid) ----------
 
-export const DEFAULT_APPROVAL_LINE = ["담당", "팀장", "실장", "본부장", "원장"] as const;
 
 function approvalBlock(ctx: WriterContext, doc: PlanDoc): XmlNode[] {
   const out: XmlNode[] = [];
@@ -142,23 +142,16 @@ function approvalBlock(ctx: WriterContext, doc: PlanDoc): XmlNode[] {
   setCellText(gridP, 7, 1, a.공개구분 ?? "공개");
   // signer labels (row 0, cols 3,5,6,8,10) — 기본 결재라인 담당 → 팀장 → 실장 → 본부장 → 원장 (user 2026-09-16);
   // `결재.라인` 으로 바꿀 수 있다(예: 북부지소 문서는 [담당, 지소장, 단장, 본부장, 원장])
-  const line = a.라인 && a.라인.length === 5 ? a.라인 : DEFAULT_APPROVAL_LINE;
-  const labels: [number, string | undefined][] = [
-    [3, line[0].length === 2 ? `${line[0][0]}  ${line[0][1]}` : line[0]],
-    [5, line[1]],
-    [6, line[2]],
-    [8, line[3]],
-    [10, line[4]],
-  ];
-  for (const [col, text] of labels) if (text) setCellText(gridP, 0, col, text);
+  // (lib/org.ts: 경영기획실 담당→팀장→실장→원장, 지역산업지원단 담당→지소장→단장→본부장→원장 …). A 4-step line
+  // leaves the last signer column blank — the reference grid has five signer columns.
+  const line = a.라인?.length ? a.라인 : approvalLineFor(m.부서);
+  const slots = [3, 5, 6, 8, 10];
+  const labels: [number, string | undefined][] = slots.map((col, i) => [col, i === 0 && line[0]?.length === 2 ? `${line[0][0]}  ${line[0][1]}` : (line[i] ?? "")]);
+  for (const [col, text] of labels) setCellText(gridP, 0, col, text ?? ""); // "" blanks the unused 5th column of a 4-step line
   // signer names go in the signature row (row 2)
-  const names: [number, string | undefined][] = [
-    [3, a.담당],
-    [5, a.팀장],
-    [6, a.실장],
-    [8, a.본부장],
-    [10, a.원장],
-  ];
+  // names by 직위 (결재.담당/팀장/실장/본부장/원장/지소장/단장) matched to the line's slots
+  const byTitle: Record<string, string | undefined> = { 담당: a.담당, 팀장: a.팀장, 실장: a.실장, 본부장: a.본부장, 원장: a.원장, 지소장: a.지소장, 단장: a.단장 };
+  const names: [number, string | undefined][] = slots.map((col, i) => [col, line[i] ? byTitle[line[i]] : undefined]);
   for (const [col, name] of names) setCellText(gridP, 2, col, name ?? "");
   setCellText(gridP, 8, 4, a.협조 ?? "");
   out.push(logoP, gridP);
@@ -189,6 +182,8 @@ function coverTitle(ctx: WriterContext, fs: FamilyStyle, b: Extract<Block, { k: 
     if (p) {
       const charPr = childrenNamed(p, "hp:run").find((r) => findAll(r, "hp:t").length > 0)?.attrs.charPrIDRef ?? "20";
       p.children = [el("hp:run", { charPrIDRef: charPr }, [el("hp:t", {}, [text])])];
+      // user 2026-09-16: 사업명 문단의 문단 위 간격 5pt → 0 (reference paraPr 26 = 가운데 120 %, prev 5pt)
+      p.attrs.paraPrIDRef = String(ctx.reg.paraPr({ align: "CENTER", lineSpacing: 120, prev: 0 }));
     }
     if (ctx.pendingPageBreak) title.attrs.pageBreak = "1";
     ctx.pendingPageBreak = false;

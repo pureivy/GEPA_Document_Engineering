@@ -60,13 +60,27 @@ describe("buildHwpx — notice", () => {
 
 describe("buildHwpx — plan", () => {
   const { bytes, report } = buildHwpx(planFixture(), { now: NOW });
-  it("approval line defaults to 담당·팀장·실장·본부장·원장 and can be overridden", async () => {
+  it("approval line follows the department (lib/org.ts) and can be overridden", async () => {
+    // fixture 부서 = 북부지소 → 지역산업지원단: 담당·지소장·단장·본부장·원장
     const text = await extractText(bytes);
-    for (const l of ["담  당", "팀장", "실장", "본부장", "원장"]) expect(text).toContain(l);
-    expect(text).not.toContain("지소장");
+    for (const l of ["담  당", "지소장", "단장", "본부장", "원장"]) expect(text).toContain(l);
+    expect(text).not.toContain("팀장");
+    // unknown department → institution default 담당·팀장·실장·본부장·원장
+    const other = planFixture();
+    (other.meta as { 부서?: string }).부서 = "미지의부서";
+    const otherText = await extractText(buildHwpx(other, { now: NOW }).bytes);
+    for (const l of ["팀장", "실장", "본부장"]) expect(otherText).toContain(l);
+    expect(otherText).not.toContain("지소장");
+    // 경영기획실 team → 4 steps, no 본부장
+    const hq = planFixture();
+    (hq.meta as { 부서?: string }).부서 = "전략기획팀";
+    const hqText = await extractText(buildHwpx(hq, { now: NOW }).bytes);
+    expect(hqText).toContain("실장");
+    expect(hqText).not.toContain("본부장");
+    // explicit 결재.라인 wins
     const doc = planFixture();
-    (doc.meta as { 결재?: Record<string, unknown> }).결재 = { ...(doc.meta as { 결재?: Record<string, unknown> }).결재, 라인: ["담당", "지소장", "단장", "본부장", "원장"] };
-    expect(await extractText(buildHwpx(doc, { now: NOW }).bytes)).toContain("지소장");
+    (doc.meta as { 결재?: Record<string, unknown> }).결재 = { ...(doc.meta as { 결재?: Record<string, unknown> }).결재, 라인: ["담당", "팀장", "실장", "원장"] };
+    expect(await extractText(buildHwpx(doc, { now: NOW }).bytes)).toContain("팀장");
   });
   it("validates and keeps the chapter band widths", async () => {
     const v = await validateHwpx(bytes);

@@ -3,6 +3,7 @@
  * research is delegated to the `researcher` subagent through the Task tool.
  */
 import type { Stage, ProjectDTO } from "../../contracts";
+import { orgSummary } from "../../org";
 
 export interface StagePromptInput {
   stage: Stage | "review";
@@ -29,10 +30,8 @@ export interface StagePrompt {
   jsonSchema?: Record<string, unknown>;
 }
 
-const COMMON = `당신은 (재)경상북도경제진흥원(GEPA)의 문서 작성 에이전트다. 모든 문서는 한국어 공문서 개조식으로 쓴다.
-기관 사실(2026년 9월 기준): 원장 박성수 — 보도자료의 "(원장 ○○○)"·인용문에는 "박성수"를 쓰고 ○○○ 자리표시자를 남기지 않는다.
-부서 정식 명칭과 책임자: 일자리민생경제지원실(실장 이유선) / 강소기업지원실(실장 이명하) / 경영전략실(실장 남상범) / 지역산업지원단(단장 남상조) / 강소기업육성본부(본부장 송호준). 프로젝트의 부서명이 약칭이면(예: "일자리민생") 정식 명칭으로 쓰고, 보도자료 front-matter의 책임자에는 "직위 이름"(예: 실장 이유선)을 넣는다. 표에 없는 부서는 책임자 키를 생략한다.
-문서 작성 기준: 행정안전부 「행정업무운영 편람」을 따른다 — 날짜 2026. 7. 14.(일 뒤 마침표, 0 생략), 시간 15:20, 금액 금60,000,000원(금육천만원), 쌍점은 앞말에 붙임, 물결표는 앞뒤 붙임(7. 1.~7. 15.), 하위 항목이 하나뿐이면 기호 없이 이어 씀, 본문 끝 "  끝."(두 타), 붙임은 "붙임  ○○ 1부.  끝.", 한자·외국어는 괄호 병기, 순화어 사용(제고→높이다, 제반→여러, 익년→다음 해, 타→다른).
+const COMMON = () => `당신은 (재)경상북도경제진흥원(GEPA)의 문서 작성 에이전트다. 모든 문서는 한국어 공문서 개조식으로 쓴다.
+기관 사실(2026년 9월 기준): ${orgSummary()} 보도자료의 "(원장 ○○○)"·인용문에는 원장 성명을 쓰고 ○○○ 자리표시자를 남기지 않는다. 프로젝트의 부서명이 팀명·약칭이면 위 표의 실·단 정식 명칭으로 쓰고, 보도자료 front-matter의 책임자에는 그 실·단의 책임자("직위 이름")를, 사업계획서 front-matter의 부서에는 프로젝트 부서명을 그대로 적는다(결재라인은 부서로 자동 결정).
 작업 규칙: Bash는 사용하지 않는다. 필요한 참고 자료는 .claude/skills/*/SKILL.md 와 reference/ 문서를 Read로 읽는다.
 프로젝트 작업 폴더(아래 경로)의 파일만 읽고 쓴다.`;
 
@@ -99,7 +98,7 @@ export function buildStagePrompt(input: StagePromptInput): StagePrompt {
   switch (stage) {
     case "research":
       return {
-        systemPromptAppend: `${COMMON}\n역할: 사업기획 조사관. .claude/skills/gepa-research/SKILL.md 의 규칙을 따른다.`,
+        systemPromptAppend: `${COMMON()}\n역할: 사업기획 조사관. .claude/skills/gepa-research/SKILL.md 의 규칙을 따른다.`,
         prompt: `${brief}\n작업 폴더: ${workspaceDir}\n\n위 주제로 사업계획 수립에 필요한 조사를 수행하고 결과를 ${workspaceDir}/research/notes.md 와 ${workspaceDir}/research/sources.json 에 저장하라.
 조사 항목: 추진배경·필요성 / 현황·통계(최근 3개년, 출처·URL 필수) / 유사·선행 사업(지원내용·규모·예산) / 법령·근거 / 예산 산출 근거(단가, 한도) / 수요·기대효과.
 ${sourcesGuide(input)}
@@ -110,7 +109,7 @@ ${sourcesGuide(input)}
       };
     case "plan":
       return {
-        systemPromptAppend: `${COMMON}\n역할: 사업계획(안) 작성자. .claude/skills/gepa-plan-design/SKILL.md 의 정본 목차·표 규격·문체를 따른다. 수치는 research/notes.md 와 sources.json 에 있는 것만 쓰고 (출처, 연도)를 붙인다.`,
+        systemPromptAppend: `${COMMON()}\n역할: 사업계획(안) 작성자. .claude/skills/gepa-plan-design/SKILL.md 의 정본 목차·표 규격·문체를 따른다. 수치는 research/notes.md 와 sources.json 에 있는 것만 쓰고 (출처, 연도)를 붙인다.`,
         prompt: `${brief}\n작업 폴더: ${workspaceDir}\n\n${workspaceDir}/research/notes.md 와 sources.json 을 읽고(없으면 주제만으로 작성하되 통계는 "확인 필요"로 표시), 「${project.title}」 사업계획(안)을 작성하라.
 front-matter: 제목(…사업계획(안)), 연도, 부서(${project.contact.부서명}), 결재{공개구분: 공개}, numbering: roman, lineSpacing: 160, body1Font: hyHeadlineBold. (요약은 쓰지 않는다 — 표지는 결재란·사업명 상자·로고만)
 장 구성: 추진배경 및 목적 / 사업개요 및 추진절차 / 세부 추진계획(## 절 2~3개) / 추진일정 / 소요예산(표+예산과목) / 기대효과(끝.). 분량 A4 8~12쪽.
@@ -121,7 +120,7 @@ ${sourcesGuide(input)}${DOC_CONTRACT("plan", "plan")}${resume}`,
       };
     case "notice":
       return {
-        systemPromptAppend: `${COMMON}\n역할: 모집 공고문 작성자. .claude/skills/gepa-notice-design/SKILL.md 의 front-matter 필드·섹션 순서·고정문구 매크로를 그대로 따른다.`,
+        systemPromptAppend: `${COMMON()}\n역할: 모집 공고문 작성자. .claude/skills/gepa-notice-design/SKILL.md 의 front-matter 필드·섹션 순서·고정문구 매크로를 그대로 따른다.`,
         prompt: `${brief}\n작업 폴더: ${workspaceDir}\n\n${workspaceDir}/plan/draft.dsl.md (사업계획서)를 읽고 그 사업의 참여기업 모집 공고문을 작성하라.
 - front-matter의 접수 정보는 담당 연락처를 쓴다: 이메일 ${project.contact.이메일}, 전화 ${project.contact.전화}, 부서명 ${project.contact.부서명}, 우편주소 ${project.contact.우편주소 ?? "경상북도 안동시 북순환로 387, 2층 경상북도경제진흥원"}.
 - 공고번호는 "2026MM0001" 꼴(연도+공고월+일련번호, 예: 2026070001)로 쓰고, 공고연월은 사업계획서의 공고 시기.
@@ -134,7 +133,7 @@ ${sourcesGuide(input)}${DOC_CONTRACT("plan", "plan")}${resume}`,
       };
     case "press":
       return {
-        systemPromptAppend: `${COMMON}\n역할: 보도자료 작성자. .claude/skills/gepa-press-style/SKILL.md 를 따른다.`,
+        systemPromptAppend: `${COMMON()}\n역할: 보도자료 작성자. .claude/skills/gepa-press-style/SKILL.md 를 따른다.`,
         prompt: `${brief}\n작업 폴더: ${workspaceDir}\n\n${workspaceDir}/notice/draft.dsl.md (공고문)과 ${workspaceDir}/plan/draft.dsl.md (사업계획서)를 읽고 언론 배포용 보도자료를 작성하라.
 front-matter: 기관 (재)경상북도경제진흥원, 배포일(공고일), 보도시점 즉시, 담당부서 ${project.contact.부서명}(부서 정식 명칭 그대로), 책임자(실장 성명을 알면 "실장 ○○○", 모르면 키 생략), 담당자 ${project.contact.담당자 ?? "담당자"}, 연락처 ${project.contact.전화}, 이메일 ${project.contact.이메일}, 제목, 부제, 사진 false, 붙임 [사업 공고문 1부].
 제목은 공백 포함 26자 이하(최대 36자), 부제는 30자 이하(최대 42자)로 쓴다 — 한 줄에 들어가야 한다. 본문 1,200~1,800자. 공고문에 없는 숫자는 쓰지 않는다. 날짜는 공고문의 확정 날짜를 그대로 쓰고 "00일" 같은 자리표시자는 쓰지 않는다.${DOC_CONTRACT("press", "press")}${resume}`,
@@ -144,7 +143,7 @@ front-matter: 기관 (재)경상북도경제진흥원, 배포일(공고일), 보
     case "review": {
       const target = input.reviewTarget ?? "plan";
       return {
-        systemPromptAppend: `${COMMON}\n역할: 문서 검토관. .claude/agents/reviewer.md 의 점검 항목을 적용한다.`,
+        systemPromptAppend: `${COMMON()}\n역할: 문서 검토관. .claude/agents/reviewer.md 의 점검 항목을 적용한다.`,
         prompt: `${brief}\n작업 폴더: ${workspaceDir}\n\n${workspaceDir}/${target}/draft.dsl.md 를 검토하라. 관련 규격: .claude/skills/gepa-${target === "plan" ? "plan-design" : target === "notice" ? "notice-design" : "press-style"}/SKILL.md.
 이슈마다 blockHint(문제가 있는 줄의 앞 20자), severity(error|warn|info), message, fix(수정 제안 DSL 줄)를 채우고 0~100점 score를 매긴다.
 참고 자료: ${workspaceDir}/research/notes.md (수치·출처 대조), ${workspaceDir}/plan/draft.dsl.md (공고문·보도자료 검토 시 정합성 기준).`,

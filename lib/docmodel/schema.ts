@@ -202,12 +202,14 @@ export const PlanMetaSchema = z.object({
       실장: z.string().optional(),
       본부장: z.string().optional(),
       원장: z.string().optional(),
+      지소장: z.string().optional(),
+      단장: z.string().optional(),
       등록일자: z.string().optional(),
       결재일자: z.string().optional(),
       공개구분: z.string().optional(),
       협조: z.string().optional(),
-      /** 결재란 직위 5개(왼쪽부터). 기본 [담당, 팀장, 실장, 본부장, 원장] */
-      라인: z.array(z.string()).length(5).optional(),
+      /** 결재란 직위 4~5개(왼쪽부터). 비우면 `부서`로 lib/org.ts 의 결재라인을 고른다 */
+      라인: z.array(z.string()).min(4).max(5).optional(),
     })
     .optional(),
   요약: z.object({ 사업개요: z.string(), 추진일정: z.string(), 기대효과: z.string() }).optional(),
