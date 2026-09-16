@@ -21,6 +21,17 @@ export const NOTICE_STYLE: FamilyStyle = {
   hangingIndent: true,
 };
 
+/** 문단 위 간격 (user, 2026-09-16 — 사업계획서와 동일): □ 10pt / ㅇ 5pt / 나머지 3pt */
+const NOTICE_SPACE_BEFORE = { body1: 1000, body2: 500, other: 300 };
+
+export function noticeStyle(doc: NoticeDoc): FamilyStyle {
+  return {
+    ...NOTICE_STYLE,
+    bodyLineSpacing: doc.meta.lineSpacing ?? 160,
+    ...(doc.meta.paraSpacing === "none" ? {} : { spaceBefore: NOTICE_SPACE_BEFORE }),
+  };
+}
+
 const TEAL = "#47B0BB";
 const TEAL_LIGHT = "#D0EAED";
 const LABEL_FILL = "#E7F4F6";
@@ -28,7 +39,7 @@ const INFO_FILL = "#FBFAF7";
 
 export function writeNotice(ctx: WriterContext, doc: NoticeDoc): XmlNode[] {
   const out: XmlNode[] = [];
-  const fs = NOTICE_STYLE;
+  const fs = noticeStyle(doc);
   for (const b of doc.blocks) {
     switch (b.k) {
       case "noticeHeader":

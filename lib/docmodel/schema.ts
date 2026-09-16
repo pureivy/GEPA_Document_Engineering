@@ -182,6 +182,10 @@ export const NoticeMetaSchema = z.object({
   모집개요: z.array(z.union([z.literal("spacer"), z.object({ 라벨: z.string(), 값: z.string(), 불릿: z.boolean().optional() })])),
   절차도: z.array(z.object({ 단계: z.string(), 일정: z.string() })),
   로고: z.boolean().default(true),
+  /** 본문 줄간격 % (user 2026-09-16: 사업계획서와 같은 160) */
+  lineSpacing: z.number().default(160),
+  /** 문단 위 간격: "plan" = 사업계획서와 같은 □10/ㅇ5/기타 3pt (기본), "none" = 참고 문서 그대로(골든) */
+  paraSpacing: z.enum(["plan", "none"]).default("plan"),
 });
 export type NoticeMeta = z.infer<typeof NoticeMetaSchema>;
 

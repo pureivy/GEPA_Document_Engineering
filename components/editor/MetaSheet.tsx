@@ -17,7 +17,7 @@ const SCHEMAS: Record<Family, z.ZodType> = { notice: NoticeMetaSchema, plan: Pla
 
 /** field order + labels for fields the schema knows; unknown keys are appended */
 const ORDER: Record<Family, string[]> = {
-  notice: ["공고번호", "사업명", "모집대상", "부제", "주관기관", "지역", "대상기업군", "공고연월", "기관장", "접수", "모집개요", "절차도", "로고"],
+  notice: ["공고번호", "사업명", "모집대상", "부제", "주관기관", "지역", "대상기업군", "공고연월", "기관장", "접수", "모집개요", "절차도", "로고", "lineSpacing", "paraSpacing"],
   plan: ["제목", "부제", "연도", "부서", "등록번호", "결재", "요약", "numbering", "lineSpacing", "body1Font", "house"],
   press: ["기관", "배포일", "보도시점", "담당부서", "책임자", "담당자", "연락처", "이메일", "제목", "부제", "사진", "붙임"],
 };
@@ -38,6 +38,8 @@ const TEMPLATE: Record<Family, Record<string, unknown>> = {
     모집개요: [],
     절차도: [],
     로고: true,
+    lineSpacing: 160,
+    paraSpacing: "plan",
   },
   plan: {
     제목: "",
