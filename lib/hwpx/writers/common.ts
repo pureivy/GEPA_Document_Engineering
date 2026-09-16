@@ -35,6 +35,8 @@ export interface FamilyStyle {
   ladder?: Ladder;
   /** 문단 위 간격 (HWPUNIT, 100 = 1pt) per level: □ / ㅇ / everything else (- · ※ * plain) */
   spaceBefore?: { body1: number; body2: number; other: number };
+  /** ○ 항목 맨 앞의 괄호 라벨 `(사전 진단)`을 괄호째 굵게 (글머리 ○는 그대로) — user 2026-09-16 */
+  boldLeadingLabel?: boolean;
   /** glyph substitutions at emit time, e.g. { "ㅇ": "○" } for the 범정부 profile */
   glyphMap?: Record<string, string>;
 }
@@ -120,7 +122,13 @@ export function emitPara(ctx: WriterContext, fs: FamilyStyle, b: ParaBlock): Xml
     const textRuns = ctx.runsFor(b.inlines, { ...base, bold: false });
     runs = [...glyphRun, ...textRuns];
   } else {
-    const inlines: Inline[] = prefix ? [{ t: "text", text: prefix }, ...b.inlines] : b.inlines;
+    let body: Inline[] = b.inlines;
+    if (fs.boldLeadingLabel && b.role === "body2" && body[0]?.t === "text" && !body[0].bold) {
+      // "(사전 진단) 참여기업 …" → bold "(사전 진단)", regular rest
+      const m = /^(\s*\([^()]{1,20}\))(?=\s|$)/.exec(body[0].text);
+      if (m) body = [{ ...body[0], text: m[1], bold: true }, { ...body[0], text: body[0].text.slice(m[1].length) }, ...body.slice(1)].filter((i) => i.t !== "text" || i.text !== "");
+    }
+    const inlines: Inline[] = prefix ? [{ t: "text", text: prefix }, ...body] : body;
     runs = ctx.runsFor(inlines, base, baseCharPr);
   }
   const ls = ctx.reg.paraPrInfo(paraPr)?.lineSpacing ?? fs.bodyLineSpacing;

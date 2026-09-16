@@ -34,6 +34,7 @@ export function planStyle(doc: PlanDoc): FamilyStyle {
       indentFamily: "notice",
       ladder: doc.meta.ladder,
       spaceBefore: PLAN_SPACE_BEFORE,
+      boldLeadingLabel: true,
       glyphMap: { "ㅇ": "○", "◦": "○" },
     };
   }
@@ -54,6 +55,7 @@ export function planStyle(doc: PlanDoc): FamilyStyle {
     hangingIndent: true,
     ladder: doc.meta.ladder,
     spaceBefore: PLAN_SPACE_BEFORE,
+    boldLeadingLabel: true,
     glyphMap: { "ㅇ": "○", "◦": "○" },
   };
 }

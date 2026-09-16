@@ -60,6 +60,21 @@ describe("buildHwpx — notice", () => {
 
 describe("buildHwpx — plan", () => {
   const { bytes, report } = buildHwpx(planFixture(), { now: NOW });
+  it("bolds a leading (라벨) of ○ items, glyph stays regular", () => {
+    const doc = planFixture();
+    doc.blocks.push({ id: "bl1", k: "para", role: "body2", glyph: "ㅇ", inlines: [{ t: "text", text: "(사전 진단) 참여기업 현황 파악" }] });
+    doc.blocks.push({ id: "bl2", k: "para", role: "body2", glyph: "ㅇ", inlines: [{ t: "text", text: "괄호 없는 항목 (뒤쪽 괄호)" }] });
+    const { sectionXml, headerXml } = buildHwpx(doc, { now: NOW });
+    const runs = [...sectionXml.matchAll(/<hp:run charPrIDRef="(\d+)"><hp:t>([^<]*)<\/hp:t>/g)].map((m) => [m[1], m[2]]);
+    const label = runs.find(([, t]) => t === "(사전 진단)");
+    const glyph = runs.find(([, t]) => t.startsWith("  ○ ") && t.trim() === "○");
+    expect(label).toBeDefined();
+    expect(glyph).toBeDefined();
+    const isBold = (id: string) => new RegExp(`<hh:charPr id="${id}"[^>]*>(?:(?!</hh:charPr>).)*<hh:bold/>`, "s").test(headerXml);
+    expect(isBold(label![0])).toBe(true);
+    expect(isBold(glyph![0])).toBe(false);
+    expect(runs.some(([, t]) => t.includes("괄호 없는 항목 (뒤쪽 괄호)"))).toBe(true);
+  });
   it("approval line follows the department (lib/org.ts) and can be overridden", async () => {
     // fixture 부서 = 북부지소 → 지역산업지원단: 담당·지소장·단장·본부장·원장
     const text = await extractText(bytes);
