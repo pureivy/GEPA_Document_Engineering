@@ -66,19 +66,33 @@ export function pdftotextBin(env: Env = process.env, platform: Platform = proces
 }
 
 /**
+ * The native executable behind an npm `.cmd` shim, when the npm layout has one. `claude.cmd`
+ * is a batch file whose only job is to run the claude-code package's bundled `claude.exe`,
+ * so going through cmd.exe buys nothing and costs correctness - see spawnCommand.
+ */
+export function nativeBinForShim(shim: string, platform: Platform = process.platform): string | null {
+  if (!isWindows(platform) || !/\.(cmd|bat)$/i.test(shim)) return null;
+  const candidate = path.join(path.dirname(shim), "node_modules", "@anthropic-ai", "claude-code", "bin", "claude.exe");
+  return existsSync(candidate) ? candidate : null;
+}
+
+/**
  * The Claude Code CLI. Order: `CLAUDE_BIN`, native installer location (`~/.local/bin/claude[.exe]`),
- * npm global shim on Windows (`%APPDATA%\npm\claude.cmd`), PATH, then bare `claude`.
+ * npm global shim on Windows (`%APPDATA%/npm/claude.cmd`), PATH, then bare `claude`.
+ * A `.cmd` shim is upgraded to the native `.exe` it wraps whenever that file is present.
  */
 export function resolveClaudeBin(env: Env = process.env, platform: Platform = process.platform): string {
+  const native = (p: string) => nativeBinForShim(p, platform) ?? p;
   const fromEnv = env.CLAUDE_BIN?.trim();
-  if (fromEnv) return resolveConfiguredPath(fromEnv);
+  if (fromEnv) return native(resolveConfiguredPath(fromEnv));
   const local = path.join(homedir(), ".local", "bin", exeName("claude", platform));
   if (existsSync(local)) return local;
   if (isWindows(platform)) {
     const shim = env.APPDATA ? path.join(env.APPDATA, "npm", "claude.cmd") : null;
-    if (shim && existsSync(shim)) return shim;
+    if (shim && existsSync(shim)) return native(shim);
   }
-  return findOnPath("claude", env, platform) ?? "claude";
+  const onPath = findOnPath("claude", env, platform);
+  return onPath ? native(onPath) : "claude";
 }
 
 /** Quote one argument for `cmd.exe /s /c "…"` (only needed for .cmd/.bat shims). */
@@ -89,21 +103,81 @@ export function quoteForCmd(arg: string): string {
 }
 
 /**
+ * cmd.exe ends its command line at the first newline, so an argument containing one silently
+ * truncates the call and drops every argument after it - that is how --append-system-prompt
+ * was swallowing --tools/--add-dir/--allowedTools on Windows. Fail loudly instead.
+ */
+function assertSingleLineArgs(bin: string, args: string[]): void {
+  const i = args.findIndex((a) => a.includes(String.fromCharCode(10)) || a.includes(String.fromCharCode(13)));
+  if (i === -1) return;
+  throw new Error(
+    `Cannot pass a multi-line argument (index ${i}: ${JSON.stringify(args[i].slice(0, 60))}...) through the Windows shim ` +
+      `${bin}: cmd.exe would truncate the command line and drop every later argument. ` +
+      "Point CLAUDE_BIN at the native .exe instead.",
+  );
+}
+
+/**
  * spawn() that also runs Windows `.cmd`/`.bat` shims (npm global installs) — Node cannot exec
  * those directly, so they go through `cmd.exe /d /s /c` with every argument quoted here
  * (no `shell: true`, whose quoting is left to the caller).
  */
 export function spawnCommand(bin: string, args: string[], opts: SpawnOptions = {}, platform: Platform = process.platform): ChildProcess {
   if (isWindows(platform) && /\.(cmd|bat)$/i.test(bin)) {
+    assertSingleLineArgs(bin, args);
     const line = [bin, ...args].map(quoteForCmd).join(" ");
     return spawn(process.env.ComSpec ?? "cmd.exe", ["/d", "/s", "/c", `"${line}"`], { ...opts, windowsVerbatimArguments: true, windowsHide: true });
   }
   return spawn(bin, args, { ...opts, windowsHide: true });
 }
 
+/**
+ * Whether to spawn a child `detached`, for a child we later kill as a whole tree.
+ * POSIX: true, so the child leads its own process group and `kill(-pid)` reaches its children.
+ * Windows: always false. `detached` maps to DETACHED_PROCESS (no console), and a `.cmd`/`.bat`
+ * shim runs through cmd.exe, which then exits 1 immediately with no stdout or stderr. Windows
+ * has no process groups anyway, so detaching bought nothing here - killTree() uses taskkill.
+ */
+export function detachChild(platform: Platform = process.platform): boolean {
+  return !isWindows(platform);
+}
+
+/**
+ * Kill a child and every process it spawned.
+ * POSIX: negative pid = the child's process group (needs detachChild()).
+ * Windows: no process groups and no real signals, so taskkill walks the tree by pid.
+ */
+export function killTree(child: ChildProcess, signal: NodeJS.Signals = "SIGTERM", platform: Platform = process.platform): void {
+  const pid = child.pid;
+  if (!pid) return;
+  if (isWindows(platform)) {
+    // Every Windows kill is a hard TerminateProcess; the caller's SIGTERM/SIGKILL grace period
+    // still applies, it just cannot ask the tree to shut down gracefully first.
+    const r = spawnSync("taskkill", ["/PID", String(pid), "/T", "/F"], { windowsHide: true });
+    if (r.error || r.status !== 0) {
+      try {
+        child.kill();
+      } catch {
+        /* already gone */
+      }
+    }
+    return;
+  }
+  try {
+    process.kill(-pid, signal);
+  } catch {
+    try {
+      child.kill(signal);
+    } catch {
+      /* already gone */
+    }
+  }
+}
+
 /** spawnSync counterpart used by scripts and the reference-document converters. */
 export function spawnCommandSync(bin: string, args: string[], opts: SpawnSyncOptionsWithStringEncoding = { encoding: "utf8" }, platform: Platform = process.platform): SpawnSyncReturns<string> {
   if (isWindows(platform) && /\.(cmd|bat)$/i.test(bin)) {
+    assertSingleLineArgs(bin, args);
     const line = [bin, ...args].map(quoteForCmd).join(" ");
     return spawnSync(process.env.ComSpec ?? "cmd.exe", ["/d", "/s", "/c", `"${line}"`], { ...opts, windowsVerbatimArguments: true, windowsHide: true });
   }
