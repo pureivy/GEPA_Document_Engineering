@@ -8,13 +8,16 @@ import type { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
 import { researchDataSourcesStatus } from "../dataSources";
 import { bizinfoSearch, BIZINFO_FIELDS } from "./bizinfo";
 import { customsTrade, SIDO_CODES } from "./customs";
+import { factorySearch } from "./factory";
 import type { Env, Fetcher, ToolResult } from "./http";
 import { kosisSearch, kosisTable } from "./kosis";
+import { KOTRA_SECTIONS, kotraCountryInfo, kotraPrices } from "./kotra";
 import { lawSearch, lawText } from "./law";
 import { policyNewsSearch } from "./policyNews";
+import { regionPopulation } from "./population";
 import { storeStats, storeUpjongCodes } from "./stores";
 
-export const RESEARCH_TOOL_NAMES = ["data_sources_status", "customs_trade", "store_stats", "store_upjong_codes", "policy_news_search", "kosis_search", "kosis_table", "law_search", "law_text", "bizinfo_search"] as const;
+export const RESEARCH_TOOL_NAMES = ["data_sources_status", "customs_trade", "store_stats", "store_upjong_codes", "policy_news_search", "kosis_search", "kosis_table", "law_search", "law_text", "bizinfo_search", "kotra_country_info", "kotra_prices", "factory_search", "region_population"] as const;
 export const MCP_SERVER_NAME = "gepa-data";
 /** fully qualified names as the CLI exposes them (for allow-lists and agent frontmatter) */
 export const RESEARCH_MCP_TOOL_IDS = RESEARCH_TOOL_NAMES.map((n) => `mcp__${MCP_SERVER_NAME}__${n}`);
@@ -58,13 +61,13 @@ export function registerResearchTools(server: McpServer, env: Env, fetchImpl: Fe
     "customs_trade",
     {
       description:
-        "관세청 수출입실적(월별, 천 달러). kind=sido: 시도별(경북 sidoCd=47) 수출입 추이 / sigungu: 시군구별 (sidoCd + HS 6자리 필수) / nation: 국가별(cntyCd) / item_nation: 품목×국가(cntyCd + hsSgn 2·4·6·10자리). 기간은 YYYYMM 이고 한 호출에 12개월 이내(3개년은 연도별 3회). 시군 전체 합계는 제공되지 않으므로 시군은 품목(HS6)별로 조회한다.",
+        "관세청 수출입실적(월별, 모든 금액 천 달러). kind=sido: 시도별(경북 sidoCd=47) 수출입 추이 / sigungu: 시군구별 (sidoCd + HS 6자리 필수) / nation: 국가별(cntyCd) / item_nation: 품목×국가(cntyCd + hsSgn 2·4·6·10자리) / item: 품목별 전 국가 합계(hsSgn). 기간은 YYYYMM 이고 한 호출에 12개월 이내(3개년은 연도별 3회). 시군 전체 합계는 제공되지 않으므로 시군은 품목(HS6)별로 조회한다.",
       inputSchema: {
-        kind: z.enum(["sido", "sigungu", "nation", "item_nation"]),
+        kind: z.enum(["sido", "sigungu", "nation", "item_nation", "item"]),
         strtYymm: z.string().regex(/^\d{6}$/),
         endYymm: z.string().regex(/^\d{6}$/),
         sidoCd: z.string().optional().describe(`시도 코드: ${Object.entries(SIDO_CODES).map(([k, v]) => `${k}=${v}`).join(", ")}`),
-        hsSgn: z.string().optional().describe("HS 코드 (sigungu: 6자리 필수)"),
+        hsSgn: z.string().optional().describe("HS 코드 (sigungu: 6자리 필수, item_nation/item: 2·4·6·10자리)"),
         cntyCd: z.string().optional().describe("국가 ISO2 (US, CN, JP, VN …)"),
       },
     },
@@ -157,5 +160,50 @@ export function registerResearchTools(server: McpServer, env: Env, fetchImpl: Fe
       inputSchema: { keyword: z.string().optional(), field: z.string().optional(), hashtags: z.string().optional(), fetchCount: z.number().int().min(1).max(500).optional(), limit: z.number().int().min(1).max(50).optional() },
     },
     async (p) => guarded(() => bizinfoSearch(p, env, fetchImpl)),
+  );
+
+  server.registerTool(
+    "kotra_country_info",
+    {
+      description: `KOTRA 국가정보 — 해외마케팅·사절단·전시회 대상국 근거. cntyCd(ISO2) 한 국가의 sections 만 돌려준다: ${KOTRA_SECTIONS.join(", ")} (기본: 개요·경제지표·시장특성·한국과의교역). 경제지표는 연도별 값(GDP·성장률·물가·수출입), 한국과의교역은 대한 수출입(백만$)과 한국의 수출 상위 품목.`,
+      inputSchema: {
+        cntyCd: z.string().describe("ISO2 국가코드 (VN, US, CN, JP, IN …)"),
+        sections: z.array(z.enum(KOTRA_SECTIONS)).optional(),
+        maxChars: z.number().int().min(200).max(8000).optional().describe("서술형 항목 한 개당 최대 글자 수(기본 1200)"),
+      },
+    },
+    async (p) => guarded(() => kotraCountryInfo(p, env, fetchImpl)),
+  );
+
+  server.registerTool(
+    "kotra_prices",
+    {
+      description: "KOTRA 국가별 생활물가(US$, 약 40개 품목: 식품·음료·교통·주거·임금·통신·의료 …). cntyCd 로 한 국가의 전체 품목, 또는 item(품목명 일부: '빅맥', '최저임금', '아파트')으로 국가 간 비교. 둘 다 주면 교집합.",
+      inputSchema: { cntyCd: z.string().optional().describe("ISO2 국가코드"), item: z.string().optional().describe("품목명 일부") },
+    },
+    async (p) => guarded(() => kotraPrices(p, env, fetchImpl)),
+  );
+
+  server.registerTool(
+    "factory_search",
+    {
+      description: "한국산업단지공단 공장등록정보(팩토리온). irsttNm(산업단지명, 부분 일치: '구미국가산업단지', '포항철강') 또는 cmpnyNm(회사명) 중 하나로 등록공장을 찾는다. totalCount 가 대상 모수(단지 내 등록공장 수), rows 는 업종·주생산품·고용인원 예시.",
+      inputSchema: {
+        irsttNm: z.string().optional(),
+        cmpnyNm: z.string().optional(),
+        limit: z.number().int().min(1).max(100).optional(),
+        pageNo: z.number().int().min(1).optional(),
+      },
+    },
+    async (p) => guarded(() => factorySearch(p, env, fetchImpl)),
+  );
+
+  server.registerTool(
+    "region_population",
+    {
+      description: "행정안전부 통계연보 시도별 연말 주민등록인구(총인구·남·여·세대, 2008~). region 은 '경북'·'경상북도' 모두 가능, 생략하면 전 시도. 기본은 최근 3개년. 시군 단위는 kosis_table 을 쓴다.",
+      inputSchema: { region: z.string().optional(), fromYear: z.number().int().optional(), toYear: z.number().int().optional() },
+    },
+    async (p) => guarded(() => regionPopulation(p, env, fetchImpl)),
   );
 }

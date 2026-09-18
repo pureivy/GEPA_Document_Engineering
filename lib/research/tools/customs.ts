@@ -1,17 +1,19 @@
 /**
- * 관세청 수출입실적 (data.go.kr, 4 services). All share the `strtYymm/endYymm` window and the
- * `response.body.items.item[]` XML shape; amounts are in thousand USD (천 달러) — the API
- * returns them with thousands separators and padding.
+ * 관세청 수출입실적 (data.go.kr, 5 services). All share the `strtYymm/endYymm` window and the
+ * `response.body.items.item[]` XML shape. sido/sigungu return thousand USD (`expUsdAmt`, padded
+ * with thousands separators); the GW services nation/item_nation/item return plain USD
+ * (`expDlr`), which `toRow` converts so every row is in 천 달러.
  *
  *   sido        15101643  getSidotradeList            (sidoCd optional; 47 = 경상북도)
  *   sigungu     15134343  getSigunguPerPrlstPerAcrs   (sidoCd + HsSgn 6자리 필수)
  *   nation      15101612  getNationtradeList          (cntyCd, e.g. US)
  *   item_nation 15100475  getNitemtradeList           (cntyCd + hsSgn 2/4/6/10자리)
+ *   item        15101609  getItemtradeList            (hsSgn 2/4/6/10자리, 전 국가 합계)
  */
 import { callableDataGoKrServices } from "../dataSources";
 import { asArray, buildUrl, dataGoKrEnvelopeError, getText, num, parseXml, redactUrl, str, type Env, type Fetcher, type ToolResult } from "./http";
 
-export type CustomsKind = "sido" | "sigungu" | "nation" | "item_nation";
+export type CustomsKind = "sido" | "sigungu" | "nation" | "item_nation" | "item";
 
 export interface CustomsParams {
   kind: CustomsKind;
@@ -21,7 +23,7 @@ export interface CustomsParams {
   endYymm: string;
   /** 시도 코드 (경상북도 47, 대구 27 …) — sido/sigungu */
   sidoCd?: string;
-  /** HS 코드 — sigungu: 6자리 필수; item_nation: 2/4/6/10자리 */
+  /** HS 코드 — sigungu: 6자리 필수; item_nation/item: 2/4/6/10자리 */
   hsSgn?: string;
   /** 국가 코드 ISO2 (US, CN, JP, VN …) — nation/item_nation */
   cntyCd?: string;
@@ -44,6 +46,7 @@ const SERVICES: Record<CustomsKind, { id: string; path: string; name: string }> 
   sigungu: { id: "15134343", path: "sigunguperprlstperacrs/getSigunguPerPrlstPerAcrs", name: "관세청_시군구별 품목별 수출입실적" },
   nation: { id: "15101612", path: "nationtrade/getNationtradeList", name: "관세청_국가별 수출입실적" },
   item_nation: { id: "15100475", path: "nitemtrade/getNitemtradeList", name: "관세청_품목별 국가별 수출입실적" },
+  item: { id: "15101609", path: "Itemtrade/getItemtradeList", name: "관세청_품목별 수출입실적" },
 };
 
 const BASE = "http://apis.data.go.kr/1220000/";
@@ -71,22 +74,27 @@ function validate(p: CustomsParams): string | null {
     if (!p.hsSgn || !/^\d{6}$/.test(p.hsSgn)) return "sigungu 에는 HS 6자리(hsSgn)가 필수입니다 (2·4자리는 거부됨)";
   }
   if ((p.kind === "nation" || p.kind === "item_nation") && !p.cntyCd) return `${p.kind} 에는 cntyCd(ISO2, 예: US) 가 필요합니다`;
-  if (p.kind === "item_nation" && !p.hsSgn) return "item_nation 에는 hsSgn(2/4/6/10자리) 가 필요합니다";
+  if ((p.kind === "item_nation" || p.kind === "item") && !p.hsSgn) return `${p.kind} 에는 hsSgn(2/4/6/10자리) 가 필요합니다`;
   return null;
 }
 
+/** GW services report plain USD (`expDlr`); rows are in 천 달러 like sido/sigungu (`expUsdAmt`). */
+function thousandUsd(n: number | null): number | null {
+  return n === null ? null : Math.round(n / 100) / 10;
+}
+
 function toRow(kind: CustomsKind, it: Record<string, unknown>): CustomsRow {
-  const 구분 = kind === "sido" ? str(it.sidoNm) : kind === "sigungu" ? str(it.sggNm) : str(it.statCdCntnKor1) || str(it.statCd);
+  const 구분 = kind === "sido" ? str(it.sidoNm) : kind === "sigungu" ? str(it.sggNm) : kind === "item" ? "전체 국가" : str(it.statCdCntnKor1) || str(it.statCd);
   return {
     기간: str(it.priodTitle) || str(it.year),
     구분,
-    ...(it.hsSgn || it.hsCd ? { hs: str(it.hsSgn) || str(it.hsCd) } : {}),
+    ...(it.hsSgn || it.hsCd || it.hsCode ? { hs: str(it.hsSgn) || str(it.hsCd) || str(it.hsCode) } : {}),
     ...(it.korePrlstNm || it.statKor ? { 품목명: str(it.korePrlstNm) || str(it.statKor) } : {}),
     수출건수: num(it.expCnt),
-    수출금액_천달러: num(it.expUsdAmt ?? it.expDlr),
+    수출금액_천달러: it.expUsdAmt !== undefined ? num(it.expUsdAmt) : thousandUsd(num(it.expDlr)),
     수입건수: num(it.impCnt),
-    수입금액_천달러: num(it.impUsdAmt ?? it.impDlr),
-    무역수지_천달러: num(it.cmtrBlncAmt ?? it.balPayments),
+    수입금액_천달러: it.impUsdAmt !== undefined ? num(it.impUsdAmt) : thousandUsd(num(it.impDlr)),
+    무역수지_천달러: it.cmtrBlncAmt !== undefined ? num(it.cmtrBlncAmt) : thousandUsd(num(it.balPayments)),
   };
 }
 
@@ -110,6 +118,7 @@ export async function customsTrade(p: CustomsParams, env: Env, fetchImpl: Fetche
     params.cntyCd = p.cntyCd;
     params.hsSgn = p.hsSgn;
   }
+  if (p.kind === "item") params.hsSgn = p.hsSgn;
   const url = buildUrl(BASE + svc.path, params);
   const source = { 기관: "관세청", 서비스: `${svc.name} (data.go.kr ${svc.id})`, url: redactUrl(url), 기준시점: `${p.strtYymm}~${p.endYymm} 수출입신고 기준(수출 FOB·수입 CIF, 천 달러)` };
   const { text } = await getText(fetchImpl, url);

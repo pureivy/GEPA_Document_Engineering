@@ -52,10 +52,14 @@ function availableDataTools(env: Record<string, string | undefined> = process.en
   const ids = new Set(callableDataGoKrServices(env).map((s) => s.id));
   const byTool: Record<string, boolean> = {
     data_sources_status: true,
-    customs_trade: ["15101643", "15134343", "15101612", "15100475"].some((id) => ids.has(id)),
+    customs_trade: ["15101643", "15134343", "15101612", "15100475", "15101609"].some((id) => ids.has(id)),
     store_stats: ids.has("15012005"),
     store_upjong_codes: ids.has("15012005"),
     policy_news_search: ids.has("15095335"),
+    kotra_country_info: ids.has("15034830"),
+    kotra_prices: ids.has("15122665"),
+    factory_search: ids.has("15087611"),
+    region_population: ids.has("15107303"),
     kosis_search: st.kosis,
     kosis_table: st.kosis,
     law_search: st.law,
