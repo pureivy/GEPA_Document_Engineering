@@ -19,4 +19,11 @@ describe("isDocStage", () => {
       expect(isDocStage(stage), stage).toBe(STAGE_FAMILY[stage] !== undefined);
     }
   });
+
+  it("does not treat inherited Object.prototype keys as stages", () => {
+    expect(isDocStage("toString")).toBe(false);
+    expect(isDocStage("constructor")).toBe(false);
+    expect(isDocStage("__proto__")).toBe(false);
+    expect(isDocStage("hasOwnProperty")).toBe(false);
+  });
 });

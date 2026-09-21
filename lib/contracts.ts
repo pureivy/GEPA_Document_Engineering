@@ -15,7 +15,7 @@ export const STAGE_FAMILY: Partial<Record<Stage, Family>> = { plan: "plan", noti
  * 그때 아무 오류도 나지 않는다(예전 runIntegration.ts 의 지역 상수가 그랬다).
  */
 export function isDocStage(stage: string): boolean {
-  return STAGE_FAMILY[stage as Stage] !== undefined;
+  return Object.hasOwn(STAGE_FAMILY, stage) && STAGE_FAMILY[stage as Stage] !== undefined;
 }
 
 export type RunStatus = "running" | "succeeded" | "failed" | "cancelled";
