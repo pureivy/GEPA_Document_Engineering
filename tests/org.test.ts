@@ -8,10 +8,13 @@ describe("org table (user-stated 2026-09-16)", () => {
     expect(findUnit("일자리민생")?.name).toBe("일자리민생경제지원실");
     expect(findUnit("민생경제지원팀")?.name).toBe("일자리민생경제지원실");
     expect(findUnit("북부지소")?.name).toBe("지역산업지원단");
-    expect(findUnit("ESG기업지원팀")?.name).toBe("강소기업지원실");
     // 2026-09-22 정정: 경영기획실의 팀은 경영관리팀이 아니라 경영지원팀이다
     // (참고 문서 수신자 목록도 "경영지원팀장, ESG·기업지원팀장, 마케팅팀장 …" 이다)
     expect(findUnit("경영지원팀")?.name).toBe("경영기획실");
+    // 기관 문서는 가운뎃점을 쓰고(`ESG·기업지원팀`) 사람은 빼고도 친다 — 네 표기 모두 붙어야 한다
+    expect(findUnit("ESG·기업지원팀")?.name).toBe("강소기업지원실");
+    expect(findUnit("ESG기업지원팀")?.name).toBe("강소기업지원실");
+    expect(findUnit("esg기업지원팀")?.name).toBe("강소기업지원실");
     expect(findUnit("esg 기업지원팀")?.name).toBe("강소기업지원실");
     expect(findUnit("알수없는부서")).toBeNull();
   });
