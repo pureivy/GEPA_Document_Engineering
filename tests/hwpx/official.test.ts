@@ -64,3 +64,35 @@ describe("buildHwpx — official", () => {
     expect(text).not.toContain("ESG·기업지원팀장"); // 수신자 목록
   }, 60_000);
 });
+
+/**
+ * 시료 DSL 의 본문은 `1. 2. 3.` 뿐이라 글머리 기호가 있는 줄을 건드리지 않는다. 공문서 본문도
+ * `ㅇ`·`-` 를 쓸 수 있고(편람 §3 의 2타 사다리), 기호는 blocks 의 `glyph` 에 따로 담겨 있어서
+ * inlines 만 쓰면 조용히 사라진다.
+ */
+describe("buildHwpx — official 본문 글머리 기호", () => {
+  const DSL_GLYPH = `---
+family: official
+수신유형: 내부결재
+제목: 글머리 확인
+처리과: 전략기획팀
+---
+1. 작성대상
+ㅇ 각 팀 협조
+- 세부 항목
+`;
+  it("글머리 기호와 편람 2타 들여쓰기가 살아 있다", async () => {
+    const { doc } = parseDsl(DSL_GLYPH);
+    const { bytes } = buildHwpx(doc, { now: NOW });
+    const text = await extractText(bytes);
+    expect(text).toContain("  ㅇ 각 팀 협조");
+    expect(text).toContain("    - 세부 항목");
+  }, 60_000);
+
+  it("굵은 글씨는 참고 문서 글꼴을 유지한 채 별도 charPr 로 나간다", () => {
+    const { doc } = parseDsl(DSL_GLYPH.replace("1. 작성대상", "본문에 **굵은 글씨** 가 있다"));
+    const { report } = buildHwpx(doc, { now: NOW });
+    // 참고 문서 본문은 굴림체 12pt 장평 95 (charPr 8) — 굵은 변형도 같은 글꼴이어야 한다
+    expect(report.appendedStyles).toEqual([{ kind: "charPr", id: 25, sig: "굴림체|굴림체|12|B||#000000|0|95|NONE" }]);
+  }, 60_000);
+});

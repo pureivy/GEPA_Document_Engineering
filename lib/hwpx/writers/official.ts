@@ -11,12 +11,16 @@
 import { childrenNamed, findFirst, isNode, type XmlNode } from "../xml";
 import { loadGeometry, cloneFragment, setCellText } from "../geometry";
 import { approvalLineFor, departmentFullName } from "../../org";
-import { inlineText, officialMetaProblems, type OfficialDoc, type OfficialMeta } from "../../docmodel/schema";
+import { leadingSpaces } from "../../docmodel/indent";
+import { officialMetaProblems, type Block, type Inline, type OfficialDoc, type OfficialMeta } from "../../docmodel/schema";
+import type { CharSpec } from "../registry";
 import { WriterContext } from "./context";
 
-/** 본문 글자 크기 — 참고 문서의 charPr 8 (style-map 의 `body`·`attachment` 역할)과 같다. */
-const BODY_PT = 12;
-const BODY_LINE_SPACING = 160;
+type ParaBlock = Extract<Block, { k: "para" }>;
+
+/** style-map 역할이 없을 때의 대비값. 참고 문서는 굴림체 12pt 장평 95 / 180 %(charPr 8, paraPr 27). */
+const BODY_CHAR: CharSpec = { font: "gulim", pt: 12, ratio: 95 };
+const BODY_LINE_SPACING = 180;
 
 // ---- 두문(t00) 셀 지도 ------------------------------------------------------------------
 const HEAD_수신 = [3, 1] as const;
@@ -63,10 +67,10 @@ export function writeOfficial(ctx: WriterContext, doc: OfficialDoc): XmlNode[] {
         wroteFooter = true;
         break;
       case "para":
-        out.push(bodyPara(ctx, inlineText(b.inlines), b.pageBreakBefore));
+        out.push(bodyPara(ctx, b));
         break;
       case "blank":
-        out.push(bodyPara(ctx, ""));
+        out.push(blankPara(ctx));
         break;
       case "attachmentList":
         out.push(...attachmentParas(ctx, b.items));
@@ -82,10 +86,33 @@ export function writeOfficial(ctx: WriterContext, doc: OfficialDoc): XmlNode[] {
   return out;
 }
 
-/** 본문 문단 — 참고 문서의 paraPr 27 / charPr 8 을 그대로 쓴다(표준 서식의 본문 줄). */
-function bodyPara(ctx: WriterContext, text: string, pageBreakBefore?: boolean): XmlNode {
-  const role = ctx.roleOr("body", { para: { align: "JUSTIFY", lineSpacing: BODY_LINE_SPACING }, char: { font: "body", pt: BODY_PT } });
-  return ctx.para({ paraPr: role.paraPr, runs: [{ charPr: role.charPr, text }], vertsize: BODY_PT * 100, lineSpacing: BODY_LINE_SPACING, forcePageBreak: pageBreakBefore });
+/**
+ * style-map 역할(`body`·`attachment`)의 문단·글자 속성. 굵은 글씨 같은 변형은 참고 문서의
+ * 글꼴에서 파생해야 하므로(`font: "body"` 로 두면 휴먼명조가 끼어든다) 실제 charPr 에서 읽는다.
+ */
+function roleSpec(ctx: WriterContext, name: string): { paraPr: number; charPr: number; base: CharSpec; lineSpacing: number } {
+  const r = ctx.roleOr(name, { para: { align: "JUSTIFY", lineSpacing: BODY_LINE_SPACING }, char: BODY_CHAR });
+  const c = ctx.reg.charPrInfo(r.charPr);
+  const base: CharSpec = c ? { font: c.hangul, pt: c.pt, spacing: c.spacing, ratio: c.ratio } : BODY_CHAR;
+  return { ...r, base, lineSpacing: ctx.reg.paraPrInfo(r.paraPr)?.lineSpacing ?? BODY_LINE_SPACING };
+}
+
+/**
+ * 본문 문단 — 참고 문서의 paraPr 27 / charPr 8 을 그대로 쓴다(표준 서식의 본문 줄).
+ * 글머리 기호는 문단 여백이 아니라 앞 반각 공백으로 들여쓴다(다른 family 와 같은 관행,
+ * lib/docmodel/indent.ts). 공문서 사다리는 편람의 2타(□0 ㅇ2 -4 ·6)다.
+ */
+function bodyPara(ctx: WriterContext, b: ParaBlock): XmlNode {
+  const s = roleSpec(ctx, "body");
+  const glyph = b.glyph && b.glyph !== "none" ? b.glyph : undefined;
+  const prefix = " ".repeat(b.indent ?? leadingSpaces("official", b.glyph, b.role)) + (glyph ? `${glyph} ` : "");
+  const inlines: Inline[] = prefix ? [{ t: "text", text: prefix }, ...b.inlines] : b.inlines;
+  return ctx.para({ paraPr: s.paraPr, runs: ctx.runsFor(inlines, s.base, s.charPr), vertsize: s.base.pt * 100, lineSpacing: s.lineSpacing, forcePageBreak: b.pageBreakBefore });
+}
+
+function blankPara(ctx: WriterContext): XmlNode {
+  const s = roleSpec(ctx, "body");
+  return ctx.para({ paraPr: s.paraPr, runs: [{ charPr: s.charPr, text: "" }], vertsize: s.base.pt * 100, lineSpacing: s.lineSpacing });
 }
 
 /**
@@ -93,7 +120,7 @@ function bodyPara(ctx: WriterContext, text: string, pageBreakBefore?: boolean): 
  * 항목이 둘 이상이면 `붙임∨∨1.∨…` 처럼 번호를 매기고 마지막 항목 뒤에 `끝.` 을 붙인다.
  */
 function attachmentParas(ctx: WriterContext, items: string[]): XmlNode[] {
-  const role = ctx.roleOr("attachment", { para: { align: "JUSTIFY", lineSpacing: BODY_LINE_SPACING }, char: { font: "body", pt: BODY_PT } });
+  const s = roleSpec(ctx, "attachment");
   // 작성자가 `끝.` 만 담은 줄을 넣었으면(```attach 관행) 버린다 — 여기서 다시 붙인다
   const list = items.map((it) => it.trim()).filter((it) => it && it !== "끝.");
   if (list.length === 0) return [];
@@ -102,7 +129,7 @@ function attachmentParas(ctx: WriterContext, items: string[]): XmlNode[] {
     const head = i === 0 ? "붙임  " : "      ";
     const body = many ? `${i + 1}. ${it}` : it;
     const text = head + body + (i === list.length - 1 ? "  끝." : "");
-    return ctx.para({ paraPr: role.paraPr, runs: [{ charPr: role.charPr, text }], vertsize: BODY_PT * 100, lineSpacing: BODY_LINE_SPACING });
+    return ctx.para({ paraPr: s.paraPr, runs: [{ charPr: s.charPr, text }], vertsize: s.base.pt * 100, lineSpacing: s.lineSpacing });
   });
 }
 
