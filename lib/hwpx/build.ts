@@ -3,9 +3,7 @@ import { zipSync } from "fflate";
 import { el, serialize, clone, findAll, findFirst, XML_DECL, type XmlNode } from "./xml";
 import { loadTemplate } from "./template";
 import { WriterContext } from "./writers/context";
-import { writeNotice } from "./writers/notice";
-import { writePlan } from "./writers/plan";
-import { writePress } from "./writers/press";
+import { HWPX_FAMILIES } from "./families";
 import type { DocModel } from "../docmodel/schema";
 import type { AppendedStyle } from "./registry";
 import type { BuildWarning } from "./writers/context";
@@ -41,10 +39,7 @@ function sec0(paras: XmlNode[]): XmlNode {
 export function buildHwpx(doc: DocModel, opts: BuildOptions = {}): BuildResult {
   const tpl = loadTemplate(doc.family);
   const ctx = new WriterContext(tpl, doc.family, { lineseg: opts.lineseg === "approx" });
-  let paras: XmlNode[];
-  if (doc.family === "notice") paras = writeNotice(ctx, doc);
-  else if (doc.family === "plan") paras = writePlan(ctx, doc);
-  else paras = writePress(ctx, doc);
+  let paras: XmlNode[] = HWPX_FAMILIES[doc.family].write(ctx, doc);
   if (paras.length === 0) paras = [ctx.para({ paraPr: 0, runs: [{ charPr: 0, text: "" }] })];
   // section properties live in the first run of the first paragraph
   const secPrRun = clone(tpl.secPrRun);
