@@ -5,7 +5,7 @@ import { useRouter } from "next/navigation";
 import { ChevronLeft, PlayCircle, RefreshCw } from "lucide-react";
 import type { RunDTO, Stage } from "@/lib/contracts";
 import { STAGE_LABEL, type ProjectDTO } from "@/lib/contracts";
-import { KIND_LABEL, stagesOf } from "@/lib/kinds";
+import { KIND_LABEL, KIND_STAGES, type ProjectKind } from "@/lib/kinds";
 import { api, errorMessage } from "@/lib/client/api";
 import { PREF_PLAN_RESEARCH, useBoolPref } from "@/lib/client/prefs";
 import { formatCost, formatDateTime, formatDuration, RUN_STATUS_LABEL } from "@/lib/client/format";
@@ -15,17 +15,14 @@ import { PipelineBar } from "./PipelineBar";
 
 interface OverviewData {
   project: ProjectDTO;
-  /** 이 프로젝트 종류의 단계 목록 — 화면의 모든 단계 순회가 이것을 따른다 */
-  stages: Stage[];
   runs: RunDTO[];
   active: Partial<Record<Stage, string | null>>;
   hasDoc: Partial<Record<Stage, boolean>>;
 }
 
 /** pure fetch of everything the overview shows (project, runs, active runs, which stages have a doc) */
-async function fetchOverview(projectId: string): Promise<OverviewData> {
+async function fetchOverview(projectId: string, stages: Stage[]): Promise<OverviewData> {
   const d = await api.getProject(projectId);
-  const stages = stagesOf(d.project.kind);
   const active: Partial<Record<Stage, string | null>> = {};
   for (const s of stages) active[s] = d.stages?.[s]?.activeRunId ?? (d.runs ?? []).find((r) => r.stage === s && r.status === "running")?.id ?? null;
   // best effort, independent requests
@@ -39,10 +36,15 @@ async function fetchOverview(projectId: string): Promise<OverviewData> {
       }
     }),
   );
-  return { project: d.project, stages, runs: d.runs ?? [], active, hasDoc: Object.fromEntries(results) };
+  return { project: d.project, runs: d.runs ?? [], active, hasDoc: Object.fromEntries(results) };
 }
 
-export function ProjectOverview({ projectId }: { projectId: string }) {
+export function ProjectOverview({ projectId, kind }: { projectId: string; kind: ProjectKind }) {
+  // 서버가 내려준 종류에서 바로 파생한다 — 첫 페인트에 이미 단계 수가 맞다.
+  // stagesOf(kind) 대신 레코드를 읽는 이유는 StageRunner.tsx 의 같은 줄 주석 참고(lint)
+  const stages = KIND_STAGES[kind];
+  // 단일 단계 종류(공문)에는 이어질 단계가 없다 — 전체 자동 실행도 진행 막대도 의미가 없다
+  const chained = stages.length > 1;
   const [data, setData] = useState<OverviewData | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
@@ -54,11 +56,11 @@ export function ProjectOverview({ projectId }: { projectId: string }) {
   const polling = !!data && Object.values(data.active).some(Boolean);
   /** 조사부터 보도자료까지 한 번에: 첫 단계를 autoChain 으로 시작하면 서버가 다음 단계를 이어 실행한다 */
   const runAll = async () => {
-    if (!data?.project || data.stages.length < 2) return;
+    if (!data?.project || !chained) return;
     if (data.hasDoc.research && !window.confirm("조사부터 다시 시작해 사업계획서·공고문·보도자료를 모두 새로 작성합니다. 계속할까요?")) return;
     setStarting(true);
     try {
-      const first = data.stages[0];
+      const first = stages[0];
       await api.runStage(projectId, first, { autoChain: true, supplementalResearch: planResearch });
       router.push(`/projects/${projectId}/${first}`);
     } catch (e) {
@@ -72,7 +74,7 @@ export function ProjectOverview({ projectId }: { projectId: string }) {
   useEffect(() => {
     let alive = true;
     const tick = () =>
-      fetchOverview(projectId)
+      fetchOverview(projectId, stages)
         .then((d) => {
           if (!alive) return;
           setData(d);
@@ -90,7 +92,7 @@ export function ProjectOverview({ projectId }: { projectId: string }) {
       alive = false;
       if (timer) clearInterval(timer);
     };
-  }, [projectId, reloadKey, polling]);
+  }, [projectId, stages, reloadKey, polling]);
 
   const reload = () => {
     setLoading(true);
@@ -98,9 +100,6 @@ export function ProjectOverview({ projectId }: { projectId: string }) {
   };
 
   const project = data?.project ?? null;
-  const stages = data?.stages ?? [];
-  // 단일 단계 종류(공문)에는 이어질 단계가 없다 — 전체 자동 실행도 진행 막대도 의미가 없다
-  const chained = stages.length > 1;
   const runs = data?.runs ?? [];
   const active = data?.active ?? {};
   const hasDoc = data?.hasDoc ?? {};

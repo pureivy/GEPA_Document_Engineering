@@ -43,8 +43,10 @@ const ZOOM_MAX = 150;
 export function StageRunner({ projectId, stage, kind, defaultModel }: StageRunnerProps) {
   const family = STAGE_FAMILY[stage];
   // 이 종류의 단계 목록. 단일 단계(공문)면 이어질 단계가 없으므로 연쇄 관련 UI 를 전부 감춘다.
-  // stagesOf(kind) 대신 레코드를 직접 읽는다 — 렌더 본문에서 수입 함수를 호출하면
-  // React Compiler 가 이 컴포넌트의 메모이제이션을 통째로 포기한다(lint 오류로 잡힌다).
+  // stagesOf(kind) 대신 레코드를 직접 읽는다: 이 한 줄만 stagesOf(kind) 호출로 바꾸면
+  // react-hooks/preserve-manual-memoization 이 아래 finishRun·onChange 에서 오류 3건을 내고
+  // (React Compiler 가 이 컴포넌트 최적화를 포기한다), 되돌리면 사라진다 — 토글로 재현했다.
+  // 컴파일러가 이유를 밝히지 않으므로 원인은 단정하지 않는다. 바꾸려면 먼저 lint 를 돌려 볼 것.
   const stages = KIND_STAGES[kind];
   const chained = stages.length > 1;
   // 편집기 콜백의 `next`(DocModel)와 겹치지 않게 이름을 달리 한다 — 가려지면 React Compiler 가 메모이제이션을 포기한다
