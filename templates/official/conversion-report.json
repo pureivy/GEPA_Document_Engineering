@@ -1,0 +1,90 @@
+{
+  "family": "official",
+  "convertedAt": "2026-09-21T08:35:23.849Z",
+  "exportHwpx": {
+    "exit": 0,
+    "json": null
+  },
+  "renderDiff": {
+    "exit": 0,
+    "json": null
+  },
+  "info": {
+    "fonts": [
+      "굴림체",
+      "양재난초체M",
+      "한양견고딕",
+      "한양신명조",
+      "한양중고딕",
+      "굴림체",
+      "양재난초체M",
+      "한컴바탕",
+      "한양견고딕",
+      "한양신명조",
+      "한양중고딕",
+      "굴림체",
+      "양재난초체M",
+      "한양신명조",
+      "한양중고딕",
+      "굴림체",
+      "양재난초체M",
+      "한양신명조",
+      "한양중고딕",
+      "굴림체",
+      "양재난초체M",
+      "한양신명조",
+      "굴림체",
+      "양재난초체M",
+      "한양신명조",
+      "한양중고딕",
+      "굴림체",
+      "양재난초체M",
+      "명조"
+    ],
+    "format": "hwpx",
+    "lastSavedWith": {
+      "confidence": "metadata",
+      "product": "hancom-office-2022",
+      "version": "12.0.0.4426"
+    },
+    "pageCount": 1,
+    "paraCount": 8,
+    "printMethod": null,
+    "printMethodImpliesNup": false,
+    "schemaVersion": "1.0",
+    "sections": 1,
+    "sizeBytes": 259420,
+    "source": "/Users/gepa_office/GEPA_AI/GEPA_Document_Engineering/templates/official/reference.hwpx",
+    "title": "경영평가 상시대응체계 구축 및 원활한 사업 관리를 위해 2026년 사업 추진 현황을 매월 점검하고자 하오니",
+    "untrustedContent": true,
+    "untrustedFields": [
+      "title",
+      "fonts[]"
+    ],
+    "version": "5.1.0.0",
+    "warnings": []
+  },
+  "entries": [
+    "mimetype",
+    "version.xml",
+    "Contents/header.xml",
+    "BinData/image1.bmp",
+    "BinData/image2.bmp",
+    "BinData/image3.png",
+    "Contents/section0.xml",
+    "Preview/PrvText.txt",
+    "settings.xml",
+    "META-INF/container.rdf",
+    "Contents/content.hpf",
+    "META-INF/container.xml",
+    "META-INF/manifest.xml"
+  ],
+  "headerCounts": {
+    "fontface": 7,
+    "font": 29,
+    "charPr": 25,
+    "paraPr": 30,
+    "borderFill": 6,
+    "style": 17
+  }
+}
