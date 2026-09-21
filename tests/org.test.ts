@@ -19,9 +19,14 @@ describe("org table (user-stated 2026-09-16)", () => {
     expect(approvalLineFor("경영지원팀")).toEqual(["담당", "팀장", "실장", "원장"]);
     expect(approvalLineFor("전략기획팀")).toEqual(["담당", "팀장", "실장", "원장"]);
     expect(approvalLineFor("마케팅팀")).toEqual(["담당", "팀장", "실장", "본부장", "원장"]);
+    // 가운뎃점 표기도 5단계를 찾아야 한다 — 기관 기본값(우연히 같은 값)으로 떨어지면 안 된다
+    expect(approvalLineFor("ESG·기업지원팀")).toEqual(["담당", "팀장", "실장", "본부장", "원장"]);
+    expect(findUnit("ESG·기업지원팀")).not.toBeNull();
     expect(approvalLineFor("일자리종합지원팀")).toEqual(["담당", "팀장", "실장", "본부장", "원장"]);
     expect(approvalLineFor("동부지소")).toEqual(["담당", "지소장", "단장", "본부장", "원장"]);
     expect(approvalLineFor(undefined)).toEqual(["담당", "팀장", "실장", "본부장", "원장"]);
+    expect(approvalLineFor("알수없는부서")).toEqual(["담당", "팀장", "실장", "본부장", "원장"]); // 기관 기본값
+    expect(findUnit("알수없는부서")).toBeNull();
   });
   it("본부 소속을 빠짐없이 적는다 — 결재라인에 본부장이 있는 실·단은 본부 산하다", () => {
     // orgSummary() 가 에이전트 프롬프트에 들어간다(lib/org.ts:64) — division 이 비면 본부장에게

@@ -24,7 +24,7 @@ export const ORG_DIRECTOR = "박성수";
 
 export const ORG_UNITS: OrgUnit[] = [
   { name: "경영기획실", teams: ["경영지원팀", "전략기획팀"], approvalLine: ["담당", "팀장", "실장", "원장"], head: "실장 남상범", aliases: ["경영전략실"] },
-  { name: "강소기업지원실", division: "강소기업육성본부", teams: ["ESG기업지원팀", "마케팅팀"], approvalLine: ["담당", "팀장", "실장", "본부장", "원장"], head: "실장 이명하" },
+  { name: "강소기업지원실", division: "강소기업육성본부", teams: ["ESG·기업지원팀", "마케팅팀"], approvalLine: ["담당", "팀장", "실장", "본부장", "원장"], head: "실장 이명하" },
   { name: "일자리민생경제지원실", division: "강소기업육성본부", teams: ["일자리종합지원팀", "민생경제지원팀"], approvalLine: ["담당", "팀장", "실장", "본부장", "원장"], head: "실장 이유선", aliases: ["일자리민생"] },
   // 지소는 팀이 아니고 단의 장은 실장이 아니라 단장이다 — 결재라인의 지소장·단장은 그대로 둔다(user 2026-09-22)
   { name: "지역산업지원단", division: "강소기업육성본부", teams: ["동부지소", "북부지소"], approvalLine: ["담당", "지소장", "단장", "본부장", "원장"], head: "단장 남상조" },
@@ -32,7 +32,13 @@ export const ORG_UNITS: OrgUnit[] = [
 
 export const DIVISION_HEADS: Record<string, string> = { 강소기업육성본부: "본부장 송호준" };
 
-const norm = (s: string) => s.replace(/\s+/g, "").toLowerCase();
+/**
+ * 부서 이름 대조용 정규화. 공백과 **가운뎃점**을 지운다 — 기관 문서는 `ESG·기업지원팀` 으로
+ * 쓰지만 사람은 `ESG기업지원팀` 으로도 친다. 가운뎃점을 남기면 어느 쪽도 상대의 접두사가
+ * 되지 못해 findUnit 이 조용히 null 을 돌려주고 기관 기본 결재라인으로 떨어진다.
+ * findUnit 의 부서 조회에만 쓰인다 — 본문 글자에는 닿지 않는다.
+ */
+const norm = (s: string) => s.replace(/[\s·・ㆍ]/g, "").toLowerCase();
 
 /** The 실/단 a department string belongs to (team name, unit name, alias or abbreviation), or null. */
 export function findUnit(department: string | undefined | null): OrgUnit | null {
