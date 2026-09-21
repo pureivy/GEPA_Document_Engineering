@@ -7,7 +7,7 @@
  *
  * hwpx 층(작성기 선택)은 lib/hwpx/families.ts 에 따로 둔다 — docmodel 은 hwpx 를 import 하지 않는다.
  */
-import type { Family } from "./schema";
+import type { DocModel, Family } from "./schema";
 
 export interface DocFamilyDef {
   /** 사람이 읽는 이름 (UI·로그·오류 메시지) */
@@ -19,6 +19,8 @@ export interface DocFamilyDef {
    * undefined 면 보정하지 않는다.
    */
   noteIndentUnderItem?: number;
+  /** HWPX 문서 제목과 내보내기 파일명에 쓰는 제목 */
+  docTitle(doc: DocModel): string;
 }
 
 export const DOC_FAMILIES: Record<Family, DocFamilyDef> = {
@@ -26,15 +28,21 @@ export const DOC_FAMILIES: Record<Family, DocFamilyDef> = {
     label: "공고문",
     indent: { "□": 0, "ㅇ": 1, "○": 1, "◦": 1, "-": 3, "·": 4, "※": 2, "*": 1 },
     noteIndentUnderItem: 4,
+    docTitle: (doc) => {
+      const m = doc.meta as Extract<DocModel, { family: "notice" }>["meta"];
+      return `「${m.사업명}」 ${m.모집대상} 모집 공고`;
+    },
   },
   plan: {
     label: "사업계획서",
     indent: { "□": 1, "ㅇ": 2, "○": 2, "◦": 2, "-": 3, "·": 4, "※": 1, "*": 2 },
     noteIndentUnderItem: 3,
+    docTitle: (doc) => (doc.meta as Extract<DocModel, { family: "plan" }>["meta"]).제목,
   },
   press: {
     label: "보도자료",
     indent: { "□": 0, "ㅇ": 1, "○": 1, "◦": 1, "-": 3, "·": 4, "※": 2, "*": 2 },
     noteIndentUnderItem: 4,
+    docTitle: (doc) => (doc.meta as Extract<DocModel, { family: "press" }>["meta"]).제목,
   },
 };

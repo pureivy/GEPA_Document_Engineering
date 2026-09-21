@@ -9,6 +9,7 @@ import { writePress } from "./writers/press";
 import type { DocModel } from "../docmodel/schema";
 import type { AppendedStyle } from "./registry";
 import type { BuildWarning } from "./writers/context";
+import { DOC_FAMILIES } from "../docmodel/families";
 
 export interface BuildReport {
   family: DocModel["family"];
@@ -25,12 +26,6 @@ export interface BuildResult {
   report: BuildReport;
   sectionXml: string;
   headerXml: string;
-}
-
-function docTitle(doc: DocModel): string {
-  if (doc.family === "notice") return `「${doc.meta.사업명}」 ${doc.meta.모집대상} 모집 공고`;
-  if (doc.family === "plan") return doc.meta.제목;
-  return doc.meta.제목;
 }
 
 export interface BuildOptions {
@@ -74,7 +69,7 @@ export function buildHwpx(doc: DocModel, opts: BuildOptions = {}): BuildResult {
 
   const now = opts.now ?? new Date();
   const stamp = now.toISOString().replace(/\.\d{3}Z$/, "Z");
-  const title = docTitle(doc);
+  const title = DOC_FAMILIES[doc.family].docTitle(doc);
   const hpfSrc = new TextDecoder().decode(tpl.files["Contents/content.hpf"]);
   const hpf = hpfSrc
     .replace(/<opf:title\/>|<opf:title>.*?<\/opf:title>/, `<opf:title>${escapeXml(title)}</opf:title>`)
