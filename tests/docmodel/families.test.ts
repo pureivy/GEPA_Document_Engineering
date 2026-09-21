@@ -73,9 +73,11 @@ describe("DOC_FAMILIES.headingStyle", () => {
   });
   it("headingStyle=none 인 family 는 제목 문법을 끄고 있어야 한다", () => {
     // press 는 expanders/press.ts 의 allowHeadings:false 로 parser.ts:509 에서 먼저 끊긴다.
-    // 둘이 어긋나면 `#` 이 조용히 공고문 섹션바로 펼쳐진다.
-    const ctx = familyContext("press", fallbackMeta("press"));
-    expect(ctx.allowHeadings).toBe(false);
+    // 둘이 어긋나면 `#` 이 조용히 공고문 섹션바로 펼쳐진다. 미래 family도 지키도록 전수 검사한다.
+    for (const f of FamilySchema.options) {
+      const ctx = familyContext(f, fallbackMeta(f));
+      if (DOC_FAMILIES[f].headingStyle === "none") expect(ctx.allowHeadings, f).toBe(false);
+    }
   });
 });
 
