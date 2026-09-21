@@ -67,6 +67,7 @@ HWPX 세부: 표의 합계 행 숫자는 열 합계 수식 필드(`=SUM(?2:?6)`,
 pnpm test                # 파서·작성기·러너·파이프라인 테스트 (vitest)
 pnpm typecheck && pnpm lint
 pnpm golden              # 6-1 공고문 골든 재현 + rhwp verify/render-diff
+pnpm exec playwright install chromium  # e2e 첫 실행 전 필요(브라우저 미설치 시 pnpm test:e2e 가 실패한다)
 pnpm test:e2e            # Playwright: 재생 실행 → 실시간 타이핑 → 저장 → HWPX 내보내기·렌더 → 편집·자동저장·다운로드, 다시 쓰기
 pnpm agent:smoke         # claude -p 서브프로세스 스모크 (구독 로그인 확인)
 ```
