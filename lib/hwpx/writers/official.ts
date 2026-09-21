@@ -9,6 +9,7 @@
  * tableOnly() 가 표 run 하나만 남긴다.
  */
 import { childrenNamed, findFirst, isNode, type XmlNode } from "../xml";
+import { paragraph } from "../emit/paragraph";
 import { loadGeometry, cloneFragment, setCellText } from "../geometry";
 import { approvalLineFor, departmentFullName } from "../../org";
 import { leadingSpaces } from "../../docmodel/indent";
@@ -66,20 +67,21 @@ export function writeOfficial(ctx: WriterContext, doc: OfficialDoc): XmlNode[] {
   // (serialize/toText.ts:99 와 같은 규칙).
   const hasAttachmentBlock = doc.blocks.some((b) => b.k === "attachmentList");
   let wroteFooter = false;
-  let firstBody = true;
+  // 도입 문장은 두문 표와 같은 문단에 들어간다(leadBlock 참조) — 본문 루프에서는 건너뛴다
+  const lead = leadBlock(doc.blocks);
 
   for (const b of doc.blocks) {
+    if (b === lead) continue;
     switch (b.k) {
       case "officialHeader":
-        out.push(...headTable(ctx, m));
+        out.push(...headTable(ctx, m, lead));
         break;
       case "officialFooter":
         out.push(...footTable(ctx, m, hasAttachmentBlock));
         wroteFooter = true;
         break;
       case "para":
-        out.push(bodyPara(ctx, b, firstBody));
-        firstBody = false;
+        out.push(bodyPara(ctx, b));
         break;
       case "blank":
         out.push(blankPara(ctx));
@@ -110,19 +112,24 @@ function roleSpec(ctx: WriterContext, name: string): { paraPr: number; charPr: n
 }
 
 /**
+ * 도입 문장("…하여 주시기 바랍니다.") 블록 — 첫 본문 문단이 글머리 기호도 번호도 없을 때만.
+ * 「실라리안 특판전」처럼 `1. 평소 부서 운영에…` 로 바로 시작하는 공문에는 도입 문장이 없다.
+ */
+function leadBlock(blocks: OfficialDoc["blocks"]): ParaBlock | undefined {
+  const first = blocks.find((b) => b.k === "para") as ParaBlock | undefined;
+  if (!first) return undefined;
+  if (first.glyph && first.glyph !== "none") return undefined;
+  return ITEM_RE.test(inlineText(first.inlines)) ? undefined : first;
+}
+
+/**
  * 본문 문단 — 참고 문서의 paraPr 27 / charPr 8 을 그대로 쓴다(표준 서식의 본문 줄).
  * 글머리 기호는 문단 여백이 아니라 앞 반각 공백으로 들여쓴다(다른 family 와 같은 관행,
  * lib/docmodel/indent.ts). 공문서 사다리는 편람의 2타(□0 ㅇ2 -4 ·6)다.
- *
- * 맨 앞의 도입 문장("…하여 주시기 바랍니다.")만 `lead` 역할(paraPr 28: 줄간격 200 %,
- * 문단 아래 500)을 쓴다 — 참고 문서에서 도입 문장은 두문 표와 같은 문단이었다. 문단 아래
- * 간격이 항목 앞 빈 줄 노릇을 하므로 빈 문단을 따로 넣지 않는다. 번호 항목으로 바로
- * 시작하는 문서(도입 문장이 없는 공문)는 첫 줄부터 `body` 다.
  */
-function bodyPara(ctx: WriterContext, b: ParaBlock, first = false): XmlNode {
+function bodyPara(ctx: WriterContext, b: ParaBlock): XmlNode {
   const glyph = b.glyph && b.glyph !== "none" ? b.glyph : undefined;
-  const isLead = first && !glyph && !ITEM_RE.test(inlineText(b.inlines));
-  const s = roleSpec(ctx, isLead ? "lead" : "body");
+  const s = roleSpec(ctx, "body");
   const prefix = " ".repeat(b.indent ?? leadingSpaces("official", b.glyph, b.role)) + (glyph ? `${glyph} ` : "");
   const inlines: Inline[] = prefix ? [{ t: "text", text: prefix }, ...b.inlines] : b.inlines;
   return ctx.para({ paraPr: s.paraPr, runs: ctx.runsFor(inlines, s.base, s.charPr), vertsize: s.base.pt * 100, lineSpacing: s.lineSpacing, forcePageBreak: b.pageBreakBefore });
@@ -153,16 +160,35 @@ function attachmentParas(ctx: WriterContext, items: string[]): XmlNode[] {
 
 // ---- 두문 --------------------------------------------------------------------------------
 
-function headTable(ctx: WriterContext, m: OfficialMeta): XmlNode[] {
+/**
+ * 두문 표 + 도입 문장. 참고 문서에서 이 둘은 **한 문단**이다(표 run 다음에 글 run 이 이어진다).
+ *
+ * 도입 문장을 뒤따르는 별도 문단으로 내면, 표만 든 앵커 문단이 자기 paraPr(28 = 12pt 200 %)
+ * 높이만큼 빈 줄을 차지한다 — 한글에서 제목 아래에 빈 줄로 보인다(rhwp·resvg 는 이 빈 줄을
+ * 접어서 렌더가 같아 보인다). 참고 문서와 같은 구조로 내면 빈 줄이 사라지고, 도입 문장은
+ * 앵커의 paraPr 28(줄간격 200 %, 문단 아래 500)을 저절로 물려받는다. 문단 아래 간격이 항목
+ * 앞 빈 줄 노릇을 하므로 빈 문단을 따로 넣지 않는다.
+ *
+ * 도입 문장이 없는 공문(`1.` 로 시작)은 앵커에 글이 없는 채로 둔다 — 그 문서의 참 모습이다.
+ */
+function headTable(ctx: WriterContext, m: OfficialMeta, lead: ParaBlock | undefined): XmlNode[] {
   const ref = loadGeometry(ctx.tpl.dir, "t00");
   if (!ref) {
     ctx.warnings.push({ message: "official template geometry t00 missing; 두문 표를 생략했습니다" });
-    return [];
+    return lead ? [bodyPara(ctx, lead)] : [];
   }
+  // tableOnly 가 참고 문서의 도입 문장과 짝 없는 CLICK_HERE fieldBegin 을 먼저 걷어낸다
   const head = tableOnly(cloneFragment(ref, ctx.ids));
   setCellText(head, ...HEAD_수신, 수신값(m));
   setCellText(head, ...HEAD_경유, m.경유);
   setCellText(head, ...HEAD_제목, m.제목);
+  if (lead) {
+    const s = roleSpec(ctx, "lead");
+    // paragraph() 로 run 노드만 만들어 앵커에 잇는다(문단 자체는 버린다) — 하이퍼링크 같은
+    // 특수 run 도 본문과 똑같이 나오도록 run 생성 로직을 한 곳에 둔다
+    const runs = childrenNamed(paragraph({ id: 0, paraPr: s.paraPr, runs: ctx.runsFor(lead.inlines, s.base, s.charPr) }), "hp:run");
+    head.children.push(...runs);
+  }
   return [head];
 }
 

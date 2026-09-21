@@ -122,26 +122,45 @@ describe("buildHwpx — official 결재란", () => {
 });
 
 /**
- * 도입 문장과 번호 항목은 문단 모양이 다르다 (참고 문서 header.xml):
- *   paraPr 28 = 줄간격 200 %, 문단 아래 500  ← 도입 문장 (t00 앵커 문단 그 자체)
- *   paraPr 27 = 줄간격 180 %, 문단 아래 0    ← 1. 2. 3. 항목
- * 28 의 문단 아래 간격이 항목 앞의 빈 줄 역할을 하므로 빈 문단을 따로 넣지 않는다.
+ * 참고 문서에서 도입 문장은 두문 표와 **같은 문단**에 있다(표 run 다음에 글 run). 별도 문단으로
+ * 내면 표만 든 앵커 문단이 paraPr 28(12pt 200 %) 높이의 빈 줄을 차지해, 한글에서 제목 아래
+ * 빈 줄로 보인다 — rhwp·resvg 는 이 빈 줄을 접기 때문에 렌더 비교로는 잡히지 않는다.
  */
 describe("buildHwpx — official 도입 문장", () => {
-  /** 최상위 문단의 paraPr 만 — 표 안(hp:subList)의 칸 문단은 세지 않는다 */
-  const paraPrs = (xml: string) => childrenNamed(parseXml(xml.replace(/^<\?xml[^>]*\?>/, "")), "hp:p").map((p) => p.attrs.paraPrIDRef);
+  /** 최상위 문단만 — 표 안(hp:subList)의 칸 문단은 세지 않는다 */
+  const tops = (xml: string) => childrenNamed(parseXml(xml.replace(/^<\?xml[^>]*\?>/, "")), "hp:p");
+  /** 문단 **직속** run 의 표/글만 본다 — findFirst 로 훑으면 표 칸 안의 글까지 딸려 온다 */
+  const shape = (xml: string) =>
+    tops(xml).map((p) => {
+      const runs = childrenNamed(p, "hp:run");
+      return {
+        paraPr: p.attrs.paraPrIDRef,
+        table: runs.some((r) => childrenNamed(r, "hp:tbl").length > 0),
+        text: runs
+          .flatMap((r) => childrenNamed(r, "hp:t"))
+          .map((t) => t.children.filter((c) => typeof c === "string").join(""))
+          .join(""),
+      };
+    });
 
-  it("첫 본문 문단만 lead(28), 번호 항목은 body(27)", () => {
+  it("도입 문장은 두문 표와 같은 문단에 들어간다 — 빈 앵커 문단을 남기지 않는다", () => {
     const { doc } = parseDsl(DSL);
     const { sectionXml } = buildHwpx(doc, { now: NOW });
-    // 두문 표(28) → 도입 문장(28) → 항목 27 × 3 → 붙임 29 → 결문 표(12)
-    expect(paraPrs(sectionXml)).toEqual(["28", "28", "27", "27", "27", "29", "12"]);
+    const ps = shape(sectionXml);
+    expect(ps.map((p) => p.paraPr)).toEqual(["28", "27", "27", "27", "29", "12"]);
+    expect(ps[0].table).toBe(true);
+    expect(ps[0].text).toContain("경영평가 상시대응체계 구축");
+    // 표만 들고 글이 없는 최상위 문단은 결문 앵커 하나뿐이어야 한다(참고 문서도 그렇다)
+    expect(ps.filter((p) => p.table && !p.text).map((p) => p.paraPr)).toEqual(["12"]);
   }, 60_000);
 
-  it("본문이 번호 항목으로 바로 시작하면 lead 를 쓰지 않는다", () => {
+  it("본문이 번호 항목으로 바로 시작하면 도입 문장이 없다 — 앵커는 글 없이 둔다", () => {
     const dsl = DSL.replace(/---\n경영평가 상시대응체계[^\n]*\n/, "---\n");
     const { doc } = parseDsl(dsl);
     const { sectionXml } = buildHwpx(doc, { now: NOW });
-    expect(paraPrs(sectionXml)).toEqual(["28", "27", "27", "27", "29", "12"]);
+    const ps = shape(sectionXml);
+    expect(ps.map((p) => p.paraPr)).toEqual(["28", "27", "27", "27", "29", "12"]);
+    expect(ps[0].text).toBe("");
+    expect(ps[1].text).toContain("1. 작성대상");
   }, 60_000);
 });
