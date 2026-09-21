@@ -12,6 +12,7 @@ import { expandBoilerplate, 끝_LINE, 끝_SUFFIX, type MacroArgs } from "../boil
 import { fallbackMeta, validateFrontMatter, normalizeNewlines } from "./frontmatter";
 import { parseInlines, pushText, inlinesToPlain } from "./inline";
 import { familyContext, type BlockInput, type FamilyContext } from "./expanders";
+import { DOC_FAMILIES } from "../families";
 
 // ---------------------------------------------------------------------------------------------
 // public types
@@ -512,7 +513,7 @@ export class LineParser {
     }
     if (level === 1) {
       const num = splitLeadingNumeral(title);
-      if (this.family === "plan") {
+      if (DOC_FAMILIES[this.family].headingStyle === "chapterChip") {
         const n = num ? num.n : this.chapterCounter + 1;
         this.chapterCounter = n;
         this.chipCounter = 0;
@@ -526,7 +527,7 @@ export class LineParser {
       return [this.commitNew({ k: "sectionBar", number: n, title: num ? num.title : title })];
     }
     if (level === 2) {
-      if (this.family === "plan") {
+      if (DOC_FAMILIES[this.family].headingStyle === "chapterChip") {
         const { label, title: t } = splitChipLabel(title);
         let lbl = label;
         if (lbl === null) {

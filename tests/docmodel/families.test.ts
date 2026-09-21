@@ -4,6 +4,7 @@ import { leadingSpaces, noteIndentUnder } from "../../lib/docmodel/indent";
 import { FamilySchema } from "../../lib/docmodel/schema";
 import type { DocModel } from "../../lib/docmodel/schema";
 import { fallbackMeta } from "../../lib/docmodel/dsl/frontmatter";
+import { familyContext } from "../../lib/docmodel/dsl/expanders";
 
 describe("DOC_FAMILIES", () => {
   it("has an entry for every family in the schema", () => {
@@ -61,5 +62,19 @@ describe("DOC_FAMILIES.docTitle", () => {
     expect(DOC_FAMILIES.plan.docTitle(plan)).toBe("안동시 지원사업");
     const press = { version: 1, family: "press", meta: { ...(fallbackMeta("press") as Record<string, unknown>), 제목: "경북도, 실라리안 육성" }, blocks: [] } as unknown as DocModel;
     expect(DOC_FAMILIES.press.docTitle(press)).toBe("경북도, 실라리안 육성");
+  });
+});
+
+describe("DOC_FAMILIES.headingStyle", () => {
+  it("사업계획서는 장 띠, 공고문은 섹션바, 보도자료는 제목을 쓰지 않는다", () => {
+    expect(DOC_FAMILIES.plan.headingStyle).toBe("chapterChip");
+    expect(DOC_FAMILIES.notice.headingStyle).toBe("sectionBar");
+    expect(DOC_FAMILIES.press.headingStyle).toBe("none");
+  });
+  it("headingStyle=none 인 family 는 제목 문법을 끄고 있어야 한다", () => {
+    // press 는 expanders/press.ts 의 allowHeadings:false 로 parser.ts:509 에서 먼저 끊긴다.
+    // 둘이 어긋나면 `#` 이 조용히 공고문 섹션바로 펼쳐진다.
+    const ctx = familyContext("press", fallbackMeta("press"));
+    expect(ctx.allowHeadings).toBe(false);
   });
 });

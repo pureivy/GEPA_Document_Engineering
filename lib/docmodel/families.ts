@@ -21,6 +21,17 @@ export interface DocFamilyDef {
   noteIndentUnderItem?: number;
   /** HWPX 문서 제목과 내보내기 파일명에 쓰는 제목 */
   docTitle(doc: DocModel): string;
+  /**
+   * `#` / `##` 제목을 어떤 블록으로 펼치는가.
+   *   "chapterChip" = 사업계획서(장 띠 + 절 칩)
+   *   "sectionBar"  = 공고문(번호 섹션바)
+   *   "none"        = 제목 문법을 쓰지 않는 family(보도자료)
+   *
+   * "none" 인 family 는 반드시 확장기의 FamilyContext.allowHeadings 도 false 여야 한다
+   * (lib/docmodel/dsl/expanders/press.ts:16). 둘이 어긋나면 parser.ts:509 를 통과해
+   * `#` 이 조용히 공고문 섹션바로 펼쳐진다.
+   */
+  headingStyle: "sectionBar" | "chapterChip" | "none";
 }
 
 export const DOC_FAMILIES: Record<Family, DocFamilyDef> = {
@@ -32,17 +43,20 @@ export const DOC_FAMILIES: Record<Family, DocFamilyDef> = {
       const m = doc.meta as Extract<DocModel, { family: "notice" }>["meta"];
       return `「${m.사업명}」 ${m.모집대상} 모집 공고`;
     },
+    headingStyle: "sectionBar",
   },
   plan: {
     label: "사업계획서",
     indent: { "□": 1, "ㅇ": 2, "○": 2, "◦": 2, "-": 3, "·": 4, "※": 1, "*": 2 },
     noteIndentUnderItem: 3,
     docTitle: (doc) => (doc.meta as Extract<DocModel, { family: "plan" }>["meta"]).제목,
+    headingStyle: "chapterChip",
   },
   press: {
     label: "보도자료",
     indent: { "□": 0, "ㅇ": 1, "○": 1, "◦": 1, "-": 3, "·": 4, "※": 2, "*": 2 },
     noteIndentUnderItem: 4,
     docTitle: (doc) => (doc.meta as Extract<DocModel, { family: "press" }>["meta"]).제목,
+    headingStyle: "none",
   },
 };
