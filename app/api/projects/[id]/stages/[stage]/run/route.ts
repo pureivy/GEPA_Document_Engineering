@@ -4,11 +4,10 @@ import { getDb } from "@/lib/db/client";
 import { projects } from "@/lib/db/schema";
 import { jsonError, readJsonBody } from "@/lib/agents/http";
 import { getRunManager, RunConflictError } from "@/lib/agents/runManager";
-import { isStage } from "@/lib/agents/runner";
+import { isRunStage } from "@/lib/agents/runner";
 import { MODEL_ALIASES } from "@/lib/agents/limits";
 import { startStageRun } from "@/lib/stages/runIntegration";
 import { serializeProject } from "@/lib/db/serialize";
-import type { Stage } from "@/lib/contracts";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
@@ -29,7 +28,7 @@ const bodySchema = z.object({
 
 export async function POST(req: Request, ctx: { params: Promise<{ id: string; stage: string }> }) {
   const { id, stage } = await ctx.params;
-  if (!isStage(stage)) return jsonError(400, `Unknown stage: ${stage}`);
+  if (!isRunStage(stage)) return jsonError(400, `Unknown stage: ${stage}`);
   const row = getDb().select().from(projects).where(eq(projects.id, id)).get();
   if (!row) return jsonError(404, "Project not found");
   const body = await readJsonBody(req, bodySchema);
@@ -46,7 +45,7 @@ export async function POST(req: Request, ctx: { params: Promise<{ id: string; st
   try {
     const { runId, sessionId } = startStageRun({
       project,
-      stage: stage as Stage | "review",
+      stage,
       instruction: body.data.instruction,
       reviewTarget: body.data.reviewTarget,
       resumeSessionId,

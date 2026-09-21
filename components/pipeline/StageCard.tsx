@@ -8,7 +8,7 @@ import { cn, formatCost, formatDateTime, formatDuration, RUN_STATUS_LABEL, STAGE
 import { Badge, type BadgeTone } from "@/components/ui/badge";
 
 const TONE: Record<RunStatus, BadgeTone> = { running: "running", succeeded: "success", failed: "danger", cancelled: "warning" };
-const ICON: Record<Stage, React.ComponentType<{ className?: string }>> = { research: FileSearch, plan: FileText, notice: Megaphone, press: Newspaper };
+const ICON: Record<Stage, React.ComponentType<{ className?: string }>> = { research: FileSearch, plan: FileText, notice: Megaphone, press: Newspaper, official: FileText };
 
 export interface StageCardProps {
   projectId: string;

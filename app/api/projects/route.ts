@@ -43,6 +43,7 @@ export async function POST(req: Request) {
   const id = randomUUID();
   const row: ProjectRow = {
     id,
+    kind: "program",
     title: body.data.title,
     topic: body.data.topic,
     region: body.data.region,

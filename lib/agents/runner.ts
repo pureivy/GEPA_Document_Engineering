@@ -6,12 +6,8 @@
  * subscription login. No API keys are used anywhere in this project.
  */
 
-export type Stage = "research" | "plan" | "notice" | "press" | "review";
-export const STAGES: readonly Stage[] = ["research", "plan", "notice", "press", "review"] as const;
-
-export function isStage(value: unknown): value is Stage {
-  return typeof value === "string" && (STAGES as readonly string[]).includes(value);
-}
+export type { RunStage } from "../contracts";
+export { RUN_STAGES, isRunStage } from "../contracts";
 
 export interface RunSpec {
   /** Server-side run id (uuid). */

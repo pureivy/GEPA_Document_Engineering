@@ -4,10 +4,18 @@
  */
 import type { Block, DocModel, Family } from "./docmodel/schema";
 
-export type Stage = "research" | "plan" | "notice" | "press";
-export const STAGES: Stage[] = ["research", "plan", "notice", "press"];
-export const STAGE_LABEL: Record<Stage, string> = { research: "조사", plan: "사업계획서", notice: "공고문", press: "보도자료" };
-export const STAGE_FAMILY: Partial<Record<Stage, Family>> = { plan: "plan", notice: "notice", press: "press" };
+/** 문서·파이프라인 단계 — 화면에 탭으로 보이는 것들 */
+export type Stage = "research" | "plan" | "notice" | "press" | "official";
+export const STAGES: Stage[] = ["research", "plan", "notice", "press", "official"];
+export const STAGE_LABEL: Record<Stage, string> = { research: "조사", plan: "사업계획서", notice: "공고문", press: "보도자료", official: "공문서" };
+export const STAGE_FAMILY: Partial<Record<Stage, Family>> = { plan: "plan", notice: "notice", press: "press", official: "official" };
+
+/** 실행 단위 — 문서 단계에 덧붙는 검토(review)를 포함한다. 어느 kind 의 탭에도 나오지 않는다. */
+export type RunStage = Stage | "review";
+export const RUN_STAGES: RunStage[] = [...STAGES, "review"];
+export function isRunStage(v: unknown): v is RunStage {
+  return typeof v === "string" && (RUN_STAGES as string[]).includes(v);
+}
 
 /**
  * 문서를 만들어 내는 단계인가 — 실시간 타이핑·doc.json 저장·HWPX 내보내기가 이 판정에 달려 있다.
