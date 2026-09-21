@@ -12,6 +12,7 @@ import type { DocModel, Family } from "../docmodel/schema";
 import type { WriterContext } from "./writers/context";
 import type { XmlNode } from "./xml";
 import { writeNotice } from "./writers/notice";
+import { writeOfficial } from "./writers/official";
 import { writePlan } from "./writers/plan";
 import { writePress } from "./writers/press";
 
@@ -30,4 +31,5 @@ export const HWPX_FAMILIES: HwpxFamilyTable = {
   notice: { write: writeNotice },
   plan: { write: writePlan },
   press: { write: writePress },
+  official: { write: writeOfficial },
 };

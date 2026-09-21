@@ -5,7 +5,7 @@
  */
 import { z } from "zod";
 
-export const FamilySchema = z.enum(["plan", "notice", "press"]);
+export const FamilySchema = z.enum(["plan", "notice", "press", "official"]);
 export type Family = z.infer<typeof FamilySchema>;
 
 export const GlyphSchema = z.enum(["□", "ㅇ", "○", "◦", "-", "·", "※", "*", "❖", "◇", "■", "✔", "❍", "▪", "∙", "❶", "❷", "❸", "❹", "none"]);
@@ -158,6 +158,9 @@ export const BlockSchema = z.discriminatedUnion("k", [
   // ---- press composites
   z.object({ ...Base, k: z.literal("pressHeader") }),
   z.object({ ...Base, k: z.literal("attachmentList"), items: z.array(z.string()) }),
+  // ---- official composites
+  z.object({ ...Base, k: z.literal("officialHeader") }),
+  z.object({ ...Base, k: z.literal("officialFooter") }),
 ]);
 export type Block = z.infer<typeof BlockSchema>;
 export type BlockKind = Block["k"];
@@ -311,11 +314,13 @@ export const DocModelSchema = z.discriminatedUnion("family", [
   z.object({ version: z.literal(1), family: z.literal("notice"), meta: NoticeMetaSchema, blocks: z.array(BlockSchema) }),
   z.object({ version: z.literal(1), family: z.literal("plan"), meta: PlanMetaSchema, blocks: z.array(BlockSchema) }),
   z.object({ version: z.literal(1), family: z.literal("press"), meta: PressMetaSchema, blocks: z.array(BlockSchema) }),
+  z.object({ version: z.literal(1), family: z.literal("official"), meta: OfficialMetaSchema, blocks: z.array(BlockSchema) }),
 ]);
 export type DocModel = z.infer<typeof DocModelSchema>;
 export type NoticeDoc = Extract<DocModel, { family: "notice" }>;
 export type PlanDoc = Extract<DocModel, { family: "plan" }>;
 export type PressDoc = Extract<DocModel, { family: "press" }>;
+export type OfficialDoc = Extract<DocModel, { family: "official" }>;
 
 export function inlineText(inlines: Inline[]): string {
   return inlines.map((i) => (i.t === "br" ? "\n" : i.text)).join("");

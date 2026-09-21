@@ -72,4 +72,15 @@ export const DOC_FAMILIES: Record<Family, DocFamilyDef> = {
     headingStyle: "none",
     requiresClosingMark: false,
   },
+  official: {
+    // 공문서는 행정업무운영 편람의 2타 사다리를 그대로 쓴다(docs/design-system/gov-manual.md §3) —
+    // 참고 문서 관행이 아니라 편람이 기준이므로 indent.ts 의 GOV 와 같은 값이다.
+    indent: { "□": 0, "ㅇ": 2, "○": 2, "◦": 2, "-": 4, "·": 6, "※": 2, "*": 2 },
+    noteIndentUnderItem: undefined,
+    docTitle: (doc) => (doc.meta as Extract<DocModel, { family: "official" }>["meta"]).제목,
+    exportBaseName: (doc) => (doc.meta as Extract<DocModel, { family: "official" }>["meta"]).제목 + "_공문",
+    headingStyle: "none",
+    // 시행규칙 제4조제4·5항: 붙임 표시와 `끝.` 은 공문서의 법정 요구사항이다.
+    requiresClosingMark: true,
+  },
 };

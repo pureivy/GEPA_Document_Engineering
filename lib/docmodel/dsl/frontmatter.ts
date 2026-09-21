@@ -2,15 +2,14 @@
  * YAML front-matter handling for the GEPA document DSL.
  *
  * A DSL document starts with `---` … `---`; the block in between is YAML whose `family:` key
- * selects the meta schema (NoticeMetaSchema / PlanMetaSchema / PressMetaSchema). Everything
- * after the closing `---` is the body.
+ * selects the meta schema (META_SCHEMAS). Everything after the closing `---` is the body.
  *
  * The functions here never throw: YAML syntax errors and schema violations are returned as
  * `errors`, softer problems (unknown keys, coerced numbers) as `warnings`.
  */
 import { parse as parseYaml } from "yaml";
 import { z } from "zod";
-import { FamilySchema, NoticeMetaSchema, PlanMetaSchema, PressMetaSchema, type DocModel, type Family } from "../schema";
+import { FamilySchema, NoticeMetaSchema, OfficialMetaSchema, PlanMetaSchema, PressMetaSchema, type DocModel, type Family } from "../schema";
 
 export interface FrontMatterIssue {
   /** 1-based line number in the original DSL text (best effort; 1 when unknown) */
@@ -41,7 +40,11 @@ export const META_SCHEMAS = {
   notice: NoticeMetaSchema,
   plan: PlanMetaSchema,
   press: PressMetaSchema,
+  official: OfficialMetaSchema,
 } as const;
+
+/** `plan | notice | press | official` — 오류 메시지에 쓰는 family 목록 (스키마가 곧 출처다) */
+const FAMILY_LIST = FamilySchema.options.join(" | ");
 
 /** keys whose values are numeric in the meta schemas (everything else numeric is coerced to string) */
 const NUMERIC_KEYS = new Set(["lineSpacing"]);
@@ -173,7 +176,7 @@ export function validateFrontMatter(fmText: string, lineOffset = 2): FrontMatter
   if (!familyParse.success) {
     errors.push({
       line: lineOfKey(fmText, "family", lineOffset),
-      message: raw.family === undefined ? "front-matter에 family 키가 없습니다 (plan | notice | press)" : `family 값이 올바르지 않습니다: ${String(raw.family)} (plan | notice | press)`,
+      message: raw.family === undefined ? `front-matter에 family 키가 없습니다 (${FAMILY_LIST})` : `family 값이 올바르지 않습니다: ${String(raw.family)} (${FAMILY_LIST})`,
       path: "family",
     });
     return { family: undefined, meta: undefined, raw, errors, warnings };
@@ -241,6 +244,10 @@ export function fallbackMeta(family: Family, raw?: Record<string, unknown>): Doc
     },
     plan: { 제목: "" },
     press: { 배포일: "", 담당부서: "", 담당자: "", 연락처: "", 제목: "" },
+    // OfficialMetaSchema 의 제목·처리과는 .min(1) 이다. 빈 문자열을 두면 아래 마지막 줄의
+    // `META_SCHEMAS[family].parse(base[family])` 가 던져서, front-matter 가 깨진 공문서는
+    // 자리표시 DocModel 로 내려앉는 대신 파서 전체를 멈춘다.
+    official: { 수신유형: "내부결재", 제목: "(제목 없음)", 처리과: "(처리과 없음)" },
   };
   const merged: Record<string, unknown> = { ...base[family] };
   if (raw) {
