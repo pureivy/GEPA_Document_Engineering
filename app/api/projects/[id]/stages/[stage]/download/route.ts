@@ -3,6 +3,7 @@ import { readFileSync } from "node:fs";
 import { hwpxPath, pdfPath, readStageDoc, readStageDsl } from "@/lib/stages/service";
 import { toText } from "@/lib/docmodel/serialize/toText";
 import { toMarkdown } from "@/lib/docmodel/serialize/toMarkdown";
+import { DOC_FAMILIES } from "@/lib/docmodel/families";
 import type { Stage } from "@/lib/contracts";
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
@@ -18,7 +19,7 @@ export async function GET(req: NextRequest, ctx: { params: Promise<{ id: string;
   const s = stage as Stage;
   const format = req.nextUrl.searchParams.get("format") ?? "hwpx";
   const doc = readStageDoc(id, s);
-  const title = doc ? (doc.family === "notice" ? doc.meta.사업명 + "_공고문" : doc.family === "plan" ? doc.meta.제목 : doc.meta.제목 + "_보도자료") : `${id}_${s}`;
+  const title = doc ? DOC_FAMILIES[doc.family].exportBaseName(doc) : `${id}_${s}`;
   if (format === "hwpx") {
     const p = hwpxPath(id, s);
     if (!p) return new Response("not exported", { status: 404 });

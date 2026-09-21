@@ -22,6 +22,12 @@ export interface DocFamilyDef {
   /** HWPX 문서 제목과 내보내기 파일명에 쓰는 제목 */
   docTitle(doc: DocModel): string;
   /**
+   * 다운로드 파일명 베이스(확장자 제외). family마다 다른 접미사 규칙을
+   * 삼항 연쇄로 두면 새 family가 마지막 분기(보도자료)를 조용히 물려받는다
+   * (app/api/projects/[id]/stages/[stage]/download/route.ts).
+   */
+  exportBaseName(doc: DocModel): string;
+  /**
    * `#` / `##` 제목을 어떤 블록으로 펼치는가.
    *   "chapterChip" = 사업계획서(장 띠 + 절 칩)
    *   "sectionBar"  = 공고문(번호 섹션바)
@@ -49,6 +55,7 @@ export const DOC_FAMILIES: Record<Family, DocFamilyDef> = {
       const m = doc.meta as Extract<DocModel, { family: "notice" }>["meta"];
       return `「${m.사업명}」 ${m.모집대상} 모집 공고`;
     },
+    exportBaseName: (doc) => (doc.meta as Extract<DocModel, { family: "notice" }>["meta"]).사업명 + "_공고문",
     headingStyle: "sectionBar",
     requiresClosingMark: true,
   },
@@ -57,6 +64,7 @@ export const DOC_FAMILIES: Record<Family, DocFamilyDef> = {
     indent: { "□": 1, "ㅇ": 2, "○": 2, "◦": 2, "-": 3, "·": 4, "※": 1, "*": 2 },
     noteIndentUnderItem: 3,
     docTitle: (doc) => (doc.meta as Extract<DocModel, { family: "plan" }>["meta"]).제목,
+    exportBaseName: (doc) => (doc.meta as Extract<DocModel, { family: "plan" }>["meta"]).제목,
     headingStyle: "chapterChip",
     requiresClosingMark: true,
   },
@@ -65,6 +73,7 @@ export const DOC_FAMILIES: Record<Family, DocFamilyDef> = {
     indent: { "□": 0, "ㅇ": 1, "○": 1, "◦": 1, "-": 3, "·": 4, "※": 2, "*": 2 },
     noteIndentUnderItem: 4,
     docTitle: (doc) => (doc.meta as Extract<DocModel, { family: "press" }>["meta"]).제목,
+    exportBaseName: (doc) => (doc.meta as Extract<DocModel, { family: "press" }>["meta"]).제목 + "_보도자료",
     headingStyle: "none",
     requiresClosingMark: false,
   },
