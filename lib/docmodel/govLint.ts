@@ -5,6 +5,7 @@
  */
 import type { Block, DocModel, Inline } from "./schema";
 import { inlineText } from "./schema";
+import { DOC_FAMILIES } from "./families";
 
 export interface GovLintIssue {
   blockId?: string;
@@ -89,8 +90,8 @@ export function lintGovStyle(doc: DocModel): GovLintIssue[] {
     void i;
   }
 
-  // ---- 붙임 / 끝 표시 (계획서·공고문 본문이 있는 문서)
-  if (doc.family === "plan" || doc.family === "notice") {
+  // ---- 붙임 / 끝 표시 (발신 문서·내부결재문서)
+  if (DOC_FAMILIES[doc.family].requiresClosingMark) {
     const last = [...blocks].reverse().find((b) => b.k === "para" || b.k === "table" || b.k === "attachmentList");
     if (last) {
       if (last.k === "attachmentList") {

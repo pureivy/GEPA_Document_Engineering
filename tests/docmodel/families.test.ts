@@ -78,3 +78,11 @@ describe("DOC_FAMILIES.headingStyle", () => {
     expect(ctx.allowHeadings).toBe(false);
   });
 });
+
+describe("DOC_FAMILIES.requiresClosingMark", () => {
+  it("계획서·공고문은 끝 표기를 요구하고 보도자료는 아니다", () => {
+    expect(DOC_FAMILIES.plan.requiresClosingMark).toBe(true);
+    expect(DOC_FAMILIES.notice.requiresClosingMark).toBe(true);
+    expect(DOC_FAMILIES.press.requiresClosingMark).toBe(false);
+  });
+});

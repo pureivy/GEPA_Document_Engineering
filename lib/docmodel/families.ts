@@ -32,6 +32,12 @@ export interface DocFamilyDef {
    * `#` 이 조용히 공고문 섹션바로 펼쳐진다.
    */
   headingStyle: "sectionBar" | "chapterChip" | "none";
+  /**
+   * 본문 끝에 붙임 표시와 `끝.` 을 요구하는가.
+   * 행정업무규정 시행규칙 제4조제4·5항 — 발신하는 문서와 내부결재문서에 적용된다.
+   * 보도자료는 공문서가 아니므로 해당 없음.
+   */
+  requiresClosingMark: boolean;
 }
 
 export const DOC_FAMILIES: Record<Family, DocFamilyDef> = {
@@ -44,6 +50,7 @@ export const DOC_FAMILIES: Record<Family, DocFamilyDef> = {
       return `「${m.사업명}」 ${m.모집대상} 모집 공고`;
     },
     headingStyle: "sectionBar",
+    requiresClosingMark: true,
   },
   plan: {
     label: "사업계획서",
@@ -51,6 +58,7 @@ export const DOC_FAMILIES: Record<Family, DocFamilyDef> = {
     noteIndentUnderItem: 3,
     docTitle: (doc) => (doc.meta as Extract<DocModel, { family: "plan" }>["meta"]).제목,
     headingStyle: "chapterChip",
+    requiresClosingMark: true,
   },
   press: {
     label: "보도자료",
@@ -58,5 +66,6 @@ export const DOC_FAMILIES: Record<Family, DocFamilyDef> = {
     noteIndentUnderItem: 4,
     docTitle: (doc) => (doc.meta as Extract<DocModel, { family: "press" }>["meta"]).제목,
     headingStyle: "none",
+    requiresClosingMark: false,
   },
 };
