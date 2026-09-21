@@ -20,7 +20,7 @@ import { writeResearchMcpConfig } from "../research/mcpConfig";
 import { RESEARCH_MCP_TOOL_IDS } from "../research/tools/register";
 import { syncWikiSnapshot, wikiSnapshotDir } from "../research/wikiSnapshot";
 import { dataDir, exportStage, saveStageDsl, stageDir } from "./service";
-import type { ProjectDTO, Stage } from "../contracts";
+import { isDocStage, type ProjectDTO, type Stage } from "../contracts";
 
 export interface StartStageRunOptions {
   project: ProjectDTO;
@@ -93,7 +93,7 @@ export function startStageRun(opts: StartStageRunOptions): { runId: string; sess
   const input: StagePromptInput = { stage: opts.stage, project: opts.project, workspaceDir, instruction: opts.instruction, reviewTarget: opts.reviewTarget, dataTools, wikiDir, supplementalResearch: opts.supplementalResearch };
   const p = buildStagePrompt(input);
   const limits = limitsFor(opts.stage);
-  const isDocStage = opts.stage === "plan" || opts.stage === "notice" || opts.stage === "press";
+  const isDoc = isDocStage(opts.stage);
   const docStage = opts.stage as Stage;
 
   // live extraction state (per run)
@@ -126,7 +126,7 @@ export function startStageRun(opts: StartStageRunOptions): { runId: string; sess
 
   // Primary live channel: the agent's Write of <stage>/draft.dsl.md, decoded from the streamed
   // tool input. Content that arrives before file_path is buffered until the path is known.
-  const draftPath = isDocStage ? resolve(workspaceDir, docStage, "draft.dsl.md") : "";
+  const draftPath = isDoc ? resolve(workspaceDir, docStage, "draft.dsl.md") : "";
   type WriteState = { dec: WriteStreamDecoder; held: string; ours: boolean | null; deltas: number };
   const writes = new Map<string, WriteState>();
   let liveFromWrite = false;
@@ -162,7 +162,7 @@ export function startStageRun(opts: StartStageRunOptions): { runId: string; sess
 
   const onEvent: StartRunInput["onEvent"] = (frame) => {
     const ev = frame.data as AgentEvent;
-    if (!isDocStage) return;
+    if (!isDoc) return;
     if ("parentToolUseId" in ev && ev.parentToolUseId) return; // subagent activity never carries the document
     switch (ev.type) {
       case "tool.start":
@@ -227,7 +227,7 @@ export function startStageRun(opts: StartStageRunOptions): { runId: string; sess
       else chainNext(run.status);
       return;
     }
-    if (!isDocStage) return;
+    if (!isDoc) return;
     endDoc(); // a stream cut short (limit, cancel) still closes so the editor settles
     // authoritative DSL: the content of the agent's last Write (its submission — identical to
     // the file unless the Write itself failed), else the file, else the final assistant text

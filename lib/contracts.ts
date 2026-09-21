@@ -9,6 +9,15 @@ export const STAGES: Stage[] = ["research", "plan", "notice", "press"];
 export const STAGE_LABEL: Record<Stage, string> = { research: "조사", plan: "사업계획서", notice: "공고문", press: "보도자료" };
 export const STAGE_FAMILY: Partial<Record<Stage, Family>> = { plan: "plan", notice: "notice", press: "press" };
 
+/**
+ * 문서를 만들어 내는 단계인가 — 실시간 타이핑·doc.json 저장·HWPX 내보내기가 이 판정에 달려 있다.
+ * STAGE_FAMILY 를 진실의 출처로 삼는다. 단계 이름을 손으로 나열하면 새 단계가 조용히 빠지고,
+ * 그때 아무 오류도 나지 않는다(예전 runIntegration.ts 의 지역 상수가 그랬다).
+ */
+export function isDocStage(stage: string): boolean {
+  return STAGE_FAMILY[stage as Stage] !== undefined;
+}
+
 export type RunStatus = "running" | "succeeded" | "failed" | "cancelled";
 
 export interface ProjectDTO {
