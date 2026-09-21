@@ -9,7 +9,8 @@ import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { PREF_AUTO_CHAIN, PREF_PLAN_RESEARCH, useBoolPref, writePref } from "@/lib/client/prefs";
 import { Group, Panel, Separator } from "react-resizable-panels";
 import { ChevronLeft, Settings2 } from "lucide-react";
-import { STAGE_FAMILY, STAGE_LABEL, STAGES, type ProjectDTO, type RunDTO, type RunStatus, type Stage } from "@/lib/contracts";
+import { STAGE_FAMILY, STAGE_LABEL, type ProjectDTO, type RunDTO, type RunStatus, type Stage } from "@/lib/contracts";
+import { KIND_STAGES, type ProjectKind } from "@/lib/kinds";
 import type { DocModel } from "@/lib/docmodel/schema";
 import { api, errorMessage } from "@/lib/client/api";
 import { ActivityStore } from "@/lib/client/activityStore";
@@ -29,6 +30,8 @@ import { buildFixInstruction, parseReviewResult, type ReviewResult } from "@/lib
 export interface StageRunnerProps {
   projectId: string;
   stage: Stage;
+  /** 프로젝트 종류 (서버에서 내려받아 넘긴다) — 단계 목록·번호·다음 단계 안내가 여기서 나온다 */
+  kind: ProjectKind;
   /** the stage's configured model (STAGE_MODELS / GEPA_MODEL env), preselected in the run controls */
   defaultModel: string;
 }
@@ -37,12 +40,19 @@ const ZOOM_MIN = 50;
 const ZOOM_MAX = 150;
 
 
-export function StageRunner({ projectId, stage, defaultModel }: StageRunnerProps) {
+export function StageRunner({ projectId, stage, kind, defaultModel }: StageRunnerProps) {
   const family = STAGE_FAMILY[stage];
+  // 이 종류의 단계 목록. 단일 단계(공문)면 이어질 단계가 없으므로 연쇄 관련 UI 를 전부 감춘다.
+  // stagesOf(kind) 대신 레코드를 직접 읽는다 — 렌더 본문에서 수입 함수를 호출하면
+  // React Compiler 가 이 컴포넌트의 메모이제이션을 통째로 포기한다(lint 오류로 잡힌다).
+  const stages = KIND_STAGES[kind];
+  const chained = stages.length > 1;
+  // 편집기 콜백의 `next`(DocModel)와 겹치지 않게 이름을 달리 한다 — 가려지면 React Compiler 가 메모이제이션을 포기한다
+  const nextStage: Stage | null = stages[stages.indexOf(stage) + 1] ?? null;
   const isResearch = stage === "research";
   // model for the next run of this stage (per-run override; the stage default otherwise)
   const [model, setModel] = useState(defaultModel);
-  // 완료 후 다음 단계 자동 실행 (research → plan → notice → press); remembered per browser (default on)
+  // 완료 후 다음 단계 자동 실행 (사업: 조사 → 사업계획서 → 공고문 → 보도자료); remembered per browser (default on)
   const autoChain = useBoolPref(PREF_AUTO_CHAIN, true);
   // 사업계획서 작성 시 보충 조사 허용 (default off — the plan stage is much faster without it)
   const planResearch = useBoolPref(PREF_PLAN_RESEARCH, false);
@@ -320,7 +330,7 @@ export function StageRunner({ projectId, stage, defaultModel }: StageRunnerProps
     setActionError(null);
     try {
       editorRef.current?.flushPendingSave();
-      const r = await api.runStage(projectId, stage, { ...opts, model, autoChain: autoChain && stage !== "press", supplementalResearch: planResearch });
+      const r = await api.runStage(projectId, stage, { ...opts, model, autoChain: autoChain && !!nextStage, supplementalResearch: planResearch });
       store.reset();
       controllerRef.current?.reset();
       resetLive();
@@ -395,21 +405,22 @@ export function StageRunner({ projectId, stage, defaultModel }: StageRunnerProps
   };
 
   const hasDoc = isResearch ? !!markdown : !!doc;
-  const stageIndex = STAGES.indexOf(stage);
+  const stageIndex = stages.indexOf(stage);
 
   return (
     <div className="flex h-full min-h-0 flex-col">
       <header className="flex items-center gap-3 border-b border-slate-200 bg-white px-3 py-2">
         <Link href={`/projects/${projectId}`} className="inline-flex items-center gap-1 rounded px-1.5 py-1 text-xs text-slate-600 hover:bg-slate-100">
-          <ChevronLeft className="h-4 w-4" /> 파이프라인
+          <ChevronLeft className="h-4 w-4" /> {chained ? "파이프라인" : "프로젝트"}
         </Link>
         <div className="min-w-0 truncate text-sm text-slate-500">{project?.title ?? "…"}</div>
         <span className="text-slate-300">/</span>
         <div className="text-sm font-semibold text-slate-900">
-          {stageIndex + 1}. {STAGE_LABEL[stage]}
+          {chained ? `${stageIndex + 1}. ` : ""}
+          {STAGE_LABEL[stage]}
         </div>
         <nav className="ml-auto hidden items-center gap-1 md:flex">
-          {STAGES.map((s) => (
+          {(chained ? stages : []).map((s) => (
             <Link key={s} href={`/projects/${projectId}/${s}`} className={cn("rounded px-2 py-1 text-xs", s === stage ? "bg-slate-800 text-white" : "text-slate-600 hover:bg-slate-100")}>
               {STAGE_LABEL[s]}
             </Link>
@@ -433,7 +444,7 @@ export function StageRunner({ projectId, stage, defaultModel }: StageRunnerProps
         defaultModel={defaultModel}
         onModelChange={setModel}
         autoChain={autoChain}
-        canAutoChain={stage !== "press"}
+        canAutoChain={!!nextStage}
         onAutoChainChange={changeAutoChain}
         planResearch={planResearch}
         canPlanResearch={stage === "plan" || stage === "research"}
@@ -444,11 +455,11 @@ export function StageRunner({ projectId, stage, defaultModel }: StageRunnerProps
         onSkipAnimation={() => controllerRef.current?.flush()}
       />
 
-      {autoChain && stage !== "press" && status === "succeeded" && !running ? (
+      {autoChain && nextStage && status === "succeeded" && !running ? (
         <div className="flex items-center gap-2 border-b border-emerald-200 bg-emerald-50 px-3 py-1.5 text-xs text-emerald-800">
           <span className="flex-1">이 단계가 끝나 다음 단계가 자동으로 시작됩니다.</span>
-          <Link href={`/projects/${projectId}/${STAGES[STAGES.indexOf(stage) + 1]}`} className="font-medium underline">
-            {STAGE_LABEL[STAGES[STAGES.indexOf(stage) + 1]]} 열기
+          <Link href={`/projects/${projectId}/${nextStage}`} className="font-medium underline">
+            {STAGE_LABEL[nextStage]} 열기
           </Link>
         </div>
       ) : null}

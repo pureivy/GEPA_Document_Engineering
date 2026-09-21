@@ -1,6 +1,6 @@
 "use client";
 import Link from "next/link";
-import { ArrowRight, Download, FileSearch, FileText, Megaphone, Newspaper } from "lucide-react";
+import { ArrowRight, Download, FileSearch, FileText, Mail, Megaphone, Newspaper } from "lucide-react";
 import type { RunDTO, RunStatus, Stage } from "@/lib/contracts";
 import { STAGE_LABEL } from "@/lib/contracts";
 import { api } from "@/lib/client/api";
@@ -8,12 +8,13 @@ import { cn, formatCost, formatDateTime, formatDuration, RUN_STATUS_LABEL, STAGE
 import { Badge, type BadgeTone } from "@/components/ui/badge";
 
 const TONE: Record<RunStatus, BadgeTone> = { running: "running", succeeded: "success", failed: "danger", cancelled: "warning" };
-const ICON: Record<Stage, React.ComponentType<{ className?: string }>> = { research: FileSearch, plan: FileText, notice: Megaphone, press: Newspaper, official: FileText };
+const ICON: Record<Stage, React.ComponentType<{ className?: string }>> = { research: FileSearch, plan: FileText, notice: Megaphone, press: Newspaper, official: Mail };
 
 export interface StageCardProps {
   projectId: string;
   stage: Stage;
-  index: number;
+  /** 연쇄 단계 안에서의 자리(0-based). 단일 단계 종류에서는 null — 번호를 매기지 않는다 */
+  index: number | null;
   latestRun: RunDTO | null;
   active: boolean;
   hasDoc: boolean | null;
@@ -34,7 +35,9 @@ export function StageCard({ projectId, stage, index, latestRun, active, hasDoc, 
       )}
     >
       <Link href={href} className="flex items-center gap-2">
-        <span className={cn("flex h-7 w-7 items-center justify-center rounded-full text-xs font-bold", done ? "bg-emerald-600 text-white" : active ? "bg-sky-600 text-white" : "bg-slate-200 text-slate-600")}>{index + 1}</span>
+        {index !== null ? (
+          <span className={cn("flex h-7 w-7 items-center justify-center rounded-full text-xs font-bold", done ? "bg-emerald-600 text-white" : active ? "bg-sky-600 text-white" : "bg-slate-200 text-slate-600")}>{index + 1}</span>
+        ) : null}
         <Icon className="h-4 w-4 text-slate-500" />
         <span className="text-sm font-semibold text-slate-900">{STAGE_LABEL[stage]}</span>
         <span className="ml-auto">{status ? <Badge tone={TONE[status]}>{RUN_STATUS_LABEL[status]}</Badge> : <Badge tone="neutral">{ready ? "준비됨" : "대기"}</Badge>}</span>

@@ -6,6 +6,7 @@ import { projects, type ProjectRow } from "@/lib/db/schema";
 import { serializeProject } from "@/lib/db/serialize";
 import { jsonError, readJsonBody } from "@/lib/agents/http";
 import { ensureProjectDir } from "@/lib/storage/paths";
+import { isProjectKind } from "@/lib/kinds";
 import { writeFileSync } from "node:fs";
 import path from "node:path";
 
@@ -24,6 +25,8 @@ const contactSchema = z
   .default({ 부서명: "", 전화: "", 이메일: "" });
 
 const createSchema = z.object({
+  /** ProjectKind — 모르는 값은 거절하지 않고 "program" 으로 떨어뜨린다(아래 isProjectKind) */
+  kind: z.string().trim().max(40).optional(),
   title: z.string().trim().min(1).max(200),
   topic: z.string().trim().min(1).max(2000),
   region: z.string().trim().max(200).default(""),
@@ -43,7 +46,7 @@ export async function POST(req: Request) {
   const id = randomUUID();
   const row: ProjectRow = {
     id,
-    kind: "program",
+    kind: isProjectKind(body.data.kind) ? body.data.kind : "program",
     title: body.data.title,
     topic: body.data.topic,
     region: body.data.region,

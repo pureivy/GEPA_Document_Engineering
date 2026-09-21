@@ -4,6 +4,7 @@ import type { ProjectDTO } from "../../lib/contracts";
 
 const project: ProjectDTO = {
   id: "p1",
+  kind: "program",
   title: "2027년 안동시 수출기업 역량강화 지원사업",
   topic: "안동시 수출기업 30개사 지원",
   region: "안동시",
@@ -41,7 +42,7 @@ describe("buildStagePrompt — reference plan and 보충 조사 option", () => {
 describe("official 단계 프롬프트", () => {
   const p = buildStagePrompt({
     stage: "official",
-    project: { id: "x", title: "t", topic: "제출 요청", region: "경상북도", organizer: "(재)경상북도경제진흥원", contact: { 부서명: "전략기획팀", 전화: "054-470-8527", 이메일: "a@gepa.kr" }, createdAt: "", updatedAt: "" },
+    project: { id: "x", kind: "official", title: "t", topic: "제출 요청", region: "경상북도", organizer: "(재)경상북도경제진흥원", contact: { 부서명: "전략기획팀", 전화: "054-470-8527", 이메일: "a@gepa.kr" }, createdAt: "", updatedAt: "" },
     workspaceDir: "/tmp",
   });
   it("공문서 작성자를 부르고 시행번호를 만들지 말라고 지시한다", () => {

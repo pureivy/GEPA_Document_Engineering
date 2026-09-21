@@ -17,7 +17,7 @@ const bodySchema = z.object({
   instruction: z.string().trim().max(20_000).optional(),
   resume: z.boolean().optional(),
   /** for stage=review: which stage's document to review */
-  reviewTarget: z.enum(["plan", "notice", "press"]).optional(),
+  reviewTarget: z.enum(["plan", "notice", "press", "official"]).optional(),
   /** model alias for this run; defaults to the stage's configured model */
   model: z.enum(MODEL_ALIASES).optional(),
   /** start the following stages automatically when this one succeeds (research → plan → notice → press) */

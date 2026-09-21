@@ -91,6 +91,15 @@ const DOC_CONTRACT = (stage: Stage, family: string) => `
 4. 마지막 답변은 3줄 이내의 요약만 쓴다. DSL을 답변에 다시 출력하지 않는다.
 `;
 
+/** 검토 대상 단계별 규격 스킬. 빠뜨리면 검토관이 엉뚱한 규격으로 채점한다(공문을 보도자료 기준으로 보는 식). */
+const REVIEW_SKILL: Record<Stage, string> = {
+  research: "gepa-research",
+  plan: "gepa-plan-design",
+  notice: "gepa-notice-design",
+  press: "gepa-press-style",
+  official: "gepa-official-design",
+};
+
 export function buildStagePrompt(input: StagePromptInput): StagePrompt {
   const { stage, project, workspaceDir, instruction } = input;
   const brief = projectBrief(project, workspaceDir) + referenceGuide(project, stage, workspaceDir);
@@ -144,7 +153,7 @@ front-matter: 기관 (재)경상북도경제진흥원, 배포일(공고일), 보
       const target = input.reviewTarget ?? "plan";
       return {
         systemPromptAppend: `${COMMON()}\n역할: 문서 검토관. .claude/agents/reviewer.md 의 점검 항목을 적용한다.`,
-        prompt: `${brief}\n작업 폴더: ${workspaceDir}\n\n${workspaceDir}/${target}/draft.dsl.md 를 검토하라. 관련 규격: .claude/skills/gepa-${target === "plan" ? "plan-design" : target === "notice" ? "notice-design" : "press-style"}/SKILL.md.
+        prompt: `${brief}\n작업 폴더: ${workspaceDir}\n\n${workspaceDir}/${target}/draft.dsl.md 를 검토하라. 관련 규격: .claude/skills/${REVIEW_SKILL[target]}/SKILL.md.
 이슈마다 blockHint(문제가 있는 줄의 앞 20자), severity(error|warn|info), message, fix(수정 제안 DSL 줄)를 채우고 0~100점 score를 매긴다.
 참고 자료: ${workspaceDir}/research/notes.md (수치·출처 대조), ${workspaceDir}/plan/draft.dsl.md (공고문·보도자료 검토 시 정합성 기준).`,
         allowedTools: ["Read", "Glob", "Grep"],

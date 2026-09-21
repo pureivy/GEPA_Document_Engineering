@@ -3,6 +3,7 @@
  * (Kept dependency-free so both sides can import it.)
  */
 import type { Block, DocModel, Family } from "./docmodel/schema";
+import type { ProjectKind } from "./kinds";
 
 /** 문서·파이프라인 단계 — 화면에 탭으로 보이는 것들 */
 export type Stage = "research" | "plan" | "notice" | "press" | "official";
@@ -30,6 +31,8 @@ export type RunStatus = "running" | "succeeded" | "failed" | "cancelled";
 
 export interface ProjectDTO {
   id: string;
+  /** 문서 종류 — 화면에 보이는 단계 목록이 여기서 파생된다 (lib/kinds.ts stagesOf) */
+  kind: ProjectKind;
   title: string;
   topic: string;
   region: string;

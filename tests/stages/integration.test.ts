@@ -52,7 +52,7 @@ function writeFixture(versions: string[] = [dsl]): string[] {
 }
 
 const project: ProjectDTO = {
-  id: "p-it-1", title: "테스트 사업", topic: "안동시 수출기업 지원", region: "안동시", organizer: "안동시",
+  id: "p-it-1", kind: "program", title: "테스트 사업", topic: "안동시 수출기업 지원", region: "안동시", organizer: "안동시",
   contact: { 부서명: "북부지소", 담당자: "김OO", 전화: "054-900-3801", 이메일: "gepa_north@naver.com" },
   createdAt: new Date().toISOString(), updatedAt: new Date().toISOString(),
 };
