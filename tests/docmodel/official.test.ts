@@ -56,4 +56,28 @@ describe("officialMetaProblems", () => {
     const m = OfficialMetaSchema.parse({ 수신유형: "내부결재", 제목: "가", 처리과: "마케팅팀" });
     expect(officialMetaProblems(m)).toEqual([]);
   });
+
+  // 내부결재는 받는 곳이 없다. 폼은 이 상태를 못 만드니 값이 있으면 에이전트가 지어낸 것이다.
+  it("내부결재 인데 수신이 있으면 문제를 낸다", () => {
+    const m = OfficialMetaSchema.parse({ 수신유형: "내부결재", 수신: "경상북도지사", 제목: "가", 처리과: "마케팅팀" });
+    expect(officialMetaProblems(m)).toHaveLength(1);
+    expect(officialMetaProblems(m)[0]).toContain("내부결재");
+    expect(officialMetaProblems(m)[0]).toContain("수신");
+  });
+
+  it("내부결재 인데 수신자가 있으면 문제를 낸다", () => {
+    const m = OfficialMetaSchema.parse({ 수신유형: "내부결재", 수신자: ["마케팅팀장"], 제목: "가", 처리과: "마케팅팀" });
+    expect(officialMetaProblems(m)).toHaveLength(1);
+    expect(officialMetaProblems(m)[0]).toContain("수신자");
+  });
+
+  it("내부결재 인데 둘 다 있으면 각각을 지적한다", () => {
+    const m = OfficialMetaSchema.parse({ 수신유형: "내부결재", 수신: "경상북도지사", 수신자: ["마케팅팀장"], 제목: "가", 처리과: "마케팅팀" });
+    expect(officialMetaProblems(m)).toHaveLength(2);
+  });
+
+  it("빈 문자열·빈 배열은 값이 아니다 — 내부결재에서 문제가 되지 않는다", () => {
+    const m = OfficialMetaSchema.parse({ 수신유형: "내부결재", 수신: "  ", 수신자: [], 제목: "가", 처리과: "마케팅팀" });
+    expect(officialMetaProblems(m)).toEqual([]);
+  });
 });
