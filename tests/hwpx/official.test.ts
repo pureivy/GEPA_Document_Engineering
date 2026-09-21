@@ -157,11 +157,14 @@ describe("buildHwpx — official 결재란", () => {
 });
 
 /**
- * 참고 문서에서 도입 문장은 두문 표와 **같은 문단**에 있다(표 run 다음에 글 run). 별도 문단으로
- * 내면 표만 든 앵커 문단이 paraPr 28(12pt 200 %) 높이의 빈 줄을 차지해, 한글에서 제목 아래
- * 빈 줄로 보인다 — rhwp·resvg 는 이 빈 줄을 접기 때문에 렌더 비교로는 잡히지 않는다.
+ * 참고 문서에서 **첫 본문 문단**은 두문 표와 같은 문단에 있다(표 run 다음에 글 run). 별도
+ * 문단으로 내면 표만 든 앵커가 paraPr 28(12pt 200 %) 높이의 빈 줄을 차지해, 한글에서 제목
+ * 아래 빈 줄로 보인다 — rhwp·resvg 는 이 빈 줄을 접기 때문에 렌더 비교로는 잡히지 않는다.
+ *
+ * 기준은 글의 모양이 아니라 자리다: 표본 1(「실라리안 특판전」)의 앵커 문단은 번호 항목
+ * `1. 평소 부서 운영에 협조해 주셔서 감사합니다.` 를 담고 있다.
  */
-describe("buildHwpx — official 도입 문장", () => {
+describe("buildHwpx — official 첫 본문 문단", () => {
   /** 최상위 문단만 — 표 안(hp:subList)의 칸 문단은 세지 않는다 */
   const tops = (xml: string) => childrenNamed(parseXml(xml.replace(/^<\?xml[^>]*\?>/, "")), "hp:p");
   /** 문단 **직속** run 의 표/글만 본다 — findFirst 로 훑으면 표 칸 안의 글까지 딸려 온다 */
@@ -178,7 +181,7 @@ describe("buildHwpx — official 도입 문장", () => {
       };
     });
 
-  it("도입 문장은 두문 표와 같은 문단에 들어간다 — 빈 앵커 문단을 남기지 않는다", () => {
+  it("첫 본문 문단은 두문 표와 같은 문단에 들어간다 — 빈 앵커 문단을 남기지 않는다", () => {
     const { doc } = parseDsl(DSL);
     const { sectionXml } = buildHwpx(doc, { now: NOW });
     const ps = shape(sectionXml);
@@ -189,13 +192,19 @@ describe("buildHwpx — official 도입 문장", () => {
     expect(ps.filter((p) => p.table && !p.text).map((p) => p.paraPr)).toEqual(["12"]);
   }, 60_000);
 
-  it("본문이 번호 항목으로 바로 시작하면 도입 문장이 없다 — 앵커는 글 없이 둔다", () => {
+  it("번호 항목으로 시작하는 공문은 그 항목이 앵커에 들어간다 (표본 1)", () => {
     const dsl = DSL.replace(/---\n경영평가 상시대응체계[^\n]*\n/, "---\n");
-    const { doc } = parseDsl(dsl);
-    const { sectionXml } = buildHwpx(doc, { now: NOW });
+    const { sectionXml } = buildHwpx(parseDsl(dsl).doc, { now: NOW });
     const ps = shape(sectionXml);
-    expect(ps.map((p) => p.paraPr)).toEqual(["28", "27", "27", "27", "29", "12"]);
-    expect(ps[0].text).toBe("");
-    expect(ps[1].text).toContain("1. 작성대상");
+    expect(ps.map((p) => p.paraPr)).toEqual(["28", "27", "27", "29", "12"]);
+    expect(ps[0].text).toContain("1. 작성대상");
+    expect(ps.filter((p) => p.table && !p.text).map((p) => p.paraPr)).toEqual(["12"]); // 빈 앵커 없음
+  }, 60_000);
+
+  it("앵커에 들어가는 첫 문단도 글머리 기호와 들여쓰기를 지킨다", () => {
+    const dsl = DSL.replace(/---\n경영평가 상시대응체계[^\n]*\n/, "---\nㅇ 각 팀 협조\n");
+    const { sectionXml } = buildHwpx(parseDsl(dsl).doc, { now: NOW });
+    // 기호는 blocks 의 glyph 에 따로 있다 — inlines 만 넘기면 조용히 사라진다
+    expect(shape(sectionXml)[0].text).toContain("  ㅇ 각 팀 협조");
   }, 60_000);
 });

@@ -13,14 +13,11 @@ import { paragraph } from "../emit/paragraph";
 import { loadGeometry, cloneFragment, setCellText } from "../geometry";
 import { approvalLineFor, departmentFullName } from "../../org";
 import { leadingSpaces } from "../../docmodel/indent";
-import { inlineText, officialMetaProblems, type Block, type Inline, type OfficialDoc, type OfficialMeta } from "../../docmodel/schema";
+import { officialMetaProblems, type Block, type Inline, type OfficialDoc, type OfficialMeta } from "../../docmodel/schema";
 import type { CharSpec } from "../registry";
 import { WriterContext } from "./context";
 
 type ParaBlock = Extract<Block, { k: "para" }>;
-
-/** `1.` `가.` `①` 처럼 번호로 시작하는 항목 줄 — 도입 문장이 아니다. */
-const ITEM_RE = /^\s*(\d+|[가-힣]|[①-⑮])\s*[.)]\s/;
 
 /** style-map 역할이 없을 때의 대비값. 참고 문서는 굴림체 12pt 장평 95 / 180 %(charPr 8, paraPr 27). */
 const BODY_CHAR: CharSpec = { font: "gulim", pt: 12, ratio: 95 };
@@ -67,14 +64,14 @@ export function writeOfficial(ctx: WriterContext, doc: OfficialDoc): XmlNode[] {
   // (serialize/toText.ts:99 와 같은 규칙).
   const hasAttachmentBlock = doc.blocks.some((b) => b.k === "attachmentList");
   let wroteFooter = false;
-  // 도입 문장은 두문 표와 같은 문단에 들어간다(leadBlock 참조) — 본문 루프에서는 건너뛴다
-  const lead = leadBlock(doc.blocks);
+  // 첫 본문 문단은 두문 표와 같은 문단에 들어간다(firstBodyBlock 참조) — 본문 루프에서는 건너뛴다
+  const first = firstBodyBlock(doc.blocks);
 
   for (const b of doc.blocks) {
-    if (b === lead) continue;
+    if (b === first) continue;
     switch (b.k) {
       case "officialHeader":
-        out.push(...headTable(ctx, m, lead));
+        out.push(...headTable(ctx, m, first));
         break;
       case "officialFooter":
         out.push(...footTable(ctx, m, hasAttachmentBlock));
@@ -112,27 +109,31 @@ function roleSpec(ctx: WriterContext, name: string): { paraPr: number; charPr: n
 }
 
 /**
- * 도입 문장("…하여 주시기 바랍니다.") 블록 — 첫 본문 문단이 글머리 기호도 번호도 없을 때만.
- * 「실라리안 특판전」처럼 `1. 평소 부서 운영에…` 로 바로 시작하는 공문에는 도입 문장이 없다.
+ * 두문 표와 한 문단에 들어갈 본문 블록 — **첫 본문 문단이면 무엇이든**이다.
+ *
+ * 처음에는 "번호 없는 도입 문장일 때만"으로 좁혀 두었는데 틀렸다. 「실라리안 특판전」(표본 1)의
+ * 앵커 문단은 번호 항목 `1. 평소 부서 운영에 협조해 주셔서 감사합니다.` 를 담고 있다. 기준은
+ * 글의 모양이 아니라 **자리**다. 덕분에 `1.` 로 시작하는 공문에도 빈 앵커 줄이 남지 않는다.
  */
-function leadBlock(blocks: OfficialDoc["blocks"]): ParaBlock | undefined {
-  const first = blocks.find((b) => b.k === "para") as ParaBlock | undefined;
-  if (!first) return undefined;
-  if (first.glyph && first.glyph !== "none") return undefined;
-  return ITEM_RE.test(inlineText(first.inlines)) ? undefined : first;
+function firstBodyBlock(blocks: OfficialDoc["blocks"]): ParaBlock | undefined {
+  return blocks.find((b) => b.k === "para") as ParaBlock | undefined;
 }
 
 /**
- * 본문 문단 — 참고 문서의 paraPr 27 / charPr 8 을 그대로 쓴다(표준 서식의 본문 줄).
- * 글머리 기호는 문단 여백이 아니라 앞 반각 공백으로 들여쓴다(다른 family 와 같은 관행,
- * lib/docmodel/indent.ts). 공문서 사다리는 편람의 2타(□0 ㅇ2 -4 ·6)다.
+ * 본문 문단의 글자 내용 — 글머리 기호를 앞에 붙이고 편람 2타 사다리만큼 반각 공백으로
+ * 들여쓴다(다른 family 와 같은 관행, lib/docmodel/indent.ts). 기호는 blocks 의 `glyph` 에
+ * 따로 담겨 있어서 `inlines` 만 쓰면 조용히 사라진다 — 앵커에 넣는 첫 문단도 같은 길을 탄다.
  */
-function bodyPara(ctx: WriterContext, b: ParaBlock): XmlNode {
+function bodyInlines(b: ParaBlock): Inline[] {
   const glyph = b.glyph && b.glyph !== "none" ? b.glyph : undefined;
-  const s = roleSpec(ctx, "body");
   const prefix = " ".repeat(b.indent ?? leadingSpaces("official", b.glyph, b.role)) + (glyph ? `${glyph} ` : "");
-  const inlines: Inline[] = prefix ? [{ t: "text", text: prefix }, ...b.inlines] : b.inlines;
-  return ctx.para({ paraPr: s.paraPr, runs: ctx.runsFor(inlines, s.base, s.charPr), vertsize: s.base.pt * 100, lineSpacing: s.lineSpacing, forcePageBreak: b.pageBreakBefore });
+  return prefix ? [{ t: "text", text: prefix }, ...b.inlines] : b.inlines;
+}
+
+/** 본문 문단 — 참고 문서의 paraPr 27 / charPr 8 을 그대로 쓴다(표준 서식의 본문 줄). */
+function bodyPara(ctx: WriterContext, b: ParaBlock): XmlNode {
+  const s = roleSpec(ctx, "body");
+  return ctx.para({ paraPr: s.paraPr, runs: ctx.runsFor(bodyInlines(b), s.base, s.charPr), vertsize: s.base.pt * 100, lineSpacing: s.lineSpacing, forcePageBreak: b.pageBreakBefore });
 }
 
 function blankPara(ctx: WriterContext): XmlNode {
@@ -161,32 +162,33 @@ function attachmentParas(ctx: WriterContext, items: string[]): XmlNode[] {
 // ---- 두문 --------------------------------------------------------------------------------
 
 /**
- * 두문 표 + 도입 문장. 참고 문서에서 이 둘은 **한 문단**이다(표 run 다음에 글 run 이 이어진다).
+ * 두문 표 + 첫 본문 문단. 참고 문서에서 이 둘은 **한 문단**이다(표 run 다음에 글 run 이 이어진다).
  *
- * 도입 문장을 뒤따르는 별도 문단으로 내면, 표만 든 앵커 문단이 자기 paraPr(28 = 12pt 200 %)
+ * 첫 문단을 뒤따르는 별도 문단으로 내면, 표만 든 앵커 문단이 자기 paraPr(28 = 12pt 200 %)
  * 높이만큼 빈 줄을 차지한다 — 한글에서 제목 아래에 빈 줄로 보인다(rhwp·resvg 는 이 빈 줄을
- * 접어서 렌더가 같아 보인다). 참고 문서와 같은 구조로 내면 빈 줄이 사라지고, 도입 문장은
- * 앵커의 paraPr 28(줄간격 200 %, 문단 아래 500)을 저절로 물려받는다. 문단 아래 간격이 항목
+ * 접어서 렌더가 같아 보인다). 참고 문서와 같은 구조로 내면 빈 줄이 사라지고, 첫 문단은
+ * 앵커의 paraPr(줄간격 200 %, 문단 아래 500)을 저절로 물려받는다. 문단 아래 간격이 다음 항목
  * 앞 빈 줄 노릇을 하므로 빈 문단을 따로 넣지 않는다.
  *
- * 도입 문장이 없는 공문(`1.` 로 시작)은 앵커에 글이 없는 채로 둔다 — 그 문서의 참 모습이다.
+ * paraPr 는 언제나 우리 템플릿(표본 3)의 앵커 값을 쓴다 — 표본마다 id 가 다르므로 다른 표본에서
+ * 읽은 번호를 옮겨 적지 않는다.
  */
-function headTable(ctx: WriterContext, m: OfficialMeta, lead: ParaBlock | undefined): XmlNode[] {
+function headTable(ctx: WriterContext, m: OfficialMeta, first: ParaBlock | undefined): XmlNode[] {
   const ref = loadGeometry(ctx.tpl.dir, "t00");
   if (!ref) {
     ctx.warnings.push({ message: "official template geometry t00 missing; 두문 표를 생략했습니다" });
-    return lead ? [bodyPara(ctx, lead)] : [];
+    return first ? [bodyPara(ctx, first)] : [];
   }
   // tableOnly 가 참고 문서의 도입 문장과 짝 없는 CLICK_HERE fieldBegin 을 먼저 걷어낸다
   const head = tableOnly(cloneFragment(ref, ctx.ids));
   setCellText(head, ...HEAD_수신, 수신값(m));
   setCellText(head, ...HEAD_경유, m.경유);
   setCellText(head, ...HEAD_제목, m.제목);
-  if (lead) {
+  if (first) {
     const s = roleSpec(ctx, "lead");
     // paragraph() 로 run 노드만 만들어 앵커에 잇는다(문단 자체는 버린다) — 하이퍼링크 같은
     // 특수 run 도 본문과 똑같이 나오도록 run 생성 로직을 한 곳에 둔다
-    const runs = childrenNamed(paragraph({ id: 0, paraPr: s.paraPr, runs: ctx.runsFor(lead.inlines, s.base, s.charPr) }), "hp:run");
+    const runs = childrenNamed(paragraph({ id: 0, paraPr: s.paraPr, runs: ctx.runsFor(bodyInlines(first), s.base, s.charPr) }), "hp:run");
     head.children.push(...runs);
   }
   return [head];
