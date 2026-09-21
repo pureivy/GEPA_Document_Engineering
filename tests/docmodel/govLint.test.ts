@@ -29,3 +29,20 @@ describe("lintGovStyle — 행정업무운영 편람 작성 기준", () => {
     expect(rules(`□ 가\nㅇ 둘\nㅇ 셋\n붙임 사업계획서 1부.  끝.\n`)).toContain("붙임 표기");
   });
 });
+
+/**
+ * 공문서는 `끝.` 을 본문 블록이 아니라 작성기가 만드는 붙임 줄에 찍는다(meta.붙임 → attachment
+ * 문단). 다른 family 는 전부 `attachmentList` 블록으로 내므로 govLint:96 의 면제가 걸리지만
+ * 공문서만 걸리지 않아, 붙임 있는 모든 공문서에서 "끝 표시" 경고가 헛울렸다.
+ */
+describe("lintGovStyle — 공문서의 끝 표시", () => {
+  const official = (fm: string, body: string) => lintGovStyle(parseDsl(`---\nfamily: official\n수신유형: 내부결재\n제목: 가\n처리과: 마케팅팀\n${fm}---\n${body}`).doc).map((i) => i.rule);
+
+  it("meta.붙임 이 있으면 끝 표시를 요구하지 않는다 — 작성기가 붙임 줄에 찍는다", () => {
+    expect(official(`붙임: ["계획서 1부."]\n`, `1. 자료를 제출하여 주시기 바랍니다.\n`)).not.toContain("끝 표시");
+  });
+
+  it("붙임이 없으면 여전히 끝 표시를 요구한다 — 그때는 작성기도 찍지 않는다", () => {
+    expect(official("", `1. 자료를 제출하여 주시기 바랍니다.\n`)).toContain("끝 표시");
+  });
+});

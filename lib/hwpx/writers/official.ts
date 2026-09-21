@@ -12,11 +12,14 @@ import { childrenNamed, findFirst, isNode, type XmlNode } from "../xml";
 import { loadGeometry, cloneFragment, setCellText } from "../geometry";
 import { approvalLineFor, departmentFullName } from "../../org";
 import { leadingSpaces } from "../../docmodel/indent";
-import { officialMetaProblems, type Block, type Inline, type OfficialDoc, type OfficialMeta } from "../../docmodel/schema";
+import { inlineText, officialMetaProblems, type Block, type Inline, type OfficialDoc, type OfficialMeta } from "../../docmodel/schema";
 import type { CharSpec } from "../registry";
 import { WriterContext } from "./context";
 
 type ParaBlock = Extract<Block, { k: "para" }>;
+
+/** `1.` `가.` `①` 처럼 번호로 시작하는 항목 줄 — 도입 문장이 아니다. */
+const ITEM_RE = /^\s*(\d+|[가-힣]|[①-⑮])\s*[.)]\s/;
 
 /** style-map 역할이 없을 때의 대비값. 참고 문서는 굴림체 12pt 장평 95 / 180 %(charPr 8, paraPr 27). */
 const BODY_CHAR: CharSpec = { font: "gulim", pt: 12, ratio: 95 };
@@ -31,11 +34,18 @@ const HEAD_제목 = [5, 1] as const;
 const FOOT_발신명의 = [0, 10] as const;
 const FOOT_수신자라벨 = [1, 0] as const;
 const FOOT_수신자 = [1, 5] as const;
-/** 결재란 직위 칸 — 참고 문서에 값이 있는 세 칸(★과장 / 팀장 / 실장) */
+/**
+ * 결재란 직위 칸 다섯 개 — t01 3행의 셀 이름이 `직위.1` … `직위.5` 이고 다섯 칸 모두
+ * `borderFillIDRef=3 paraPr=23 charPr=21` 로 같다. 참고 문서에서 뒤 두 칸이 비어 있는 것은
+ * 그 문서가 실장 전결(`★과장`의 ★)이었기 때문이지 서식이 세 칸이어서가 아니다.
+ * (4행 `직위.6`…`직위.10` 은 결재선이 더 긴 문서를 위한 둘째 줄이다 — 여기서는 쓰지 않는다.)
+ */
 const FOOT_결재 = [
   [3, 0],
   [3, 9],
   [3, 20],
+  [3, 32],
+  [3, 42],
 ] as const;
 const FOOT_협조자 = [5, 4] as const;
 const FOOT_시행 = [7, 3] as const;
@@ -56,6 +66,7 @@ export function writeOfficial(ctx: WriterContext, doc: OfficialDoc): XmlNode[] {
   // (serialize/toText.ts:99 와 같은 규칙).
   const hasAttachmentBlock = doc.blocks.some((b) => b.k === "attachmentList");
   let wroteFooter = false;
+  let firstBody = true;
 
   for (const b of doc.blocks) {
     switch (b.k) {
@@ -67,7 +78,8 @@ export function writeOfficial(ctx: WriterContext, doc: OfficialDoc): XmlNode[] {
         wroteFooter = true;
         break;
       case "para":
-        out.push(bodyPara(ctx, b));
+        out.push(bodyPara(ctx, b, firstBody));
+        firstBody = false;
         break;
       case "blank":
         out.push(blankPara(ctx));
@@ -101,10 +113,16 @@ function roleSpec(ctx: WriterContext, name: string): { paraPr: number; charPr: n
  * 본문 문단 — 참고 문서의 paraPr 27 / charPr 8 을 그대로 쓴다(표준 서식의 본문 줄).
  * 글머리 기호는 문단 여백이 아니라 앞 반각 공백으로 들여쓴다(다른 family 와 같은 관행,
  * lib/docmodel/indent.ts). 공문서 사다리는 편람의 2타(□0 ㅇ2 -4 ·6)다.
+ *
+ * 맨 앞의 도입 문장("…하여 주시기 바랍니다.")만 `lead` 역할(paraPr 28: 줄간격 200 %,
+ * 문단 아래 500)을 쓴다 — 참고 문서에서 도입 문장은 두문 표와 같은 문단이었다. 문단 아래
+ * 간격이 항목 앞 빈 줄 노릇을 하므로 빈 문단을 따로 넣지 않는다. 번호 항목으로 바로
+ * 시작하는 문서(도입 문장이 없는 공문)는 첫 줄부터 `body` 다.
  */
-function bodyPara(ctx: WriterContext, b: ParaBlock): XmlNode {
-  const s = roleSpec(ctx, "body");
+function bodyPara(ctx: WriterContext, b: ParaBlock, first = false): XmlNode {
   const glyph = b.glyph && b.glyph !== "none" ? b.glyph : undefined;
+  const isLead = first && !glyph && !ITEM_RE.test(inlineText(b.inlines));
+  const s = roleSpec(ctx, isLead ? "lead" : "body");
   const prefix = " ".repeat(b.indent ?? leadingSpaces("official", b.glyph, b.role)) + (glyph ? `${glyph} ` : "");
   const inlines: Inline[] = prefix ? [{ t: "text", text: prefix }, ...b.inlines] : b.inlines;
   return ctx.para({ paraPr: s.paraPr, runs: ctx.runsFor(inlines, s.base, s.charPr), vertsize: s.base.pt * 100, lineSpacing: s.lineSpacing, forcePageBreak: b.pageBreakBefore });

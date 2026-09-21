@@ -4,6 +4,7 @@ import { describe, expect, it } from "vitest";
 import { buildHwpx } from "../../lib/hwpx/build";
 import { validateHwpx, extractText } from "../../lib/hwpx/validate";
 import { parseDsl } from "../../lib/docmodel/dsl";
+import { childrenNamed, parseXml } from "../../lib/hwpx/xml";
 
 const NOW = new Date("2026-09-21T00:00:00Z");
 
@@ -94,5 +95,53 @@ family: official
     const { report } = buildHwpx(doc, { now: NOW });
     // 참고 문서 본문은 굴림체 12pt 장평 95 (charPr 8) — 굵은 변형도 같은 글꼴이어야 한다
     expect(report.appendedStyles).toEqual([{ kind: "charPr", id: 25, sig: "굴림체|굴림체|12|B||#000000|0|95|NONE" }]);
+  }, 60_000);
+});
+
+/**
+ * 결문 결재란은 5칸이다 — t01 3행의 셀 이름이 `직위.1` … `직위.5` (cols 0·9·20·32·42) 이고
+ * 다섯 칸 모두 `borderFillIDRef=3 paraPr=23 charPr=21` 로 같다. 참고 문서에서 뒤 두 칸이 비어
+ * 있는 것은 그 문서가 실장 전결(`★`)이었기 때문이지 서식이 3칸이어서가 아니다.
+ * org.ts 의 결재라인은 전부 4~5단계이므로, 3칸만 채우면 모든 공문서가 최종 결재권자를 잃는다.
+ */
+describe("buildHwpx — official 결재란", () => {
+  it("4단계 결재라인의 마지막 직위(원장)까지 들어간다", async () => {
+    const { doc } = parseDsl(DSL);
+    const { bytes, report } = buildHwpx(doc, { now: NOW });
+    const text = await extractText(bytes);
+    // 전략기획팀 → 경영기획실: 담당 → 팀장 → 실장 → 원장 (lib/org.ts)
+    for (const 직위 of ["담당", "팀장", "실장", "원장"]) expect(text, 직위).toContain(직위);
+    expect(report.warnings.map((w) => w.message).filter((m) => m.includes("결재란"))).toEqual([]);
+  }, 60_000);
+
+  it("결재라인이 5칸을 넘으면 경고한다", () => {
+    const { doc } = parseDsl(DSL.replace("처리과: 전략기획팀", "처리과: 전략기획팀\n결재라인: [담당, 팀장, 실장, 본부장, 원장, 이사장]"));
+    const { report } = buildHwpx(doc, { now: NOW });
+    expect(report.warnings.map((w) => w.message).join("\n")).toContain("이사장");
+  }, 60_000);
+});
+
+/**
+ * 도입 문장과 번호 항목은 문단 모양이 다르다 (참고 문서 header.xml):
+ *   paraPr 28 = 줄간격 200 %, 문단 아래 500  ← 도입 문장 (t00 앵커 문단 그 자체)
+ *   paraPr 27 = 줄간격 180 %, 문단 아래 0    ← 1. 2. 3. 항목
+ * 28 의 문단 아래 간격이 항목 앞의 빈 줄 역할을 하므로 빈 문단을 따로 넣지 않는다.
+ */
+describe("buildHwpx — official 도입 문장", () => {
+  /** 최상위 문단의 paraPr 만 — 표 안(hp:subList)의 칸 문단은 세지 않는다 */
+  const paraPrs = (xml: string) => childrenNamed(parseXml(xml.replace(/^<\?xml[^>]*\?>/, "")), "hp:p").map((p) => p.attrs.paraPrIDRef);
+
+  it("첫 본문 문단만 lead(28), 번호 항목은 body(27)", () => {
+    const { doc } = parseDsl(DSL);
+    const { sectionXml } = buildHwpx(doc, { now: NOW });
+    // 두문 표(28) → 도입 문장(28) → 항목 27 × 3 → 붙임 29 → 결문 표(12)
+    expect(paraPrs(sectionXml)).toEqual(["28", "28", "27", "27", "27", "29", "12"]);
+  }, 60_000);
+
+  it("본문이 번호 항목으로 바로 시작하면 lead 를 쓰지 않는다", () => {
+    const dsl = DSL.replace(/---\n경영평가 상시대응체계[^\n]*\n/, "---\n");
+    const { doc } = parseDsl(dsl);
+    const { sectionXml } = buildHwpx(doc, { now: NOW });
+    expect(paraPrs(sectionXml)).toEqual(["28", "27", "27", "27", "29", "12"]);
   }, 60_000);
 });
