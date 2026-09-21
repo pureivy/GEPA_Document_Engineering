@@ -37,3 +37,15 @@ describe("buildStagePrompt — reference plan and 보충 조사 option", () => {
     expect(buildStagePrompt({ stage: "plan", project: withRef, workspaceDir: ws }).prompt).toContain("골격");
   });
 });
+
+describe("official 단계 프롬프트", () => {
+  const p = buildStagePrompt({
+    stage: "official",
+    project: { id: "x", title: "t", topic: "제출 요청", region: "경상북도", organizer: "(재)경상북도경제진흥원", contact: { 부서명: "전략기획팀", 전화: "054-470-8527", 이메일: "a@gepa.kr" }, createdAt: "", updatedAt: "" },
+    workspaceDir: "/tmp",
+  });
+  it("공문서 작성자를 부르고 시행번호를 만들지 말라고 지시한다", () => {
+    expect(p.systemPromptAppend).toContain("공문서");
+    expect(p.systemPromptAppend + p.prompt).toMatch(/시행번호|일련번호/);
+  });
+});

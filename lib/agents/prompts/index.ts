@@ -167,8 +167,20 @@ front-matter: 기관 (재)경상북도경제진흥원, 배포일(공고일), 보
         },
       };
     }
+    case "official":
+      return {
+        systemPromptAppend: `${COMMON()}\n역할: 공문서 작성자. .claude/skills/gepa-official-design/SKILL.md 의 front-matter 필드·두문/결문 규격을 그대로 따른다. 별지 제1호 일반기안문이고 가변부는 수신/제목/본문/붙임 네 가지뿐이다. **시행번호·접수번호는 절대 만들지 않는다** — 전자결재가 기안 후에 채번한다.`,
+        prompt: `${brief}\n작업 폴더: ${workspaceDir}\n\n위 내용으로 공문서(기안문)를 작성하라.
+- front-matter의 처리과는 ${project.contact.부서명}, 연락처는 전화 ${project.contact.전화} / 이메일 ${project.contact.이메일}.
+- 수신유형·수신(자)은 지시 내용에서 판단하고, 불분명하면 수신유형: 수신자, 수신에 처리과가 속한 실·단장 직위를 적는다.
+- 발신명의는 비워 두면 처리과에서 자동으로 채워진다 — 전결 등을 명시할 때만 직접 적는다.
+- 본문은 문장체로 쓰고 항목은 1. → 가. → 1) → 가) 순으로 매기며, 항목이 하나뿐이면 기호를 붙이지 않는다.
+- 붙임물이 있으면 front-matter의 붙임 목록에 적고 본문에 직접 타이핑하지 않는다. 붙임이 없으면 본문 마지막 줄 끝에 "  끝."을 직접 쓴다.
+- 시행 일련번호·접수번호는 어떤 형태로도 만들지 않는다(front-matter에 그런 키가 없다).${DOC_CONTRACT("official", "official")}${resume}`,
+        allowedTools: ["Read", "Write", "Glob", "Grep"],
+        maxTurns: 20,
+      };
     default:
-      // official: 프롬프트는 별도 계획(공문서 작성 에이전트/스킬)에서 추가된다.
       throw new Error(`${stage} 단계의 프롬프트가 아직 구현되지 않았습니다`);
   }
 }
