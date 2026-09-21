@@ -1,5 +1,6 @@
 /**
- * (재)경상북도경제진흥원 조직 사실 — user-stated on 2026-09-16 (see memory gepa-org-facts).
+ * (재)경상북도경제진흥원 조직 사실 — user-stated on 2026-09-16, 2026-09-22 정정
+ * (경영기획실 팀명은 경영지원팀 / 일자리민생경제지원실·지역산업지원단도 강소기업육성본부 산하).
  * Used to pick the 결재라인 of a 사업계획서 and the 담당부서 정식 명칭 / 책임자 of a 보도자료
  * from whatever the project form calls the department (a team name, a 실/단 name or an abbreviation).
  */
@@ -22,10 +23,11 @@ export interface OrgUnit {
 export const ORG_DIRECTOR = "박성수";
 
 export const ORG_UNITS: OrgUnit[] = [
-  { name: "경영기획실", teams: ["경영관리팀", "전략기획팀"], approvalLine: ["담당", "팀장", "실장", "원장"], head: "실장 남상범", aliases: ["경영전략실"] },
+  { name: "경영기획실", teams: ["경영지원팀", "전략기획팀"], approvalLine: ["담당", "팀장", "실장", "원장"], head: "실장 남상범", aliases: ["경영전략실"] },
   { name: "강소기업지원실", division: "강소기업육성본부", teams: ["ESG기업지원팀", "마케팅팀"], approvalLine: ["담당", "팀장", "실장", "본부장", "원장"], head: "실장 이명하" },
-  { name: "일자리민생경제지원실", teams: ["일자리종합지원팀", "민생경제지원팀"], approvalLine: ["담당", "팀장", "실장", "본부장", "원장"], head: "실장 이유선", aliases: ["일자리민생"] },
-  { name: "지역산업지원단", teams: ["동부지소", "북부지소"], approvalLine: ["담당", "지소장", "단장", "본부장", "원장"], head: "단장 남상조" },
+  { name: "일자리민생경제지원실", division: "강소기업육성본부", teams: ["일자리종합지원팀", "민생경제지원팀"], approvalLine: ["담당", "팀장", "실장", "본부장", "원장"], head: "실장 이유선", aliases: ["일자리민생"] },
+  // 지소는 팀이 아니고 단의 장은 실장이 아니라 단장이다 — 결재라인의 지소장·단장은 그대로 둔다(user 2026-09-22)
+  { name: "지역산업지원단", division: "강소기업육성본부", teams: ["동부지소", "북부지소"], approvalLine: ["담당", "지소장", "단장", "본부장", "원장"], head: "단장 남상조" },
 ];
 
 export const DIVISION_HEADS: Record<string, string> = { 강소기업육성본부: "본부장 송호준" };

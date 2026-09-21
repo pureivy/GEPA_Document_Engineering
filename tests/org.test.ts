@@ -9,15 +9,29 @@ describe("org table (user-stated 2026-09-16)", () => {
     expect(findUnit("민생경제지원팀")?.name).toBe("일자리민생경제지원실");
     expect(findUnit("북부지소")?.name).toBe("지역산업지원단");
     expect(findUnit("ESG기업지원팀")?.name).toBe("강소기업지원실");
+    // 2026-09-22 정정: 경영기획실의 팀은 경영관리팀이 아니라 경영지원팀이다
+    // (참고 문서 수신자 목록도 "경영지원팀장, ESG·기업지원팀장, 마케팅팀장 …" 이다)
+    expect(findUnit("경영지원팀")?.name).toBe("경영기획실");
     expect(findUnit("esg 기업지원팀")?.name).toBe("강소기업지원실");
     expect(findUnit("알수없는부서")).toBeNull();
   });
   it("gives each unit its 결재라인 and the institution default otherwise", () => {
-    expect(approvalLineFor("경영관리팀")).toEqual(["담당", "팀장", "실장", "원장"]);
+    expect(approvalLineFor("경영지원팀")).toEqual(["담당", "팀장", "실장", "원장"]);
+    expect(approvalLineFor("전략기획팀")).toEqual(["담당", "팀장", "실장", "원장"]);
     expect(approvalLineFor("마케팅팀")).toEqual(["담당", "팀장", "실장", "본부장", "원장"]);
     expect(approvalLineFor("일자리종합지원팀")).toEqual(["담당", "팀장", "실장", "본부장", "원장"]);
     expect(approvalLineFor("동부지소")).toEqual(["담당", "지소장", "단장", "본부장", "원장"]);
     expect(approvalLineFor(undefined)).toEqual(["담당", "팀장", "실장", "본부장", "원장"]);
+  });
+  it("본부 소속을 빠짐없이 적는다 — 결재라인에 본부장이 있는 실·단은 본부 산하다", () => {
+    // orgSummary() 가 에이전트 프롬프트에 들어간다(lib/org.ts:64) — division 이 비면 본부장에게
+    // 결재를 받는 부서가 원장 직속인 것처럼 설명된다
+    for (const team of ["마케팅팀", "일자리종합지원팀", "북부지소"]) {
+      expect(findUnit(team)?.division, team).toBe("강소기업육성본부");
+      expect(approvalLineFor(team), team).toContain("본부장");
+    }
+    expect(findUnit("전략기획팀")?.division).toBeUndefined(); // 경영기획실은 원장 직속
+    expect(orgSummary()).toContain("일자리민생경제지원실(일자리종합지원팀·민생경제지원팀, 강소기업육성본부 산하");
   });
   it("resolves full names and heads", () => {
     expect(departmentFullName("일자리민생")).toBe("일자리민생경제지원실");

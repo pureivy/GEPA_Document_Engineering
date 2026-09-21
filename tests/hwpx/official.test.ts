@@ -4,7 +4,8 @@ import { describe, expect, it } from "vitest";
 import { buildHwpx } from "../../lib/hwpx/build";
 import { validateHwpx, extractText } from "../../lib/hwpx/validate";
 import { parseDsl } from "../../lib/docmodel/dsl";
-import { childrenNamed, parseXml } from "../../lib/hwpx/xml";
+import { childrenNamed, findAll, parseXml } from "../../lib/hwpx/xml";
+import { cellAt } from "../../lib/hwpx/geometry";
 
 const NOW = new Date("2026-09-21T00:00:00Z");
 
@@ -105,6 +106,40 @@ family: official
  * org.ts 의 결재라인은 전부 4~5단계이므로, 3칸만 채우면 모든 공문서가 최종 결재권자를 잃는다.
  */
 describe("buildHwpx — official 결재란", () => {
+  /** 결문 표(paraPr 12 앵커)의 (row, col) 칸 글자 */
+  const footCell = (xml: string, row: number, col: number): string => {
+    const foot = childrenNamed(parseXml(xml.replace(/^<\?xml[^>]*\?>/, "")), "hp:p").find((p) => p.attrs.paraPrIDRef === "12")!;
+    const tc = cellAt(foot, row, col)!;
+    return findAll(tc, "hp:t")
+      .map((t) => t.children.filter((c) => typeof c === "string").join(""))
+      .join("")
+      .trim();
+  };
+  /** 직위.1 … 직위.5 (t01 3행) */
+  const 직위 = (xml: string) => [0, 9, 20, 32, 42].map((col) => footCell(xml, 3, col));
+
+  it("조직표의 4단계 결재라인이 앞 네 칸에 들어가고 다섯째 칸은 빈다", () => {
+    const { sectionXml } = buildHwpx(parseDsl(DSL).doc, { now: NOW });
+    // 전략기획팀 → 경영기획실: 담당 → 팀장 → 실장 → 원장 (lib/org.ts)
+    expect(직위(sectionXml)).toEqual(["담당", "팀장", "실장", "원장", ""]);
+  }, 60_000);
+
+  it("5단계 결재라인은 다섯 칸을 모두 채운다", () => {
+    const { sectionXml } = buildHwpx(parseDsl(DSL.replace("처리과: 전략기획팀", "처리과: 마케팅팀")).doc, { now: NOW });
+    // 마케팅팀 → 강소기업지원실: 담당 → 팀장 → 실장 → 본부장 → 원장
+    expect(직위(sectionXml)).toEqual(["담당", "팀장", "실장", "본부장", "원장"]);
+  }, 60_000);
+
+  /**
+   * 전결(專決) — 위임전결 규정에 따라 결재가 중간에서 끝나는 문서. 참고 문서의 `★과장` 이 그 예다.
+   * 전결 자체를 모델링하지는 않고, `결재라인` 을 직접 적으면 조직표 기본값을 덮어쓰게 해 둔다.
+   */
+  it("결재라인을 직접 적으면 조직표 기본값을 덮어쓴다 (전결 문서)", () => {
+    const dsl = DSL.replace("처리과: 전략기획팀", "처리과: 전략기획팀\n결재라인: [담당, 팀장, 실장]");
+    const { sectionXml } = buildHwpx(parseDsl(dsl).doc, { now: NOW });
+    expect(직위(sectionXml)).toEqual(["담당", "팀장", "실장", "", ""]); // 원장 칸이 채워지지 않는다
+  }, 60_000);
+
   it("4단계 결재라인의 마지막 직위(원장)까지 들어간다", async () => {
     const { doc } = parseDsl(DSL);
     const { bytes, report } = buildHwpx(doc, { now: NOW });
