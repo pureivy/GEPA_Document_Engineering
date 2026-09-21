@@ -10,8 +10,6 @@
 import type { DocModel, Family } from "./schema";
 
 export interface DocFamilyDef {
-  /** 사람이 읽는 이름 (UI·로그·오류 메시지) */
-  label: string;
   /** 글머리 기호 → 앞 반각 공백 타수. 참고 문서 관행 사다리("gepa"). */
   indent: Record<string, number>;
   /**
@@ -48,7 +46,6 @@ export interface DocFamilyDef {
 
 export const DOC_FAMILIES: Record<Family, DocFamilyDef> = {
   notice: {
-    label: "공고문",
     indent: { "□": 0, "ㅇ": 1, "○": 1, "◦": 1, "-": 3, "·": 4, "※": 2, "*": 1 },
     noteIndentUnderItem: 4,
     docTitle: (doc) => {
@@ -60,7 +57,6 @@ export const DOC_FAMILIES: Record<Family, DocFamilyDef> = {
     requiresClosingMark: true,
   },
   plan: {
-    label: "사업계획서",
     indent: { "□": 1, "ㅇ": 2, "○": 2, "◦": 2, "-": 3, "·": 4, "※": 1, "*": 2 },
     noteIndentUnderItem: 3,
     docTitle: (doc) => (doc.meta as Extract<DocModel, { family: "plan" }>["meta"]).제목,
@@ -69,7 +65,6 @@ export const DOC_FAMILIES: Record<Family, DocFamilyDef> = {
     requiresClosingMark: true,
   },
   press: {
-    label: "보도자료",
     indent: { "□": 0, "ㅇ": 1, "○": 1, "◦": 1, "-": 3, "·": 4, "※": 2, "*": 2 },
     noteIndentUnderItem: 4,
     docTitle: (doc) => (doc.meta as Extract<DocModel, { family: "press" }>["meta"]).제목,
