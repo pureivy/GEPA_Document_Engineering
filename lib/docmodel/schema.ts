@@ -4,8 +4,9 @@
  * order by the parser) used for streaming upserts and editor node mapping.
  */
 import { z } from "zod";
+import { DELEGATION_LEVELS, DEFAULT_DELEGATION, INSTITUTION_HEAD_TITLE } from "../org";
 
-export const FamilySchema = z.enum(["plan", "notice", "press"]);
+export const FamilySchema = z.enum(["plan", "notice", "press", "official"]);
 export type Family = z.infer<typeof FamilySchema>;
 
 export const GlyphSchema = z.enum(["□", "ㅇ", "○", "◦", "-", "·", "※", "*", "❖", "◇", "■", "✔", "❍", "▪", "∙", "❶", "❷", "❸", "❹", "none"]);
@@ -158,6 +159,9 @@ export const BlockSchema = z.discriminatedUnion("k", [
   // ---- press composites
   z.object({ ...Base, k: z.literal("pressHeader") }),
   z.object({ ...Base, k: z.literal("attachmentList"), items: z.array(z.string()) }),
+  // ---- official composites
+  z.object({ ...Base, k: z.literal("officialHeader") }),
+  z.object({ ...Base, k: z.literal("officialFooter") }),
 ]);
 export type Block = z.infer<typeof BlockSchema>;
 export type BlockKind = Block["k"];
@@ -171,7 +175,7 @@ export const NoticeMetaSchema = z.object({
   지역: z.string(),
   대상기업군: z.string().default("중소기업"),
   공고연월: z.string(),
-  기관장: z.string().default("(재)경상북도경제진흥원장"),
+  기관장: z.string().default(INSTITUTION_HEAD_TITLE),
   접수: z.object({
     이메일: z.string(),
     우편주소: z.string(),
@@ -249,15 +253,94 @@ export const PressMetaSchema = z.object({
 });
 export type PressMeta = z.infer<typeof PressMetaSchema>;
 
+/**
+ * 공문서 — 행정안전부 「행정업무의 운영 및 혁신에 관한 규정」 시행규칙 별지 제1호 일반기안문.
+ * 가변부는 수신 / 제목 / 본문 / 붙임 네 가지뿐이고 나머지는 프레임과 조직 데이터다.
+ *
+ * 시행 일련번호는 이 스키마에 없다. 전자결재 시스템이 기안 후에 채번하므로 우리는 만들지 않는다
+ * (시행 칸은 `<처리과>-` 까지만 찍는다). 값을 담을 자리를 두면 에이전트가 지어낸다.
+ */
+export const OfficialMetaSchema = z
+  .object({
+    수신유형: z.enum(["내부결재", "수신자", "수신자참조"]),
+    /** 수신유형=수신자 일 때의 수신자 — 예: "경영기획실장(경영지원팀장)" */
+    수신: z.string().optional(),
+    /** 수신유형=수신자참조 일 때의 수신자 목록 */
+    수신자: z.array(z.string()).optional(),
+    경유: z.string().default(""),
+    제목: z.string().min(1),
+    /**
+     * 결문 발신명의(직위). 비우면 **실제로 쓰인 결재라인의 마지막 직위**에서 정한다 —
+     * 원장 → 기관장, 본부장 → 처리과가 속한 본부의 장, 실장·단장 → 그 실·단의 장(lib/org.ts
+     * senderTitleFor). 부서에서 바로 뽑는 것이 아니다: 마케팅팀의 원장 전결은 실장이 아니라
+     * 기관장 명의로 나간다. 우선순위는 이 값 → 직접 적은 `결재라인` 의 마지막 직위 → `전결`
+     * 단계에서 끊은 결재라인의 마지막 직위.
+     */
+    발신명의: z.string().default(""),
+    /** 기안 부서(팀). 시행 칸에 `<처리과>-` 로 찍힌다 */
+    처리과: z.string().min(1),
+    /** 시행일. 시행 전에는 빈 문자열 */
+    시행일: z.string().default(""),
+    공개구분: z.enum(["공개", "부분공개", "비공개"]).default("공개"),
+    /**
+     * 전결 단계 — 결재란과 발신명의를 함께 정한다(lib/org.ts DELEGATION_LEVELS). 기본은 원장:
+     * 결재란은 처리과의 결재라인을 끝까지 쓰고 발신명의는 기관장이 된다. 전결은 그 사슬을 낮추는
+     * 선택이라 적은 문서만 짧아진다(기본값의 근거는 lib/org.ts DEFAULT_DELEGATION).
+     * `결재라인`·`발신명의`를 직접 적으면 각각 이 값보다 앞선다.
+     */
+    전결: z.enum(DELEGATION_LEVELS).default(DEFAULT_DELEGATION),
+    /** 결재란 직위. 비우면 `전결` 단계에서 끊은 approvalLineFor(처리과) */
+    결재라인: z.array(z.string()).default([]),
+    협조자: z.array(z.string()).default([]),
+    연락처: z
+      .object({
+        우편번호: z.string().default(""),
+        주소: z.string().default(""),
+        홈페이지: z.string().default("https://gepa.kr"),
+        전화: z.string().default(""),
+        전송: z.string().default(""),
+        이메일: z.string().default(""),
+      })
+      // zod v4: 객체의 .default() 는 출력 타입(각 필드 기본 적용 후)을 요구한다 — {} 는
+      // 안쪽 필드 기본값과 동일한 전체 리터럴로 명시해야 통과한다(런타임 결과는 동일).
+      .default({ 우편번호: "", 주소: "", 홈페이지: "https://gepa.kr", 전화: "", 전송: "", 이메일: "" }),
+    붙임: z.array(z.string()).default([]),
+  });
+export type OfficialMeta = z.infer<typeof OfficialMetaSchema>;
+
+/**
+ * 수신유형과 수신·수신자의 정합성 검사. 사람이 읽는 문제 목록을 돌려준다(빈 배열이면 정상).
+ *
+ * 이것을 zod `.superRefine()` 으로 넣지 않는 이유: superRefine 으로 감싸도 여전히 ZodObject 라
+ * unwrapSchema(frontmatter.ts:116)·collectUnknownKeys 는 멀쩡히 동작한다(zod 4.6.5 실측) — 그건
+ * 문제가 아니다. 진짜 이유는 **판정의 성격**이다. superRefine 은 안 맞으면 파싱 자체를 실패시키는데,
+ * 이 호출처(작성기의 ctx.warnings, 검토관)는 문서를 **경고와 함께라도 만들어 내야** 한다 — 수신유형과
+ * 수신·수신자가 안 맞아도 문서는 나오고, 사람이 읽는 문제 목록만 곁들인다. 스키마 파싱을 막으면
+ * 그 자리에서 작성이 멈춘다.
+ */
+export function officialMetaProblems(m: OfficialMeta): string[] {
+  const out: string[] = [];
+  if (m.수신유형 === "수신자" && !m.수신?.trim()) out.push("수신유형이 '수신자'면 수신을 적어야 합니다");
+  if (m.수신유형 === "수신자참조" && !m.수신자?.length) out.push("수신유형이 '수신자참조'면 수신자를 한 명 이상 적어야 합니다");
+  // 내부결재는 받는 곳이 없다 — 두문 수신 칸에 "내부결재"만 찍힌다(참고 문서도 그렇다).
+  // 폼은 이 상태를 만들 수 없으므로(RECIPIENT_KEY 가 내부결재에 키를 주지 않는다) 값이 있다면
+  // 에이전트가 지어냈거나 DSL 을 손으로 고친 것이다. 둘 다 작성자가 듣고 싶어 하는 지적이다.
+  if (m.수신유형 === "내부결재" && m.수신?.trim()) out.push("수신유형이 '내부결재'면 수신을 적지 않습니다");
+  if (m.수신유형 === "내부결재" && m.수신자?.length) out.push("수신유형이 '내부결재'면 수신자를 적지 않습니다");
+  return out;
+}
+
 export const DocModelSchema = z.discriminatedUnion("family", [
   z.object({ version: z.literal(1), family: z.literal("notice"), meta: NoticeMetaSchema, blocks: z.array(BlockSchema) }),
   z.object({ version: z.literal(1), family: z.literal("plan"), meta: PlanMetaSchema, blocks: z.array(BlockSchema) }),
   z.object({ version: z.literal(1), family: z.literal("press"), meta: PressMetaSchema, blocks: z.array(BlockSchema) }),
+  z.object({ version: z.literal(1), family: z.literal("official"), meta: OfficialMetaSchema, blocks: z.array(BlockSchema) }),
 ]);
 export type DocModel = z.infer<typeof DocModelSchema>;
 export type NoticeDoc = Extract<DocModel, { family: "notice" }>;
 export type PlanDoc = Extract<DocModel, { family: "plan" }>;
 export type PressDoc = Extract<DocModel, { family: "press" }>;
+export type OfficialDoc = Extract<DocModel, { family: "official" }>;
 
 export function inlineText(inlines: Inline[]): string {
   return inlines.map((i) => (i.t === "br" ? "\n" : i.text)).join("");

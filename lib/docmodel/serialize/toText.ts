@@ -2,7 +2,7 @@
  * DocModel → plain text (.txt). Written for the 보도자료 deliverable but works for any family:
  * glyph lines keep their glyph, tables become ` | `-separated rows, composites are flattened.
  */
-import type { Block, DocModel, Inline, NoticeMeta, PlanMeta, PressMeta } from "../schema";
+import type { Block, DocModel, Inline, NoticeMeta, OfficialMeta, PlanMeta, PressMeta } from "../schema";
 import { greetingScope } from "../format";
 
 export function inlinesPlain(inlines: Inline[]): string {
@@ -13,6 +13,12 @@ function pressHeaderText(meta: PressMeta): string[] {
   const lines = ["보도자료", meta.기관, `배포일: ${meta.배포일}`, `보도시점: ${meta.보도시점}`, `담당부서: ${meta.담당부서}`, ...(meta.책임자 ? [`책임자: ${meta.책임자}`] : []), `담당자: ${meta.담당자} (${meta.연락처}${meta.이메일 ? `, ${meta.이메일}` : ""})`];
   if (meta.사진) lines.push("※ 사진 있음");
   return lines;
+}
+
+/** 공문서 두문: 기관명 / 수신 / (경유) / 제목 — 별지 제1호 서식의 머리 순서 그대로 */
+function officialHeaderText(meta: OfficialMeta): string[] {
+  const 수신 = meta.수신유형 === "내부결재" ? "내부결재" : meta.수신유형 === "수신자참조" ? "수신자 참조" : (meta.수신 ?? "");
+  return ["(재)경상북도경제진흥원", `수신  ${수신}`, ...(meta.경유 ? [`(경유)  ${meta.경유}`] : []), `제목  ${meta.제목}`, ""];
 }
 
 function noticeHeaderText(meta: NoticeMeta): string[] {
@@ -88,14 +94,19 @@ export function blockToText(b: Block, doc: DocModel): string[] {
       return doc.family === "press" ? pressHeaderText(doc.meta as PressMeta) : [];
     case "attachmentList":
       return [...b.items.map((it, i) => (/^붙임/.test(it) ? it : `붙임 ${i + 1}. ${it}`)), "끝."];
+    case "officialHeader":
+      return doc.family === "official" ? officialHeaderText(doc.meta as OfficialMeta) : [];
+    case "officialFooter":
+      // 결문(발신명의·결재란·시행·연락처)은 작성기가 참고 문서 표에서 펼친다 — 본문 텍스트가 아니다
+      return [];
   }
 }
 
 export function toText(doc: DocModel): string {
   const lines: string[] = [];
   for (const b of doc.blocks) lines.push(...blockToText(b, doc));
-  if (doc.family === "press") {
-    const meta = doc.meta as PressMeta;
+  if (doc.family === "press" || doc.family === "official") {
+    const meta = doc.meta as PressMeta | OfficialMeta;
     if (meta.붙임?.length && !doc.blocks.some((b) => b.k === "attachmentList")) {
       lines.push("", ...meta.붙임.map((it, i) => (/^붙임/.test(it) ? it : `붙임 ${i + 1}. ${it}`)), "끝.");
     }

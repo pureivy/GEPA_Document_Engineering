@@ -10,6 +10,8 @@ const pairs: [string, string][] = [
   ["docs/design-system/press.md", "agent/.claude/skills/gepa-press-style/reference/design-system.md"],
   ["docs/design-system/gov-manual.md", "agent/.claude/skills/gepa-plan-design/reference/gov-manual.md"],
   ["docs/design-system/gov-manual.md", "agent/.claude/skills/gepa-notice-design/reference/gov-manual.md"],
+  ["docs/design-system/official.md", "agent/.claude/skills/gepa-official-design/reference/design-system.md"],
+  ["docs/design-system/gov-manual.md", "agent/.claude/skills/gepa-official-design/reference/gov-manual.md"],
 ];
 for (const [src, dst] of pairs) {
   const s = join(root, src), d = join(root, dst);

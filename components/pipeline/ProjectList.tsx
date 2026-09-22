@@ -3,46 +3,112 @@ import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
 import { FolderOpen, Plus, RefreshCw, Trash2, Upload } from "lucide-react";
-import type { ProjectDTO } from "@/lib/contracts";
+import { REFERENCE_CHANGES_LABEL, REFERENCE_DOC_TITLE, REFERENCE_ROLES, type ProjectDTO, type ReferenceRole } from "@/lib/contracts";
+import { OfficialMetaSchema } from "@/lib/docmodel/schema";
+import { approvalLineFor, approvalLineUpTo, DEFAULT_DELEGATION, DELEGATION_LEVELS, findUnit, senderTitleFor, type DelegationLevel } from "@/lib/org";
 import { api, errorMessage, type NewProjectInput } from "@/lib/client/api";
-import { formatDateTime } from "@/lib/client/format";
+import { cn, formatDateTime } from "@/lib/client/format";
 import { Button } from "@/components/ui/button";
 import { Dialog } from "@/components/ui/dialog";
-import { Field, Input, Textarea } from "@/components/ui/input";
-import { PREF_PLAN_RESEARCH, useBoolPref, writePref } from "@/lib/client/prefs";
+import { Field, Input, Select, Textarea } from "@/components/ui/input";
+import { Badge } from "@/components/ui/badge";
+import { KIND_LABEL, PROJECT_KINDS, type ProjectKind } from "@/lib/kinds";
+import { PREF_PLAN_RESEARCH, saveContactPref, useBoolPref, useContactPref, writePref } from "@/lib/client/prefs";
+
+/** 종류별 한 줄 설명 — 라디오 옆에 그대로 보인다 */
+const KIND_HINT: Record<ProjectKind, string> = {
+  program: "조사 → 사업계획서 → 공고문 → 보도자료를 차례로 만듭니다.",
+  official: "별지 제1호 기안문 한 건을 만듭니다.",
+};
+
+/** 공문 수신유형 — OfficialMetaSchema 에서 그대로 가져온다(손으로 다시 적으면 둘이 갈라질 수 있다). export 는 드리프트 가드 테스트용. */
+export const RECIPIENT_KINDS = OfficialMetaSchema.shape.수신유형.options;
+export type RecipientKind = (typeof RECIPIENT_KINDS)[number];
+/** 수신유형별로 값을 담는 front-matter 키. 내부결재는 수신 대상이 없다 */
+export const RECIPIENT_KEY: Record<RecipientKind, "" | "수신" | "수신자"> = { 내부결재: "", 수신자: "수신", 수신자참조: "수신자" };
+
+/**
+ * 공문 전결 단계 — 값은 조직 사실이라 lib/org.ts 에 한 벌만 두고 화면과 OfficialMetaSchema 가
+ * 같은 배열을 쓴다(수신유형을 스키마에서 가져오는 것과 같은 이유). 드리프트 가드는
+ * tests/ui/recipientKinds.test.ts 가 스키마와 대조한다.
+ */
+export { DELEGATION_LEVELS, DEFAULT_DELEGATION };
+
+/**
+ * 용도 라디오의 표시 이름과 changes 칸 hint — 화면에서만 쓰는 문구다.
+ * 값 자체(REFERENCE_ROLES)와 changes 칸의 label 은 lib/contracts.ts 가 단일 출처다(프롬프트와 같아야 한다).
+ */
+const REFERENCE_ROLE_UI: Record<ReferenceRole, { 표시: string; hint: string }> = {
+  근거자료: { 표시: "내용 근거자료", hint: "예) 지원 대상과 접수 기간만 추려서 알림" },
+  받은공문: { 표시: "받은 공문 (회신)", hint: "예) 자료 제출 요청에 대한 회신, 제출 기한 연장 요청" },
+  붙임: { 표시: "붙임 문서", hint: "예) 2026년 사업 신청서 서식 1부" },
+};
 
 const EMPTY: NewProjectInput = {
+  kind: "program",
   title: "",
   topic: "",
   region: "안동시",
   organizer: "(재)경상북도경제진흥원",
-  contact: { 부서명: "", 담당자: "", 전화: "", 이메일: "", 우편주소: "" },
+  contact: { 부서명: "", 담당자: "", 전화: "", 전송: "", 이메일: "", 우편주소: "", 우편번호: "" },
 };
 
-/** mounted only while open, so every opening starts from a blank form */
+/** mounted only while open, so every opening starts from a blank form (연락처만 지난번 값에서 이어 쓴다) */
 function NewProjectDialog({ onClose, onCreated }: { onClose: () => void; onCreated: (p: ProjectDTO) => void }) {
-  const [form, setForm] = useState<NewProjectInput>(EMPTY);
+  // 연락처는 이 브라우저에 담아 둔 지난번 값으로 시작한다 — 프로젝트마다 다시 치지 않게 한다
+  // (user 2026-09-22). 폼이 열릴 때 한 번만 읽는다: 그 뒤의 편집은 이 프로젝트만의 것이다.
+  const saved = useContactPref();
+  const [form, setForm] = useState<NewProjectInput>(() => ({ ...EMPTY, contact: { ...EMPTY.contact, ...saved } }));
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
   // 기존 사업계획서 업로드 (선택): 파일 + 바뀌는 내용 → 업로드 후 전체 자동 실행
   const [refFile, setRefFile] = useState<File | null>(null);
   const [changes, setChanges] = useState("");
   const [autoRun, setAutoRun] = useState(true);
+  // 공문에 붙인 문서의 용도 — 프로젝트마다 다르므로 브라우저에 기억하지 않는다
+  const [refRole, setRefRole] = useState<ReferenceRole>("근거자료");
+  // 공문 전용 입력. DB 컬럼이 아니라 contact(looseObject)에 실려 프롬프트로 가고, 에이전트가 front-matter 에 쓴다(스펙 §5.4 — 연락처와 같은 근거)
+  const [recipientKind, setRecipientKind] = useState<RecipientKind>("수신자");
+  const [recipient, setRecipient] = useState("");
+  const [delegation, setDelegation] = useState<DelegationLevel>(DEFAULT_DELEGATION);
   const planResearch = useBoolPref(PREF_PLAN_RESEARCH, false);
   const [phase, setPhase] = useState<"" | "create" | "upload">("");
 
+  const kind = form.kind;
+  const isOfficial = kind === "official";
   const set = <K extends keyof NewProjectInput>(k: K, v: NewProjectInput[K]) => setForm((f) => ({ ...f, [k]: v }));
   const setContact = (k: keyof NewProjectInput["contact"], v: string) => setForm((f) => ({ ...f, contact: { ...f.contact, [k]: v } }));
   // with an uploaded 기존 사업계획서 the title/topic can be derived from the file + 변경 사항; the contact is always needed for the documents
   const contactOk = !!(form.contact.부서명.trim() && form.contact.전화.trim() && form.contact.이메일.trim());
-  const valid = contactOk && (refFile ? true : !!(form.title.trim() && form.topic.trim()));
-  const missing = [
-    ...(!refFile && !form.title.trim() ? ["제목"] : []),
-    ...(!refFile && !form.topic.trim() ? ["주제"] : []),
-    ...(!form.contact.부서명.trim() ? ["부서명"] : []),
-    ...(!form.contact.전화.trim() ? ["전화"] : []),
-    ...(!form.contact.이메일.trim() ? ["이메일"] : []),
-  ];
+  const recipientOk = recipientKind === "내부결재" || !!recipient.trim();
+  // 본부 없는 실·단(경영기획실)에는 본부장 전결이 없다 — 부서를 못 찾으면 기관 기본 결재라인에
+  // 본부장이 있으므로 그대로 둔다. 고르고 나서 부서를 바꿔 없어진 단계는 기본값으로 읽는다.
+  const unit = findUnit(form.contact.부서명);
+  const levels = DELEGATION_LEVELS.filter((l) => l !== "본부장" || !unit || !!unit.division);
+  const 전결: DelegationLevel = levels.includes(delegation) ? delegation : DEFAULT_DELEGATION;
+  const 결재란 = approvalLineUpTo(form.contact.부서명, 전결) ?? approvalLineFor(form.contact.부서명);
+  const 발신명의 = senderTitleFor(결재란[결재란.length - 1], form.contact.부서명);
+  // 공문에 파일이 붙으면 내용을 그 문서로 대신할 수 있다. 제목은 그래도 필수다 —
+  // 공문 제목은 담당자가 정할 일이고, 잘못 유도한 제목이 문서 첫 줄에 그대로 박힌다.
+  const valid = isOfficial
+    ? contactOk && recipientOk && !!form.title.trim() && (!!form.topic.trim() || !!refFile)
+    : contactOk && (refFile ? true : !!(form.title.trim() && form.topic.trim()));
+  const missing = isOfficial
+    ? [
+        ...(!form.title.trim() ? ["제목"] : []),
+        ...(!recipientOk ? [RECIPIENT_KEY[recipientKind]] : []),
+        ...(!form.topic.trim() && !refFile ? ["공문 내용"] : []),
+        ...(!form.contact.부서명.trim() ? ["부서명"] : []),
+        ...(!form.contact.전화.trim() ? ["전화"] : []),
+        ...(!form.contact.이메일.trim() ? ["이메일"] : []),
+      ]
+    : [
+        ...(!refFile && !form.title.trim() ? ["제목"] : []),
+        ...(!refFile && !form.topic.trim() ? ["주제"] : []),
+        ...(!form.contact.부서명.trim() ? ["부서명"] : []),
+        ...(!form.contact.전화.trim() ? ["전화"] : []),
+        ...(!form.contact.이메일.trim() ? ["이메일"] : []),
+      ];
 
   const submit = async () => {
     if (!valid) return;
@@ -52,14 +118,33 @@ function NewProjectDialog({ onClose, onCreated }: { onClose: () => void; onCreat
       const contact = { ...form.contact };
       if (!contact.담당자?.trim()) delete contact.담당자;
       if (!contact.우편주소?.trim()) delete contact.우편주소;
+      if (!contact.우편번호?.trim()) delete contact.우편번호;
+      if (!contact.전송?.trim()) delete contact.전송;
+      // 수신유형·수신(자)는 topic 이 아니라 contact 에 얹는다(스펙 §5.4) — topic 은 공문 내용만 담는다
+      if (isOfficial) {
+        contact.수신유형 = recipientKind;
+        contact.전결 = 전결;
+        if (recipientKind === "수신자") contact.수신 = recipient.trim();
+        else if (recipientKind === "수신자참조") contact.수신자 = recipient.trim();
+        // 파일이 없으면 키 자체를 넣지 않는다 — 용도는 붙인 문서가 있을 때만 뜻이 있다
+        if (refFile) contact.참고문서용도 = refRole;
+      }
       setPhase("create");
-      const baseName = refFile ? refFile.name.replace(/\.[A-Za-z0-9]+$/, "") : "";
+      const baseName = !isOfficial && refFile ? refFile.name.replace(/\.[A-Za-z0-9]+$/, "") : "";
       const title = form.title.trim() || baseName;
-      const topic = form.topic.trim() || (refFile ? `기존 사업계획서(${refFile.name})를 기준으로 갱신${changes.trim() ? ` — 바뀌는 내용: ${changes.trim()}` : ""}` : "");
+      // topic 은 서버에서 한 글자 이상이라야 한다(app/api/projects/route.ts createSchema).
+      // 공문에서 내용 칸을 비우고 파일로 대신했을 때는 그 사실을 한 줄로 적어 준다 — 용도별 지시와
+      // 파일 경로는 프롬프트의 "참고 문서(용도: …)" 줄이 따로 싣는다.
+      const topic = isOfficial
+        ? form.topic.trim() || (refFile ? `첨부한 ${REFERENCE_DOC_TITLE[refRole]}(${refFile.name})의 내용으로 공문을 작성` : "")
+        : form.topic.trim() || (refFile ? `기존 사업계획서(${refFile.name})를 기준으로 갱신${changes.trim() ? ` — 바뀌는 내용: ${changes.trim()}` : ""}` : "");
       const p = await api.createProject({ ...form, title, topic, contact });
+      // 실제로 쓰인 연락처가 다음 프로젝트의 기본값이 된다(브라우저에만 담는다)
+      saveContactPref(form.contact);
       if (refFile) {
         setPhase("upload");
-        await api.uploadReference(p.id, refFile, changes, autoRun, planResearch);
+        // 공문에는 research 단계가 없다 — 자동 실행을 걸 곳이 없으므로 늘 false 로 보낸다
+        await api.uploadReference(p.id, refFile, changes, isOfficial ? false : autoRun, planResearch);
       }
       onCreated(p);
     } catch (e) {
@@ -75,7 +160,7 @@ function NewProjectDialog({ onClose, onCreated }: { onClose: () => void; onCreat
       open
       onClose={onClose}
       title="새 프로젝트"
-      description="주제와 담당 정보를 입력하면 조사 → 사업계획서 → 공고문 → 보도자료 순으로 문서를 만듭니다."
+      description={KIND_HINT[kind]}
       className="max-w-2xl"
       footer={
         <>
@@ -84,70 +169,204 @@ function NewProjectDialog({ onClose, onCreated }: { onClose: () => void; onCreat
           </Button>
           {!valid ? <span className="mr-2 self-center text-[11px] text-slate-500">입력 필요: {missing.join(", ")}</span> : null}
           <Button variant="primary" onClick={() => void submit()} disabled={!valid} loading={busy} title={valid ? undefined : `입력 필요: ${missing.join(", ")}`}>
-            {phase === "upload" ? "업로드·분석 중…" : refFile && autoRun ? "만들고 자동 실행" : "만들기"}
+            {phase === "upload" ? "업로드·분석 중…" : !isOfficial && refFile && autoRun ? "만들고 자동 실행" : "만들기"}
           </Button>
         </>
       }
     >
       <div className="grid gap-4">
-        <Field label="제목" required={!refFile} hint={refFile ? "비우면 파일 이름을 제목으로 씁니다" : undefined}>
-          <Input placeholder="예) 2026년 안동시 수출기업 역량강화 지원사업" value={form.title} onChange={(e) => set("title", e.target.value)} autoFocus />
+        <Field label="종류">
+          <div className="flex flex-wrap gap-2">
+            {PROJECT_KINDS.map((k) => (
+              <label
+                key={k}
+                className={cn(
+                  "flex cursor-pointer items-center gap-2 rounded-md border px-3 py-2 text-xs",
+                  kind === k ? "border-sky-500 bg-sky-50 text-sky-900" : "border-slate-300 text-slate-700 hover:bg-slate-50",
+                )}
+              >
+                <input type="radio" name="kind" className="h-3.5 w-3.5" checked={kind === k} onChange={() => set("kind", k)} />
+                <span className="font-semibold">{KIND_LABEL[k]}</span>
+                <span className="text-slate-500">{KIND_HINT[k]}</span>
+              </label>
+            ))}
+          </div>
         </Field>
-        <Field label="주제" hint={refFile ? "비우면 기존 계획서와 바뀌는 내용으로 채웁니다" : "자유 서술 — 목적, 대상, 지원 내용, 예산 규모 등"} required={!refFile}>
-          <Textarea rows={5} placeholder="예) 안동시 소재 수출 유망 중소기업 20개사에 수출용 홍보물 제작·마케팅·디자인 개발을 기업당 최대 300만원 지원. 7월 공고, 8월 선정, 10월 말까지 지원." value={form.topic} onChange={(e) => set("topic", e.target.value)} />
+        <Field label="제목" id="title" required={isOfficial || !refFile} hint={!isOfficial && refFile ? "비우면 파일 이름을 제목으로 씁니다" : isOfficial ? "공문의 제목 칸에 그대로 들어갑니다" : undefined}>
+          <Input
+            id="title"
+            name="title"
+            placeholder={isOfficial ? "예) 경영평가 대응을 위한 2026년 사업 추진 현황 제출 요청" : "예) 2026년 안동시 수출기업 역량강화 지원사업"}
+            value={form.title}
+            onChange={(e) => set("title", e.target.value)}
+            autoComplete="off"
+            autoFocus
+          />
         </Field>
-        <div className="grid grid-cols-2 gap-4">
-          <Field label="지역" hint="예: 안동시">
-            <Input value={form.region} onChange={(e) => set("region", e.target.value)} />
-          </Field>
-          <Field label="주관기관">
-            <Input value={form.organizer} onChange={(e) => set("organizer", e.target.value)} />
-          </Field>
-        </div>
+        {isOfficial ? (
+          <>
+            <div className="grid grid-cols-[10rem_1fr] gap-4">
+              <Field label="수신유형" id="recipientKind" required>
+                <Select id="recipientKind" name="recipientKind" value={recipientKind} onChange={(e) => setRecipientKind(e.target.value as RecipientKind)}>
+                  {RECIPIENT_KINDS.map((r) => (
+                    <option key={r} value={r}>
+                      {r}
+                    </option>
+                  ))}
+                </Select>
+              </Field>
+              {recipientKind === "내부결재" ? (
+                <div className="self-end pb-2 text-[11px] text-slate-500">내부결재는 수신 대상 없이 &ldquo;내부결재&rdquo;로 찍힙니다.</div>
+              ) : (
+                <Field label={RECIPIENT_KEY[recipientKind]} id="recipient" required hint={recipientKind === "수신자참조" ? "여럿이면 쉼표로 구분" : "예: 경상북도지사"}>
+                  <Input
+                    id="recipient"
+                    name="recipient"
+                    placeholder={recipientKind === "수신자참조" ? "경영지원팀장, 마케팅팀장, 일자리종합지원팀장" : "경상북도지사"}
+                    value={recipient}
+                    onChange={(e) => setRecipient(e.target.value)}
+                    autoComplete="off"
+                  />
+                </Field>
+              )}
+            </div>
+            <div className="grid grid-cols-[10rem_1fr] gap-4">
+              <Field label="전결" id="delegation" required>
+                <Select id="delegation" name="delegation" value={전결} onChange={(e) => setDelegation(e.target.value as DelegationLevel)}>
+                  {levels.map((l) => (
+                    <option key={l} value={l}>
+                      {l}
+                    </option>
+                  ))}
+                </Select>
+              </Field>
+              <div className="self-end pb-2 text-[11px] text-slate-500">
+                결재란 {결재란.join(" · ")} / 발신명의 {발신명의 ?? "(부서명을 적으면 정해집니다)"}
+                {unit && !unit.division ? ` — ${unit.name}은 원장 직속이라 본부장 전결이 없습니다` : ""}
+              </div>
+            </div>
+            <Field
+              label="공문 내용"
+              id="body"
+              required={!refFile}
+              hint={refFile ? "비우면 아래에 올린 문서의 내용으로 씁니다" : "자유 서술 — 용건, 근거, 기한, 제출 방법 등. 에이전트가 항목 위계를 세워 기안문으로 씁니다"}
+            >
+              <Textarea
+                id="body"
+                name="body"
+                rows={5}
+                placeholder="예) 경영평가 상시대응을 위해 각 팀의 2026년 사업 추진 현황을 매월 제출받으려 한다. 작성대상은 각 팀 전체 사업, 기준은 전월 말일 예산 집행액, 제출기한은 매월 5일까지."
+                value={form.topic}
+                onChange={(e) => set("topic", e.target.value)}
+                autoComplete="off"
+              />
+            </Field>
+          </>
+        ) : (
+          <>
+            <Field label="주제" id="topic" hint={refFile ? "비우면 기존 계획서와 바뀌는 내용으로 채웁니다" : "자유 서술 — 목적, 대상, 지원 내용, 예산 규모 등"} required={!refFile}>
+              <Textarea id="topic" name="topic" rows={5} placeholder="예) 안동시 소재 수출 유망 중소기업 20개사에 수출용 홍보물 제작·마케팅·디자인 개발을 기업당 최대 300만원 지원. 7월 공고, 8월 선정, 10월 말까지 지원." value={form.topic} onChange={(e) => set("topic", e.target.value)} autoComplete="off" />
+            </Field>
+            <div className="grid grid-cols-2 gap-4">
+              <Field label="지역" id="region" hint="예: 안동시">
+                <Input id="region" name="region" value={form.region} onChange={(e) => set("region", e.target.value)} autoComplete="off" />
+              </Field>
+              <Field label="주관기관" id="organizer">
+                <Input id="organizer" name="organizer" value={form.organizer} onChange={(e) => set("organizer", e.target.value)} autoComplete="off" />
+              </Field>
+            </div>
+          </>
+        )}
         <fieldset className="rounded-md border border-slate-200 p-3">
-          <legend className="px-1 text-xs font-semibold text-slate-600">담당 연락처</legend>
+          <legend className="px-1 text-xs font-semibold text-slate-600">{isOfficial ? "처리과·담당 연락처" : "담당 연락처"}</legend>
+          {isOfficial ? <p className="mb-2 text-[11px] text-slate-500">부서명은 공문의 처리과가 되고(결재라인·발신명의가 여기서 정해집니다), 전화·이메일은 결문 연락처에 찍힙니다.</p> : null}
           <div className="grid grid-cols-2 gap-3">
-            <Field label="부서명" required>
-              <Input placeholder="북부지소" value={form.contact.부서명} onChange={(e) => setContact("부서명", e.target.value)} />
+            <Field label="부서명" id="organization" required>
+              <Input id="organization" name="organization" placeholder="북부지소" value={form.contact.부서명} onChange={(e) => setContact("부서명", e.target.value)} autoComplete="organization" />
             </Field>
-            <Field label="담당자">
-              <Input placeholder="홍길동 팀장" value={form.contact.담당자 ?? ""} onChange={(e) => setContact("담당자", e.target.value)} />
+            <Field label="담당자" id="name">
+              <Input id="name" name="name" placeholder="홍길동 팀장" value={form.contact.담당자 ?? ""} onChange={(e) => setContact("담당자", e.target.value)} autoComplete="name" />
             </Field>
-            <Field label="전화" required>
-              <Input placeholder="054-900-3801" value={form.contact.전화} onChange={(e) => setContact("전화", e.target.value)} />
+            <Field label="전화" id="tel" required>
+              <Input id="tel" name="tel" type="tel" placeholder="054-900-3801" value={form.contact.전화} onChange={(e) => setContact("전화", e.target.value)} autoComplete="tel" />
             </Field>
-            <Field label="이메일" required>
-              <Input type="email" placeholder="gepa_north@naver.com" value={form.contact.이메일} onChange={(e) => setContact("이메일", e.target.value)} />
+            <Field label="전송" id="fax">
+              <Input id="fax" name="fax" type="tel" placeholder="054-472-2989" value={form.contact.전송 ?? ""} onChange={(e) => setContact("전송", e.target.value)} autoComplete="fax" />
             </Field>
-            <Field label="우편주소" className="col-span-2">
-              <Input placeholder="경상북도 안동시 북순환로 387, 2층 경상북도경제진흥원" value={form.contact.우편주소 ?? ""} onChange={(e) => setContact("우편주소", e.target.value)} />
+            <Field label="이메일" id="email" required>
+              <Input id="email" name="email" type="email" placeholder="gepa_north@naver.com" value={form.contact.이메일} onChange={(e) => setContact("이메일", e.target.value)} autoComplete="email" />
+            </Field>
+            <Field label="우편번호" id="postal-code">
+              <Input id="postal-code" name="postal-code" placeholder="39393" value={form.contact.우편번호 ?? ""} onChange={(e) => setContact("우편번호", e.target.value)} autoComplete="postal-code" />
+            </Field>
+            <Field label="우편주소" id="street-address" className="col-span-2">
+              <Input id="street-address" name="street-address" placeholder="경상북도 안동시 북순환로 387, 2층 경상북도경제진흥원" value={form.contact.우편주소 ?? ""} onChange={(e) => setContact("우편주소", e.target.value)} autoComplete="street-address" />
             </Field>
           </div>
         </fieldset>
+        {/* 공문에도 파일을 붙인다 — 같은 업로드 경로를 쓰되 용도를 묻고, 자동 실행은 걸지 않는다(공문에는 조사 단계가 없다) */}
         <fieldset className="rounded-md border border-slate-200 p-3">
-          <legend className="px-1 text-xs font-semibold text-slate-600">기존 사업계획서로 시작 (선택)</legend>
-          <p className="mb-2 text-[11px] text-slate-500">지난해 사업계획서(hwp·hwpx·pdf·docx)를 올리고 바뀌는 내용을 적으면, 그 계획서를 기준으로 조사 → 사업계획서 → 공고문 → 보도자료를 자동으로 만듭니다.</p>
+          <legend className="px-1 text-xs font-semibold text-slate-600">{isOfficial ? "관련 문서 첨부 (선택)" : "기존 사업계획서로 시작 (선택)"}</legend>
+          <p className="mb-2 text-[11px] text-slate-500">
+            {isOfficial
+              ? "관련 문서를 올리면 그 내용을 읽고 공문을 씁니다. 주제 칸을 길게 적는 대신 파일로 대신할 수 있습니다."
+              : "지난해 사업계획서(hwp·hwpx·pdf·docx)를 올리고 바뀌는 내용을 적으면, 그 계획서를 기준으로 조사 → 사업계획서 → 공고문 → 보도자료를 자동으로 만듭니다."}
+          </p>
           <div className="grid gap-3">
             <label className="flex cursor-pointer items-center gap-2 rounded border border-dashed border-slate-300 px-3 py-2 text-xs text-slate-700 hover:bg-slate-50">
               <Upload className="h-4 w-4 text-slate-400" />
               <span className="flex-1 truncate">{refFile ? `${refFile.name} (${Math.round(refFile.size / 1024)} KB)` : "파일 선택 — .hwp .hwpx .pdf .docx .md .txt"}</span>
-              <input type="file" className="hidden" accept=".hwp,.hwpx,.pdf,.docx,.md,.txt" onChange={(e) => setRefFile(e.target.files?.[0] ?? null)} />
+              <input id="referenceFile" name="referenceFile" type="file" className="hidden" accept=".hwp,.hwpx,.pdf,.docx,.md,.txt" onChange={(e) => setRefFile(e.target.files?.[0] ?? null)} />
             </label>
             {refFile ? (
               <>
-                <Field label="이번에 바뀌는 내용" hint="예) 2027년으로 연도 변경, 지원 규모 20개사 → 30개사, 기업당 한도 300만원 → 500만원, 접수 7월 → 8월">
-                  <Textarea rows={3} value={changes} onChange={(e) => setChanges(e.target.value)} placeholder="연도·기간·규모·금액·담당 등 달라지는 점을 적어 주세요" />
+                {isOfficial ? (
+                  <Field label="이 문서의 용도">
+                    <div className="flex flex-wrap gap-2">
+                      {REFERENCE_ROLES.map((r) => (
+                        <div
+                          key={r}
+                          className={cn(
+                            "flex items-center gap-2 rounded-md border px-3 py-2 text-xs",
+                            refRole === r ? "border-sky-500 bg-sky-50 text-sky-900" : "border-slate-300 text-slate-700 hover:bg-slate-50",
+                          )}
+                        >
+                          <input id={`refRole-${r}`} name="refRole" type="radio" className="h-3.5 w-3.5" checked={refRole === r} onChange={() => setRefRole(r)} />
+                          <label htmlFor={`refRole-${r}`} className="cursor-pointer font-semibold">
+                            {REFERENCE_ROLE_UI[r].표시}
+                          </label>
+                        </div>
+                      ))}
+                    </div>
+                  </Field>
+                ) : null}
+                <Field
+                  label={isOfficial ? REFERENCE_CHANGES_LABEL[refRole] : "이번에 바뀌는 내용"}
+                  id="changes"
+                  hint={isOfficial ? REFERENCE_ROLE_UI[refRole].hint : "예) 2027년으로 연도 변경, 지원 규모 20개사 → 30개사, 기업당 한도 300만원 → 500만원, 접수 7월 → 8월"}
+                >
+                  <Textarea
+                    id="changes"
+                    name="changes"
+                    rows={3}
+                    value={changes}
+                    onChange={(e) => setChanges(e.target.value)}
+                    placeholder={isOfficial ? undefined : "연도·기간·규모·금액·담당 등 달라지는 점을 적어 주세요"}
+                  />
                 </Field>
-                <div className="flex flex-wrap gap-4 text-xs text-slate-700">
-                  <label className="flex items-center gap-1">
-                    <input type="checkbox" className="h-3.5 w-3.5" checked={autoRun} onChange={(e) => setAutoRun(e.target.checked)} />
-                    만든 뒤 조사부터 보도자료까지 자동 실행
-                  </label>
-                  <label className="flex items-center gap-1" title="사업계획서 작성 중 근거가 부족하면 조사 에이전트로 보충 조사합니다(최대 2회). 이 설정은 기억되어 이후 실행에도 적용됩니다">
-                    <input type="checkbox" className="h-3.5 w-3.5" checked={planResearch} onChange={(e) => writePref(PREF_PLAN_RESEARCH, e.target.checked)} />
-                    계획서 보충 조사
-                  </label>
-                </div>
+                {/* 자동 실행은 조사 → 보도자료 파이프라인의 것이다 — 공문에는 그 단계가 없어 아예 그리지 않는다 */}
+                {isOfficial ? null : (
+                  <div className="flex flex-wrap gap-4 text-xs text-slate-700">
+                    <label className="flex items-center gap-1">
+                      <input id="autoRun" name="autoRun" type="checkbox" className="h-3.5 w-3.5" checked={autoRun} onChange={(e) => setAutoRun(e.target.checked)} />
+                      만든 뒤 조사부터 보도자료까지 자동 실행
+                    </label>
+                    <label className="flex items-center gap-1" title="사업계획서 작성 중 근거가 부족하면 조사 에이전트로 보충 조사합니다(최대 2회). 이 설정은 기억되어 이후 실행에도 적용됩니다">
+                      <input id="supplementalResearch" name="supplementalResearch" type="checkbox" className="h-3.5 w-3.5" checked={planResearch} onChange={(e) => writePref(PREF_PLAN_RESEARCH, e.target.checked)} />
+                      계획서 보충 조사
+                    </label>
+                  </div>
+                )}
               </>
             ) : null}
           </div>
@@ -214,7 +433,7 @@ export function ProjectList() {
       <div className="mb-6 flex items-center gap-3">
         <div>
           <h1 className="text-xl font-bold text-slate-900">프로젝트</h1>
-          <p className="mt-0.5 text-xs text-slate-500">하나의 사업 주제로 조사 노트, 사업계획서, 공고문, 보도자료를 차례로 생성합니다.</p>
+          <p className="mt-0.5 text-xs text-slate-500">사업 주제로 조사 노트·사업계획서·공고문·보도자료를 차례로 만들거나, 공문 한 건을 만듭니다.</p>
         </div>
         <div className="ml-auto flex items-center gap-2">
           <Button variant="ghost" size="sm" onClick={reload} loading={loading}>
@@ -255,11 +474,20 @@ export function ProjectList() {
           {projects.map((p) => (
             <div key={p.id} className="relative rounded-lg border border-slate-200 bg-white transition-shadow hover:shadow-md">
               <Link href={`/projects/${p.id}`} className="block p-4 pr-12">
-                <div className="text-sm font-semibold text-slate-900">{p.title}</div>
+                <div className="flex items-center gap-2">
+                  <Badge tone="neutral">{KIND_LABEL[p.kind]}</Badge>
+                  <div className="min-w-0 truncate text-sm font-semibold text-slate-900">{p.title}</div>
+                </div>
                 <p className="mt-1 line-clamp-2 text-xs leading-relaxed text-slate-600">{p.topic}</p>
                 <div className="mt-3 flex flex-wrap gap-x-4 gap-y-1 text-[11px] text-slate-500">
-                  <span>지역 {p.region || "-"}</span>
-                  <span>주관 {p.organizer || "-"}</span>
+                  {p.kind === "program" ? (
+                    <>
+                      <span>지역 {p.region || "-"}</span>
+                      <span>주관 {p.organizer || "-"}</span>
+                    </>
+                  ) : (
+                    <span>처리과 {p.contact?.부서명 || "-"}</span>
+                  )}
                   <span className="ml-auto">{formatDateTime(p.updatedAt || p.createdAt)}</span>
                 </div>
               </Link>
@@ -284,7 +512,7 @@ export function ProjectList() {
         open={!!toDelete}
         onClose={() => (deleting ? undefined : setToDelete(null))}
         title="프로젝트 삭제"
-        description="조사 노트, 사업계획서, 공고문, 보도자료와 실행 기록이 모두 지워지며 되돌릴 수 없습니다."
+        description="작성된 문서와 실행 기록이 모두 지워지며 되돌릴 수 없습니다."
         footer={
           <>
             <Button variant="outline" onClick={() => setToDelete(null)} disabled={deleting}>

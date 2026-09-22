@@ -13,6 +13,7 @@ import { serializeProject } from "@/lib/db/serialize";
 import { jsonError } from "@/lib/agents/http";
 import { RunConflictError } from "@/lib/agents/runManager";
 import { startStageRun } from "@/lib/stages/runIntegration";
+import { KIND_LABEL, isProjectKind, stagesOf } from "@/lib/kinds";
 import { projectDir } from "@/lib/storage/paths";
 import { extractReferenceText, referenceMarkdown, referenceExtension, REFERENCE_EXTENSIONS } from "@/lib/reference/extract";
 
@@ -41,6 +42,15 @@ export async function POST(req: Request, ctx: { params: Promise<{ id: string }> 
   const autoRun = String(form.get("autoRun") ?? "") === "1";
   const supplementalResearch = String(form.get("supplementalResearch") ?? "") === "1";
 
+  // run route(app/api/projects/[id]/stages/[stage]/run/route.ts:39)와 같은 kind 게이트 — 이 라우트를
+  // 직접 POST 하면(autoRun=1) 공문 프로젝트 안에도 research 실행이 생길 수 있었다.
+  if (autoRun) {
+    const kind = isProjectKind(row.kind) ? row.kind : "program";
+    if (!stagesOf(kind).includes("research")) {
+      return jsonError(404, `${KIND_LABEL[kind]} 프로젝트에는 research 단계가 없습니다`);
+    }
+  }
+
   const bytes = new Uint8Array(await file.arrayBuffer());
   let extracted: { text: string; truncated: boolean };
   try {
@@ -51,7 +61,11 @@ export async function POST(req: Request, ctx: { params: Promise<{ id: string }> 
   const dir = join(projectDir(id), "reference");
   mkdirSync(dir, { recursive: true });
   writeFileSync(join(dir, safeName), bytes);
-  writeFileSync(join(dir, "base-plan.md"), referenceMarkdown(safeName, changes, extracted.text), "utf8");
+  // 공문에 붙인 문서는 용도대로 자기를 소개해야 한다 — 에이전트가 여는 파일이 "기존 사업계획서"라고
+  // 적혀 있으면 프롬프트를 공문용으로 갈라 놓아도 소용이 없다. 용도는 프로젝트를 만들 때 이미
+  // contact 에 실려 저장되고(화면이 createProject → uploadReference 순으로 부른다) 여기서 읽기만 한다.
+  const role = row.kind === "official" ? serializeProject(row).contact.참고문서용도 : undefined;
+  writeFileSync(join(dir, "base-plan.md"), referenceMarkdown(safeName, changes, extracted.text, role), "utf8");
   const now = new Date().toISOString();
   db.update(projects).set({ referenceName: safeName, referenceChanges: changes, updatedAt: now }).where(eq(projects.id, id)).run();
   const updated = db.select().from(projects).where(eq(projects.id, id)).get()!;

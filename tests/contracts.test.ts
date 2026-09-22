@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { isDocStage, STAGE_FAMILY, STAGES } from "../lib/contracts";
+import { isDocStage, isRunStage, RUN_STAGES, STAGE_FAMILY, STAGES } from "../lib/contracts";
 
 describe("isDocStage", () => {
   it("is true for exactly the stages that map to a family", () => {
@@ -25,5 +25,17 @@ describe("isDocStage", () => {
     expect(isDocStage("constructor")).toBe(false);
     expect(isDocStage("__proto__")).toBe(false);
     expect(isDocStage("hasOwnProperty")).toBe(false);
+  });
+});
+
+describe("RunStage", () => {
+  it("adds review on top of the document/pipeline stages", () => {
+    expect(RUN_STAGES).toEqual([...STAGES, "review"]);
+  });
+
+  it("isRunStage accepts every doc stage and review, rejects garbage", () => {
+    for (const s of STAGES) expect(isRunStage(s)).toBe(true);
+    expect(isRunStage("review")).toBe(true);
+    expect(isRunStage("없는단계")).toBe(false);
   });
 });

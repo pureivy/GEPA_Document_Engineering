@@ -29,10 +29,10 @@ export function Label({ className, children, hint, ...props }: React.LabelHTMLAt
   );
 }
 
-export function Field({ label, hint, children, className, required }: { label: string; hint?: string; children: React.ReactNode; className?: string; required?: boolean }) {
+export function Field({ label, hint, children, className, required, id }: { label: string; hint?: string; children: React.ReactNode; className?: string; required?: boolean; id?: string }) {
   return (
     <div className={className}>
-      <Label hint={hint}>
+      <Label hint={hint} htmlFor={id}>
         {label}
         {required ? <span className="ml-0.5 text-red-500">*</span> : null}
       </Label>

@@ -48,6 +48,8 @@ export const N = {
   pressHeader: "pressHeader",
   attachmentList: "attachmentList",
   attachmentItem: "attachmentItem",
+  officialHeader: "officialHeader",
+  officialFooter: "officialFooter",
 } as const;
 
 export const M = {
@@ -75,6 +77,8 @@ export const BLOCK_NODE_NAMES: readonly string[] = [
   N.noticeHeader,
   N.pressHeader,
   N.attachmentList,
+  N.officialHeader,
+  N.officialFooter,
 ];
 
 export interface PmMark {

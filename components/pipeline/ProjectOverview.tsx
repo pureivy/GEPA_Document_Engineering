@@ -4,7 +4,8 @@ import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import { ChevronLeft, PlayCircle, RefreshCw } from "lucide-react";
 import type { RunDTO, Stage } from "@/lib/contracts";
-import { STAGES, STAGE_LABEL, type ProjectDTO } from "@/lib/contracts";
+import { STAGE_LABEL, type ProjectDTO } from "@/lib/contracts";
+import { KIND_LABEL, KIND_STAGES, type ProjectKind } from "@/lib/kinds";
 import { api, errorMessage } from "@/lib/client/api";
 import { PREF_PLAN_RESEARCH, useBoolPref } from "@/lib/client/prefs";
 import { formatCost, formatDateTime, formatDuration, RUN_STATUS_LABEL } from "@/lib/client/format";
@@ -20,13 +21,13 @@ interface OverviewData {
 }
 
 /** pure fetch of everything the overview shows (project, runs, active runs, which stages have a doc) */
-async function fetchOverview(projectId: string): Promise<OverviewData> {
+async function fetchOverview(projectId: string, stages: Stage[]): Promise<OverviewData> {
   const d = await api.getProject(projectId);
   const active: Partial<Record<Stage, string | null>> = {};
-  for (const s of STAGES) active[s] = d.stages?.[s]?.activeRunId ?? (d.runs ?? []).find((r) => r.stage === s && r.status === "running")?.id ?? null;
+  for (const s of stages) active[s] = d.stages?.[s]?.activeRunId ?? (d.runs ?? []).find((r) => r.stage === s && r.status === "running")?.id ?? null;
   // best effort, independent requests
   const results = await Promise.all(
-    STAGES.map(async (s) => {
+    stages.map(async (s) => {
       try {
         if (s === "research") return [s, !!(await api.getResearch(projectId)).markdown] as const;
         return [s, !!(await api.getDoc(projectId, s)).doc] as const;
@@ -38,7 +39,12 @@ async function fetchOverview(projectId: string): Promise<OverviewData> {
   return { project: d.project, runs: d.runs ?? [], active, hasDoc: Object.fromEntries(results) };
 }
 
-export function ProjectOverview({ projectId }: { projectId: string }) {
+export function ProjectOverview({ projectId, kind }: { projectId: string; kind: ProjectKind }) {
+  // 서버가 내려준 종류에서 바로 파생한다 — 첫 페인트에 이미 단계 수가 맞다.
+  // stagesOf(kind) 대신 레코드를 읽는 이유는 StageRunner.tsx 의 같은 줄 주석 참고(lint)
+  const stages = KIND_STAGES[kind];
+  // 단일 단계 종류(공문)에는 이어질 단계가 없다 — 전체 자동 실행도 진행 막대도 의미가 없다
+  const chained = stages.length > 1;
   const [data, setData] = useState<OverviewData | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
@@ -48,14 +54,15 @@ export function ProjectOverview({ projectId }: { projectId: string }) {
   const planResearch = useBoolPref(PREF_PLAN_RESEARCH, false);
   const router = useRouter();
   const polling = !!data && Object.values(data.active).some(Boolean);
-  /** 조사부터 보도자료까지 한 번에: research 를 autoChain 으로 시작하면 서버가 다음 단계를 이어 실행한다 */
+  /** 조사부터 보도자료까지 한 번에: 첫 단계를 autoChain 으로 시작하면 서버가 다음 단계를 이어 실행한다 */
   const runAll = async () => {
-    if (!data?.project) return;
+    if (!data?.project || !chained) return;
     if (data.hasDoc.research && !window.confirm("조사부터 다시 시작해 사업계획서·공고문·보도자료를 모두 새로 작성합니다. 계속할까요?")) return;
     setStarting(true);
     try {
-      await api.runStage(projectId, "research", { autoChain: true, supplementalResearch: planResearch });
-      router.push(`/projects/${projectId}/research`);
+      const first = stages[0];
+      await api.runStage(projectId, first, { autoChain: true, supplementalResearch: planResearch });
+      router.push(`/projects/${projectId}/${first}`);
     } catch (e) {
       setError(errorMessage(e));
     } finally {
@@ -67,7 +74,7 @@ export function ProjectOverview({ projectId }: { projectId: string }) {
   useEffect(() => {
     let alive = true;
     const tick = () =>
-      fetchOverview(projectId)
+      fetchOverview(projectId, stages)
         .then((d) => {
           if (!alive) return;
           setData(d);
@@ -85,7 +92,7 @@ export function ProjectOverview({ projectId }: { projectId: string }) {
       alive = false;
       if (timer) clearInterval(timer);
     };
-  }, [projectId, reloadKey, polling]);
+  }, [projectId, stages, reloadKey, polling]);
 
   const reload = () => {
     setLoading(true);
@@ -103,10 +110,12 @@ export function ProjectOverview({ projectId }: { projectId: string }) {
         <Link href="/" className="inline-flex items-center gap-1 rounded px-1.5 py-1 text-xs text-slate-600 hover:bg-slate-100">
           <ChevronLeft className="h-4 w-4" /> 프로젝트 목록
         </Link>
-        <Button size="sm" variant="primary" className="ml-auto" onClick={() => void runAll()} loading={starting} disabled={polling} title={`조사 → 사업계획서 → 공고문 → 보도자료를 자동으로 이어서 실행합니다 (계획서 보충 조사 ${planResearch ? "켜짐" : "꺼짐"} — 사업계획서 화면에서 변경)`}>
-          <PlayCircle className="h-3.5 w-3.5" /> 전체 자동 실행
-        </Button>
-        <Button size="sm" variant="ghost" onClick={reload} loading={loading}>
+        {chained ? (
+          <Button size="sm" variant="primary" className="ml-auto" onClick={() => void runAll()} loading={starting} disabled={polling} title={`${stages.map((s) => STAGE_LABEL[s]).join(" → ")}를 자동으로 이어서 실행합니다 (계획서 보충 조사 ${planResearch ? "켜짐" : "꺼짐"} — 사업계획서 화면에서 변경)`}>
+            <PlayCircle className="h-3.5 w-3.5" /> 전체 자동 실행
+          </Button>
+        ) : null}
+        <Button size="sm" variant="ghost" className={chained ? undefined : "ml-auto"} onClick={reload} loading={loading}>
           <RefreshCw className="h-3.5 w-3.5" /> 새로 고침
         </Button>
       </div>
@@ -119,17 +128,24 @@ export function ProjectOverview({ projectId }: { projectId: string }) {
 
       {project ? (
         <section className="mb-6 rounded-lg border border-slate-200 bg-white p-5">
-          <h1 className="text-xl font-bold text-slate-900">{project.title}</h1>
+          <div className="flex items-center gap-2">
+            <Badge tone="neutral">{KIND_LABEL[project.kind]}</Badge>
+            <h1 className="text-xl font-bold text-slate-900">{project.title}</h1>
+          </div>
           <p className="mt-2 whitespace-pre-wrap text-sm leading-relaxed text-slate-700">{project.topic}</p>
           <dl className="mt-4 grid grid-cols-2 gap-x-6 gap-y-1 text-xs text-slate-600 md:grid-cols-4">
-            <div>
-              <dt className="text-slate-400">지역</dt>
-              <dd className="text-slate-800">{project.region || "-"}</dd>
-            </div>
-            <div>
-              <dt className="text-slate-400">주관기관</dt>
-              <dd className="text-slate-800">{project.organizer || "-"}</dd>
-            </div>
+            {chained ? (
+              <>
+                <div>
+                  <dt className="text-slate-400">지역</dt>
+                  <dd className="text-slate-800">{project.region || "-"}</dd>
+                </div>
+                <div>
+                  <dt className="text-slate-400">주관기관</dt>
+                  <dd className="text-slate-800">{project.organizer || "-"}</dd>
+                </div>
+              </>
+            ) : null}
             <div>
               <dt className="text-slate-400">담당</dt>
               <dd className="text-slate-800">
@@ -148,8 +164,8 @@ export function ProjectOverview({ projectId }: { projectId: string }) {
         <div className="mb-6 h-32 animate-pulse rounded-lg bg-slate-100" />
       ) : null}
 
-      <h2 className="mb-2 text-sm font-semibold text-slate-700">문서 파이프라인</h2>
-      <PipelineBar projectId={projectId} runs={runs} activeRunIds={active} hasDoc={hasDoc} />
+      <h2 className="mb-2 text-sm font-semibold text-slate-700">{chained ? "문서 파이프라인" : "문서"}</h2>
+      <PipelineBar projectId={projectId} stages={stages} runs={runs} activeRunIds={active} hasDoc={hasDoc} />
 
       <h2 className="mb-2 mt-8 text-sm font-semibold text-slate-700">실행 기록</h2>
       {runs.length === 0 ? (

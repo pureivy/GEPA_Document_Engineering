@@ -319,6 +319,8 @@ function bodyLines(doc: DocModel): string[] {
       case "approvalBlock":
       case "noticeHeader":
       case "pressHeader":
+      case "officialHeader":
+      case "officialFooter":
       case "overviewTable":
         // synthesized from meta; nothing to write
         break;

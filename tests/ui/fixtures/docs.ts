@@ -203,11 +203,36 @@ export function pressFixture(): DocModel {
   } as DocModel;
 }
 
+export function officialFixture(): DocModel {
+  resetIds();
+  const blocks: Block[] = [
+    { id: id(), k: "officialHeader" },
+    { id: id(), k: "para", role: "plain", inlines: [t("경영평가 상시대응체계 구축을 위해 다음과 같이 자료를 제출하여 주시기 바랍니다.")] },
+    { id: id(), k: "para", role: "plain", inlines: [t("1. 작성대상: 2026년 각 팀에서 운영하고 있는 전체 사업")] },
+    { id: id(), k: "officialFooter" },
+  ];
+  return {
+    version: 1,
+    family: "official",
+    meta: {
+      수신유형: "수신자참조",
+      수신자: ["경영지원팀장", "마케팅팀장"],
+      제목: "경영평가 대응을 위한 2026년 사업 추진 현황 제출 요청",
+      발신명의: "경영기획실장",
+      처리과: "전략기획팀",
+      연락처: { 전화: "054-470-8527", 이메일: "nancy.kwon@gepa.kr" },
+      붙임: ["(양식) 2026년 사업 추진 현황_팀명 1부."],
+    } as DocModel["meta"],
+    blocks,
+  } as DocModel;
+}
+
 /** every block kind in one document (plan meta) — the coverage fixture */
 export function kitchenSinkFixture(): DocModel {
   const plan = planFixture();
   const notice = noticeFixture();
   const press = pressFixture();
-  const blocks = [...plan.blocks, ...notice.blocks, ...press.blocks].map((b, i) => ({ ...b, id: `k${String(i + 1).padStart(3, "0")}` }));
+  const official = officialFixture();
+  const blocks = [...plan.blocks, ...notice.blocks, ...press.blocks, ...official.blocks].map((b, i) => ({ ...b, id: `k${String(i + 1).padStart(3, "0")}` }));
   return { ...plan, blocks } as DocModel;
 }

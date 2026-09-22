@@ -4,6 +4,7 @@
  */
 import type { DocModel } from "@/lib/docmodel/schema";
 import type { ExportReportDTO, ProjectDTO, RunDTO, Stage } from "@/lib/contracts";
+import type { ProjectKind } from "@/lib/kinds";
 
 export class ApiError extends Error {
   constructor(
@@ -42,6 +43,8 @@ async function request<T>(url: string, init?: RequestInit): Promise<T> {
 const json = (v: unknown): RequestInit => ({ method: "POST", body: JSON.stringify(v) });
 
 export interface NewProjectInput {
+  /** 문서 종류. 생략하면 서버가 "program" 으로 본다 */
+  kind: ProjectKind;
   title: string;
   topic: string;
   region: string;

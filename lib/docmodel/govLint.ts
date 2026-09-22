@@ -93,7 +93,11 @@ export function lintGovStyle(doc: DocModel): GovLintIssue[] {
   // ---- 붙임 / 끝 표시 (발신 문서·내부결재문서)
   if (DOC_FAMILIES[doc.family].requiresClosingMark) {
     const last = [...blocks].reverse().find((b) => b.k === "para" || b.k === "table" || b.k === "attachmentList");
-    if (last) {
+    // 공문서는 붙임을 블록이 아니라 meta.붙임 에서 펼친다(다른 family 는 ```attach 블록을 쓴다).
+    // 작성기가 그 줄 끝에 "  끝." 을 찍으므로(lib/hwpx/writers/official.ts) 본문 마지막 문단에
+    // 끝 표시를 요구하면 붙임 있는 모든 공문서에서 헛울린다. serialize/toText.ts:99 와 같은 조건이다.
+    const 붙임_meta = doc.family === "official" && doc.meta.붙임.length > 0 && !blocks.some((b) => b.k === "attachmentList");
+    if (last && !붙임_meta) {
       if (last.k === "attachmentList") {
         // writer appends "  끝." after the last item — fine
       } else if (last.k === "para") {

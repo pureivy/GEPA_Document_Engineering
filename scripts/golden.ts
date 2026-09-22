@@ -15,6 +15,12 @@ const name = process.argv[3] ?? "6-1";
 const dir = join(process.cwd(), "templates", family);
 const dsl = readFileSync(join(dir, "golden", `${name}.dsl.md`), "utf8");
 
+/** `rhwp verify --expect-*` per family (informational check below) — 공고문 값을 그대로 두고 다른 family 를 더한다. */
+const FAMILY_VERIFY: Record<string, { minPages?: number; contains: string[] }> = {
+  notice: { minPages: 5, contains: ["1. 모집개요", "www.gepa.kr", "기업게좌"] },
+  official: { contains: ["수신자 참조", "전략기획팀-"] },
+};
+
 function norm(s: string): string {
   return s.replace(/\s+/g, " ").replace(/[‧·]/g, "·").trim();
 }
@@ -53,7 +59,11 @@ async function main() {
   // rhwp verify + render-diff (informational)
   const rhwp = rhwpBin();
   if (existsSync(rhwp)) {
-    const ver = spawnSync(rhwp, ["verify", out, "--expect-min-pages", "5", "--expect-contains", "1. 모집개요", "--expect-contains", "www.gepa.kr", "--expect-contains", "기업게좌"], { encoding: "utf8" });
+    const checks = FAMILY_VERIFY[family] ?? { contains: [] };
+    const verifyArgs = [out];
+    if (checks.minPages) verifyArgs.push("--expect-min-pages", String(checks.minPages));
+    for (const c of checks.contains) verifyArgs.push("--expect-contains", c);
+    const ver = spawnSync(rhwp, ["verify", ...verifyArgs], { encoding: "utf8" });
     console.log("rhwp verify:", ver.stdout.trim().split("\n").pop());
     const rd = spawnSync(rhwp, ["render-diff", join(dir, "reference.hwpx"), out, "--json", "--max-disp", "2"], { encoding: "utf8" });
     console.log("render-diff exit", rd.status, (rd.stdout.trim().split("\n").pop() ?? "").slice(0, 300));

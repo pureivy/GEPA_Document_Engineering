@@ -5,12 +5,13 @@ import { toPm } from "@/lib/docmodel/prosemirror/toPm";
 import { fromPm } from "@/lib/docmodel/prosemirror/fromPm";
 import { BLOCK_NODE_NAMES } from "@/lib/docmodel/prosemirror/schema";
 import { gepaExtensions } from "@/components/editor/nodes";
-import { kitchenSinkFixture, noticeFixture, planFixture, pressFixture } from "./fixtures/docs";
+import { kitchenSinkFixture, noticeFixture, officialFixture, planFixture, pressFixture } from "./fixtures/docs";
 
 const FIXTURES: Record<string, () => DocModel> = {
   notice: noticeFixture,
   plan: planFixture,
   press: pressFixture,
+  official: officialFixture,
   kitchenSink: kitchenSinkFixture,
 };
 

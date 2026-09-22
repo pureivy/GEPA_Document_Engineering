@@ -2,7 +2,7 @@
  * Stage prompt builders. The main `claude -p` process is the writer persona for the stage;
  * research is delegated to the `researcher` subagent through the Task tool.
  */
-import type { Stage, ProjectDTO } from "../../contracts";
+import { REFERENCE_CHANGES_LABEL, type Stage, type ProjectDTO, type ReferenceRole } from "../../contracts";
 import { orgSummary } from "../../org";
 
 export interface StagePromptInput {
@@ -35,6 +35,15 @@ const COMMON = () => `당신은 (재)경상북도경제진흥원(GEPA)의 문서
 작업 규칙: Bash는 사용하지 않는다. 필요한 참고 자료는 .claude/skills/*/SKILL.md 와 reference/ 문서를 Read로 읽는다.
 프로젝트 작업 폴더(아래 경로)의 파일만 읽고 쓴다.`;
 
+/** 공문(official) 전용 — contact.수신유형이 있으면 그 값으로 한 줄을 만든다(§5.4: DB 컬럼 없이 contact 에 얹은 값). */
+function recipientLine(p: ProjectDTO): string | null {
+  const 수신유형 = p.contact.수신유형;
+  if (!수신유형) return null;
+  if (수신유형 === "내부결재") return "수신유형: 내부결재";
+  if (수신유형 === "수신자") return `수신유형: 수신자, 수신: ${p.contact.수신 ?? ""}`;
+  return `수신유형: 수신자참조, 수신자: ${p.contact.수신자 ?? ""}`;
+}
+
 function projectBrief(p: ProjectDTO, workspaceDir?: string): string {
   const lines = [
     `프로젝트: ${p.title}`,
@@ -42,11 +51,38 @@ function projectBrief(p: ProjectDTO, workspaceDir?: string): string {
     `지역: ${p.region} / 주관기관: ${p.organizer}`,
     `담당: ${p.contact.부서명} ${p.contact.담당자 ?? ""} ☎ ${p.contact.전화} / ${p.contact.이메일}${p.contact.우편주소 ? " / " + p.contact.우편주소 : ""}`,
   ];
+  const recipient = recipientLine(p);
+  if (recipient) lines.push(recipient);
+  // 전결은 결재란과 발신명의를 함께 정한다 — 수신유형과 같은 길(contact)로 실려 온다
+  if (p.contact.전결) lines.push(`전결: ${p.contact.전결}`);
+  // 결문 연락처의 전송·우편번호(공문 전용) — 담당 줄은 네 단계가 함께 쓰므로 늘리지 않고 따로 둔다.
+  // kind 로 막는다: 이 두 칸은 폼의 공용 연락처 구역에 있고 브라우저 기억으로 prefill 되므로,
+  // 공문을 한 번 만든 뒤 세운 사업계획서 프로젝트가 값을 물려받아 얼어붙은 세 family 의
+  // 프롬프트에 없던 두 줄을 흘려보낸다(검토자 지적, 재현 확인).
+  if (p.kind === "official") {
+    if (p.contact.전송) lines.push(`전송: ${p.contact.전송}`);
+    if (p.contact.우편번호) lines.push(`우편번호: ${p.contact.우편번호}`);
+  }
   if (p.reference) {
-    lines.push(`기존 사업계획서: ${workspaceDir ?? "<작업폴더>"}/reference/base-plan.md (원본 파일 ${p.reference.fileName}) — 이번 프로젝트는 이 계획서를 갱신하는 것이다.`);
-    lines.push(`이번에 바뀌는 내용: ${p.reference.changes || "(미기재 — 연도·일정·담당만 갱신)"}`);
+    if (p.kind === "official") {
+      // 공문에서는 같은 파일이 세 가지로 쓰인다(근거자료·받은 공문·붙임) — 용도 이름을 그대로 드러내
+      // 아래 referenceGuide 의 지시와 담당자가 적은 줄이 같은 것을 가리키게 한다.
+      // 사업계획서 쪽 두 줄은 손대지 않는다: 얼어붙은 세 family 의 프롬프트가 바뀌면 안 된다.
+      const 용도 = referenceRole(p);
+      lines.push(`참고 문서(용도: ${용도}): ${workspaceDir ?? "<작업폴더>"}/reference/base-plan.md (원본 파일 ${p.reference.fileName})`);
+      // 비면 줄 자체를 싣지 않는다 — "(미기재 — 연도·일정·담당만 갱신)" 은 사업계획서 갱신을 전제한 문구라 공문에 맞지 않는다
+      if (p.reference.changes) lines.push(`${REFERENCE_CHANGES_LABEL[용도]}: ${p.reference.changes}`);
+    } else {
+      lines.push(`기존 사업계획서: ${workspaceDir ?? "<작업폴더>"}/reference/base-plan.md (원본 파일 ${p.reference.fileName}) — 이번 프로젝트는 이 계획서를 갱신하는 것이다.`);
+      lines.push(`이번에 바뀌는 내용: ${p.reference.changes || "(미기재 — 연도·일정·담당만 갱신)"}`);
+    }
   }
   return lines.join("\n");
+}
+
+/** 공문에 붙인 참고 문서의 용도. 파일만 있고 용도가 비었으면 근거자료로 본다(가장 해가 적은 쪽). */
+function referenceRole(p: ProjectDTO): ReferenceRole {
+  return p.contact.참고문서용도 ?? "근거자료";
 }
 
 /** Stage-specific guidance when the project was started from an uploaded 기존 사업계획서. */
@@ -61,6 +97,17 @@ function referenceGuide(p: ProjectDTO, stage: Stage | "review", workspaceDir: st
     case "notice":
     case "press":
       return `\n이 프로젝트는 기존 사업계획서(${file})를 갱신한 것이다. 이번에 바뀐 내용이 공고·보도 내용에도 반영되었는지(연도·기간·규모·금액) 확인한다.`;
+    // 공문은 붙인 문서를 셋 중 어느 쪽으로 쓰느냐에 따라 지시가 완전히 갈린다 — 근거자료는 내용을 추려 쓰고,
+    // 받은 공문은 그 공문에 회신하며, 붙임은 본문에 옮기지 않고 이름만 「붙임」에 적는다.
+    case "official":
+      switch (referenceRole(p)) {
+        case "받은공문":
+          return `\n받은 공문 ${file} 를 먼저 Read 한다. 수신은 그 공문의 발신명의로 하고, 제목은 「(받은 공문의 제목)」 관련 회신으로 적는다. 본문 첫 항은 그 공문을 근거로 밝히며 시작한다(예: "귀 기관의 ○○○-1234(2026. 9. 10.)호와 관련입니다."). 문서번호·시행일이 추출된 텍스트에 없으면 지어내지 말고 그 부분을 비운 채 제목만으로 관련지어 적는다.`;
+        case "붙임":
+          return `\n붙임 문서 ${file} 를 먼저 Read 해 무엇인지 파악한다. 본문에는 이 문서를 보내는 취지와 수신자가 할 일만 간단히 적는다(내용을 본문에 옮겨 적지 않는다). 붙임 이름은 front-matter 의 붙임 목록에 "○○○ 1부." 형태로 적는다 — 본문에 직접 타이핑하지 않는다(작성기가 결문의 붙임 줄과 "끝." 표기를 그 목록에서 만든다). 이름은 "붙임에 적을 이름" 줄이 있으면 그 값을, 없으면 원본 파일명에서 확장자를 뺀 것을 쓴다.`;
+        default:
+          return `\n참고 문서 ${file} 를 먼저 Read 한다. 사업명·기간·금액·대상·담당은 그 문서에 적힌 값을 그대로 쓰고, 그 문서에 없는 수치는 지어내지 않는다(없으면 그 항목을 빼거나 "별도 안내"로 적는다). 공문 본문은 1쪽 분량으로 줄인다 — 그 문서를 옮겨 적는 것이 아니라 수신자가 해야 할 일과 기한만 남긴다.`;
+      }
     default:
       return "";
   }
@@ -90,6 +137,15 @@ const DOC_CONTRACT = (stage: Stage, family: string) => `
 3. 완성된 DSL 전체를 Write 도구로 <작업폴더>/${stage}/draft.dsl.md 에 저장한다. 이 저장이 곧 제출이다(화면에는 저장하는 내용이 실시간으로 표시된다). 문서는 머릿속에서 완성한 뒤 **한 번에** 저장한다. 다시 Write 하는 것은 치명적 오류를 고칠 때 **최대 1회**로 한다(매번 전체를 다시 쓰면 시간이 배로 든다).
 4. 마지막 답변은 3줄 이내의 요약만 쓴다. DSL을 답변에 다시 출력하지 않는다.
 `;
+
+/** 검토 대상 단계별 규격 스킬. 빠뜨리면 검토관이 엉뚱한 규격으로 채점한다(공문을 보도자료 기준으로 보는 식). */
+const REVIEW_SKILL: Record<Stage, string> = {
+  research: "gepa-research",
+  plan: "gepa-plan-design",
+  notice: "gepa-notice-design",
+  press: "gepa-press-style",
+  official: "gepa-official-design",
+};
 
 export function buildStagePrompt(input: StagePromptInput): StagePrompt {
   const { stage, project, workspaceDir, instruction } = input;
@@ -144,7 +200,7 @@ front-matter: 기관 (재)경상북도경제진흥원, 배포일(공고일), 보
       const target = input.reviewTarget ?? "plan";
       return {
         systemPromptAppend: `${COMMON()}\n역할: 문서 검토관. .claude/agents/reviewer.md 의 점검 항목을 적용한다.`,
-        prompt: `${brief}\n작업 폴더: ${workspaceDir}\n\n${workspaceDir}/${target}/draft.dsl.md 를 검토하라. 관련 규격: .claude/skills/gepa-${target === "plan" ? "plan-design" : target === "notice" ? "notice-design" : "press-style"}/SKILL.md.
+        prompt: `${brief}\n작업 폴더: ${workspaceDir}\n\n${workspaceDir}/${target}/draft.dsl.md 를 검토하라. 관련 규격: .claude/skills/${REVIEW_SKILL[target]}/SKILL.md.
 이슈마다 blockHint(문제가 있는 줄의 앞 20자), severity(error|warn|info), message, fix(수정 제안 DSL 줄)를 채우고 0~100점 score를 매긴다.
 참고 자료: ${workspaceDir}/research/notes.md (수치·출처 대조), ${workspaceDir}/plan/draft.dsl.md (공고문·보도자료 검토 시 정합성 기준).`,
         allowedTools: ["Read", "Glob", "Grep"],
@@ -167,5 +223,21 @@ front-matter: 기관 (재)경상북도경제진흥원, 배포일(공고일), 보
         },
       };
     }
+    case "official":
+      return {
+        systemPromptAppend: `${COMMON()}\n역할: 공문서 작성자. .claude/skills/gepa-official-design/SKILL.md 의 front-matter 필드·두문/결문 규격을 그대로 따른다. 별지 제1호 일반기안문이고 가변부는 수신/제목/본문/붙임 네 가지뿐이다. **시행번호·접수번호는 절대 만들지 않는다** — 전자결재가 기안 후에 채번한다.`,
+        prompt: `${brief}\n작업 폴더: ${workspaceDir}\n\n위 내용으로 공문서(기안문)를 작성하라.
+- front-matter의 처리과는 ${project.contact.부서명}, 연락처(front-matter 의 연락처 객체: 우편번호·주소·홈페이지·전화·전송·이메일)는 전화 ${project.contact.전화} / 이메일 ${project.contact.이메일}${project.contact.우편주소 ? ` / 주소 ${project.contact.우편주소}` : ""} 로 채운다. 위에 "전송: …" 줄이 있으면 연락처의 전송에, "우편번호: …" 줄이 있으면 연락처의 우편번호에 그 값을 그대로 옮긴다. 그 줄이 없으면(또는 그 밖의 값) 비워 두거나 스키마 기본값(홈페이지는 https://gepa.kr)을 그대로 둔다.
+- 수신유형·수신(자)은 위 "수신유형: …" 줄의 값을 그대로 옮긴다. 수신유형이 수신자참조면 그 줄의 수신자는 쉼표로 구분된 이름 목록이므로 OfficialMetaSchema 가 요구하는 YAML 배열(수신자: [경영지원팀장, 마케팅팀장, …])로 바꿔 쓴다 — 옮겨 적기만 하면 배열이 아니라 문자열 하나가 되어 스키마를 통과하지 못한다. 위에 "수신유형: …" 줄이 없으면(예전 방식으로 만들어진 프로젝트) 지시 내용에서 판단하고, 불분명하면 수신유형: 수신자, 수신에 처리과가 속한 실·단장 직위를 적는다.
+- 전결은 위 "전결: …" 줄의 값을 front-matter 의 전결에 그대로 옮긴다 — 결재란을 어디서 끊을지와 발신명의가 여기서 함께 정해진다(실·단장 → 실·단장 명의, 본부장 → 본부장 명의, 원장 → 기관장 명의). 그 줄이 없으면 전결을 적지 않는다(적지 않으면 원장까지 결재하는 것이 기본값이다 — 전결은 그 사슬을 낮출 때만 적는다).
+- 발신명의와 결재라인은 비워 둔다 — 전결과 처리과에서 자동으로 채워진다. 규정 밖의 결재란을 재현해야 할 때만 결재라인을 직접 적는다.
+- 본문은 문장체로 쓰고 항목은 1. → 가. → 1) → 가) 순으로 매기며, 항목이 하나뿐이면 기호를 붙이지 않는다.
+- 붙임물이 있으면 front-matter의 붙임 목록에 적고 본문에 직접 타이핑하지 않는다. 붙임이 없으면 본문 마지막 줄 끝에 "  끝."을 직접 쓴다.
+- 시행 일련번호·접수번호는 어떤 형태로도 만들지 않는다(front-matter에 그런 키가 없다).${DOC_CONTRACT("official", "official")}${resume}`,
+        allowedTools: ["Read", "Write", "Glob", "Grep"],
+        maxTurns: 20,
+      };
+    default:
+      throw new Error(`${stage} 단계의 프롬프트가 아직 구현되지 않았습니다`);
   }
 }
