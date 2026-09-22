@@ -15,6 +15,8 @@ describe("DOC_FAMILIES", () => {
     expect(DOC_FAMILIES.notice.indent).toEqual({ "□": 0, "ㅇ": 1, "○": 1, "◦": 1, "-": 3, "·": 4, "※": 2, "*": 1 });
     expect(DOC_FAMILIES.plan.indent).toEqual({ "□": 1, "ㅇ": 2, "○": 2, "◦": 2, "-": 3, "·": 4, "※": 1, "*": 2 });
     expect(DOC_FAMILIES.press.indent).toEqual({ "□": 0, "ㅇ": 1, "○": 1, "◦": 1, "-": 3, "·": 4, "※": 2, "*": 2 });
+    // 업무보고는 참고본 실측 사다리다 — 편람 2타(공문)도 사업계획서 사다리도 아니다
+    expect(DOC_FAMILIES.report.indent).toEqual({ "●": 0, "-": 3, "ㅇ": 0, "·": 3 });
   });
 });
 
@@ -65,11 +67,23 @@ describe("DOC_FAMILIES.docTitle", () => {
   });
 });
 
+describe("DOC_FAMILIES.exportBaseName", () => {
+  it("업무보고서는 제목에 _주요업무보고 를 붙인다", () => {
+    const meta = { ...(fallbackMeta("report") as Record<string, unknown>), 제목: "2026년 주요업무보고" };
+    const doc = { version: 1, family: "report", meta, blocks: [] } as unknown as DocModel;
+    expect(DOC_FAMILIES.report.docTitle(doc)).toBe("2026년 주요업무보고");
+    expect(DOC_FAMILIES.report.exportBaseName(doc)).toBe("2026년 주요업무보고_주요업무보고");
+  });
+});
+
 describe("DOC_FAMILIES.headingStyle", () => {
   it("사업계획서는 장 띠, 공고문은 섹션바, 보도자료는 제목을 쓰지 않는다", () => {
     expect(DOC_FAMILIES.plan.headingStyle).toBe("chapterChip");
     expect(DOC_FAMILIES.notice.headingStyle).toBe("sectionBar");
     expect(DOC_FAMILIES.press.headingStyle).toBe("none");
+  });
+  it("업무보고서는 제목 문법을 쓰지 않는다", () => {
+    expect(DOC_FAMILIES.report.headingStyle).toBe("none");
   });
   it("headingStyle=none 인 family 는 제목 문법을 끄고 있어야 한다", () => {
     // press 는 expanders/press.ts 의 allowHeadings:false 로 parser.ts:509 에서 먼저 끊긴다.
@@ -86,5 +100,9 @@ describe("DOC_FAMILIES.requiresClosingMark", () => {
     expect(DOC_FAMILIES.plan.requiresClosingMark).toBe(true);
     expect(DOC_FAMILIES.notice.requiresClosingMark).toBe(true);
     expect(DOC_FAMILIES.press.requiresClosingMark).toBe(false);
+  });
+  it("업무보고서는 끝 표기를 요구하지 않는다", () => {
+    // `끝.` 은 시행규칙 제4조제5항이 공문서에 요구하는 것이고 업무보고에는 그런 규정이 없다.
+    expect(DOC_FAMILIES.report.requiresClosingMark).toBe(false);
   });
 });

@@ -9,7 +9,7 @@
  */
 import { parse as parseYaml } from "yaml";
 import { z } from "zod";
-import { FamilySchema, NoticeMetaSchema, OfficialMetaSchema, PlanMetaSchema, PressMetaSchema, type DocModel, type Family } from "../schema";
+import { FamilySchema, NoticeMetaSchema, OfficialMetaSchema, PlanMetaSchema, PressMetaSchema, ReportMetaSchema, type DocModel, type Family } from "../schema";
 
 export interface FrontMatterIssue {
   /** 1-based line number in the original DSL text (best effort; 1 when unknown) */
@@ -41,9 +41,10 @@ export const META_SCHEMAS = {
   plan: PlanMetaSchema,
   press: PressMetaSchema,
   official: OfficialMetaSchema,
+  report: ReportMetaSchema,
 } as const;
 
-/** `plan | notice | press | official` — 오류 메시지에 쓰는 family 목록 (스키마가 곧 출처다) */
+/** `plan | notice | press | official | report` — 오류 메시지에 쓰는 family 목록 (스키마가 곧 출처다) */
 const FAMILY_LIST = FamilySchema.options.join(" | ");
 
 /** keys whose values are numeric in the meta schemas (everything else numeric is coerced to string) */
@@ -248,6 +249,8 @@ export function fallbackMeta(family: Family, raw?: Record<string, unknown>): Doc
     // `META_SCHEMAS[family].parse(base[family])` 가 던져서, front-matter 가 깨진 공문서는
     // 자리표시 DocModel 로 내려앉는 대신 파서 전체를 멈춘다.
     official: { 수신유형: "내부결재", 제목: "(제목 없음)", 처리과: "(처리과 없음)" },
+    // ReportMetaSchema 는 여섯 칸이 모두 .default() 라 빈 객체가 그대로 파싱된다(.min(1) 이 없다).
+    report: {},
   };
   const merged: Record<string, unknown> = { ...base[family] };
   if (raw) {

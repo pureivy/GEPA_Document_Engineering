@@ -18,7 +18,7 @@ export interface GepaTableOptions {
 
 const hidden = { default: null, rendered: false } as const;
 
-export const DEFAULT_HEADER_FILL: Record<Family, string> = { plan: "#d9d9d9", notice: "#dfe6f7", press: "#dfe6f7", official: "#dfe6f7" };
+export const DEFAULT_HEADER_FILL: Record<Family, string> = { plan: "#d9d9d9", notice: "#dfe6f7", press: "#dfe6f7", official: "#dfe6f7", report: "#dfe6f7" };
 export const DEFAULT_TOTAL_FILL = "#d9d9d9";
 
 export const GepaTable = Node.create<GepaTableOptions>({

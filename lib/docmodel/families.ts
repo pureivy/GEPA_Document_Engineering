@@ -83,4 +83,14 @@ export const DOC_FAMILIES: Record<Family, DocFamilyDef> = {
     // 시행규칙 제4조제4·5항: 붙임 표시와 `끝.` 은 공문서의 법정 요구사항이다.
     requiresClosingMark: true,
   },
+  report: {
+    // 참고본 실측 사다리 — 편람 2타(공문)도 사업계획서 사다리도 아니다
+    indent: { "●": 0, "-": 3, "ㅇ": 0, "·": 3 },
+    noteIndentUnderItem: undefined,
+    docTitle: (doc) => (doc.meta as Extract<DocModel, { family: "report" }>["meta"]).제목,
+    exportBaseName: (doc) => (doc.meta as Extract<DocModel, { family: "report" }>["meta"]).제목 + "_주요업무보고",
+    headingStyle: "none",
+    // 공문의 `끝.` 은 시행규칙 제4조제5항의 법정 요구사항이고 업무보고에는 없다
+    requiresClosingMark: false,
+  },
 };
