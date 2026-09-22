@@ -6,7 +6,7 @@
 import { z } from "zod";
 import { DELEGATION_LEVELS, DEFAULT_DELEGATION, INSTITUTION_HEAD_TITLE } from "../org";
 
-export const FamilySchema = z.enum(["plan", "notice", "press", "official"]);
+export const FamilySchema = z.enum(["plan", "notice", "press", "official", "report"]);
 export type Family = z.infer<typeof FamilySchema>;
 
 export const GlyphSchema = z.enum(["□", "ㅇ", "○", "◦", "-", "·", "※", "*", "❖", "◇", "■", "✔", "❍", "▪", "∙", "❶", "❷", "❸", "❹", "none"]);
@@ -330,17 +330,36 @@ export function officialMetaProblems(m: OfficialMeta): string[] {
   return out;
 }
 
+/**
+ * 주요업무보고 — 스펙 §5.3. 참고본(`※(경제진흥원) 2026년 주요업무보고`, 23쪽) 실측 기준.
+ *
+ * `OfficialMetaSchema` 와 같이 **맨 `z.object`** 로 둔다. `.refine`/`.superRefine` 을 걸면
+ * front-matter 경로의 `unwrapSchema`(dsl/frontmatter.ts:116)가 `instanceof ZodObject` 로
+ * 갈라지지 못해, 한 칸이 안 맞는 것이 복구 가능한 경고가 아니라 파싱 실패가 된다.
+ */
+export const ReportMetaSchema = z.object({
+  제목: z.string().default("주요업무보고"),
+  보고일: z.string().default(""),
+  보고대상: z.string().default(""),
+  부서: z.string().default(""),
+  대상기간: z.string().default(""),
+  목차표시: z.boolean().default(true),
+});
+export type ReportMeta = z.infer<typeof ReportMetaSchema>;
+
 export const DocModelSchema = z.discriminatedUnion("family", [
   z.object({ version: z.literal(1), family: z.literal("notice"), meta: NoticeMetaSchema, blocks: z.array(BlockSchema) }),
   z.object({ version: z.literal(1), family: z.literal("plan"), meta: PlanMetaSchema, blocks: z.array(BlockSchema) }),
   z.object({ version: z.literal(1), family: z.literal("press"), meta: PressMetaSchema, blocks: z.array(BlockSchema) }),
   z.object({ version: z.literal(1), family: z.literal("official"), meta: OfficialMetaSchema, blocks: z.array(BlockSchema) }),
+  z.object({ version: z.literal(1), family: z.literal("report"), meta: ReportMetaSchema, blocks: z.array(BlockSchema) }),
 ]);
 export type DocModel = z.infer<typeof DocModelSchema>;
 export type NoticeDoc = Extract<DocModel, { family: "notice" }>;
 export type PlanDoc = Extract<DocModel, { family: "plan" }>;
 export type PressDoc = Extract<DocModel, { family: "press" }>;
 export type OfficialDoc = Extract<DocModel, { family: "official" }>;
+export type ReportDoc = Extract<DocModel, { family: "report" }>;
 
 export function inlineText(inlines: Inline[]): string {
   return inlines.map((i) => (i.t === "br" ? "\n" : i.text)).join("");

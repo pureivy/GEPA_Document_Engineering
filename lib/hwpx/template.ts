@@ -28,7 +28,7 @@ export interface Template {
   files: Record<string, Uint8Array>; // all non-XML package files (mimetype, BinData, META-INF, settings, version, content.hpf)
 }
 
-const TEMPLATE_FAMILY: Record<Family, string> = { notice: "notice", plan: "plan", press: "press", official: "official" };
+const TEMPLATE_FAMILY: Record<Family, string> = { notice: "notice", plan: "plan", press: "press", official: "official", report: "report" };
 const cache = new Map<string, Template>();
 
 export function templateDir(family: Family): string {

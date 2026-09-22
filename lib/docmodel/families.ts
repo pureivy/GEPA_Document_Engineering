@@ -27,9 +27,9 @@ export interface DocFamilyDef {
   exportBaseName(doc: DocModel): string;
   /**
    * `#` / `##` 제목을 어떤 블록으로 펼치는가.
-   *   "chapterChip" = 사업계획서(장 띠 + 절 칩)
+   *   "chapterChip" = 사업계획서·업무보고(장 띠 + 절 칩)
    *   "sectionBar"  = 공고문(번호 섹션바)
-   *   "none"        = 제목 문법을 쓰지 않는 family(보도자료)
+   *   "none"        = 제목 문법을 쓰지 않는 family(보도자료·공문서)
    *
    * "none" 인 family 는 반드시 확장기의 FamilyContext.allowHeadings 도 false 여야 한다
    * (lib/docmodel/dsl/expanders/press.ts:16). 둘이 어긋나면 parser.ts:509 를 통과해
@@ -82,5 +82,17 @@ export const DOC_FAMILIES: Record<Family, DocFamilyDef> = {
     headingStyle: "none",
     // 시행규칙 제4조제4·5항: 붙임 표시와 `끝.` 은 공문서의 법정 요구사항이다.
     requiresClosingMark: true,
+  },
+  report: {
+    // 참고본 실측 사다리 — 편람 2타(공문)도 사업계획서 사다리도 아니다
+    indent: { "●": 0, "-": 3, "ㅇ": 0, "·": 3 },
+    noteIndentUnderItem: undefined,
+    docTitle: (doc) => (doc.meta as Extract<DocModel, { family: "report" }>["meta"]).제목,
+    exportBaseName: (doc) => (doc.meta as Extract<DocModel, { family: "report" }>["meta"]).제목 + "_주요업무보고",
+    // 간지 Ⅰ·Ⅱ·Ⅲ 과 소제목 칩은 본문 중간에 되풀이된다 — 공문서의 두문·결문처럼 고정된
+    // 자리가 아니므로 작성기가 혼자 놓을 수 없고, `#`/`##` 로 위치를 받아야 한다.
+    headingStyle: "chapterChip",
+    // 공문의 `끝.` 은 시행규칙 제4조제5항의 법정 요구사항이고 업무보고에는 없다
+    requiresClosingMark: false,
   },
 };

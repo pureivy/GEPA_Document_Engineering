@@ -30,5 +30,5 @@ export function planPrelude(meta: PlanMeta): BlockInput[] {
 }
 
 export function planContext(meta: PlanMeta): FamilyContext {
-  return { prelude: planPrelude(meta), firstSectionNumber: 1, plainRole: "plain", allowHeadings: true };
+  return { prelude: planPrelude(meta), firstSectionNumber: 1, plainRole: "plain", allowHeadings: true, numeralStyle: meta.numbering === "arabic" ? "arabic" : "roman" };
 }
