@@ -55,9 +55,14 @@ function projectBrief(p: ProjectDTO, workspaceDir?: string): string {
   if (recipient) lines.push(recipient);
   // 전결은 결재란과 발신명의를 함께 정한다 — 수신유형과 같은 길(contact)로 실려 온다
   if (p.contact.전결) lines.push(`전결: ${p.contact.전결}`);
-  // 결문 연락처의 전송·우편번호(공문 전용) — 담당 줄은 네 단계가 함께 쓰므로 늘리지 않고 따로 둔다
-  if (p.contact.전송) lines.push(`전송: ${p.contact.전송}`);
-  if (p.contact.우편번호) lines.push(`우편번호: ${p.contact.우편번호}`);
+  // 결문 연락처의 전송·우편번호(공문 전용) — 담당 줄은 네 단계가 함께 쓰므로 늘리지 않고 따로 둔다.
+  // kind 로 막는다: 이 두 칸은 폼의 공용 연락처 구역에 있고 브라우저 기억으로 prefill 되므로,
+  // 공문을 한 번 만든 뒤 세운 사업계획서 프로젝트가 값을 물려받아 얼어붙은 세 family 의
+  // 프롬프트에 없던 두 줄을 흘려보낸다(검토자 지적, 재현 확인).
+  if (p.kind === "official") {
+    if (p.contact.전송) lines.push(`전송: ${p.contact.전송}`);
+    if (p.contact.우편번호) lines.push(`우편번호: ${p.contact.우편번호}`);
+  }
   if (p.reference) {
     lines.push(`기존 사업계획서: ${workspaceDir ?? "<작업폴더>"}/reference/base-plan.md (원본 파일 ${p.reference.fileName}) — 이번 프로젝트는 이 계획서를 갱신하는 것이다.`);
     lines.push(`이번에 바뀌는 내용: ${p.reference.changes || "(미기재 — 연도·일정·담당만 갱신)"}`);

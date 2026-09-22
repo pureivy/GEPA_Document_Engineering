@@ -105,4 +105,25 @@ describe("official 단계 프롬프트", () => {
     expect(p.prompt).not.toMatch(/^전송: /m);
     expect(p.prompt).not.toMatch(/^우편번호: /m);
   });
+
+  /**
+   * 값이 있어도 공문이 아니면 실리지 않는다. 폼의 전송·우편번호 칸은 공용 연락처 구역에 있고
+   * 브라우저 기억으로 prefill 되므로, 공문을 한 번 만든 담당자가 다음에 세운 사업계획서
+   * 프로젝트가 그 값을 물려받는다. kind 로 막지 않으면 얼어붙은 세 family 의 프롬프트가 조용히 바뀐다.
+   */
+  it("공문이 아닌 프로젝트는 전송·우편번호 값이 있어도 브리프에 싣지 않는다", () => {
+    const 물려받은: ProjectDTO = {
+      ...project,
+      contact: { ...project.contact, 전송: "054-472-2989", 우편번호: "39393" },
+    };
+    for (const stage of ["plan", "notice", "press"] as const) {
+      const q = buildStagePrompt({ stage, project: 물려받은, workspaceDir: ws });
+      expect(q.prompt, stage).not.toMatch(/^전송: /m);
+      expect(q.prompt, stage).not.toMatch(/^우편번호: /m);
+    }
+    // 같은 값이 공문에서는 실려야 한다 — 막는 조건이 kind 이지 값의 유무가 아님을 고정한다
+    const 공문 = buildStagePrompt({ stage: "official", project: { ...물려받은, kind: "official" }, workspaceDir: ws });
+    expect(공문.prompt).toMatch(/^전송: 054-472-2989$/m);
+    expect(공문.prompt).toMatch(/^우편번호: 39393$/m);
+  });
 });
