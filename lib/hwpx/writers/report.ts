@@ -83,9 +83,53 @@ interface RoleSpec {
  * 글꼴**에서 파생해야 한다(official.ts:roleSpec 과 같은 이유) — 대비값의 글꼴로 파생하면
  * 굵은 조각만 다른 글꼴로 튄다.
  */
+/**
+ * 사다리 세 칸의 문단 간격 — 담당자 지시(2026-09-22, 한글에서 보고 정함).
+ *
+ * 참고본은 셋 다 `문단 위 0 / 아래 1.5pt` 인데, 실제로 쓰는 쪽에서는 **아래를 0 으로 두고
+ * 위로 벌리는** 편이 읽기 좋다고 한다. 칸이 깊어질수록 위 간격을 좁혀 계단이 보이게 한다.
+ * 단위는 HWPUNIT (100 = 1pt).
+ *
+ * 참고본의 문단모양(146·147·150)을 **고치지 않는다.** 큐레이션을 다시 뜨면 날아가고,
+ * 참고본 패키지는 "참고본이 무엇이었나"의 기록이어야 한다. 대신 같은 모양에서 위·아래만
+ * 바꾼 문단모양을 새로 등록해 쓴다.
+ */
+const PARA_SPACING: Record<string, { prev: number; next: number }> = {
+  subHeading: { prev: 1000, next: 0 }, // 초록 그러데이션 칩 — 위 10pt
+  bullet1: { prev: 500, next: 0 }, //    ● — 위 5pt
+  bullet1Mark: { prev: 500, next: 0 }, // ● 의 기호 run 도 같은 문단이다
+  bullet2: { prev: 300, next: 0 }, //    - — 위 3pt
+};
+
+/**
+ * 맺어진 문단모양에서 위·아래 간격만 바꾼 것을 돌려준다. 나머지(정렬·줄간격·내어쓰기·여백)는
+ * 참고본 값을 그대로 옮긴다 — 내어쓰기를 잃으면 둘째 줄이 기호 밑으로 파고든다.
+ */
+function withSpacing(ctx: WriterContext, paraPr: number, sp: { prev: number; next: number }): number {
+  const g = ctx.reg.paraPrInfo(paraPr);
+  if (!g) return paraPr;
+  // **단위 함정**: `ParaSpec` 의 여백은 한글이 보여 주는 단위(100 = 1pt)인데
+  // `paraPrInfo` 는 header.xml 의 `hp:default` 가지를 읽고 거기엔 **두 배**로 적혀 있다
+  // (registry.ts:206 이 쓸 때 2배, 254 가 `hp:case` 에 0.5배). 그대로 되먹이면 내어쓰기가
+  // 두 배가 되어 둘째 줄이 훨씬 안쪽에서 시작한다 — 실제로 한 번 그렇게 나왔다.
+  const half = (v: number) => Math.round(v / 2);
+  return ctx.reg.paraPr({
+    align: g.align as NonNullable<ParaSpec["align"]>,
+    lineSpacing: g.lineSpacing,
+    left: half(g.left),
+    right: half(g.right),
+    keepWithNext: g.keepWithNext,
+    ...(g.intent < 0 ? { hanging: half(-g.intent) } : g.intent > 0 ? { firstLine: half(g.intent) } : {}),
+    prev: sp.prev, // 이 둘은 UI 단위로 새로 정하는 값이라 나누지 않는다
+    next: sp.next,
+  });
+}
+
 function roleSpec(ctx: WriterContext, name: string): RoleSpec {
   const fb = FALLBACK[name] ?? FALLBACK.summary;
-  const r = ctx.roleOr(name, fb);
+  const r0 = ctx.roleOr(name, fb);
+  const sp = PARA_SPACING[name];
+  const r = sp ? { ...r0, paraPr: withSpacing(ctx, r0.paraPr, sp) } : r0;
   const c = ctx.reg.charPrInfo(r.charPr);
   const base: CharSpec = c ? { font: c.hangul, pt: c.pt, bold: c.bold, color: c.color, spacing: c.spacing, ratio: c.ratio } : fb.char;
   return { ...r, base, lineSpacing: ctx.reg.paraPrInfo(r.paraPr)?.lineSpacing ?? fb.para.lineSpacing ?? BODY_LINE_SPACING };

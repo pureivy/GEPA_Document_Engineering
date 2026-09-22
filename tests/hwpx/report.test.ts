@@ -6,11 +6,37 @@ import { validateHwpx, extractText, rhwp } from "../../lib/hwpx/validate";
 import { parseDsl } from "../../lib/docmodel/dsl";
 import type { DocModel } from "../../lib/docmodel/schema";
 import { findAll, parseXml } from "../../lib/hwpx/xml";
+import { unzipSync } from "fflate";
 
 const NOW = new Date("2026-09-22T00:00:00Z");
 const DIR = join(process.cwd(), "templates/report");
 const DSL = readFileSync(join(process.cwd(), "tests/fixtures/report-sample.dsl.md"), "utf8");
 const HEADER = readFileSync(join(DIR, "pkg/Contents/header.xml"), "utf8");
+/** 문단모양 단언이 쓰는 생성물 — describe 두 곳이 함께 본다 */
+const BUILT = buildHwpx(parseDsl(DSL).doc, { now: new Date("2026-09-22T00:00:00Z") }).bytes;
+
+/**
+ * **생성물** 헤더에서 문단모양의 `hp:case` 가지 값을 읽는다.
+ *
+ * 참고본 헤더가 아니라 만들어 낸 헤더를 본다 — 담당자가 정한 문단 간격을 주려고 참고본
+ * 문단모양에서 파생한 것을 새로 등록해 쓰기 때문에, 그 번호는 참고본에 없다.
+ *
+ * `hp:case` 를 읽는 이유: 같은 값이 `hp:default` 에는 **두 배**로 적힌다
+ * (registry.ts 가 쓸 때 2배, `hp:case` 에 0.5배). 한글이 보여 주는 단위는 case 쪽이다.
+ */
+function paraPrCase(id: string): { intent: number; left: number; prev: number; next: number; lineSpacing: number } {
+  const built = new TextDecoder().decode(unzipSync(BUILT)["Contents/header.xml"]);
+  const pr = new RegExp(`<hh:paraPr id="${id}"[\\s\\S]*?</hh:paraPr>`).exec(built)?.[0] ?? "";
+  const branch = /<hp:case[\s\S]*?<\/hp:case>/.exec(pr)?.[0] ?? pr;
+  const num = (k: string) => Number(new RegExp(`<hc:${k} value="(-?\\d+)"`).exec(branch)?.[1] ?? NaN);
+  return {
+    intent: num("intent"),
+    left: num("left"),
+    prev: num("prev"),
+    next: num("next"),
+    lineSpacing: Number(/<hh:lineSpacing[^>]*value="(\d+)"/.exec(branch)?.[1] ?? NaN),
+  };
+}
 
 /** 참고본 헤더에서 borderFill id 의 채움색을 읽는다 (id 대신 보이는 색으로 단언하려고). */
 function fillColorOf(id: string | undefined): string | undefined {
@@ -66,7 +92,7 @@ describe("buildHwpx — report", () => {
     const sec = parseXml(sectionXml);
     const withChip = findAll(sec, "hp:p").filter((p) => findAll(p, "hp:container").length > 0);
     expect(withChip.length).toBe(2);
-    for (const p of withChip) expect(p.attrs.paraPrIDRef).toBe("146");
+    for (const p of withChip) expect(paraPrCase(p.attrs.paraPrIDRef!).intent).toBe(paraPrCase("146").intent);
   });
 
   it("DSL 의 `●` 는 참고본이 쓰는 사용자 영역 문자 U+F06D 로 나간다", async () => {
@@ -265,11 +291,41 @@ describe("buildHwpx — report 소제목 도형 칩", () => {
     expect(sectionXml).toContain("<hp:t> 청년정주지원센터 운영");
   });
 
-  it("칩 문단은 style-map 의 소제목 문단 모양(paraPr 146)에 선다", () => {
+  /**
+   * 문단모양 번호를 리터럴로 고정하지 않는다. 담당자가 정한 문단 간격(위 10pt / 아래 0)을
+   * 주려고 참고본 146 에서 **파생한** 문단모양을 새로 등록해 쓰기 때문이다 — 참고본 패키지를
+   * 직접 고치면 큐레이션을 다시 뜰 때 날아간다. 그래서 번호가 아니라 **모양**을 본다.
+   */
+  it("칩 문단은 참고본 소제목 모양을 그대로 쓰되 간격만 담당자 값이다", () => {
     const sec = parseXml(sectionXml);
     const withChip = findAll(sec, "hp:p").filter((p) => findAll(p, "hp:container").length > 0);
     expect(withChip.length).toBe(2);
-    for (const p of withChip) expect(p.attrs.paraPrIDRef).toBe("146");
+    const ref = paraPrCase("146");
+    for (const p of withChip) {
+      const got = paraPrCase(p.attrs.paraPrIDRef!);
+      expect(got.intent, "내어쓰기는 참고본 그대로여야 한다").toBe(ref.intent);
+      expect(got.lineSpacing).toBe(ref.lineSpacing);
+      expect(got.prev, "문단 위 10pt").toBe(1000);
+      expect(got.next, "문단 아래 0").toBe(0);
+    }
+  });
+
+  it("● 와 - 도 간격만 담당자 값으로 바뀐다", () => {
+    // 문단을 XML 문자열에서 곧장 찾는다 — JSON.stringify 는 U+F06D 를 \uf06d 로 이스케이프해
+    // 문자로 찾으면 안 걸린다(이 저장소가 보이지 않는 문자에 이미 여러 번 걸렸다).
+    const xml = new TextDecoder().decode(unzipSync(BUILT)["Contents/section0.xml"]);
+    const paras = [...xml.matchAll(/<hp:p id="\d+" paraPrIDRef="(\d+)"(?:(?!<\/hp:p>)[\s\S])*?<\/hp:p>/g)];
+    for (const [origId, prev, has] of [
+      ["147", 500, (t: string) => t.includes("\uF06D")],
+      ["150", 300, (t: string) => /<hp:t>\s+- /.test(t)],
+    ] as const) {
+      const p = paras.find((m) => has(m[0]));
+      expect(p, `${origId} 을 쓰는 문단을 못 찾았다`).toBeDefined();
+      const got = paraPrCase(p![1]);
+      expect(got.intent, "내어쓰기는 참고본 그대로").toBe(paraPrCase(origId).intent);
+      expect(got.prev).toBe(prev);
+      expect(got.next).toBe(0);
+    }
   });
 
   it("칩마다 도형 id 를 새로 매긴다 (참고본 id 를 그대로 끌고 오지 않는다)", () => {
