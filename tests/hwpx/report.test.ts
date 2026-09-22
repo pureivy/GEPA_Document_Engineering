@@ -492,3 +492,36 @@ describe("templates/report — 대비값의 내어쓰기가 참고본과 맞는�
     expect(hanging, "case intent = -hanging 이어야 한다").toBe(-intent!);
   });
 });
+
+/**
+ * 표지·간지에는 쪽번호를 찍지 않되 **쪽은 센다** (담당자 지시 2026-09-22).
+ *
+ * 참고본도 같은 구조다: 번호를 켜는 `hp:pageNum` 은 문서 전체에 하나뿐이고
+ * (`문단 4`, `BOTTOM_CENTER`/`sideChar="-"`), `hidePageNum="1"` 인 `hp:pageHiding` 이
+ * 열다섯 개 붙어 표지·목차·간지 쪽에서만 가린다. 번호를 끄는 게 아니라 그 쪽에만 안 찍는다.
+ */
+describe("buildHwpx — report 쪽번호 감추기", () => {
+  const { sectionXml } = buildHwpx(parseDsl(DSL).doc, { now: NOW });
+
+  it("번호를 켜는 컨트롤은 문서에 하나뿐이다 (쪽은 계속 센다)", () => {
+    expect((sectionXml.match(/<hp:pageNum /g) ?? []).length).toBe(1);
+    expect(sectionXml).toContain('pos="BOTTOM_CENTER"');
+    expect(sectionXml).toContain('sideChar="-"');
+  });
+
+  it("표지와 간지마다 감추기가 붙는다", () => {
+    // 표본에는 간지가 둘(Ⅰ·Ⅱ) 있고 표지가 하나다.
+    expect((sectionXml.match(/hidePageNum="1"/g) ?? []).length).toBe(3);
+  });
+
+  it("감추기는 간지 문단 **안에** 있다", () => {
+    // 앞에 따로 문단을 세우면 그 문단이 쪽 나눔을 먹어 빈 쪽이 하나 더 생긴다.
+    const sec = parseXml(sectionXml);
+    // 간지만 고르는 일이 생각보다 까다롭다: 목차 상자에도 "Ⅰ. 일 반 현 황" 글자가 있고,
+    // 번호칩도 앞에 `<pagebreak>` 가 있으면 pageBreak="1" 이며, 표지 로고 표도 칸이 넷이다.
+    // 간지는 참고본 `t03`(1×4 표)이면서 **언제나 새 쪽에서 여는** 유일한 표다.
+    const bands = findAll(sec, "hp:p").filter((p) => p.attrs.pageBreak === "1" && findAll(p, "hp:tc").length === 4);
+    expect(bands.length, "표본에는 간지가 둘이다").toBe(2);
+    for (const b of bands) expect(findAll(b, "hp:pageHiding").length, "간지 문단이 감추기를 품어야 한다").toBe(1);
+  });
+});

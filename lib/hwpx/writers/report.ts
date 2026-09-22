@@ -252,6 +252,7 @@ export function writeReport(ctx: WriterContext, doc: ReportDoc): XmlNode[] {
  */
 function cover(ctx: WriterContext, m: ReportMeta, title?: Inline[]): XmlNode[] {
   const out: XmlNode[] = [];
+  out.push(hidePageNumPara(ctx)); // 표지에는 쪽번호를 찍지 않는다(세기는 한다)
   const logo = loadGeometry(ctx.tpl.dir, "t00");
   if (logo) out.push(cloneFragment(logo, ctx.ids));
   else ctx.warnings.push({ message: "report template geometry t00 missing; 표지 로고 표를 생략했습니다" });
@@ -304,6 +305,28 @@ function coverTitlePara(ctx: WriterContext, inlines: Inline[]): XmlNode {
   return ctx.para({ paraPr: anchor.paraPr, runs: [{ charPr: anchor.charPr, nodes: [box] }], vertsize: h, lineSpacing: 100 });
 }
 
+/**
+ * 쪽번호를 **감추는** 컨트롤. 번호는 계속 세고 그 쪽에만 찍지 않는다 — 담당자 지시
+ * (2026-09-22): "표지와 간지에는 쪽번호가 없는 게 낫다, 대신 쪽 카운트는 하고".
+ *
+ * 참고본도 그렇게 한다: 번호를 켜는 `hp:pageNum` 은 문서 전체에 **하나**(문단 4)뿐이고,
+ * `hidePageNum="1"` 인 `hp:pageHiding` 이 **열다섯 개** 붙어 표지·목차·간지 쪽에서만 가린다.
+ * 그래서 본문 첫 쪽이 `- 1 -` 이 아니라 참고본처럼 앞쪽을 센 번호로 시작한다.
+ */
+function hidePageNumRun(ctx: WriterContext): { charPr: number; nodes: XmlNode[] } {
+  const s = roleSpec(ctx, "coverSpacer");
+  return {
+    charPr: s.charPr,
+    nodes: [el("hp:ctrl", {}, [el("hp:pageHiding", { hideHeader: "0", hideFooter: "0", hideMasterPage: "0", hideBorder: "0", hideFill: "0", hidePageNum: "1" })])],
+  };
+}
+
+/** 쪽번호를 감추는 컨트롤만 담은 빈 문단 — 그 쪽 첫머리에 둔다. */
+function hidePageNumPara(ctx: WriterContext): XmlNode {
+  const s = roleSpec(ctx, "coverSpacer");
+  return ctx.para({ paraPr: s.paraPr, runs: [hidePageNumRun(ctx)], vertsize: Math.round(s.base.pt * 100), lineSpacing: s.lineSpacing });
+}
+
 function coverSpacer(ctx: WriterContext): XmlNode {
   const s = roleSpec(ctx, "coverSpacer");
   return ctx.para({ paraPr: s.paraPr, runs: [{ charPr: s.charPr, text: "" }], vertsize: Math.round(s.base.pt * 100), lineSpacing: s.lineSpacing });
@@ -338,6 +361,10 @@ function chapterBand(ctx: WriterContext, numeral: string, title: string, first =
   setCellText(frag, 0, 0, text);
   if (ctx.pendingPageBreak || !first) frag.attrs.pageBreak = "1";
   ctx.pendingPageBreak = false;
+  // 간지 쪽에도 쪽번호를 찍지 않는다. 조각 문단 **안에** 넣어야 그 쪽에 걸린다 —
+  // 앞에 따로 문단을 세우면 그 문단이 쪽 나눔을 먹어 빈 쪽이 하나 더 생긴다.
+  const r = hidePageNumRun(ctx);
+  frag.children.unshift(el("hp:run", { charPrIDRef: String(r.charPr) }, r.nodes));
   return frag;
 }
 
