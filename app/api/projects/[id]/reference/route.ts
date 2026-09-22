@@ -61,7 +61,11 @@ export async function POST(req: Request, ctx: { params: Promise<{ id: string }> 
   const dir = join(projectDir(id), "reference");
   mkdirSync(dir, { recursive: true });
   writeFileSync(join(dir, safeName), bytes);
-  writeFileSync(join(dir, "base-plan.md"), referenceMarkdown(safeName, changes, extracted.text), "utf8");
+  // 공문에 붙인 문서는 용도대로 자기를 소개해야 한다 — 에이전트가 여는 파일이 "기존 사업계획서"라고
+  // 적혀 있으면 프롬프트를 공문용으로 갈라 놓아도 소용이 없다. 용도는 프로젝트를 만들 때 이미
+  // contact 에 실려 저장되고(화면이 createProject → uploadReference 순으로 부른다) 여기서 읽기만 한다.
+  const role = row.kind === "official" ? serializeProject(row).contact.참고문서용도 : undefined;
+  writeFileSync(join(dir, "base-plan.md"), referenceMarkdown(safeName, changes, extracted.text, role), "utf8");
   const now = new Date().toISOString();
   db.update(projects).set({ referenceName: safeName, referenceChanges: changes, updatedAt: now }).where(eq(projects.id, id)).run();
   const updated = db.select().from(projects).where(eq(projects.id, id)).get()!;

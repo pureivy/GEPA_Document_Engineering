@@ -23,6 +23,16 @@ export const REFERENCE_CHANGES_LABEL: Record<ReferenceRole, string> = {
   받은공문: "회신 취지",
   붙임: "붙임에 적을 이름",
 };
+/**
+ * 용도별로 붙인 파일을 뭐라고 부를지 — 에이전트가 **실제로 읽는 파일**(reference/base-plan.md)의
+ * 제목이 된다. 프롬프트만 고치면 모자란다: 그 파일이 스스로를 "기존 사업계획서"라고 소개하면
+ * 에이전트는 붙임 서식을 갱신할 계획서로 읽는다.
+ */
+export const REFERENCE_DOC_TITLE: Record<ReferenceRole, string> = {
+  근거자료: "참고 문서",
+  받은공문: "받은 공문",
+  붙임: "붙임 문서",
+};
 
 /** 실행 단위 — 문서 단계에 덧붙는 검토(review)를 포함한다. 어느 kind 의 탭에도 나오지 않는다. */
 export type RunStage = Stage | "review";

@@ -3,7 +3,7 @@ import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
 import { FolderOpen, Plus, RefreshCw, Trash2, Upload } from "lucide-react";
-import { REFERENCE_CHANGES_LABEL, REFERENCE_ROLES, type ProjectDTO, type ReferenceRole } from "@/lib/contracts";
+import { REFERENCE_CHANGES_LABEL, REFERENCE_DOC_TITLE, REFERENCE_ROLES, type ProjectDTO, type ReferenceRole } from "@/lib/contracts";
 import { OfficialMetaSchema } from "@/lib/docmodel/schema";
 import { approvalLineFor, approvalLineUpTo, DEFAULT_DELEGATION, DELEGATION_LEVELS, findUnit, senderTitleFor, type DelegationLevel } from "@/lib/org";
 import { api, errorMessage, type NewProjectInput } from "@/lib/client/api";
@@ -136,7 +136,7 @@ function NewProjectDialog({ onClose, onCreated }: { onClose: () => void; onCreat
       // 공문에서 내용 칸을 비우고 파일로 대신했을 때는 그 사실을 한 줄로 적어 준다 — 용도별 지시와
       // 파일 경로는 프롬프트의 "참고 문서(용도: …)" 줄이 따로 싣는다.
       const topic = isOfficial
-        ? form.topic.trim() || (refFile ? `첨부한 관련 문서(${refFile.name})의 내용으로 공문을 작성` : "")
+        ? form.topic.trim() || (refFile ? `첨부한 ${REFERENCE_DOC_TITLE[refRole]}(${refFile.name})의 내용으로 공문을 작성` : "")
         : form.topic.trim() || (refFile ? `기존 사업계획서(${refFile.name})를 기준으로 갱신${changes.trim() ? ` — 바뀌는 내용: ${changes.trim()}` : ""}` : "");
       const p = await api.createProject({ ...form, title, topic, contact });
       // 실제로 쓰인 연락처가 다음 프로젝트의 기본값이 된다(브라우저에만 담는다)
