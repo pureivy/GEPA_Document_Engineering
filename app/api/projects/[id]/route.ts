@@ -3,7 +3,7 @@ import { getDb } from "@/lib/db/client";
 import { projects } from "@/lib/db/schema";
 import { jsonError } from "@/lib/agents/http";
 import { getRunManager } from "@/lib/agents/runManager";
-import { STAGES, type Stage } from "@/lib/agents/runner";
+import { RUN_STAGES, type RunStage } from "@/lib/agents/runner";
 import { serializeProject } from "@/lib/db/serialize";
 import { projectDir } from "@/lib/storage/paths";
 import { existsSync, rmSync } from "node:fs";
@@ -17,8 +17,8 @@ export async function GET(_req: Request, ctx: { params: Promise<{ id: string }> 
   if (!row) return jsonError(404, "Project not found");
   const rm = getRunManager();
   const runs = rm.listRunsForProject(id);
-  const stages: Record<Stage, { latestRun: (typeof runs)[number] | null; activeRunId: string | null }> = {} as never;
-  for (const stage of STAGES) {
+  const stages: Record<RunStage, { latestRun: (typeof runs)[number] | null; activeRunId: string | null }> = {} as never;
+  for (const stage of RUN_STAGES) {
     stages[stage] = {
       latestRun: runs.find((r) => r.stage === stage) ?? null,
       activeRunId: rm.activeRunFor(id, stage) ?? null,
@@ -34,7 +34,7 @@ export async function DELETE(_req: Request, ctx: { params: Promise<{ id: string 
   const row = db.select().from(projects).where(eq(projects.id, id)).get();
   if (!row) return jsonError(404, "Project not found");
   const rm = getRunManager();
-  const active = [...STAGES, "review" as const].map((s) => rm.activeRunFor(id, s as Stage)).find(Boolean);
+  const active = RUN_STAGES.map((s) => rm.activeRunFor(id, s)).find(Boolean);
   if (active) return jsonError(409, "실행 중인 단계가 있어 삭제할 수 없습니다. 먼저 중지하세요.", { activeRunId: active });
   db.delete(projects).where(eq(projects.id, id)).run();
   const dir = projectDir(id);

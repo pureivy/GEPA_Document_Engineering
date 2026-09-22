@@ -3,12 +3,21 @@ import { zipSync } from "fflate";
 import { el, serialize, clone, findAll, findFirst, XML_DECL, type XmlNode } from "./xml";
 import { loadTemplate } from "./template";
 import { WriterContext } from "./writers/context";
-import { writeNotice } from "./writers/notice";
-import { writePlan } from "./writers/plan";
-import { writePress } from "./writers/press";
+import { HWPX_FAMILIES } from "./families";
 import type { DocModel } from "../docmodel/schema";
 import type { AppendedStyle } from "./registry";
 import type { BuildWarning } from "./writers/context";
+import { DOC_FAMILIES } from "../docmodel/families";
+
+/**
+ * HWPX_FAMILIES 는 family별로 doc 타입을 좁혀 두므로(lib/hwpx/families.ts), 아직 좁혀지지 않은
+ * `doc: DocModel` 을 여기서 넘기려면 캐스트가 하나 필요하다. HwpxFamilyTable 정의 자체를 좁게 유지해
+ * 얻는 반변 검사(잘못 연결된 작성기 = 컴파일 오류)를 지키기 위해, 캐스트는 이 한 곳에만 둔다.
+ */
+function writeForFamily(ctx: WriterContext, doc: DocModel): XmlNode[] {
+  const write = HWPX_FAMILIES[doc.family].write as (ctx: WriterContext, doc: DocModel) => XmlNode[];
+  return write(ctx, doc);
+}
 
 export interface BuildReport {
   family: DocModel["family"];
@@ -27,12 +36,6 @@ export interface BuildResult {
   headerXml: string;
 }
 
-function docTitle(doc: DocModel): string {
-  if (doc.family === "notice") return `「${doc.meta.사업명}」 ${doc.meta.모집대상} 모집 공고`;
-  if (doc.family === "plan") return doc.meta.제목;
-  return doc.meta.제목;
-}
-
 export interface BuildOptions {
   now?: Date;
   /** 'omit' (default) leaves layout to the reader; 'approx' writes one placeholder lineseg per paragraph */
@@ -46,10 +49,7 @@ function sec0(paras: XmlNode[]): XmlNode {
 export function buildHwpx(doc: DocModel, opts: BuildOptions = {}): BuildResult {
   const tpl = loadTemplate(doc.family);
   const ctx = new WriterContext(tpl, doc.family, { lineseg: opts.lineseg === "approx" });
-  let paras: XmlNode[];
-  if (doc.family === "notice") paras = writeNotice(ctx, doc);
-  else if (doc.family === "plan") paras = writePlan(ctx, doc);
-  else paras = writePress(ctx, doc);
+  let paras: XmlNode[] = writeForFamily(ctx, doc);
   if (paras.length === 0) paras = [ctx.para({ paraPr: 0, runs: [{ charPr: 0, text: "" }] })];
   // section properties live in the first run of the first paragraph
   const secPrRun = clone(tpl.secPrRun);
@@ -74,7 +74,7 @@ export function buildHwpx(doc: DocModel, opts: BuildOptions = {}): BuildResult {
 
   const now = opts.now ?? new Date();
   const stamp = now.toISOString().replace(/\.\d{3}Z$/, "Z");
-  const title = docTitle(doc);
+  const title = DOC_FAMILIES[doc.family].docTitle(doc);
   const hpfSrc = new TextDecoder().decode(tpl.files["Contents/content.hpf"]);
   const hpf = hpfSrc
     .replace(/<opf:title\/>|<opf:title>.*?<\/opf:title>/, `<opf:title>${escapeXml(title)}</opf:title>`)

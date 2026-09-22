@@ -9,7 +9,7 @@
  */
 import { mkdirSync } from "node:fs";
 import path from "node:path";
-import type { Stage } from "../agents/runner";
+import type { RunStage } from "../agents/runner";
 
 const SAFE_ID = /^[A-Za-z0-9][A-Za-z0-9_-]{0,127}$/;
 
@@ -31,7 +31,7 @@ export function projectDir(projectId: string): string {
   return path.join(projectsDir(), assertSafeId(projectId, "project id"));
 }
 
-export function stageDir(projectId: string, stage: Stage): string {
+export function stageDir(projectId: string, stage: RunStage): string {
   return path.join(projectDir(projectId), stage);
 }
 
@@ -44,7 +44,7 @@ export function ensureProjectDir(projectId: string): string {
   return ensureDir(projectDir(projectId));
 }
 
-export function ensureStageDir(projectId: string, stage: Stage): string {
+export function ensureStageDir(projectId: string, stage: RunStage): string {
   return ensureDir(stageDir(projectId, stage));
 }
 
@@ -60,6 +60,6 @@ export const FILE_NAMES = {
 } as const;
 
 /** Run logs live in a dot-directory so the agent's Glob/Read over the workspace does not see them. */
-export function runLogPath(projectId: string, stage: Stage, runId: string): string {
+export function runLogPath(projectId: string, stage: RunStage, runId: string): string {
   return path.join(projectDir(projectId), ".runs", stage, `run-${assertSafeId(runId, "run id")}.ndjson`);
 }

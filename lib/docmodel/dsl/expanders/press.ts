@@ -13,5 +13,6 @@ export function pressPrelude(meta: PressMeta): BlockInput[] {
 }
 
 export function pressContext(meta: PressMeta): FamilyContext {
-  return { prelude: pressPrelude(meta), firstSectionNumber: 1, plainRole: "pressBody", allowHeadings: false };
+  // allowHeadings:false 라 `#` 은 parser.ts:510 에서 끊긴다 — numeralStyle 에 닿지 않는다.
+  return { prelude: pressPrelude(meta), firstSectionNumber: 1, plainRole: "pressBody", allowHeadings: false, numeralStyle: "roman" };
 }

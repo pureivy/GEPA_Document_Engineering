@@ -20,14 +20,14 @@ import { appendRunLogLine } from "../storage/files";
 import { ensureStageDir } from "../storage/paths";
 import { ClaudeCliRunner, effectiveSessionId } from "./claudeCliRunner";
 import { limitsFor, modelFor, STAGE_ALLOWED_TOOLS } from "./limits";
-import type { AgentEvent, AgentFrame, AgentRunner, RunFrame, RunSpec, RunStatus, Stage } from "./runner";
+import type { AgentEvent, AgentFrame, AgentRunner, RunFrame, RunSpec, RunStatus, RunStage } from "./runner";
 
 export type FrameListener = (frame: RunFrame) => void;
 export type AgentEventListener = (frame: AgentFrame) => void;
 
 export interface StartRunInput {
   projectId: string;
-  stage: Stage;
+  stage: RunStage;
   /** Partial spec; `prompt` is required. Missing limits/tools/model come from stage defaults. */
   spec: Partial<Omit<RunSpec, "runId" | "sessionId">> & { prompt: string };
   /** Called synchronously for every agent event after persistence, before broadcast (document extractor hook). */
@@ -46,7 +46,7 @@ export interface StartRunResult {
 export class RunConflictError extends Error {
   constructor(
     public readonly projectId: string,
-    public readonly stage: Stage,
+    public readonly stage: RunStage,
     public readonly activeRunId: string,
   ) {
     super(`A run is already active for project ${projectId} stage ${stage} (run ${activeRunId})`);
@@ -57,7 +57,7 @@ export class RunConflictError extends Error {
 interface ActiveRun {
   runId: string;
   projectId: string;
-  stage: Stage;
+  stage: RunStage;
   sessionId: string;
   abort: AbortController;
   subscribers: Set<FrameListener>;
@@ -88,7 +88,7 @@ export class RunManager {
     this.defaultRunner = runner;
   }
 
-  private stageKey(projectId: string, stage: Stage): string {
+  private stageKey(projectId: string, stage: RunStage): string {
     return `${projectId}:${stage}`;
   }
 
@@ -97,12 +97,12 @@ export class RunManager {
     return !!a && !a.done;
   }
 
-  activeRunFor(projectId: string, stage: Stage): string | undefined {
+  activeRunFor(projectId: string, stage: RunStage): string | undefined {
     const id = this.byStage.get(this.stageKey(projectId, stage));
     return id && this.isActive(id) ? id : undefined;
   }
 
-  listActive(): Array<{ runId: string; projectId: string; stage: Stage; sessionId: string }> {
+  listActive(): Array<{ runId: string; projectId: string; stage: RunStage; sessionId: string }> {
     return [...this.active.values()]
       .filter((a) => !a.done)
       .map(({ runId, projectId, stage, sessionId }) => ({ runId, projectId, stage, sessionId }));
@@ -347,7 +347,7 @@ export class RunManager {
     return getDb().select().from(runs).where(eq(runs.projectId, projectId)).orderBy(desc(runs.startedAt)).all();
   }
 
-  latestRun(projectId: string, stage: Stage): RunRow | undefined {
+  latestRun(projectId: string, stage: RunStage): RunRow | undefined {
     return getDb()
       .select()
       .from(runs)

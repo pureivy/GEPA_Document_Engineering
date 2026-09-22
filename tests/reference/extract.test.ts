@@ -48,4 +48,30 @@ describe("reference document extraction", () => {
     expect(md).toContain("2027년으로 변경");
     expect(md.trim().endsWith("본문")).toBe(true);
   });
+
+  /**
+   * 공문에 붙인 문서(user 2026-09-22). 에이전트가 **실제로 여는 파일**이라 프롬프트만 갈라서는
+   * 모자란다 — 붙임 서식이 스스로를 "기존 사업계획서"라고 소개하면 갱신할 계획서로 읽힌다.
+   */
+  it("용도가 있으면 붙인 문서가 자기를 용도대로 소개한다", () => {
+    const md = referenceMarkdown("서식.hwp", "신청서 서식", "본문", "붙임");
+    expect(md).toContain("# 붙임 문서 — 서식.hwp");
+    expect(md).toContain("## 붙임에 적을 이름");
+    expect(md).toContain("## 붙임 문서 원문");
+    expect(md).not.toContain("기존 사업계획서");
+    const 받은 = referenceMarkdown("공문.hwpx", "자료 제출 회신", "본문", "받은공문");
+    expect(받은).toContain("# 받은 공문 — 공문.hwpx");
+    expect(받은).toContain("## 회신 취지");
+  });
+
+  it("용도가 있고 적어 둔 내용이 없으면 절 자체를 넣지 않는다(계획서 갱신 전제 문구를 쓰지 않는다)", () => {
+    const md = referenceMarkdown("서식.hwp", "  ", "본문", "붙임");
+    expect(md).not.toContain("## 붙임에 적을 이름");
+    expect(md).not.toContain("미기재");
+    expect(md).toContain("## 붙임 문서 원문");
+  });
+
+  it("용도가 없으면 예전 문자열 그대로다 — 얼어붙은 세 family 가 읽는 파일", () => {
+    expect(referenceMarkdown("plan.hwp", "", "본문")).toContain("(변경 사항 미기재 — 연도·일정·담당만 갱신)");
+  });
 });

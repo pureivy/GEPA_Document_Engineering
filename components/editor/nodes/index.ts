@@ -3,7 +3,7 @@ import type { AnyExtension } from "@tiptap/core";
 import type { Family } from "@/lib/docmodel/schema";
 import { GepaDocument } from "./document";
 import { GepaParagraph } from "./paragraph";
-import { ApprovalBlock, Blank, GepaImage, NoticeHeader, PageBreak, PressHeader } from "./atoms";
+import { ApprovalBlock, Blank, GepaImage, NoticeHeader, OfficialFooter, OfficialHeader, PageBreak, PressHeader } from "./atoms";
 import { GepaCell, GepaRow, GepaTable } from "./table";
 import {
   AttachmentItem,
@@ -93,9 +93,11 @@ export function gepaExtensions({ family, overrides = {} }: GepaExtensionOptions)
     overrides.pressHeader ?? PressHeader,
     AttachmentList,
     AttachmentItem,
+    OfficialHeader,
+    OfficialFooter,
     GepaStyle,
     TypingCaret,
   ];
 }
 
-export { GepaDocument, GepaParagraph, Blank, PageBreak, GepaImage, ApprovalBlock, NoticeHeader, PressHeader, GepaTable, GepaRow, GepaCell, GepaStyle, TypingCaret };
+export { GepaDocument, GepaParagraph, Blank, PageBreak, GepaImage, ApprovalBlock, NoticeHeader, PressHeader, OfficialHeader, OfficialFooter, GepaTable, GepaRow, GepaCell, GepaStyle, TypingCaret };

@@ -20,7 +20,8 @@ import { writeResearchMcpConfig } from "../research/mcpConfig";
 import { RESEARCH_MCP_TOOL_IDS } from "../research/tools/register";
 import { syncWikiSnapshot, wikiSnapshotDir } from "../research/wikiSnapshot";
 import { dataDir, exportStage, saveStageDsl, stageDir } from "./service";
-import type { ProjectDTO, Stage } from "../contracts";
+import { isDocStage, type ProjectDTO, type Stage } from "../contracts";
+import { stagesOf, type ProjectKind } from "../kinds";
 
 export interface StartStageRunOptions {
   project: ProjectDTO;
@@ -40,10 +41,14 @@ export interface StartStageRunOptions {
   supplementalResearch?: boolean;
 }
 
-const PIPELINE: Stage[] = ["research", "plan", "notice", "press"];
-export function nextStage(stage: Stage | "review"): Stage | null {
-  const i = PIPELINE.indexOf(stage as Stage);
-  return i >= 0 && i + 1 < PIPELINE.length ? PIPELINE[i + 1] : null;
+/**
+ * 자동연쇄의 다음 단계. 연쇄는 **프로젝트 종류의 단계 목록**을 따른다(진실의 출처는 lib/kinds.ts 하나뿐).
+ * 단일 단계 kind(공문)에서는 언제나 null 이므로 연쇄가 아예 돌지 않는다. `review` 도 목록에 없어 null 이다.
+ */
+export function nextStage(stage: Stage | "review", kind: ProjectKind): Stage | null {
+  const chain = stagesOf(kind);
+  const i = chain.indexOf(stage as Stage);
+  return i >= 0 && i + 1 < chain.length ? chain[i + 1] : null;
 }
 
 /** The MCP tool ids that will actually work with the configured keys (for the prompt). */
@@ -52,10 +57,14 @@ function availableDataTools(env: Record<string, string | undefined> = process.en
   const ids = new Set(callableDataGoKrServices(env).map((s) => s.id));
   const byTool: Record<string, boolean> = {
     data_sources_status: true,
-    customs_trade: ["15101643", "15134343", "15101612", "15100475"].some((id) => ids.has(id)),
+    customs_trade: ["15101643", "15134343", "15101612", "15100475", "15101609"].some((id) => ids.has(id)),
     store_stats: ids.has("15012005"),
     store_upjong_codes: ids.has("15012005"),
     policy_news_search: ids.has("15095335"),
+    kotra_country_info: ids.has("15034830"),
+    kotra_prices: ids.has("15122665"),
+    factory_search: ids.has("15087611"),
+    region_population: ids.has("15107303"),
     kosis_search: st.kosis,
     kosis_table: st.kosis,
     law_search: st.law,
@@ -89,7 +98,7 @@ export function startStageRun(opts: StartStageRunOptions): { runId: string; sess
   const input: StagePromptInput = { stage: opts.stage, project: opts.project, workspaceDir, instruction: opts.instruction, reviewTarget: opts.reviewTarget, dataTools, wikiDir, supplementalResearch: opts.supplementalResearch };
   const p = buildStagePrompt(input);
   const limits = limitsFor(opts.stage);
-  const isDocStage = opts.stage === "plan" || opts.stage === "notice" || opts.stage === "press";
+  const isDoc = isDocStage(opts.stage);
   const docStage = opts.stage as Stage;
 
   // live extraction state (per run)
@@ -122,7 +131,7 @@ export function startStageRun(opts: StartStageRunOptions): { runId: string; sess
 
   // Primary live channel: the agent's Write of <stage>/draft.dsl.md, decoded from the streamed
   // tool input. Content that arrives before file_path is buffered until the path is known.
-  const draftPath = isDocStage ? resolve(workspaceDir, docStage, "draft.dsl.md") : "";
+  const draftPath = isDoc ? resolve(workspaceDir, docStage, "draft.dsl.md") : "";
   type WriteState = { dec: WriteStreamDecoder; held: string; ours: boolean | null; deltas: number };
   const writes = new Map<string, WriteState>();
   let liveFromWrite = false;
@@ -158,7 +167,7 @@ export function startStageRun(opts: StartStageRunOptions): { runId: string; sess
 
   const onEvent: StartRunInput["onEvent"] = (frame) => {
     const ev = frame.data as AgentEvent;
-    if (!isDocStage) return;
+    if (!isDoc) return;
     if ("parentToolUseId" in ev && ev.parentToolUseId) return; // subagent activity never carries the document
     switch (ev.type) {
       case "tool.start":
@@ -203,7 +212,7 @@ export function startStageRun(opts: StartStageRunOptions): { runId: string; sess
   /** 단계 자동 연결: 성공한 뒤 다음 단계를 같은 옵션으로 시작한다(다음 단계 모델은 그 단계 기본값). */
   const chainNext = (status: string) => {
     if (!opts.autoChain || status !== "succeeded") return;
-    const next = nextStage(opts.stage);
+    const next = nextStage(opts.stage, opts.project.kind);
     if (!next) return;
     // the current run is being finalized in the run manager; start the next one on the next tick
     setTimeout(() => {
@@ -223,7 +232,7 @@ export function startStageRun(opts: StartStageRunOptions): { runId: string; sess
       else chainNext(run.status);
       return;
     }
-    if (!isDocStage) return;
+    if (!isDoc) return;
     endDoc(); // a stream cut short (limit, cancel) still closes so the editor settles
     // authoritative DSL: the content of the agent's last Write (its submission — identical to
     // the file unless the Write itself failed), else the file, else the final assistant text

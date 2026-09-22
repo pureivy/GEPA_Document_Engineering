@@ -125,3 +125,35 @@ export const PressHeader = Node.create({
     return ["div", { "data-gepa-press-header": "", class: "hwp-press-header hwp-meta-block" }, "보도자료 머리표"];
   },
 });
+
+/** `officialHeader` — 공문서 두문(기관명·수신·경유·제목)을 meta 에서 펼친 표. */
+export const OfficialHeader = Node.create({
+  name: N.officialHeader,
+  group: "block",
+  atom: true,
+  addAttributes() {
+    return { ...idAttr };
+  },
+  parseHTML() {
+    return [{ tag: "div[data-gepa-official-header]" }];
+  },
+  renderHTML() {
+    return ["div", { "data-gepa-official-header": "", class: "hwp-official-header hwp-meta-block" }, "공문 두문"];
+  },
+});
+
+/** `officialFooter` — 공문서 결문(발신명의·결재란·시행·연락처)을 meta 에서 펼친 표. */
+export const OfficialFooter = Node.create({
+  name: N.officialFooter,
+  group: "block",
+  atom: true,
+  addAttributes() {
+    return { ...idAttr };
+  },
+  parseHTML() {
+    return [{ tag: "div[data-gepa-official-footer]" }];
+  },
+  renderHTML() {
+    return ["div", { "data-gepa-official-footer": "", class: "hwp-official-footer hwp-meta-block" }, "공문 결문"];
+  },
+});

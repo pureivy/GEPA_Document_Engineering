@@ -18,10 +18,14 @@ description: 사업계획 조사 규칙 — 출처 계층, 인용 형식, 산출
 |---|---|---|
 | `data_sources_status` | 시작할 때 1회 | 어떤 포털·서비스가 살아 있는지 확인 |
 | `kosis_search` → `kosis_table` | 인구·고령화·사업체·종사자·고용·기업생멸 등 통계 | 검색으로 orgId/tblId 를 얻고, `prdSe=Y`, 최근 3개년, `nameFilter` 는 시군 이름만("포항시"; 도 전체는 "경상북도"), 경북 전체 시군은 `codePrefix="37"` |
-| `customs_trade` | 수출입 실적 | `sido`(경북 sidoCd=47) 로 연도별 추이, `sigungu` 는 HS 6자리 필수(시군 총액은 미제공 → KOSIS·무역협회), `nation`/`item_nation` 은 대상국 근거 |
+| `customs_trade` | 수출입 실적(모든 금액 천 달러) | `sido`(경북 sidoCd=47) 로 연도별 추이, `sigungu` 는 HS 6자리 필수(시군 총액은 미제공 → KOSIS·무역협회), `nation`/`item_nation` 은 대상국 근거, `item` 은 품목(HS) 전국 합계 |
 | `store_stats` (+`store_upjong_codes`) | 소상공인·점포 수 | 시군구 5자리 코드(행안부 코드, 경산시 47290) × 업종 대분류(I2 음식, G2 소매 …) |
 | `law_search` → `law_text` | 법령·조례 조문 인용 | `ordin` + `region:"경상북도"`; 인용은 「조례명」 제N조(제목) |
 | `bizinfo_search` | 유사·선행 지원사업 | `field`(04 수출, 05 내수, 06 창업, 07 경영 …) + `keyword`; 세부 예산은 URL 을 WebFetch |
 | `policy_news_search` | 중앙부처 정책 근거 | 기간 + keyword; 인용 전 원문URL 확인 |
+| `kotra_country_info` | 해외마케팅·사절단·전시회 대상국 근거 | `cntyCd`(ISO2) + 필요한 `sections` 만(기본: 개요·경제지표·시장특성·한국과의교역; 규제는 `무역규제`, 진출 사례는 `진출기업`) |
+| `kotra_prices` | 대상국 생활물가·최저임금(체재비·단가 근거) | `cntyCd` 로 한 국가 약 40개 품목, `item`('최저임금', '아파트')으로 국가 간 비교; 조사국은 67개국뿐 |
+| `factory_search` | 산업단지 기업 지원 사업의 대상 모수 | `irsttNm`(정식 단지명, 예: 구미국가산업단지) → `totalCount` 가 등록공장 수; 대표자·연락처는 옮기지 않는다 |
+| `region_population` | 시도 인구·세대 추이 | `region:"경북"`, 기본 최근 3개년; 시군 단위는 `kosis_table` |
 
 도구가 `ok:false` 를 돌려주면 `hint` 를 따르고 같은 호출을 반복하지 않는다. 수치마다 `(기관, 연도)` 와 `[Sn]` 을 붙이는 규칙은 동일하다.

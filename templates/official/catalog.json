@@ -1,0 +1,1156 @@
+{
+  "family": "official",
+  "counts": {
+    "charPr": 25,
+    "paraPr": 30,
+    "borderFill": 6,
+    "style": 17
+  },
+  "fonts": {
+    "HANGUL": {
+      "0": "굴림체",
+      "1": "양재난초체M",
+      "2": "한양견고딕",
+      "3": "한양신명조",
+      "4": "한양중고딕"
+    },
+    "LATIN": {
+      "0": "굴림체",
+      "1": "양재난초체M",
+      "2": "한컴바탕",
+      "3": "한양견고딕",
+      "4": "한양신명조",
+      "5": "한양중고딕"
+    },
+    "HANJA": {
+      "0": "굴림체",
+      "1": "양재난초체M",
+      "2": "한양신명조",
+      "3": "한양중고딕"
+    },
+    "JAPANESE": {
+      "0": "굴림체",
+      "1": "양재난초체M",
+      "2": "한양신명조",
+      "3": "한양중고딕"
+    },
+    "OTHER": {
+      "0": "굴림체",
+      "1": "양재난초체M",
+      "2": "한양신명조"
+    },
+    "SYMBOL": {
+      "0": "굴림체",
+      "1": "양재난초체M",
+      "2": "한양신명조",
+      "3": "한양중고딕"
+    },
+    "USER": {
+      "0": "굴림체",
+      "1": "양재난초체M",
+      "2": "명조"
+    }
+  },
+  "charPr": [
+    {
+      "id": 0,
+      "pt": 10,
+      "hangul": "한양신명조",
+      "latin": "한양신명조",
+      "bold": false,
+      "italic": false,
+      "color": "#000000",
+      "spacing": 0,
+      "ratio": 100,
+      "underline": "NONE",
+      "fontRefs": {
+        "HANGUL": 3,
+        "LATIN": 4,
+        "HANJA": 2,
+        "JAPANESE": 2,
+        "OTHER": 2,
+        "SYMBOL": 2,
+        "USER": 2
+      },
+      "sig": "한양신명조|한양신명조|10|||#000000|0|100|NONE"
+    },
+    {
+      "id": 1,
+      "pt": 10,
+      "hangul": "한양신명조",
+      "latin": "한양신명조",
+      "bold": false,
+      "italic": false,
+      "color": "#000000",
+      "spacing": -5,
+      "ratio": 95,
+      "underline": "NONE",
+      "fontRefs": {
+        "HANGUL": 3,
+        "LATIN": 4,
+        "HANJA": 2,
+        "JAPANESE": 2,
+        "OTHER": 2,
+        "SYMBOL": 2,
+        "USER": 2
+      },
+      "sig": "한양신명조|한양신명조|10|||#000000|-5|95|NONE"
+    },
+    {
+      "id": 2,
+      "pt": 10,
+      "hangul": "한양견고딕",
+      "latin": "한양견고딕",
+      "bold": false,
+      "italic": false,
+      "color": "#000000",
+      "spacing": 0,
+      "ratio": 100,
+      "underline": "NONE",
+      "fontRefs": {
+        "HANGUL": 2,
+        "LATIN": 3,
+        "HANJA": 3,
+        "JAPANESE": 3,
+        "OTHER": 2,
+        "SYMBOL": 3,
+        "USER": 2
+      },
+      "sig": "한양견고딕|한양견고딕|10|||#000000|0|100|NONE"
+    },
+    {
+      "id": 3,
+      "pt": 9,
+      "hangul": "한양중고딕",
+      "latin": "한양중고딕",
+      "bold": false,
+      "italic": false,
+      "color": "#000000",
+      "spacing": 0,
+      "ratio": 100,
+      "underline": "NONE",
+      "fontRefs": {
+        "HANGUL": 4,
+        "LATIN": 5,
+        "HANJA": 3,
+        "JAPANESE": 3,
+        "OTHER": 2,
+        "SYMBOL": 3,
+        "USER": 2
+      },
+      "sig": "한양중고딕|한양중고딕|9|||#000000|0|100|NONE"
+    },
+    {
+      "id": 4,
+      "pt": 9.48,
+      "hangul": "한양신명조",
+      "latin": "한양신명조",
+      "bold": false,
+      "italic": false,
+      "color": "#000000",
+      "spacing": 0,
+      "ratio": 100,
+      "underline": "NONE",
+      "fontRefs": {
+        "HANGUL": 3,
+        "LATIN": 4,
+        "HANJA": 2,
+        "JAPANESE": 2,
+        "OTHER": 2,
+        "SYMBOL": 2,
+        "USER": 2
+      },
+      "sig": "한양신명조|한양신명조|9.48|||#000000|0|100|NONE"
+    },
+    {
+      "id": 5,
+      "pt": 9,
+      "hangul": "한양신명조",
+      "latin": "한양신명조",
+      "bold": false,
+      "italic": false,
+      "color": "#000000",
+      "spacing": 0,
+      "ratio": 100,
+      "underline": "NONE",
+      "fontRefs": {
+        "HANGUL": 3,
+        "LATIN": 4,
+        "HANJA": 2,
+        "JAPANESE": 2,
+        "OTHER": 2,
+        "SYMBOL": 2,
+        "USER": 2
+      },
+      "sig": "한양신명조|한양신명조|9|||#000000|0|100|NONE"
+    },
+    {
+      "id": 6,
+      "pt": 10,
+      "hangul": "한양신명조",
+      "latin": "한컴바탕",
+      "bold": false,
+      "italic": false,
+      "color": "#000000",
+      "spacing": 0,
+      "ratio": 100,
+      "underline": "NONE",
+      "fontRefs": {
+        "HANGUL": 3,
+        "LATIN": 2,
+        "HANJA": 2,
+        "JAPANESE": 2,
+        "OTHER": 2,
+        "SYMBOL": 2,
+        "USER": 2
+      },
+      "sig": "한양신명조|한컴바탕|10|||#000000|0|100|NONE"
+    },
+    {
+      "id": 7,
+      "pt": 10,
+      "hangul": "한양신명조",
+      "latin": "한양신명조",
+      "bold": false,
+      "italic": false,
+      "color": "#000000",
+      "spacing": 0,
+      "ratio": 100,
+      "underline": "NONE",
+      "fontRefs": {
+        "HANGUL": 3,
+        "LATIN": 4,
+        "HANJA": 2,
+        "JAPANESE": 2,
+        "OTHER": 2,
+        "SYMBOL": 2,
+        "USER": 2
+      },
+      "sig": "한양신명조|한양신명조|10|||#000000|0|100|NONE"
+    },
+    {
+      "id": 8,
+      "pt": 12,
+      "hangul": "굴림체",
+      "latin": "굴림체",
+      "bold": false,
+      "italic": false,
+      "color": "#000000",
+      "spacing": 0,
+      "ratio": 95,
+      "underline": "NONE",
+      "fontRefs": {
+        "HANGUL": 0,
+        "LATIN": 0,
+        "HANJA": 0,
+        "JAPANESE": 0,
+        "OTHER": 0,
+        "SYMBOL": 0,
+        "USER": 0
+      },
+      "sig": "굴림체|굴림체|12|||#000000|0|95|NONE"
+    },
+    {
+      "id": 9,
+      "pt": 12,
+      "hangul": "굴림체",
+      "latin": "굴림체",
+      "bold": false,
+      "italic": false,
+      "color": "#000000",
+      "spacing": 0,
+      "ratio": 100,
+      "underline": "NONE",
+      "fontRefs": {
+        "HANGUL": 0,
+        "LATIN": 0,
+        "HANJA": 0,
+        "JAPANESE": 0,
+        "OTHER": 0,
+        "SYMBOL": 0,
+        "USER": 0
+      },
+      "sig": "굴림체|굴림체|12|||#000000|0|100|NONE"
+    },
+    {
+      "id": 10,
+      "pt": 10,
+      "hangul": "굴림체",
+      "latin": "굴림체",
+      "bold": false,
+      "italic": false,
+      "color": "#000000",
+      "spacing": 0,
+      "ratio": 100,
+      "underline": "NONE",
+      "fontRefs": {
+        "HANGUL": 0,
+        "LATIN": 0,
+        "HANJA": 0,
+        "JAPANESE": 0,
+        "OTHER": 0,
+        "SYMBOL": 0,
+        "USER": 0
+      },
+      "sig": "굴림체|굴림체|10|||#000000|0|100|NONE"
+    },
+    {
+      "id": 11,
+      "pt": 20,
+      "hangul": "굴림체",
+      "latin": "굴림체",
+      "bold": true,
+      "italic": false,
+      "color": "#000000",
+      "spacing": 0,
+      "ratio": 100,
+      "underline": "NONE",
+      "fontRefs": {
+        "HANGUL": 0,
+        "LATIN": 0,
+        "HANJA": 0,
+        "JAPANESE": 0,
+        "OTHER": 0,
+        "SYMBOL": 0,
+        "USER": 0
+      },
+      "sig": "굴림체|굴림체|20|B||#000000|0|100|NONE"
+    },
+    {
+      "id": 12,
+      "pt": 10,
+      "hangul": "굴림체",
+      "latin": "굴림체",
+      "bold": true,
+      "italic": false,
+      "color": "#000000",
+      "spacing": 0,
+      "ratio": 95,
+      "underline": "NONE",
+      "fontRefs": {
+        "HANGUL": 0,
+        "LATIN": 0,
+        "HANJA": 0,
+        "JAPANESE": 0,
+        "OTHER": 0,
+        "SYMBOL": 0,
+        "USER": 0
+      },
+      "sig": "굴림체|굴림체|10|B||#000000|0|95|NONE"
+    },
+    {
+      "id": 13,
+      "pt": 14,
+      "hangul": "굴림체",
+      "latin": "굴림체",
+      "bold": false,
+      "italic": false,
+      "color": "#000000",
+      "spacing": 0,
+      "ratio": 100,
+      "underline": "NONE",
+      "fontRefs": {
+        "HANGUL": 0,
+        "LATIN": 0,
+        "HANJA": 0,
+        "JAPANESE": 0,
+        "OTHER": 0,
+        "SYMBOL": 0,
+        "USER": 0
+      },
+      "sig": "굴림체|굴림체|14|||#000000|0|100|NONE"
+    },
+    {
+      "id": 14,
+      "pt": 18,
+      "hangul": "굴림체",
+      "latin": "굴림체",
+      "bold": true,
+      "italic": false,
+      "color": "#000000",
+      "spacing": 0,
+      "ratio": 100,
+      "underline": "NONE",
+      "fontRefs": {
+        "HANGUL": 0,
+        "LATIN": 0,
+        "HANJA": 0,
+        "JAPANESE": 0,
+        "OTHER": 0,
+        "SYMBOL": 0,
+        "USER": 0
+      },
+      "sig": "굴림체|굴림체|18|B||#000000|0|100|NONE"
+    },
+    {
+      "id": 15,
+      "pt": 18,
+      "hangul": "굴림체",
+      "latin": "굴림체",
+      "bold": false,
+      "italic": false,
+      "color": "#000000",
+      "spacing": 0,
+      "ratio": 100,
+      "underline": "NONE",
+      "fontRefs": {
+        "HANGUL": 0,
+        "LATIN": 0,
+        "HANJA": 0,
+        "JAPANESE": 0,
+        "OTHER": 0,
+        "SYMBOL": 0,
+        "USER": 0
+      },
+      "sig": "굴림체|굴림체|18|||#000000|0|100|NONE"
+    },
+    {
+      "id": 16,
+      "pt": 3,
+      "hangul": "굴림체",
+      "latin": "굴림체",
+      "bold": true,
+      "italic": false,
+      "color": "#0000FF",
+      "spacing": -10,
+      "ratio": 100,
+      "underline": "NONE",
+      "fontRefs": {
+        "HANGUL": 0,
+        "LATIN": 0,
+        "HANJA": 0,
+        "JAPANESE": 0,
+        "OTHER": 0,
+        "SYMBOL": 0,
+        "USER": 0
+      },
+      "sig": "굴림체|굴림체|3|B||#0000FF|-10|100|NONE"
+    },
+    {
+      "id": 17,
+      "pt": 8,
+      "hangul": "굴림체",
+      "latin": "굴림체",
+      "bold": false,
+      "italic": false,
+      "color": "#000000",
+      "spacing": 0,
+      "ratio": 100,
+      "underline": "NONE",
+      "fontRefs": {
+        "HANGUL": 0,
+        "LATIN": 0,
+        "HANJA": 0,
+        "JAPANESE": 0,
+        "OTHER": 0,
+        "SYMBOL": 0,
+        "USER": 0
+      },
+      "sig": "굴림체|굴림체|8|||#000000|0|100|NONE"
+    },
+    {
+      "id": 18,
+      "pt": 3,
+      "hangul": "굴림체",
+      "latin": "굴림체",
+      "bold": false,
+      "italic": false,
+      "color": "#FFFFFF",
+      "spacing": 0,
+      "ratio": 100,
+      "underline": "NONE",
+      "fontRefs": {
+        "HANGUL": 0,
+        "LATIN": 0,
+        "HANJA": 0,
+        "JAPANESE": 0,
+        "OTHER": 0,
+        "SYMBOL": 0,
+        "USER": 0
+      },
+      "sig": "굴림체|굴림체|3|||#FFFFFF|0|100|NONE"
+    },
+    {
+      "id": 19,
+      "pt": 10,
+      "hangul": "굴림체",
+      "latin": "굴림체",
+      "bold": false,
+      "italic": false,
+      "color": "#000000",
+      "spacing": -10,
+      "ratio": 100,
+      "underline": "NONE",
+      "fontRefs": {
+        "HANGUL": 0,
+        "LATIN": 0,
+        "HANJA": 0,
+        "JAPANESE": 0,
+        "OTHER": 0,
+        "SYMBOL": 0,
+        "USER": 0
+      },
+      "sig": "굴림체|굴림체|10|||#000000|-10|100|NONE"
+    },
+    {
+      "id": 20,
+      "pt": 13,
+      "hangul": "양재난초체M",
+      "latin": "양재난초체M",
+      "bold": true,
+      "italic": false,
+      "color": "#FE6100",
+      "spacing": -10,
+      "ratio": 100,
+      "underline": "NONE",
+      "fontRefs": {
+        "HANGUL": 1,
+        "LATIN": 1,
+        "HANJA": 1,
+        "JAPANESE": 1,
+        "OTHER": 1,
+        "SYMBOL": 1,
+        "USER": 1
+      },
+      "sig": "양재난초체M|양재난초체M|13|B||#FE6100|-10|100|NONE"
+    },
+    {
+      "id": 21,
+      "pt": 8,
+      "hangul": "굴림체",
+      "latin": "굴림체",
+      "bold": false,
+      "italic": false,
+      "color": "#000000",
+      "spacing": 0,
+      "ratio": 100,
+      "underline": "NONE",
+      "fontRefs": {
+        "HANGUL": 0,
+        "LATIN": 0,
+        "HANJA": 0,
+        "JAPANESE": 0,
+        "OTHER": 2,
+        "SYMBOL": 0,
+        "USER": 2
+      },
+      "sig": "굴림체|굴림체|8|||#000000|0|100|NONE"
+    },
+    {
+      "id": 22,
+      "pt": 10,
+      "hangul": "굴림체",
+      "latin": "굴림체",
+      "bold": false,
+      "italic": false,
+      "color": "#000000",
+      "spacing": 0,
+      "ratio": 95,
+      "underline": "NONE",
+      "fontRefs": {
+        "HANGUL": 0,
+        "LATIN": 0,
+        "HANJA": 0,
+        "JAPANESE": 0,
+        "OTHER": 0,
+        "SYMBOL": 0,
+        "USER": 0
+      },
+      "sig": "굴림체|굴림체|10|||#000000|0|95|NONE"
+    },
+    {
+      "id": 23,
+      "pt": 12,
+      "hangul": "굴림체",
+      "latin": "굴림체",
+      "bold": false,
+      "italic": false,
+      "color": "#000000",
+      "spacing": -2,
+      "ratio": 95,
+      "underline": "NONE",
+      "fontRefs": {
+        "HANGUL": 0,
+        "LATIN": 0,
+        "HANJA": 0,
+        "JAPANESE": 0,
+        "OTHER": 0,
+        "SYMBOL": 0,
+        "USER": 0
+      },
+      "sig": "굴림체|굴림체|12|||#000000|-2|95|NONE"
+    },
+    {
+      "id": 24,
+      "pt": 8,
+      "hangul": "굴림체",
+      "latin": "굴림체",
+      "bold": false,
+      "italic": false,
+      "color": "#000000",
+      "spacing": 0,
+      "ratio": 100,
+      "underline": "NONE",
+      "fontRefs": {
+        "HANGUL": 0,
+        "LATIN": 0,
+        "HANJA": 0,
+        "JAPANESE": 0,
+        "OTHER": 2,
+        "SYMBOL": 0,
+        "USER": 2
+      },
+      "sig": "굴림체|굴림체|8|||#000000|0|100|NONE"
+    }
+  ],
+  "paraPr": [
+    {
+      "id": 0,
+      "align": "JUSTIFY",
+      "lineSpacingType": "PERCENT",
+      "lineSpacing": 160,
+      "intent": 0,
+      "left": 0,
+      "right": 0,
+      "prev": 0,
+      "next": 0,
+      "keepWithNext": false,
+      "sig": "JUSTIFY|PERCENT|160|0|0|0|0|0|"
+    },
+    {
+      "id": 1,
+      "align": "JUSTIFY",
+      "lineSpacingType": "PERCENT",
+      "lineSpacing": 165,
+      "intent": 0,
+      "left": 3504,
+      "right": 3504,
+      "prev": 848,
+      "next": 848,
+      "keepWithNext": false,
+      "sig": "JUSTIFY|PERCENT|165|0|3504|3504|848|848|"
+    },
+    {
+      "id": 2,
+      "align": "JUSTIFY",
+      "lineSpacingType": "PERCENT",
+      "lineSpacing": 160,
+      "intent": -1488,
+      "left": 0,
+      "right": 0,
+      "prev": 0,
+      "next": 0,
+      "keepWithNext": false,
+      "sig": "JUSTIFY|PERCENT|160|-1488|0|0|0|0|"
+    },
+    {
+      "id": 3,
+      "align": "JUSTIFY",
+      "lineSpacingType": "PERCENT",
+      "lineSpacing": 160,
+      "intent": -1488,
+      "left": 2000,
+      "right": 0,
+      "prev": 0,
+      "next": 0,
+      "keepWithNext": false,
+      "sig": "JUSTIFY|PERCENT|160|-1488|2000|0|0|0|"
+    },
+    {
+      "id": 4,
+      "align": "JUSTIFY",
+      "lineSpacingType": "PERCENT",
+      "lineSpacing": 160,
+      "intent": -1488,
+      "left": 4000,
+      "right": 0,
+      "prev": 0,
+      "next": 0,
+      "keepWithNext": false,
+      "sig": "JUSTIFY|PERCENT|160|-1488|4000|0|0|0|"
+    },
+    {
+      "id": 5,
+      "align": "JUSTIFY",
+      "lineSpacingType": "PERCENT",
+      "lineSpacing": 160,
+      "intent": -1488,
+      "left": 6000,
+      "right": 0,
+      "prev": 0,
+      "next": 0,
+      "keepWithNext": false,
+      "sig": "JUSTIFY|PERCENT|160|-1488|6000|0|0|0|"
+    },
+    {
+      "id": 6,
+      "align": "JUSTIFY",
+      "lineSpacingType": "PERCENT",
+      "lineSpacing": 160,
+      "intent": -1488,
+      "left": 8000,
+      "right": 0,
+      "prev": 0,
+      "next": 0,
+      "keepWithNext": false,
+      "sig": "JUSTIFY|PERCENT|160|-1488|8000|0|0|0|"
+    },
+    {
+      "id": 7,
+      "align": "JUSTIFY",
+      "lineSpacingType": "PERCENT",
+      "lineSpacing": 160,
+      "intent": -1488,
+      "left": 10000,
+      "right": 0,
+      "prev": 0,
+      "next": 0,
+      "keepWithNext": false,
+      "sig": "JUSTIFY|PERCENT|160|-1488|10000|0|0|0|"
+    },
+    {
+      "id": 8,
+      "align": "JUSTIFY",
+      "lineSpacingType": "PERCENT",
+      "lineSpacing": 160,
+      "intent": -1488,
+      "left": 12000,
+      "right": 0,
+      "prev": 0,
+      "next": 0,
+      "keepWithNext": false,
+      "sig": "JUSTIFY|PERCENT|160|-1488|12000|0|0|0|"
+    },
+    {
+      "id": 9,
+      "align": "RIGHT",
+      "lineSpacingType": "PERCENT",
+      "lineSpacing": 150,
+      "intent": 0,
+      "left": 0,
+      "right": 2000,
+      "prev": 0,
+      "next": 0,
+      "keepWithNext": false,
+      "sig": "RIGHT|PERCENT|150|0|0|2000|0|0|"
+    },
+    {
+      "id": 10,
+      "align": "JUSTIFY",
+      "lineSpacingType": "PERCENT",
+      "lineSpacing": 130,
+      "intent": -2640,
+      "left": 0,
+      "right": 0,
+      "prev": 0,
+      "next": 0,
+      "keepWithNext": false,
+      "sig": "JUSTIFY|PERCENT|130|-2640|0|0|0|0|"
+    },
+    {
+      "id": 11,
+      "align": "JUSTIFY",
+      "lineSpacingType": "PERCENT",
+      "lineSpacing": 160,
+      "intent": 0,
+      "left": 0,
+      "right": 0,
+      "prev": 0,
+      "next": 0,
+      "keepWithNext": false,
+      "sig": "JUSTIFY|PERCENT|160|0|0|0|0|0|"
+    },
+    {
+      "id": 12,
+      "align": "LEFT",
+      "lineSpacingType": "PERCENT",
+      "lineSpacing": 160,
+      "intent": 0,
+      "left": 0,
+      "right": 1000,
+      "prev": 0,
+      "next": 0,
+      "keepWithNext": false,
+      "sig": "LEFT|PERCENT|160|0|0|1000|0|0|"
+    },
+    {
+      "id": 13,
+      "align": "CENTER",
+      "lineSpacingType": "PERCENT",
+      "lineSpacing": 160,
+      "intent": 0,
+      "left": 0,
+      "right": 0,
+      "prev": 0,
+      "next": 0,
+      "keepWithNext": false,
+      "sig": "CENTER|PERCENT|160|0|0|0|0|0|"
+    },
+    {
+      "id": 14,
+      "align": "RIGHT",
+      "lineSpacingType": "PERCENT",
+      "lineSpacing": 160,
+      "intent": 0,
+      "left": 0,
+      "right": 0,
+      "prev": 0,
+      "next": 0,
+      "keepWithNext": false,
+      "sig": "RIGHT|PERCENT|160|0|0|0|0|0|"
+    },
+    {
+      "id": 15,
+      "align": "LEFT",
+      "lineSpacingType": "PERCENT",
+      "lineSpacing": 160,
+      "intent": 0,
+      "left": 0,
+      "right": 0,
+      "prev": 0,
+      "next": 0,
+      "keepWithNext": false,
+      "sig": "LEFT|PERCENT|160|0|0|0|0|0|"
+    },
+    {
+      "id": 16,
+      "align": "LEFT",
+      "lineSpacingType": "PERCENT",
+      "lineSpacing": 160,
+      "intent": 0,
+      "left": 0,
+      "right": 0,
+      "prev": 0,
+      "next": 0,
+      "keepWithNext": false,
+      "sig": "LEFT|PERCENT|160|0|0|0|0|0|"
+    },
+    {
+      "id": 17,
+      "align": "LEFT",
+      "lineSpacingType": "PERCENT",
+      "lineSpacing": 130,
+      "intent": 0,
+      "left": 0,
+      "right": 0,
+      "prev": 0,
+      "next": 0,
+      "keepWithNext": false,
+      "sig": "LEFT|PERCENT|130|0|0|0|0|0|"
+    },
+    {
+      "id": 18,
+      "align": "LEFT",
+      "lineSpacingType": "PERCENT",
+      "lineSpacing": 130,
+      "intent": 0,
+      "left": 0,
+      "right": 0,
+      "prev": 0,
+      "next": 0,
+      "keepWithNext": false,
+      "sig": "LEFT|PERCENT|130|0|0|0|0|0|"
+    },
+    {
+      "id": 19,
+      "align": "CENTER",
+      "lineSpacingType": "PERCENT",
+      "lineSpacing": 100,
+      "intent": 0,
+      "left": 0,
+      "right": 0,
+      "prev": 0,
+      "next": 0,
+      "keepWithNext": false,
+      "sig": "CENTER|PERCENT|100|0|0|0|0|0|"
+    },
+    {
+      "id": 20,
+      "align": "JUSTIFY",
+      "lineSpacingType": "PERCENT",
+      "lineSpacing": 160,
+      "intent": -3000,
+      "left": 0,
+      "right": 0,
+      "prev": 0,
+      "next": 0,
+      "keepWithNext": false,
+      "sig": "JUSTIFY|PERCENT|160|-3000|0|0|0|0|"
+    },
+    {
+      "id": 21,
+      "align": "LEFT",
+      "lineSpacingType": "PERCENT",
+      "lineSpacing": 160,
+      "intent": 0,
+      "left": 0,
+      "right": 0,
+      "prev": 0,
+      "next": 0,
+      "keepWithNext": false,
+      "sig": "LEFT|PERCENT|160|0|0|0|0|0|"
+    },
+    {
+      "id": 22,
+      "align": "JUSTIFY",
+      "lineSpacingType": "PERCENT",
+      "lineSpacing": 130,
+      "intent": 0,
+      "left": 0,
+      "right": 0,
+      "prev": 0,
+      "next": 0,
+      "keepWithNext": false,
+      "sig": "JUSTIFY|PERCENT|130|0|0|0|0|0|"
+    },
+    {
+      "id": 23,
+      "align": "JUSTIFY",
+      "lineSpacingType": "PERCENT",
+      "lineSpacing": 100,
+      "intent": 0,
+      "left": 0,
+      "right": 0,
+      "prev": 0,
+      "next": 0,
+      "keepWithNext": false,
+      "sig": "JUSTIFY|PERCENT|100|0|0|0|0|0|"
+    },
+    {
+      "id": 24,
+      "align": "LEFT",
+      "lineSpacingType": "PERCENT",
+      "lineSpacing": 100,
+      "intent": 0,
+      "left": 0,
+      "right": 0,
+      "prev": 0,
+      "next": 0,
+      "keepWithNext": false,
+      "sig": "LEFT|PERCENT|100|0|0|0|0|0|"
+    },
+    {
+      "id": 25,
+      "align": "JUSTIFY",
+      "lineSpacingType": "PERCENT",
+      "lineSpacing": 160,
+      "intent": 0,
+      "left": 0,
+      "right": 0,
+      "prev": 0,
+      "next": 0,
+      "keepWithNext": false,
+      "sig": "JUSTIFY|PERCENT|160|0|0|0|0|0|"
+    },
+    {
+      "id": 26,
+      "align": "CENTER",
+      "lineSpacingType": "PERCENT",
+      "lineSpacing": 160,
+      "intent": 0,
+      "left": 0,
+      "right": 0,
+      "prev": 0,
+      "next": 0,
+      "keepWithNext": false,
+      "sig": "CENTER|PERCENT|160|0|0|0|0|0|"
+    },
+    {
+      "id": 27,
+      "align": "JUSTIFY",
+      "lineSpacingType": "PERCENT",
+      "lineSpacing": 180,
+      "intent": 0,
+      "left": 0,
+      "right": 1000,
+      "prev": 0,
+      "next": 0,
+      "keepWithNext": false,
+      "sig": "JUSTIFY|PERCENT|180|0|0|1000|0|0|"
+    },
+    {
+      "id": 28,
+      "align": "JUSTIFY",
+      "lineSpacingType": "PERCENT",
+      "lineSpacing": 200,
+      "intent": 0,
+      "left": 0,
+      "right": 1000,
+      "prev": 0,
+      "next": 1000,
+      "keepWithNext": false,
+      "sig": "JUSTIFY|PERCENT|200|0|0|1000|0|1000|"
+    },
+    {
+      "id": 29,
+      "align": "JUSTIFY",
+      "lineSpacingType": "PERCENT",
+      "lineSpacing": 180,
+      "intent": 0,
+      "left": 0,
+      "right": 1000,
+      "prev": 2000,
+      "next": 0,
+      "keepWithNext": false,
+      "sig": "JUSTIFY|PERCENT|180|0|0|1000|2000|0|"
+    }
+  ],
+  "borderFill": [
+    {
+      "id": 1,
+      "left": {
+        "type": "NONE",
+        "width": "0.1 mm",
+        "color": "#000000"
+      },
+      "right": {
+        "type": "NONE",
+        "width": "0.1 mm",
+        "color": "#000000"
+      },
+      "top": {
+        "type": "NONE",
+        "width": "0.1 mm",
+        "color": "#000000"
+      },
+      "bottom": {
+        "type": "NONE",
+        "width": "0.1 mm",
+        "color": "#000000"
+      },
+      "fill": null,
+      "gradient": null,
+      "sig": "NONE|NONE|NONE|NONE||"
+    },
+    {
+      "id": 2,
+      "left": {
+        "type": "SOLID",
+        "width": "0.12 mm",
+        "color": "#000000"
+      },
+      "right": {
+        "type": "SOLID",
+        "width": "0.12 mm",
+        "color": "#000000"
+      },
+      "top": {
+        "type": "SOLID",
+        "width": "0.12 mm",
+        "color": "#000000"
+      },
+      "bottom": {
+        "type": "SOLID",
+        "width": "0.12 mm",
+        "color": "#000000"
+      },
+      "fill": null,
+      "gradient": null,
+      "sig": "SOLID 0.12 mm #000000|SOLID 0.12 mm #000000|SOLID 0.12 mm #000000|SOLID 0.12 mm #000000||"
+    },
+    {
+      "id": 3,
+      "left": {
+        "type": "NONE",
+        "width": "0.1 mm",
+        "color": "#000000"
+      },
+      "right": {
+        "type": "NONE",
+        "width": "0.1 mm",
+        "color": "#000000"
+      },
+      "top": {
+        "type": "NONE",
+        "width": "0.1 mm",
+        "color": "#000000"
+      },
+      "bottom": {
+        "type": "NONE",
+        "width": "0.1 mm",
+        "color": "#000000"
+      },
+      "fill": null,
+      "gradient": null,
+      "sig": "NONE|NONE|NONE|NONE||"
+    },
+    {
+      "id": 4,
+      "left": {
+        "type": "NONE",
+        "width": "0.1 mm",
+        "color": "#000000"
+      },
+      "right": {
+        "type": "NONE",
+        "width": "0.1 mm",
+        "color": "#000000"
+      },
+      "top": {
+        "type": "NONE",
+        "width": "0.1 mm",
+        "color": "#000000"
+      },
+      "bottom": {
+        "type": "SOLID",
+        "width": "0.12 mm",
+        "color": "#000000"
+      },
+      "fill": null,
+      "gradient": null,
+      "sig": "NONE|NONE|NONE|SOLID 0.12 mm #000000||"
+    },
+    {
+      "id": 5,
+      "left": {
+        "type": "NONE",
+        "width": "0.1 mm",
+        "color": "#000000"
+      },
+      "right": {
+        "type": "NONE",
+        "width": "0.1 mm",
+        "color": "#000000"
+      },
+      "top": {
+        "type": "NONE",
+        "width": "0.1 mm",
+        "color": "#000000"
+      },
+      "bottom": {
+        "type": "NONE",
+        "width": "0.1 mm",
+        "color": "#000000"
+      },
+      "fill": "#CCCCCC",
+      "gradient": null,
+      "sig": "NONE|NONE|NONE|NONE|#CCCCCC|"
+    },
+    {
+      "id": 6,
+      "left": {
+        "type": "NONE",
+        "width": "0.1 mm",
+        "color": "#000000"
+      },
+      "right": {
+        "type": "NONE",
+        "width": "0.1 mm",
+        "color": "#000000"
+      },
+      "top": {
+        "type": "NONE",
+        "width": "0.1 mm",
+        "color": "#000000"
+      },
+      "bottom": {
+        "type": "NONE",
+        "width": "0.1 mm",
+        "color": "#000000"
+      },
+      "fill": "NONE",
+      "gradient": null,
+      "sig": "NONE|NONE|NONE|NONE|NONE|"
+    }
+  ]
+}

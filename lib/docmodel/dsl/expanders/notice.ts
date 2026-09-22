@@ -74,5 +74,7 @@ export function noticePrelude(meta: NoticeMeta): BlockInput[] {
 }
 
 export function noticeContext(meta: NoticeMeta): FamilyContext {
-  return { prelude: noticePrelude(meta), firstSectionNumber: NOTICE_FIRST_SECTION, plainRole: "plain", allowHeadings: true };
+  // numeralStyle 은 headingStyle "chapterChip" 인 family 만 읽는다(parser.ts). 공고문은
+  // "sectionBar" 라 `#` 이 번호 섹션바로 가므로 이 값에 닿지 않는다.
+  return { prelude: noticePrelude(meta), firstSectionNumber: NOTICE_FIRST_SECTION, plainRole: "plain", allowHeadings: true, numeralStyle: "roman" };
 }

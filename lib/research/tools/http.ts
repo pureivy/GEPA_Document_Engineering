@@ -23,7 +23,7 @@ export type ToolResult<T> =
   | { ok: true; source: ToolSource; data: T; note?: string }
   | { ok: false; error: string; hint?: string; source?: ToolSource };
 
-export const KEY_PARAMS = ["serviceKey", "apiKey", "crtfcKey", "OC"] as const;
+export const KEY_PARAMS = ["serviceKey", "ServiceKey", "apiKey", "crtfcKey", "OC"] as const;
 
 /** Build a URL; `params` values are encoded, undefined/empty skipped. */
 export function buildUrl(base: string, params: Record<string, string | number | undefined>): string {

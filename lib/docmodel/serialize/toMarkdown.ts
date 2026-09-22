@@ -4,7 +4,7 @@
  * merged cells are flattened (covered cells render empty), and the 보도자료 head becomes a
  * small key-value table.
  */
-import type { Block, DocModel, Inline, NoticeMeta, PressMeta } from "../schema";
+import type { Block, DocModel, Inline, NoticeMeta, OfficialMeta, PressMeta } from "../schema";
 import { greetingScope } from "../format";
 
 function esc(s: string): string {
@@ -67,6 +67,12 @@ function noticeHead(meta: NoticeMeta): string[] {
   ];
 }
 
+/** 공문서 두문: 기관명 / 수신 / (경유) / 제목 */
+function officialHead(meta: OfficialMeta): string[] {
+  const 수신 = meta.수신유형 === "내부결재" ? "내부결재" : meta.수신유형 === "수신자참조" ? "수신자 참조" : (meta.수신 ?? "");
+  return [`**(재)경상북도경제진흥원**`, "", `수신  ${수신}`, ...(meta.경유 ? [`(경유)  ${meta.경유}`] : []), "", `# ${meta.제목}`, ""];
+}
+
 export function blockToMarkdown(b: Block, doc: DocModel): string[] {
   switch (b.k) {
     case "para": {
@@ -121,14 +127,19 @@ export function blockToMarkdown(b: Block, doc: DocModel): string[] {
       return doc.family === "press" ? pressHead(doc.meta as PressMeta) : [];
     case "attachmentList":
       return [...b.items.map((it, i) => (/^붙임/.test(it) ? it : `붙임 ${i + 1}. ${it}`)), "", "끝.", ""];
+    case "officialHeader":
+      return doc.family === "official" ? officialHead(doc.meta as OfficialMeta) : [];
+    case "officialFooter":
+      // 결문은 작성기가 참고 문서 표에서 펼친다 — 미리보기 본문에는 담지 않는다
+      return [];
   }
 }
 
 export function toMarkdown(doc: DocModel): string {
   const lines: string[] = [];
   for (const b of doc.blocks) lines.push(...blockToMarkdown(b, doc));
-  if (doc.family === "press") {
-    const meta = doc.meta as PressMeta;
+  if (doc.family === "press" || doc.family === "official") {
+    const meta = doc.meta as PressMeta | OfficialMeta;
     if (meta.붙임?.length && !doc.blocks.some((b) => b.k === "attachmentList")) {
       lines.push(...meta.붙임.map((it, i) => (/^붙임/.test(it) ? it : `붙임 ${i + 1}. ${it}`)), "", "끝.", "");
     }

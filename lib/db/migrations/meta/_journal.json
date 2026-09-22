@@ -15,6 +15,13 @@
       "when": 1789540291672,
       "tag": "0001_reference",
       "breakpoints": true
+    },
+    {
+      "idx": 2,
+      "version": "6",
+      "when": 1790030567417,
+      "tag": "0002_kind",
+      "breakpoints": true
     }
   ]
 }

@@ -203,6 +203,10 @@ export function blockFromPm(n: PmNode, id: string): Block | null {
       return { id, k: "pressHeader" };
     case N.attachmentList:
       return { id, k: "attachmentList", items: childrenOfType(n, N.attachmentItem).map((it) => pmToString(it.content)) };
+    case N.officialHeader:
+      return { id, k: "officialHeader" };
+    case N.officialFooter:
+      return { id, k: "officialFooter" };
     default:
       return null;
   }

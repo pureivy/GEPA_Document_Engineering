@@ -2,7 +2,7 @@ import { index, integer, real, sqliteTable, text, uniqueIndex } from "drizzle-or
 
 /** Timestamps are ISO-8601 strings (matches lib/contracts.ts DTOs). */
 
-export const STAGE_VALUES = ["research", "plan", "notice", "press", "review"] as const;
+export const STAGE_VALUES = ["research", "plan", "notice", "press", "official", "review"] as const;
 export const RUN_STATUS_VALUES = ["running", "succeeded", "failed", "cancelled"] as const;
 export const DOC_SOURCE_VALUES = ["agent", "user", "restore"] as const;
 
@@ -12,6 +12,8 @@ export type DocSource = (typeof DOC_SOURCE_VALUES)[number];
 
 export const projects = sqliteTable("projects", {
   id: text("id").primaryKey(),
+  /** ProjectKind (lib/kinds.ts) — derives the project's stage list. Existing rows default to program. */
+  kind: text("kind").notNull().default("program"),
   title: text("title").notNull(),
   topic: text("topic").notNull(),
   region: text("region").notNull().default(""),

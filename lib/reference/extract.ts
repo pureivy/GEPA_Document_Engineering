@@ -7,6 +7,7 @@
  *   .docx  → word/document.xml (w:t runs, paragraphs → lines)
  *   .md/.txt → as is (UTF-8)
  */
+import { REFERENCE_CHANGES_LABEL, REFERENCE_DOC_TITLE, type ReferenceRole } from "../contracts";
 import { pdftotextBin, rhwpBin, spawnCommandSync as spawnSync } from "../platform";
 import { mkdtempSync, readFileSync, rmSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
@@ -104,7 +105,29 @@ export function extractReferenceText(fileName: string, bytes: Uint8Array): { tex
   return { text: truncated ? text.slice(0, REFERENCE_MAX_CHARS) + "\n\n[… 이하 생략 …]" : text, truncated };
 }
 
-/** The markdown the agents read: a short header + the extracted body. */
-export function referenceMarkdown(fileName: string, changes: string, text: string): string {
-  return [`# 기존 사업계획서 — ${fileName}`, "", "## 이번 프로젝트에서 바뀌는 내용", "", changes.trim() || "(변경 사항 미기재 — 연도·일정·담당만 갱신)", "", "## 기존 사업계획서 원문", "", text, ""].join("\n");
+/**
+ * The markdown the agents read: a short header + the extracted body.
+ *
+ * `role` 이 있으면 공문에 붙인 문서다 — 그때는 이 파일이 스스로를 용도대로 소개해야 한다.
+ * 프롬프트만 공문용으로 갈라 놓으면 모자란다: 에이전트가 여는 파일이 "기존 사업계획서"라고
+ * 적혀 있으면 붙임 서식을 갱신할 계획서로 읽고, "(변경 사항 미기재 — 연도·일정·담당만 갱신)"
+ * 라는 계획서 갱신 전제 문구까지 그대로 읽는다.
+ * `role` 이 없으면(사업계획서 갱신) 예전 문자열 그대로다 — 얼어붙은 세 family 가 읽는 파일이다.
+ */
+export function referenceMarkdown(fileName: string, changes: string, text: string, role?: ReferenceRole): string {
+  if (!role) {
+    return [`# 기존 사업계획서 — ${fileName}`, "", "## 이번 프로젝트에서 바뀌는 내용", "", changes.trim() || "(변경 사항 미기재 — 연도·일정·담당만 갱신)", "", "## 기존 사업계획서 원문", "", text, ""].join("\n");
+  }
+  const title = REFERENCE_DOC_TITLE[role];
+  const note = changes.trim();
+  return [
+    `# ${title} — ${fileName}`,
+    "",
+    // 적어 둔 것이 없으면 절 자체를 넣지 않는다 — 빈 절이나 기본 문구는 없는 지시를 있는 것처럼 보이게 한다
+    ...(note ? [`## ${REFERENCE_CHANGES_LABEL[role]}`, "", note, ""] : []),
+    `## ${title} 원문`,
+    "",
+    text,
+    "",
+  ].join("\n");
 }

@@ -169,6 +169,10 @@ export function blockToPm(block: Block): PmNode {
         attrs: { ...id },
         content: block.items.map((item) => ({ type: N.attachmentItem, content: stringToPm(item) })),
       };
+    case "officialHeader":
+      return { type: N.officialHeader, attrs: { ...id } };
+    case "officialFooter":
+      return { type: N.officialFooter, attrs: { ...id } };
   }
 }
 
