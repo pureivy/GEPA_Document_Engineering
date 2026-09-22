@@ -110,21 +110,42 @@ describe("official 단계 프롬프트", () => {
    * 값이 있어도 공문이 아니면 실리지 않는다. 폼의 전송·우편번호 칸은 공용 연락처 구역에 있고
    * 브라우저 기억으로 prefill 되므로, 공문을 한 번 만든 담당자가 다음에 세운 사업계획서
    * 프로젝트가 그 값을 물려받는다. kind 로 막지 않으면 얼어붙은 세 family 의 프롬프트가 조용히 바뀐다.
+   *
+   * **결문 전용 칸 네 개를 한꺼번에 본다**(전송·우편번호·홈페이지·공개구분). 이 branch 에서만
+   * 같은 꼴의 누수가 세 번 나왔다 — 전송·우편번호(5a37bf3), 참고 문서 문구(Task 7), 그리고
+   * 홈페이지·공개구분. 칸이 늘 때마다 여기 목록에 더한다.
+   *
+   * 업무보고도 함께 돌린다: 업무보고에는 결문이 없어서 네 칸 모두 쓸 데가 없고, 화면의
+   * 연락처 구역은 공용이라 앞서 만든 공문의 값이 그대로 따라온다.
    */
-  it("공문이 아닌 프로젝트는 전송·우편번호 값이 있어도 브리프에 싣지 않는다", () => {
+  it("공문이 아닌 프로젝트는 결문 전용 값이 있어도 브리프에 싣지 않는다", () => {
     const 물려받은: ProjectDTO = {
       ...project,
-      contact: { ...project.contact, 전송: "054-472-2989", 우편번호: "39393" },
+      contact: { ...project.contact, 전송: "054-472-2989", 우편번호: "39393", 홈페이지: "https://gepa.kr", 공개구분: "비공개" },
     };
-    for (const stage of ["plan", "notice", "press"] as const) {
-      const q = buildStagePrompt({ stage, project: 물려받은, workspaceDir: ws });
-      expect(q.prompt, stage).not.toMatch(/^전송: /m);
-      expect(q.prompt, stage).not.toMatch(/^우편번호: /m);
+    const 결문칸 = [/^전송: /m, /^우편번호: /m, /^홈페이지: /m, /^공개구분: /m];
+    for (const stage of ["plan", "notice", "press", "report"] as const) {
+      const q = buildStagePrompt({ stage, project: { ...물려받은, kind: stage === "report" ? "report" : "program" }, workspaceDir: ws });
+      for (const 칸 of 결문칸) expect(q.prompt, `${stage} ${칸}`).not.toMatch(칸);
     }
     // 같은 값이 공문에서는 실려야 한다 — 막는 조건이 kind 이지 값의 유무가 아님을 고정한다
     const 공문 = buildStagePrompt({ stage: "official", project: { ...물려받은, kind: "official" }, workspaceDir: ws });
     expect(공문.prompt).toMatch(/^전송: 054-472-2989$/m);
     expect(공문.prompt).toMatch(/^우편번호: 39393$/m);
+    expect(공문.prompt).toMatch(/^홈페이지: https:\/\/gepa\.kr$/m);
+    expect(공문.prompt).toMatch(/^공개구분: 비공개$/m);
+  });
+
+  /**
+   * 홈페이지·공개구분은 **비면 줄 자체가 없어야 한다.** 빈 줄("홈페이지: ")을 실으면 에이전트가
+   * 그 자리를 채울 값을 찾으려 들고, 스키마 기본값이 사라진 홈페이지는 특히 지어내기 쉽다.
+   */
+  it("공문이라도 값이 비면 그 줄 자체가 없다", () => {
+    const q = buildStagePrompt({ stage: "official", project: { ...project, kind: "official" }, workspaceDir: ws });
+    expect(q.prompt).not.toMatch(/^홈페이지: /m);
+    expect(q.prompt).not.toMatch(/^공개구분: /m);
+    // 대신 빈 칸을 비워 두라는 지시가 프롬프트에 있다(없는 주소를 지어내는 것이 이 자리의 위험이다)
+    expect(q.prompt).toContain("그 줄이 없으면 그 칸을 비워 둔다");
   });
 });
 
@@ -187,5 +208,183 @@ describe("buildStagePrompt — 공문에 붙인 참고 문서의 용도", () => 
     // changes 가 비었을 때의 기본 문구도 그대로 남는다
     const 빈변경: ProjectDTO = { ...project, reference: { fileName: "a.hwp", changes: "" } };
     expect(buildStagePrompt({ stage: "plan", project: 빈변경, workspaceDir: ws }).prompt).toContain("이번에 바뀌는 내용: (미기재 — 연도·일정·담당만 갱신)");
+  });
+});
+
+/**
+ * 주요업무보고(report) 단계. 담당자가 한글에서 보고 정한 서식 셋이 프롬프트에 살아 있어야 한다:
+ * 1단계는 `●`(`ㅇ` 아님), 목차 쪽번호는 짓지 않는다, 요약박스는 요약문으로 시작하는 절에만 단다.
+ */
+describe("report 단계 프롬프트", () => {
+  const 업무보고: ProjectDTO = {
+    id: "r1",
+    kind: "program",
+    title: "2026년 주요업무보고",
+    topic: "2026년 주요업무 추진실적 및 계획",
+    region: "경상북도",
+    organizer: "(재)경상북도경제진흥원",
+    contact: { 부서명: "경영기획실", 전화: "054-470-8527", 이메일: "a@gepa.kr" },
+    createdAt: "",
+    updatedAt: "",
+  };
+  const p = buildStagePrompt({ stage: "report", project: 업무보고, workspaceDir: ws });
+
+  it("업무보고 작성자를 부르고 전용 규격 스킬을 가리킨다", () => {
+    expect(p.systemPromptAppend).toContain("주요업무보고 작성자");
+    expect(p.systemPromptAppend).toContain("gepa-report-design");
+    // 공고가 아니라 실적·계획이라는 것이 역할 문장에 있어야 한다
+    expect(p.systemPromptAppend).toContain("실적과 계획");
+  });
+
+  it("사다리 세 칸을 가르치고 ㅇ 를 막는다", () => {
+    expect(p.prompt).toContain("□ → ● → -");
+    expect(p.prompt).toContain("ㅇ 은 쓰지 않는다");
+    expect(p.prompt).toContain("1단계는 언제나 ●");
+  });
+
+  /** 결재에 올라가는 문서다 — 쪽번호를 지어내면 틀린 번호가 그대로 실린다 */
+  it("목차를 직접 쓰게 하되 쪽번호는 짓지 말라고 한다", () => {
+    expect(p.prompt).toContain("```toc");
+    expect(p.prompt).toContain("쪽번호를 적지 않는다");
+    expect(p.systemPromptAppend).toContain("―(U+2015)");
+  });
+
+  it("요약박스는 요약문으로 시작하는 절에만 달라고 한다", () => {
+    expect(p.prompt).toContain("```box");
+    expect(p.prompt).toContain("목록이나 표로 시작하는 절에는 박스를 두지 않는다");
+  });
+
+  it("근거 없는 수치를 막고 날짜를 지어내지 못하게 한다", () => {
+    expect(p.prompt).toContain("추진 중");
+    expect(p.prompt).toContain("날짜나 받는 사람을 지어내지 않는다");
+  });
+
+  it("출력 계약은 report/draft.dsl.md 와 family: report 다", () => {
+    expect(p.prompt).toContain(`${ws}`);
+    expect(p.prompt).toContain("<작업폴더>/report/draft.dsl.md");
+    expect(p.prompt).toContain("family: report");
+    expect(p.allowedTools).toEqual(["Read", "Write", "Glob", "Grep"]);
+  });
+
+  /** 조사 단계가 없는 문서다 — 웹·하위 에이전트 도구가 새면 안 된다 */
+  it("조사 도구를 주지 않는다", () => {
+    for (const tool of ["WebSearch", "WebFetch", "Task"]) expect(p.allowedTools).not.toContain(tool);
+  });
+
+  /**
+   * 회귀: report 분기를 더해도 얼어붙은 네 family 의 프롬프트는 한 글자도 달라지지 않는다.
+   * projectBrief·referenceGuide 를 함께 쓰므로 여기서 한 번 더 못박는다.
+   */
+  it("기존 네 단계의 프롬프트는 그대로다", () => {
+    for (const stage of ["plan", "notice", "press", "official"] as const) {
+      const q = buildStagePrompt({ stage, project, workspaceDir: ws });
+      expect(q.prompt, stage).not.toContain("주요업무보고");
+      expect(q.systemPromptAppend, stage).not.toContain("gepa-report-design");
+    }
+  });
+});
+
+/**
+ * 업무보고에 붙인 참고 문서 (Task 7 판정, Task 6 구현자가 미리 짚음).
+ *
+ * `projectBrief` 의 reference 분기는 "공문이면 … 아니면 기존 사업계획서" 두 갈래였다.
+ * `report` kind 가 생기는 순간 그 `아니면` 이 업무보고까지 삼켜서, 참고 문서를 붙인
+ * 업무보고 프로젝트에 **"이번 프로젝트는 이 계획서를 갱신하는 것이다"** 가 실리고
+ * `referenceGuide` 는 빈 문자열을 돌려준다 — 에이전트는 업무보고를 사업계획서 갱신으로
+ * 읽고 아무 오류 없이 틀린 문서를 쓴다. 공문의 전송·우편번호 누수와 같은 부류다.
+ *
+ * 값이 있어도 안 실리는 것과, 같은 값이 제 family 에서는 실리는 것을 함께 고정한다.
+ */
+describe("buildStagePrompt — 업무보고에 붙인 참고 문서", () => {
+  const 업무보고: ProjectDTO = {
+    ...project,
+    kind: "report",
+    title: "2026년 주요업무보고",
+    topic: "2026년 주요업무보고",
+    reference: { fileName: "2025년 주요업무보고.hwp", changes: "2025년 추진성과와 조직 현황만 추려서 씀" },
+  };
+  const p = buildStagePrompt({ stage: "report", project: 업무보고, workspaceDir: ws });
+
+  it("사업계획서 갱신 문구가 업무보고로 새지 않는다", () => {
+    expect(p.prompt).not.toContain("기존 사업계획서");
+    expect(p.prompt).not.toContain("갱신하는 것이다");
+    expect(p.prompt).not.toMatch(/^이번에 바뀌는 내용: /m);
+    expect(p.prompt).not.toContain("(미기재 — 연도·일정·담당만 갱신)");
+  });
+
+  it("참고 문서 줄과 단계 지시가 함께 실린다 — 붙인 문서가 프롬프트에서 사라지면 안 된다", () => {
+    expect(p.prompt).toMatch(/^참고 문서: \/tmp\/ws\/reference\/base-plan\.md \(원본 파일 2025년 주요업무보고\.hwp\)$/m);
+    // 화면 label·base-plan.md 의 절 제목과 같은 이름을 쓴다(lib/contracts.ts 가 단일 출처)
+    expect(p.prompt).toMatch(new RegExp(`^${REFERENCE_CHANGES_LABEL["근거자료"]}: 2025년 추진성과와 조직 현황만 추려서 씀$`, "m"));
+    expect(p.prompt).toContain(`${ws}/reference/base-plan.md 를 먼저 Read`);
+  });
+
+  /**
+   * 업무보고의 참고 문서는 대개 **지난해 업무보고**다. 그 Ⅱ장은 지나간 실적이므로("2025년도
+   * 추진성과 … 944개사, 2,771억원"), "지난 연도 표기를 이번 보고 기준으로 고친다"고만 적으면
+   * 에이전트가 그 숫자에 올해 연도를 붙인다 — 있지도 않은 실적이 결재에 올라간다.
+   * 고쳐도 되는 연도와 그대로 둘 연도를 지시가 갈라 두는지 여기서 고정한다.
+   */
+  it("실적 수치의 연도를 옮겨 붙이지 말라고 이른다", () => {
+    expect(p.prompt).toContain("연도를 옮겨 붙이지 않는다");
+    expect(p.prompt).toContain("실적 수치와 그 실적이 일어난 연도는 참고 문서에 적힌 그대로 둔다");
+  });
+
+  it("용도를 묻지 않는다 — 업무보고에는 수신유형·전결·참고문서용도가 없다", () => {
+    expect(p.prompt).not.toContain("용도:");
+    expect(p.prompt).not.toMatch(/^수신유형: /m);
+    expect(p.prompt).not.toMatch(/^전결: /m);
+  });
+
+  it("붙인 문서가 없으면 참고 문서 줄 자체가 없다", () => {
+    const q = buildStagePrompt({ stage: "report", project: { ...업무보고, reference: undefined }, workspaceDir: ws });
+    expect(q.prompt).not.toMatch(/^참고 문서: /m);
+    expect(q.prompt).not.toContain("base-plan.md");
+  });
+
+  it("같은 reference 가 사업 프로젝트에서는 기존 문구 그대로 실린다 — 막는 조건이 kind 다", () => {
+    const 사업 = buildStagePrompt({ stage: "plan", project: { ...업무보고, kind: "program" }, workspaceDir: ws });
+    expect(사업.prompt).toContain("이번 프로젝트는 이 계획서를 갱신하는 것이다.");
+    expect(사업.prompt).toMatch(/^이번에 바뀌는 내용: 2025년 추진성과와 조직 현황만 추려서 씀$/m);
+  });
+});
+
+/**
+ * 업무보고가 내부 위키에 닿는지 (user 2026-09-22: "최근 3년간 비교나 전년 대비 등으로
+ * 성과를 극대화해야").
+ *
+ * 그 전까지 `wikiDir` 은 `researchCapable`(조사·사업계획서)일 때만 설정됐고
+ * `sourcesGuide` 도 그 두 단계에서만 불렸다 — **업무보고 에이전트는 위키가 있다는 사실조차
+ * 몰랐다.** 도구(Read·Grep)는 있었지만 경로를 받지 못했고 샌드박스에도 붙지 않았다.
+ * 그래서 「비교 기준이 있으면 쓴다」는 규칙이 영원히 발동하지 않는 상태였다.
+ */
+describe("업무보고 — 내부 위키", () => {
+  const report: ProjectDTO = {
+    id: "r1", kind: "report", title: "2026년 주요업무보고", topic: "x", region: "경상북도",
+    organizer: "(재)경상북도경제진흥원", contact: { 부서명: "전략기획팀", 전화: "054-470-8527", 이메일: "a@gepa.kr" },
+    createdAt: "", updatedAt: "",
+  };
+
+  it("위키가 붙으면 경로와 최근 3년 지시가 프롬프트에 실린다", () => {
+    const p = buildStagePrompt({ stage: "report", project: report, workspaceDir: ws, wikiDir: "/tmp/wiki-snap" });
+    expect(p.prompt).toContain("/tmp/wiki-snap");
+    expect(p.prompt).toContain("최근 3년");
+    expect(p.prompt, "읽는 법을 알려 줘야 한다").toMatch(/Grep/);
+  });
+
+  it("위키가 없으면 비교를 지어내지 말라고 한다", () => {
+    // 경로가 없는데 비교를 요구하면 에이전트가 수치를 만들어 낸다 — 결재에 올라가는 문서다.
+    const p = buildStagePrompt({ stage: "report", project: report, workspaceDir: ws });
+    expect(p.prompt).toMatch(/비교 표기는 넣지 않는다/);
+    expect(p.prompt).not.toContain("최근 3년 비교를 만든다");
+  });
+
+  it("얼어붙은 네 단계의 프롬프트는 wikiDir 로 바뀌지 않는다", () => {
+    for (const stage of ["notice", "press", "official"] as const) {
+      const kind = stage === "official" ? "official" : "program";
+      const base = buildStagePrompt({ stage, project: { ...report, kind }, workspaceDir: ws });
+      const withWiki = buildStagePrompt({ stage, project: { ...report, kind }, workspaceDir: ws, wikiDir: "/tmp/wiki-snap" });
+      expect(withWiki.prompt, stage).toBe(base.prompt);
+    }
   });
 });

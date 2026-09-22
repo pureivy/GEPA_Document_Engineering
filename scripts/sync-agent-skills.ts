@@ -12,6 +12,8 @@ const pairs: [string, string][] = [
   ["docs/design-system/gov-manual.md", "agent/.claude/skills/gepa-notice-design/reference/gov-manual.md"],
   ["docs/design-system/official.md", "agent/.claude/skills/gepa-official-design/reference/design-system.md"],
   ["docs/design-system/gov-manual.md", "agent/.claude/skills/gepa-official-design/reference/gov-manual.md"],
+  // 업무보고는 편람 2타 사다리가 아니라 참고본 실측 사다리를 쓴다 — gov-manual 을 딸려 보내지 않는다
+  ["docs/design-system/report.md", "agent/.claude/skills/gepa-report-design/reference/design-system.md"],
 ];
 for (const [src, dst] of pairs) {
   const s = join(root, src), d = join(root, dst);

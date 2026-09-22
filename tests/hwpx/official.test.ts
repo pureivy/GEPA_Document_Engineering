@@ -353,3 +353,36 @@ family: official
     expect(text.indexOf("2. 작성서식: 붙임 서식에 따라 작성")).toBeLessThan(text.indexOf("경영기획실장"));
   }, 60_000);
 });
+
+/**
+ * 결문 연락처의 **홈페이지 칸** (user 2026-09-22).
+ *
+ * 스키마가 `https://gepa.kr` 을 기본값으로 들고 있어서, 작성자가 적지 않아도 결문에 주소가
+ * 찍혔다. 참고본의 결문 꼬리는 `우 / 전화 054-470-8527 /전송 054-472-2989 /
+ * nancy.kwon@gepa.kr / 공개` — **홈페이지 자리가 비어 있다.** 적지 않은 것을 채워 내보내는
+ * 것은 담당자가 쓰지 않은 값을 문서에 싣는 일이라, 빈 칸은 빈 칸으로 낸다.
+ * 화면에는 `https://gepa.kr` 을 placeholder 로 두어 흔한 경우는 한 번만 누르면 되게 했다.
+ */
+describe("buildHwpx — official 결문 홈페이지 칸", () => {
+  const footCell = (xml: string, row: number, col: number): string => {
+    const foot = childrenNamed(parseXml(xml.replace(/^<\?xml[^>]*\?>/, "")), "hp:p").find((p) => p.attrs.paraPrIDRef === "12")!;
+    const tc = cellAt(foot, row, col)!;
+    return findAll(tc, "hp:t")
+      .map((t) => t.children.filter((c) => typeof c === "string").join(""))
+      .join("")
+      .trim();
+  };
+  /** FOOT_홈페이지 = [8, 30] (lib/hwpx/writers/official.ts) */
+  const 홈페이지 = (xml: string) => footCell(xml, 8, 30);
+
+  it("적지 않으면 빈 칸으로 나간다 — 기본값을 찍지 않는다", () => {
+    const { sectionXml } = buildHwpx(parseDsl(DSL).doc, { now: NOW });
+    expect(홈페이지(sectionXml)).toBe("");
+  }, 60_000);
+
+  it("적으면 적은 대로 나간다", () => {
+    const dsl = DSL.replace("  전화: 054-470-8527", "  홈페이지: https://gepa.kr\n  전화: 054-470-8527");
+    const { sectionXml } = buildHwpx(parseDsl(dsl).doc, { now: NOW });
+    expect(홈페이지(sectionXml)).toBe("https://gepa.kr");
+  }, 60_000);
+});

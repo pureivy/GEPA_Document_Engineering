@@ -3,7 +3,7 @@ import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
 import { FolderOpen, Plus, RefreshCw, Trash2, Upload } from "lucide-react";
-import { REFERENCE_CHANGES_LABEL, REFERENCE_DOC_TITLE, REFERENCE_ROLES, type ProjectDTO, type ReferenceRole } from "@/lib/contracts";
+import { DEFAULT_REFERENCE_ROLE, REFERENCE_CHANGES_LABEL, REFERENCE_DOC_TITLE, REFERENCE_ROLES, type ProjectDTO, type ReferenceRole } from "@/lib/contracts";
 import { OfficialMetaSchema } from "@/lib/docmodel/schema";
 import { approvalLineFor, approvalLineUpTo, DEFAULT_DELEGATION, DELEGATION_LEVELS, findUnit, senderTitleFor, type DelegationLevel } from "@/lib/org";
 import { api, errorMessage, type NewProjectInput } from "@/lib/client/api";
@@ -19,10 +19,17 @@ import { PREF_PLAN_RESEARCH, saveContactPref, useBoolPref, useContactPref, write
 const KIND_HINT: Record<ProjectKind, string> = {
   program: "조사 → 사업계획서 → 공고문 → 보도자료를 차례로 만듭니다.",
   official: "별지 제1호 기안문 한 건을 만듭니다.",
+  report: "주요업무보고 한 건을 만듭니다(표지·보고순서·간지 포함).",
 };
 
 /** 공문 수신유형 — OfficialMetaSchema 에서 그대로 가져온다(손으로 다시 적으면 둘이 갈라질 수 있다). export 는 드리프트 가드 테스트용. */
 export const RECIPIENT_KINDS = OfficialMetaSchema.shape.수신유형.options;
+/**
+ * 공문 결문의 공개구분 — 값을 손으로 나열하지 않고 스키마에서 가져온다(수신유형과 같은 이유).
+ * 이 필드는 `.default("공개")` 를 달고 있어 `.options` 가 겉에 없다 — 한 겹 벗겨 읽는다.
+ */
+export const DISCLOSURE_KINDS = OfficialMetaSchema.shape.공개구분.unwrap().options;
+type DisclosureKind = (typeof DISCLOSURE_KINDS)[number];
 export type RecipientKind = (typeof RECIPIENT_KINDS)[number];
 /** 수신유형별로 값을 담는 front-matter 키. 내부결재는 수신 대상이 없다 */
 export const RECIPIENT_KEY: Record<RecipientKind, "" | "수신" | "수신자"> = { 내부결재: "", 수신자: "수신", 수신자참조: "수신자" };
@@ -50,7 +57,7 @@ const EMPTY: NewProjectInput = {
   topic: "",
   region: "안동시",
   organizer: "(재)경상북도경제진흥원",
-  contact: { 부서명: "", 담당자: "", 전화: "", 전송: "", 이메일: "", 우편주소: "", 우편번호: "" },
+  contact: { 부서명: "", 담당자: "", 전화: "", 전송: "", 이메일: "", 우편주소: "", 우편번호: "", 홈페이지: "" },
 };
 
 /** mounted only while open, so every opening starts from a blank form (연락처만 지난번 값에서 이어 쓴다) */
@@ -71,11 +78,20 @@ function NewProjectDialog({ onClose, onCreated }: { onClose: () => void; onCreat
   const [recipientKind, setRecipientKind] = useState<RecipientKind>("수신자");
   const [recipient, setRecipient] = useState("");
   const [delegation, setDelegation] = useState<DelegationLevel>(DEFAULT_DELEGATION);
+  // 공개구분은 되돌리기 어려운 선택이다 — 비공개 문서를 공개로 내보내면 주워 담을 수 없다.
+  const [disclosure, setDisclosure] = useState<DisclosureKind>(DISCLOSURE_KINDS[0]);
   const planResearch = useBoolPref(PREF_PLAN_RESEARCH, false);
   const [phase, setPhase] = useState<"" | "create" | "upload">("");
 
   const kind = form.kind;
   const isOfficial = kind === "official";
+  /**
+   * **"공문이 아니다" 와 "사업이다" 는 다르다.** 업무보고가 생기기 전에는 같았고, 그래서 이 폼의
+   * `!isOfficial` 가지에는 사업계획서 갱신 파이프라인의 것(자동 실행·"기존 사업계획서"·보충 조사)이
+   * 들어 있다. 공문 전용 입력(수신유형·전결·용도)은 `isOfficial` 로 막혀 업무보고에 새지 않지만,
+   * 그 반대편은 막아 주는 것이 없다 — 사업 전용인 자리는 여기서 `isProgram` 으로 좁힌다.
+   */
+  const isProgram = kind === "program";
   const set = <K extends keyof NewProjectInput>(k: K, v: NewProjectInput[K]) => setForm((f) => ({ ...f, [k]: v }));
   const setContact = (k: keyof NewProjectInput["contact"], v: string) => setForm((f) => ({ ...f, contact: { ...f.contact, [k]: v } }));
   // with an uploaded 기존 사업계획서 the title/topic can be derived from the file + 변경 사항; the contact is always needed for the documents
@@ -90,9 +106,13 @@ function NewProjectDialog({ onClose, onCreated }: { onClose: () => void; onCreat
   const 발신명의 = senderTitleFor(결재란[결재란.length - 1], form.contact.부서명);
   // 공문에 파일이 붙으면 내용을 그 문서로 대신할 수 있다. 제목은 그래도 필수다 —
   // 공문 제목은 담당자가 정할 일이고, 잘못 유도한 제목이 문서 첫 줄에 그대로 박힌다.
+  // 업무보고에 필요한 것은 제목과 담당 연락처뿐이다 — 수신도 전결도 없고, 보고 내용은
+  // 붙인 문서나 지시로 채운다(비워 두면 제목에서 주제를 만든다. 아래 submit 의 topic).
   const valid = isOfficial
     ? contactOk && recipientOk && !!form.title.trim() && (!!form.topic.trim() || !!refFile)
-    : contactOk && (refFile ? true : !!(form.title.trim() && form.topic.trim()));
+    : isProgram
+      ? contactOk && (refFile ? true : !!(form.title.trim() && form.topic.trim()))
+      : contactOk && !!form.title.trim();
   const missing = isOfficial
     ? [
         ...(!form.title.trim() ? ["제목"] : []),
@@ -102,13 +122,20 @@ function NewProjectDialog({ onClose, onCreated }: { onClose: () => void; onCreat
         ...(!form.contact.전화.trim() ? ["전화"] : []),
         ...(!form.contact.이메일.trim() ? ["이메일"] : []),
       ]
-    : [
-        ...(!refFile && !form.title.trim() ? ["제목"] : []),
-        ...(!refFile && !form.topic.trim() ? ["주제"] : []),
-        ...(!form.contact.부서명.trim() ? ["부서명"] : []),
-        ...(!form.contact.전화.trim() ? ["전화"] : []),
-        ...(!form.contact.이메일.trim() ? ["이메일"] : []),
-      ];
+    : !isProgram
+      ? [
+          ...(!form.title.trim() ? ["제목"] : []),
+          ...(!form.contact.부서명.trim() ? ["부서명"] : []),
+          ...(!form.contact.전화.trim() ? ["전화"] : []),
+          ...(!form.contact.이메일.trim() ? ["이메일"] : []),
+        ]
+      : [
+          ...(!refFile && !form.title.trim() ? ["제목"] : []),
+          ...(!refFile && !form.topic.trim() ? ["주제"] : []),
+          ...(!form.contact.부서명.trim() ? ["부서명"] : []),
+          ...(!form.contact.전화.trim() ? ["전화"] : []),
+          ...(!form.contact.이메일.trim() ? ["이메일"] : []),
+        ];
 
   const submit = async () => {
     if (!valid) return;
@@ -120,31 +147,40 @@ function NewProjectDialog({ onClose, onCreated }: { onClose: () => void; onCreat
       if (!contact.우편주소?.trim()) delete contact.우편주소;
       if (!contact.우편번호?.trim()) delete contact.우편번호;
       if (!contact.전송?.trim()) delete contact.전송;
+      if (!contact.홈페이지?.trim()) delete contact.홈페이지;
       // 수신유형·수신(자)는 topic 이 아니라 contact 에 얹는다(스펙 §5.4) — topic 은 공문 내용만 담는다
       if (isOfficial) {
         contact.수신유형 = recipientKind;
         contact.전결 = 전결;
+        contact.공개구분 = disclosure;
         if (recipientKind === "수신자") contact.수신 = recipient.trim();
         else if (recipientKind === "수신자참조") contact.수신자 = recipient.trim();
         // 파일이 없으면 키 자체를 넣지 않는다 — 용도는 붙인 문서가 있을 때만 뜻이 있다
         if (refFile) contact.참고문서용도 = refRole;
       }
       setPhase("create");
-      const baseName = !isOfficial && refFile ? refFile.name.replace(/\.[A-Za-z0-9]+$/, "") : "";
+      // 파일 이름을 제목으로 삼는 것은 사업계획서 갱신의 편의다 — 공문·업무보고는 제목이 필수다
+      const baseName = isProgram && refFile ? refFile.name.replace(/\.[A-Za-z0-9]+$/, "") : "";
       const title = form.title.trim() || baseName;
       // topic 은 서버에서 한 글자 이상이라야 한다(app/api/projects/route.ts createSchema).
       // 공문에서 내용 칸을 비우고 파일로 대신했을 때는 그 사실을 한 줄로 적어 준다 — 용도별 지시와
       // 파일 경로는 프롬프트의 "참고 문서(용도: …)" 줄이 따로 싣는다.
       const topic = isOfficial
         ? form.topic.trim() || (refFile ? `첨부한 ${REFERENCE_DOC_TITLE[refRole]}(${refFile.name})의 내용으로 공문을 작성` : "")
-        : form.topic.trim() || (refFile ? `기존 사업계획서(${refFile.name})를 기준으로 갱신${changes.trim() ? ` — 바뀌는 내용: ${changes.trim()}` : ""}` : "");
+        : isProgram
+          ? form.topic.trim() || (refFile ? `기존 사업계획서(${refFile.name})를 기준으로 갱신${changes.trim() ? ` — 바뀌는 내용: ${changes.trim()}` : ""}` : "")
+          : // 업무보고는 주제를 묻지 않으므로 비어 있을 수 있다. 서버는 한 글자 이상을 요구하므로
+            // 제목에서 만든다 — "기존 사업계획서를 갱신" 은 업무보고에 쓰면 안 되는 말이다.
+            form.topic.trim() ||
+            (refFile ? `첨부한 ${REFERENCE_DOC_TITLE[DEFAULT_REFERENCE_ROLE]}(${refFile.name})의 내용으로 「${title}」 주요업무보고를 작성` : `「${title}」 주요업무보고 작성`);
       const p = await api.createProject({ ...form, title, topic, contact });
       // 실제로 쓰인 연락처가 다음 프로젝트의 기본값이 된다(브라우저에만 담는다)
       saveContactPref(form.contact);
       if (refFile) {
         setPhase("upload");
-        // 공문에는 research 단계가 없다 — 자동 실행을 걸 곳이 없으므로 늘 false 로 보낸다
-        await api.uploadReference(p.id, refFile, changes, isOfficial ? false : autoRun, planResearch);
+        // 공문·업무보고에는 research 단계가 없다 — 자동 실행을 걸 곳이 없으므로 늘 false 로 보낸다
+        // (라우트도 같은 게이트를 둔다: app/api/projects/[id]/reference/route.ts:48).
+        await api.uploadReference(p.id, refFile, changes, isProgram ? autoRun : false, planResearch);
       }
       onCreated(p);
     } catch (e) {
@@ -169,7 +205,7 @@ function NewProjectDialog({ onClose, onCreated }: { onClose: () => void; onCreat
           </Button>
           {!valid ? <span className="mr-2 self-center text-[11px] text-slate-500">입력 필요: {missing.join(", ")}</span> : null}
           <Button variant="primary" onClick={() => void submit()} disabled={!valid} loading={busy} title={valid ? undefined : `입력 필요: ${missing.join(", ")}`}>
-            {phase === "upload" ? "업로드·분석 중…" : !isOfficial && refFile && autoRun ? "만들고 자동 실행" : "만들기"}
+            {phase === "upload" ? "업로드·분석 중…" : isProgram && refFile && autoRun ? "만들고 자동 실행" : "만들기"}
           </Button>
         </>
       }
@@ -192,11 +228,16 @@ function NewProjectDialog({ onClose, onCreated }: { onClose: () => void; onCreat
             ))}
           </div>
         </Field>
-        <Field label="제목" id="title" required={isOfficial || !refFile} hint={!isOfficial && refFile ? "비우면 파일 이름을 제목으로 씁니다" : isOfficial ? "공문의 제목 칸에 그대로 들어갑니다" : undefined}>
+        <Field
+          label="제목"
+          id="title"
+          required={!isProgram || !refFile}
+          hint={isProgram && refFile ? "비우면 파일 이름을 제목으로 씁니다" : isOfficial ? "공문의 제목 칸에 그대로 들어갑니다" : !isProgram ? "표지에 나가는 유일한 글자입니다" : undefined}
+        >
           <Input
             id="title"
             name="title"
-            placeholder={isOfficial ? "예) 경영평가 대응을 위한 2026년 사업 추진 현황 제출 요청" : "예) 2026년 안동시 수출기업 역량강화 지원사업"}
+            placeholder={isOfficial ? "예) 경영평가 대응을 위한 2026년 사업 추진 현황 제출 요청" : isProgram ? "예) 2026년 안동시 수출기업 역량강화 지원사업" : "예) 2026년 주요업무보고"}
             value={form.title}
             onChange={(e) => set("title", e.target.value)}
             autoComplete="off"
@@ -205,7 +246,7 @@ function NewProjectDialog({ onClose, onCreated }: { onClose: () => void; onCreat
         </Field>
         {isOfficial ? (
           <>
-            <div className="grid grid-cols-[10rem_1fr] gap-4">
+            <div className="grid grid-cols-[10rem_9rem_1fr] gap-4">
               <Field label="수신유형" id="recipientKind" required>
                 <Select id="recipientKind" name="recipientKind" value={recipientKind} onChange={(e) => setRecipientKind(e.target.value as RecipientKind)}>
                   {RECIPIENT_KINDS.map((r) => (
@@ -240,6 +281,15 @@ function NewProjectDialog({ onClose, onCreated }: { onClose: () => void; onCreat
                   ))}
                 </Select>
               </Field>
+              <Field label="공개구분" id="disclosure" required>
+                <Select id="disclosure" name="disclosure" value={disclosure} onChange={(e) => setDisclosure(e.target.value as DisclosureKind)}>
+                  {DISCLOSURE_KINDS.map((d) => (
+                    <option key={d} value={d}>
+                      {d}
+                    </option>
+                  ))}
+                </Select>
+              </Field>
               <div className="self-end pb-2 text-[11px] text-slate-500">
                 결재란 {결재란.join(" · ")} / 발신명의 {발신명의 ?? "(부서명을 적으면 정해집니다)"}
                 {unit && !unit.division ? ` — ${unit.name}은 원장 직속이라 본부장 전결이 없습니다` : ""}
@@ -262,7 +312,7 @@ function NewProjectDialog({ onClose, onCreated }: { onClose: () => void; onCreat
               />
             </Field>
           </>
-        ) : (
+        ) : isProgram ? (
           <>
             <Field label="주제" id="topic" hint={refFile ? "비우면 기존 계획서와 바뀌는 내용으로 채웁니다" : "자유 서술 — 목적, 대상, 지원 내용, 예산 규모 등"} required={!refFile}>
               <Textarea id="topic" name="topic" rows={5} placeholder="예) 안동시 소재 수출 유망 중소기업 20개사에 수출용 홍보물 제작·마케팅·디자인 개발을 기업당 최대 300만원 지원. 7월 공고, 8월 선정, 10월 말까지 지원." value={form.topic} onChange={(e) => set("topic", e.target.value)} autoComplete="off" />
@@ -276,10 +326,24 @@ function NewProjectDialog({ onClose, onCreated }: { onClose: () => void; onCreat
               </Field>
             </div>
           </>
+        ) : (
+          // 업무보고에는 지역·주관기관이 없다(표지에 나가는 글자는 제목뿐이다). 보고 내용도
+          // 비워 둘 수 있다 — 붙인 문서나 단계 화면의 추가 지시로 채운다.
+          <Field label="보고 내용" id="topic" hint={refFile ? "비우면 아래에 올린 문서의 내용으로 씁니다" : "자유 서술 — 보고 대상, 대상 기간, 다룰 장(章), 넣어야 할 실적 등"}>
+            <Textarea
+              id="topic"
+              name="topic"
+              rows={5}
+              placeholder="예) 경상북도지사 대상 2026년 주요업무보고. 일반현황(설립목적·연혁·조직)과 2025년도 추진성과, 2026년도 주요사업을 장으로 나눠 작성."
+              value={form.topic}
+              onChange={(e) => set("topic", e.target.value)}
+              autoComplete="off"
+            />
+          </Field>
         )}
         <fieldset className="rounded-md border border-slate-200 p-3">
           <legend className="px-1 text-xs font-semibold text-slate-600">{isOfficial ? "처리과·담당 연락처" : "담당 연락처"}</legend>
-          {isOfficial ? <p className="mb-2 text-[11px] text-slate-500">부서명은 공문의 처리과가 되고(결재라인·발신명의가 여기서 정해집니다), 전화·이메일은 결문 연락처에 찍힙니다.</p> : null}
+          {isOfficial ? <p className="mb-2 text-[11px] text-slate-500">부서명은 공문의 처리과가 되고(결재라인·발신명의가 여기서 정해집니다), 전화·전송(팩스)·이메일·우편번호·우편주소·홈페이지는 결문 연락처에 그대로 찍힙니다. 비우면 그 칸도 빕니다.</p> : null}
           <div className="grid grid-cols-2 gap-3">
             <Field label="부서명" id="organization" required>
               <Input id="organization" name="organization" placeholder="북부지소" value={form.contact.부서명} onChange={(e) => setContact("부서명", e.target.value)} autoComplete="organization" />
@@ -290,7 +354,7 @@ function NewProjectDialog({ onClose, onCreated }: { onClose: () => void; onCreat
             <Field label="전화" id="tel" required>
               <Input id="tel" name="tel" type="tel" placeholder="054-900-3801" value={form.contact.전화} onChange={(e) => setContact("전화", e.target.value)} autoComplete="tel" />
             </Field>
-            <Field label="전송" id="fax">
+            <Field label={isOfficial ? "전송(팩스)" : "전송"} id="fax">
               <Input id="fax" name="fax" type="tel" placeholder="054-472-2989" value={form.contact.전송 ?? ""} onChange={(e) => setContact("전송", e.target.value)} autoComplete="fax" />
             </Field>
             <Field label="이메일" id="email" required>
@@ -302,15 +366,23 @@ function NewProjectDialog({ onClose, onCreated }: { onClose: () => void; onCreat
             <Field label="주소" id="street-address" className="col-span-2">
               <Input id="street-address" name="street-address" placeholder="경상북도 안동시 북순환로 387, 2층 경상북도경제진흥원" value={form.contact.우편주소 ?? ""} onChange={(e) => setContact("우편주소", e.target.value)} autoComplete="street-address" />
             </Field>
+            {isOfficial ? (
+              <Field label="홈페이지" id="url" className="col-span-2" hint="비우면 결문의 그 칸도 빕니다 — 참고 공문도 비워 둡니다">
+                <Input id="url" name="url" type="url" placeholder="https://gepa.kr" value={form.contact.홈페이지 ?? ""} onChange={(e) => setContact("홈페이지", e.target.value)} autoComplete="url" />
+              </Field>
+            ) : null}
           </div>
         </fieldset>
-        {/* 공문에도 파일을 붙인다 — 같은 업로드 경로를 쓰되 용도를 묻고, 자동 실행은 걸지 않는다(공문에는 조사 단계가 없다) */}
+        {/* 공문·업무보고에도 파일을 붙인다 — 같은 업로드 경로를 쓰되 용도는 공문만 묻고(업무보고는 언제나
+            근거자료다), 자동 실행은 걸지 않는다(둘 다 조사 단계가 없다) */}
         <fieldset className="rounded-md border border-slate-200 p-3">
-          <legend className="px-1 text-xs font-semibold text-slate-600">{isOfficial ? "관련 문서 첨부 (선택)" : "기존 사업계획서로 시작 (선택)"}</legend>
+          <legend className="px-1 text-xs font-semibold text-slate-600">{isProgram ? "기존 사업계획서로 시작 (선택)" : "관련 문서 첨부 (선택)"}</legend>
           <p className="mb-2 text-[11px] text-slate-500">
             {isOfficial
               ? "관련 문서를 올리면 그 내용을 읽고 공문을 씁니다. 주제 칸을 길게 적는 대신 파일로 대신할 수 있습니다."
-              : "지난해 사업계획서(hwp·hwpx·pdf·docx)를 올리고 바뀌는 내용을 적으면, 그 계획서를 기준으로 조사 → 사업계획서 → 공고문 → 보도자료를 자동으로 만듭니다."}
+              : isProgram
+                ? "지난해 사업계획서(hwp·hwpx·pdf·docx)를 올리고 바뀌는 내용을 적으면, 그 계획서를 기준으로 조사 → 사업계획서 → 공고문 → 보도자료를 자동으로 만듭니다."
+                : "지난 보고서나 실적 자료를 올리면 그 내용을 읽고 업무보고를 씁니다. 지난 연도 표기는 이번 보고 기준으로 고쳐 씁니다."}
           </p>
           <div className="grid gap-3">
             <label className="flex cursor-pointer items-center gap-2 rounded border border-dashed border-slate-300 px-3 py-2 text-xs text-slate-700 hover:bg-slate-50">
@@ -340,10 +412,18 @@ function NewProjectDialog({ onClose, onCreated }: { onClose: () => void; onCreat
                     </div>
                   </Field>
                 ) : null}
+                {/* 업무보고는 용도를 묻지 않으므로 이름도 기본 용도의 것을 쓴다 — 이 label 은
+                    프롬프트의 줄 이름이자 base-plan.md 의 절 제목이다(lib/contracts.ts 가 단일 출처). */}
                 <Field
-                  label={isOfficial ? REFERENCE_CHANGES_LABEL[refRole] : "이번에 바뀌는 내용"}
+                  label={isProgram ? "이번에 바뀌는 내용" : REFERENCE_CHANGES_LABEL[isOfficial ? refRole : DEFAULT_REFERENCE_ROLE]}
                   id="changes"
-                  hint={isOfficial ? REFERENCE_ROLE_UI[refRole].hint : "예) 2027년으로 연도 변경, 지원 규모 20개사 → 30개사, 기업당 한도 300만원 → 500만원, 접수 7월 → 8월"}
+                  hint={
+                    isOfficial
+                      ? REFERENCE_ROLE_UI[refRole].hint
+                      : isProgram
+                        ? "예) 2027년으로 연도 변경, 지원 규모 20개사 → 30개사, 기업당 한도 300만원 → 500만원, 접수 7월 → 8월"
+                        : "예) 2025년 추진성과와 조직 현황만 추려서 씀"
+                  }
                 >
                   <Textarea
                     id="changes"
@@ -351,11 +431,11 @@ function NewProjectDialog({ onClose, onCreated }: { onClose: () => void; onCreat
                     rows={3}
                     value={changes}
                     onChange={(e) => setChanges(e.target.value)}
-                    placeholder={isOfficial ? undefined : "연도·기간·규모·금액·담당 등 달라지는 점을 적어 주세요"}
+                    placeholder={isProgram ? "연도·기간·규모·금액·담당 등 달라지는 점을 적어 주세요" : undefined}
                   />
                 </Field>
-                {/* 자동 실행은 조사 → 보도자료 파이프라인의 것이다 — 공문에는 그 단계가 없어 아예 그리지 않는다 */}
-                {isOfficial ? null : (
+                {/* 자동 실행은 조사 → 보도자료 파이프라인의 것이다 — 공문·업무보고에는 그 단계가 없어 아예 그리지 않는다 */}
+                {isProgram ? (
                   <div className="flex flex-wrap gap-4 text-xs text-slate-700">
                     <label className="flex items-center gap-1">
                       <input id="autoRun" name="autoRun" type="checkbox" className="h-3.5 w-3.5" checked={autoRun} onChange={(e) => setAutoRun(e.target.checked)} />
@@ -366,7 +446,7 @@ function NewProjectDialog({ onClose, onCreated }: { onClose: () => void; onCreat
                       계획서 보충 조사
                     </label>
                   </div>
-                )}
+                ) : null}
               </>
             ) : null}
           </div>
@@ -486,7 +566,10 @@ export function ProjectList() {
                       <span>주관 {p.organizer || "-"}</span>
                     </>
                   ) : (
-                    <span>처리과 {p.contact?.부서명 || "-"}</span>
+                    /* 처리과는 공문의 말이다 — 업무보고에는 그냥 부서다 */
+                    <span>
+                      {p.kind === "official" ? "처리과" : "부서"} {p.contact?.부서명 || "-"}
+                    </span>
                   )}
                   <span className="ml-auto">{formatDateTime(p.updatedAt || p.createdAt)}</span>
                 </div>
