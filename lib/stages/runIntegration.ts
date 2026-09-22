@@ -78,11 +78,20 @@ export function startStageRun(opts: StartStageRunOptions): { runId: string; sess
   const rm = getRunManager();
   const workspaceDir = dirname(stageDir(opts.project.id, "research"));
   const researchCapable = opts.stage === "research" || opts.stage === "plan";
+  /**
+   * 업무보고는 **밖을 조사하지 않고 안을 읽는다.** 실적·전년 대비는 웹이 아니라 진흥원
+   * 내부자료에 있으므로 공공데이터 MCP 는 주지 않고 위키만 붙인다(도구도 Read·Grep 뿐이라
+   * 웹으로 나갈 길이 없다). 이것이 없으면 에이전트는 위키가 있다는 사실조차 모르고,
+   * "비교 기준이 있으면 쓴다"는 규칙이 영원히 발동하지 않는다(user 2026-09-22).
+   */
+  const wikiCapable = researchCapable || opts.stage === "report";
   // public-data MCP server + read-only wiki snapshot for the stages that research
   let mcpConfigPath: string | undefined;
   let wikiDir: string | undefined;
   if (researchCapable) {
     mcpConfigPath = writeResearchMcpConfig({ dir: join(dataDir(), "mcp") }) ?? undefined;
+  }
+  if (wikiCapable) {
     const wikiSrc = process.env.GEPA_WIKI_DIR?.trim();
     if (wikiSrc) {
       try {

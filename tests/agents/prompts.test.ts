@@ -348,3 +348,43 @@ describe("buildStagePrompt — 업무보고에 붙인 참고 문서", () => {
     expect(사업.prompt).toMatch(/^이번에 바뀌는 내용: 2025년 추진성과와 조직 현황만 추려서 씀$/m);
   });
 });
+
+/**
+ * 업무보고가 내부 위키에 닿는지 (user 2026-09-22: "최근 3년간 비교나 전년 대비 등으로
+ * 성과를 극대화해야").
+ *
+ * 그 전까지 `wikiDir` 은 `researchCapable`(조사·사업계획서)일 때만 설정됐고
+ * `sourcesGuide` 도 그 두 단계에서만 불렸다 — **업무보고 에이전트는 위키가 있다는 사실조차
+ * 몰랐다.** 도구(Read·Grep)는 있었지만 경로를 받지 못했고 샌드박스에도 붙지 않았다.
+ * 그래서 「비교 기준이 있으면 쓴다」는 규칙이 영원히 발동하지 않는 상태였다.
+ */
+describe("업무보고 — 내부 위키", () => {
+  const report: ProjectDTO = {
+    id: "r1", kind: "report", title: "2026년 주요업무보고", topic: "x", region: "경상북도",
+    organizer: "(재)경상북도경제진흥원", contact: { 부서명: "전략기획팀", 전화: "054-470-8527", 이메일: "a@gepa.kr" },
+    createdAt: "", updatedAt: "",
+  };
+
+  it("위키가 붙으면 경로와 최근 3년 지시가 프롬프트에 실린다", () => {
+    const p = buildStagePrompt({ stage: "report", project: report, workspaceDir: ws, wikiDir: "/tmp/wiki-snap" });
+    expect(p.prompt).toContain("/tmp/wiki-snap");
+    expect(p.prompt).toContain("최근 3년");
+    expect(p.prompt, "읽는 법을 알려 줘야 한다").toMatch(/Grep/);
+  });
+
+  it("위키가 없으면 비교를 지어내지 말라고 한다", () => {
+    // 경로가 없는데 비교를 요구하면 에이전트가 수치를 만들어 낸다 — 결재에 올라가는 문서다.
+    const p = buildStagePrompt({ stage: "report", project: report, workspaceDir: ws });
+    expect(p.prompt).toMatch(/비교 표기는 넣지 않는다/);
+    expect(p.prompt).not.toContain("최근 3년 비교를 만든다");
+  });
+
+  it("얼어붙은 네 단계의 프롬프트는 wikiDir 로 바뀌지 않는다", () => {
+    for (const stage of ["notice", "press", "official"] as const) {
+      const kind = stage === "official" ? "official" : "program";
+      const base = buildStagePrompt({ stage, project: { ...report, kind }, workspaceDir: ws });
+      const withWiki = buildStagePrompt({ stage, project: { ...report, kind }, workspaceDir: ws, wikiDir: "/tmp/wiki-snap" });
+      expect(withWiki.prompt, stage).toBe(base.prompt);
+    }
+  });
+});
