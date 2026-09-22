@@ -1,5 +1,5 @@
 import { describe, it, expect } from "vitest";
-import { approvalLineFor, departmentFullName, findUnit, orgSummary, unitHeadFor } from "../lib/org";
+import { approvalLineFor, approvalLineUpTo, DEFAULT_DELEGATION, DELEGATION_LEVELS, departmentFullName, findUnit, INSTITUTION_HEAD_TITLE, orgSummary, senderTitleFor, unitHeadFor } from "../lib/org";
 
 describe("org table (user-stated 2026-09-16)", () => {
   it("maps teams, units, aliases and abbreviations to their 실/단", () => {
@@ -54,5 +54,57 @@ describe("org table (user-stated 2026-09-16)", () => {
     expect(unitHeadFor("북부지소")).toBe("단장 남상조");
     expect(orgSummary()).toContain("원장 박성수");
     expect(orgSummary()).toContain("본부장 송호준");
+  });
+});
+
+/**
+ * 전결 단계 — 결재란을 어디서 끊고 발신명의를 무엇으로 쓸지 한 값으로 정한다
+ * (user 2026-09-22). 본부가 있는 부서(마케팅팀 → 강소기업지원실)와 없는 부서
+ * (전략기획팀 → 경영기획실, 원장 직속)를 함께 본다 — 본부 없는 부서의 본부장 전결이
+ * `undefined장` 같은 값을 만들지 않아야 한다.
+ */
+describe("전결 단계 (user 2026-09-22)", () => {
+  /**
+   * 기본값은 글자로 고정한다(user 2026-09-22 결정): 기관 밖으로 나가는 공문은 기관장 명의로
+   * 나가므로 안전한 쪽이 결재라인 전체이고, 전결은 그 사슬을 **낮추는** 선택이다. 기본을 낮추면
+   * 그렇게 하자고 하지 않은 문서의 결재 사슬이 조용히 짧아진다.
+   */
+  it("전결을 적지 않은 문서는 원장까지 결재한다", () => {
+    expect(DEFAULT_DELEGATION).toBe("원장");
+    expect(DELEGATION_LEVELS).toContain(DEFAULT_DELEGATION);
+  });
+
+  it("결재라인을 전결 단계에서 끊는다 — 본부 있는 부서", () => {
+    expect(approvalLineUpTo("마케팅팀", "실·단장")).toEqual(["담당", "팀장", "실장"]);
+    expect(approvalLineUpTo("마케팅팀", "본부장")).toEqual(["담당", "팀장", "실장", "본부장"]);
+    expect(approvalLineUpTo("마케팅팀", "원장")).toEqual(["담당", "팀장", "실장", "본부장", "원장"]);
+  });
+
+  it("실·단장은 단(單)의 단장도 찾는다 — 지역산업지원단은 실장이 없다", () => {
+    expect(approvalLineUpTo("북부지소", "실·단장")).toEqual(["담당", "지소장", "단장"]);
+    expect(approvalLineUpTo("북부지소", "원장")).toEqual(["담당", "지소장", "단장", "본부장", "원장"]);
+  });
+
+  it("본부 없는 부서에는 본부장 전결이 없다 — undefined 로 알린다", () => {
+    expect(approvalLineUpTo("전략기획팀", "실·단장")).toEqual(["담당", "팀장", "실장"]);
+    expect(approvalLineUpTo("전략기획팀", "원장")).toEqual(["담당", "팀장", "실장", "원장"]);
+    expect(approvalLineUpTo("전략기획팀", "본부장")).toBeUndefined();
+  });
+
+  it("발신명의는 결재라인의 마지막 직위에서 나온다", () => {
+    expect(senderTitleFor("실장", "전략기획팀")).toBe("경영기획실장");
+    expect(senderTitleFor("실장", "마케팅팀")).toBe("강소기업지원실장");
+    expect(senderTitleFor("단장", "북부지소")).toBe("지역산업지원단장");
+    expect(senderTitleFor("본부장", "마케팅팀")).toBe("강소기업육성본부장");
+    expect(senderTitleFor("원장", "마케팅팀")).toBe(INSTITUTION_HEAD_TITLE);
+    expect(senderTitleFor("원장", "알수없는부서")).toBe("(재)경상북도경제진흥원장");
+  });
+
+  it("규칙이 이름 붙이지 않은 직위·모르는 부서는 undefined — 호출처가 경고와 함께 정한다", () => {
+    expect(senderTitleFor("본부장", "전략기획팀")).toBeUndefined(); // 경영기획실은 본부가 없다
+    expect(senderTitleFor("팀장", "마케팅팀")).toBeUndefined();
+    expect(senderTitleFor("지소장", "북부지소")).toBeUndefined();
+    expect(senderTitleFor("실장", "알수없는부서")).toBeUndefined();
+    expect(senderTitleFor(undefined, "마케팅팀")).toBeUndefined();
   });
 });

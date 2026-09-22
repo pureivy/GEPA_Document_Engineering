@@ -91,6 +91,47 @@ family: official
     expect(text).toContain("    - 세부 항목");
   }, 60_000);
 
+  /**
+   * 번호 항목은 glyph 가 아니라 본문 글자라(`1. 작성대상`) 기호 사다리가 닿지 않았다 — 실제로
+   * 쓰는 사람이 `가.` 가 `1.` 과 같은 칸에서 시작하는 것을 보고 신고했다(user 2026-09-22).
+   * 편람 §3 의 2타 사다리를 번호에도 적용한다(참고 문서의 관행 4타가 아니라 편람 2타).
+   */
+  it("번호 항목은 편람 2타 사다리만큼 들여쓴다", async () => {
+    const DSL_NUM = `---
+family: official
+수신유형: 내부결재
+제목: 번호 사다리 확인
+처리과: 전략기획팀
+---
+1. 첫째 단계
+가. 둘째 단계
+1) 셋째 단계
+가) 넷째 단계
+(1) 다섯째 단계
+(가) 여섯째 단계
+① 일곱째 단계
+㉮ 여덟째 단계
+`;
+    const { doc } = parseDsl(DSL_NUM);
+    const { bytes } = buildHwpx(doc, { now: NOW });
+    const text = await extractText(bytes);
+    // 첫 항목은 두문 표와 같은 문단에 들어가므로 줄 시작이 아니다 — 들여쓰기 0타만 확인한다
+    expect(text).toContain("1. 첫째 단계");
+    expect(text).not.toContain(" 1. 첫째 단계");
+    for (const [line, indent] of [
+      ["가. 둘째 단계", 2],
+      ["1) 셋째 단계", 4],
+      ["가) 넷째 단계", 6],
+      ["(1) 다섯째 단계", 8],
+      ["(가) 여섯째 단계", 10],
+      ["① 일곱째 단계", 12],
+      ["㉮ 여덟째 단계", 14],
+    ] as [string, number][]) {
+      expect(text, line).toContain(`${" ".repeat(indent)}${line}`);
+      expect(text, `${line} 는 ${indent}타를 넘지 않는다`).not.toContain(`${" ".repeat(indent + 1)}${line}`);
+    }
+  }, 60_000);
+
   it("굵은 글씨는 참고 문서 글꼴을 유지한 채 별도 charPr 로 나간다", () => {
     const { doc } = parseDsl(DSL_GLYPH.replace("1. 작성대상", "본문에 **굵은 글씨** 가 있다"));
     const { report } = buildHwpx(doc, { now: NOW });
@@ -103,7 +144,10 @@ family: official
  * 결문 결재란은 5칸이다 — t01 3행의 셀 이름이 `직위.1` … `직위.5` (cols 0·9·20·32·42) 이고
  * 다섯 칸 모두 `borderFillIDRef=3 paraPr=23 charPr=21` 로 같다. 참고 문서에서 뒤 두 칸이 비어
  * 있는 것은 그 문서가 실장 전결(`★`)이었기 때문이지 서식이 3칸이어서가 아니다.
- * org.ts 의 결재라인은 전부 4~5단계이므로, 3칸만 채우면 모든 공문서가 최종 결재권자를 잃는다.
+ *
+ * 칸을 어디까지 채울지는 `전결`이 정한다(user 2026-09-22). 기본값은 **원장** — 기관 밖으로 나가는
+ * 공문은 기관장 명의로 나가므로 안전한 쪽이 결재라인 전체이고, 전결은 그 사슬을 낮추는 선택이다.
+ * 세 단계 모두 명시한 문서로 따로 고정해 둔다 — 어느 단계가 기본값이 되든 각각이 계속 검사된다.
  */
 describe("buildHwpx — official 결재란", () => {
   /** 결문 표(paraPr 12 앵커)의 (row, col) 칸 글자 */
@@ -118,30 +162,83 @@ describe("buildHwpx — official 결재란", () => {
   /** 직위.1 … 직위.5 (t01 3행) */
   const 직위 = (xml: string) => [0, 9, 20, 32, 42].map((col) => footCell(xml, 3, col));
 
-  it("조직표의 4단계 결재라인이 앞 네 칸에 들어가고 다섯째 칸은 빈다", () => {
-    const { sectionXml } = buildHwpx(parseDsl(DSL).doc, { now: NOW });
-    // 전략기획팀 → 경영기획실: 담당 → 팀장 → 실장 → 원장 (lib/org.ts)
+  /** 처리과·전결을 바꾼 시료 DSL (발신명의 줄은 지워 전결에서 파생되게 둔다) */
+  const dsl = (처리과: string, 전결?: string) =>
+    DSL.replace("발신명의: 경영기획실장\n", "").replace("처리과: 전략기획팀", `처리과: ${처리과}${전결 ? `\n전결: ${전결}` : ""}`);
+  const 발신명의 = (xml: string) => footCell(xml, 0, 10);
+
+  /**
+   * 기본값이 조용히 바뀌면 여기서 걸린다: 전결을 적지 않은 문서가 `전결: 원장` 을 적은 문서와
+   * **같은 결문**을 내야 한다(값 자체는 tests/org.test.ts 가 글자로 고정한다).
+   */
+  it("전결을 적지 않으면 원장까지 결재한다 — 기본값", () => {
+    const { sectionXml } = buildHwpx(parseDsl(dsl("전략기획팀")).doc, { now: NOW });
+    // 전략기획팀 → 경영기획실: 담당 → 팀장 → 실장 → 원장 (끊지 않는다)
     expect(직위(sectionXml)).toEqual(["담당", "팀장", "실장", "원장", ""]);
+    expect(발신명의(sectionXml)).toBe("(재)경상북도경제진흥원장");
+    const 명시 = buildHwpx(parseDsl(dsl("전략기획팀", "원장")).doc, { now: NOW });
+    expect(직위(sectionXml)).toEqual(직위(명시.sectionXml));
+    expect(발신명의(sectionXml)).toBe(발신명의(명시.sectionXml));
   }, 60_000);
 
-  it("5단계 결재라인은 다섯 칸을 모두 채운다", () => {
-    const { sectionXml } = buildHwpx(parseDsl(DSL.replace("처리과: 전략기획팀", "처리과: 마케팅팀")).doc, { now: NOW });
+  it("원장 전결은 4단계 결재라인의 네 칸을 채우고 발신명의가 기관장이 된다", () => {
+    const { sectionXml } = buildHwpx(parseDsl(dsl("전략기획팀", "원장")).doc, { now: NOW });
+    expect(직위(sectionXml)).toEqual(["담당", "팀장", "실장", "원장", ""]);
+    expect(발신명의(sectionXml)).toBe("(재)경상북도경제진흥원장");
+  }, 60_000);
+
+  it("원장 전결은 5단계 결재라인의 다섯 칸을 모두 채운다", () => {
+    const { sectionXml } = buildHwpx(parseDsl(dsl("마케팅팀", "원장")).doc, { now: NOW });
     // 마케팅팀 → 강소기업지원실: 담당 → 팀장 → 실장 → 본부장 → 원장
     expect(직위(sectionXml)).toEqual(["담당", "팀장", "실장", "본부장", "원장"]);
+    expect(발신명의(sectionXml)).toBe("(재)경상북도경제진흥원장");
+  }, 60_000);
+
+  it("본부장 전결은 본부장에서 끊고 발신명의가 본부장이 된다", () => {
+    const { sectionXml } = buildHwpx(parseDsl(dsl("마케팅팀", "본부장")).doc, { now: NOW });
+    expect(직위(sectionXml)).toEqual(["담당", "팀장", "실장", "본부장", ""]);
+    expect(발신명의(sectionXml)).toBe("강소기업육성본부장");
+  }, 60_000);
+
+  it("실·단장 전결의 발신명의는 실이면 실장, 단이면 단장", () => {
+    const 실 = buildHwpx(parseDsl(dsl("마케팅팀", "실·단장")).doc, { now: NOW });
+    expect(직위(실.sectionXml)).toEqual(["담당", "팀장", "실장", "", ""]);
+    expect(발신명의(실.sectionXml)).toBe("강소기업지원실장");
+    // 지역산업지원단은 실장이 없다 — 담당 → 지소장 → 단장
+    const 단 = buildHwpx(parseDsl(dsl("북부지소", "실·단장")).doc, { now: NOW });
+    expect(직위(단.sectionXml)).toEqual(["담당", "지소장", "단장", "", ""]);
+    expect(발신명의(단.sectionXml)).toBe("지역산업지원단장");
   }, 60_000);
 
   /**
-   * 전결(專決) — 위임전결 규정에 따라 결재가 중간에서 끝나는 문서. 참고 문서의 `★과장` 이 그 예다.
-   * 전결 자체를 모델링하지는 않고, `결재라인` 을 직접 적으면 조직표 기본값을 덮어쓰게 해 둔다.
+   * 경영기획실은 원장 직속이라 본부장이 없다(lib/org.ts). 조용히 다른 단계로 바꾸면 결재란이
+   * 사실과 달라지므로, 끊지 않고 전체를 쓰되 그렇게 했다고 말한다.
    */
-  it("결재라인을 직접 적으면 조직표 기본값을 덮어쓴다 (전결 문서)", () => {
-    const dsl = DSL.replace("처리과: 전략기획팀", "처리과: 전략기획팀\n결재라인: [담당, 팀장, 실장]");
-    const { sectionXml } = buildHwpx(parseDsl(dsl).doc, { now: NOW });
-    expect(직위(sectionXml)).toEqual(["담당", "팀장", "실장", "", ""]); // 원장 칸이 채워지지 않는다
+  it("본부 없는 부서의 본부장 전결은 경고하고 결재라인을 끊지 않는다", () => {
+    const { sectionXml, report } = buildHwpx(parseDsl(dsl("전략기획팀", "본부장")).doc, { now: NOW });
+    expect(직위(sectionXml)).toEqual(["담당", "팀장", "실장", "원장", ""]);
+    expect(report.warnings.map((w) => w.message).join("\n")).toContain("본부장 단계가 없습니다");
+    expect(발신명의(sectionXml)).toBe("(재)경상북도경제진흥원장"); // 결재라인의 마지막이 원장이다
   }, 60_000);
 
-  it("4단계 결재라인의 마지막 직위(원장)까지 들어간다", async () => {
-    const { doc } = parseDsl(DSL);
+  it("발신명의를 직접 적으면 전결에서 파생한 값보다 앞선다", () => {
+    const { sectionXml } = buildHwpx(parseDsl(DSL.replace("처리과: 전략기획팀", "처리과: 전략기획팀\n전결: 원장")).doc, { now: NOW });
+    expect(발신명의(sectionXml)).toBe("경영기획실장"); // 시료 DSL 의 발신명의 — 원장 전결이어도 그대로
+  }, 60_000);
+
+  /**
+   * 참고 문서의 `★과장` 처럼 규정 밖의 결재란을 재현해야 하는 문서의 탈출구 — `결재라인` 을
+   * 직접 적으면 전결에서 파생한 값보다 앞선다(골든 문서가 이 길을 쓴다).
+   */
+  it("결재라인을 직접 적으면 전결보다 앞선다", () => {
+    // 전결을 실·단장으로 적어 두면 파생 결재란은 담당·팀장·실장이다 — 첫 칸의 과장이 명시값의 증거다
+    const d = DSL.replace("처리과: 전략기획팀", "처리과: 전략기획팀\n전결: 실·단장\n결재라인: [과장, 팀장, 실장]");
+    const { sectionXml } = buildHwpx(parseDsl(d).doc, { now: NOW });
+    expect(직위(sectionXml)).toEqual(["과장", "팀장", "실장", "", ""]); // 파생값(담당…)이 아니다
+  }, 60_000);
+
+  it("원장 전결이면 마지막 직위(원장)까지 결재란에 들어간다", async () => {
+    const { doc } = parseDsl(dsl("전략기획팀", "원장"));
     const { bytes, report } = buildHwpx(doc, { now: NOW });
     const text = await extractText(bytes);
     // 전략기획팀 → 경영기획실: 담당 → 팀장 → 실장 → 원장 (lib/org.ts)

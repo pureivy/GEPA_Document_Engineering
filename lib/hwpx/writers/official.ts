@@ -11,9 +11,9 @@
 import { childrenNamed, findFirst, isNode, type XmlNode } from "../xml";
 import { paragraph } from "../emit/paragraph";
 import { loadGeometry, cloneFragment, setCellText } from "../geometry";
-import { approvalLineFor, departmentFullName } from "../../org";
-import { leadingSpaces } from "../../docmodel/indent";
-import { officialMetaProblems, type Block, type Inline, type OfficialDoc, type OfficialMeta } from "../../docmodel/schema";
+import { approvalLineFor, approvalLineUpTo, departmentFullName, senderTitleFor } from "../../org";
+import { leadingSpaces, manualMarkerIndent } from "../../docmodel/indent";
+import { inlineText, officialMetaProblems, type Block, type Inline, type OfficialDoc, type OfficialMeta } from "../../docmodel/schema";
 import type { CharSpec } from "../registry";
 import { WriterContext } from "./context";
 
@@ -126,7 +126,10 @@ function firstBodyBlock(blocks: OfficialDoc["blocks"]): ParaBlock | undefined {
  */
 function bodyInlines(b: ParaBlock): Inline[] {
   const glyph = b.glyph && b.glyph !== "none" ? b.glyph : undefined;
-  const prefix = " ".repeat(b.indent ?? leadingSpaces("official", b.glyph, b.role)) + (glyph ? `${glyph} ` : "");
+  // 기호가 없는 문단은 글머리의 편람 번호(`1.` `가.` `1)` …)에서 단계를 읽는다 — 번호는 glyph
+  // 가 아니라 본문 글자라서 기호 사다리가 닿지 않아 지금까지 전부 0타로 나갔다.
+  const marker = glyph ? undefined : manualMarkerIndent(inlineText(b.inlines));
+  const prefix = " ".repeat(b.indent ?? marker ?? leadingSpaces("official", b.glyph, b.role)) + (glyph ? `${glyph} ` : "");
   return prefix ? [{ t: "text", text: prefix }, ...b.inlines] : b.inlines;
 }
 
@@ -213,14 +216,14 @@ function footTable(ctx: WriterContext, m: OfficialMeta, hasAttachmentBlock: bool
   }
   const foot = tableOnly(cloneFragment(ref, ctx.ids));
 
-  setCellText(foot, ...FOOT_발신명의, 발신명의(ctx, m));
-
   // 수신자 목록은 `수신자참조` 일 때만 — 아니면 라벨까지 비워 참고 문서의 목록이 남지 않게 한다
   const 참조 = m.수신유형 === "수신자참조";
   setCellText(foot, ...FOOT_수신자라벨, 참조 ? "수신자" : "");
   setCellText(foot, ...FOOT_수신자, 참조 ? (m.수신자 ?? []).join(", ") : "");
 
-  const line = m.결재라인.length ? m.결재라인 : approvalLineFor(m.처리과);
+  // 결재란이 먼저다 — 발신명의는 그 결재라인의 **마지막 직위**에서 나온다
+  const line = 결재라인(ctx, m);
+  setCellText(foot, ...FOOT_발신명의, 발신명의(ctx, m, line));
   if (line.length > FOOT_결재.length) {
     ctx.warnings.push({ message: `결재란은 ${FOOT_결재.length}칸입니다. 결재라인 ${line.length}개 중 뒤 ${line.length - FOOT_결재.length}개(${line.slice(FOOT_결재.length).join(", ")})는 서식에 들어가지 않습니다` });
   }
@@ -246,14 +249,39 @@ function footTable(ctx: WriterContext, m: OfficialMeta, hasAttachmentBlock: bool
 }
 
 /**
- * 결문 발신명의 칸은 직위(`경영기획실장`)를 쓴다 — 사람 이름이 아니다.
- * 비어 있으면 처리과가 속한 실·단 이름에 `장`을 붙여 만든다(`전략기획팀` → `경영기획실장`).
+ * 결재란 직위 — 직접 적은 `결재라인` 이 언제나 앞선다(전결을 규정 밖으로 적어야 하는 문서의
+ * 탈출구; 골든 문서가 참고 문서의 과장·팀장·실장을 이 길로 재현한다). 비어 있으면 `전결` 단계에서
+ * 끊는다. 그 단계가 처리과의 결재라인에 없으면(본부 없는 경영기획실의 본부장 전결) 끊지 않고
+ * 전체를 쓰되 그렇게 했다고 말한다 — 조용히 다른 단계로 바꾸면 결재란이 사실과 달라진다.
  */
-function 발신명의(ctx: WriterContext, m: OfficialMeta): string {
+function 결재라인(ctx: WriterContext, m: OfficialMeta): string[] {
+  if (m.결재라인.length) return m.결재라인;
+  const cut = approvalLineUpTo(m.처리과, m.전결);
+  if (cut) return cut;
+  const full = approvalLineFor(m.처리과);
+  ctx.warnings.push({ message: `처리과 "${m.처리과}"의 결재라인(${full.join("·")})에는 ${m.전결} 단계가 없습니다 — 전결 없이 ${full[full.length - 1]}까지 결재하는 것으로 두었습니다` });
+  return full;
+}
+
+/**
+ * 결문 발신명의 칸은 직위(`경영기획실장`)를 쓴다 — 사람 이름이 아니다.
+ * 직접 적은 값이 언제나 앞서고, 비어 있으면 **결재라인의 마지막 직위**에서 만든다
+ * (원장 → 기관장, 본부장 → 소속 본부장, 실장·단장 → 그 실·단장).
+ */
+function 발신명의(ctx: WriterContext, m: OfficialMeta, line: string[]): string {
   if (m.발신명의.trim()) return m.발신명의.trim();
+  const last = line[line.length - 1];
+  const title = senderTitleFor(last, m.처리과);
+  if (title) return title;
+  // 규칙이 이름 붙이지 않은 마지막 직위(내부결재의 팀장·지소장)나 모르는 부서 — 처리과에서
+  // 지어내되 무엇을 했는지 남긴다
   const unit = departmentFullName(m.처리과);
   const derived = unit ? (unit.endsWith("장") ? unit : `${unit}장`) : "";
-  ctx.warnings.push({ message: derived ? `발신명의가 비어 있어 처리과 "${m.처리과}"에서 "${derived}"로 채웠습니다` : `발신명의가 비어 있고 처리과 "${m.처리과}"로 부서를 찾지 못해 빈 칸으로 두었습니다` });
+  ctx.warnings.push({
+    message: derived
+      ? `결재라인의 마지막 직위 "${last ?? ""}"로는 발신명의를 정할 수 없어 처리과 "${m.처리과}"에서 "${derived}"로 채웠습니다`
+      : `발신명의가 비어 있고 처리과 "${m.처리과}"로 부서를 찾지 못해 빈 칸으로 두었습니다`,
+  });
   return derived;
 }
 

@@ -9,6 +9,7 @@ import { useMemo, useState } from "react";
 import { z } from "zod";
 import type { DocModel, Family } from "@/lib/docmodel/schema";
 import { NoticeMetaSchema, OfficialMetaSchema, PlanMetaSchema, PressMetaSchema } from "@/lib/docmodel/schema";
+import { DEFAULT_DELEGATION } from "@/lib/org";
 import { Sheet } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { Field, Input, Textarea } from "@/components/ui/input";
@@ -20,7 +21,7 @@ const ORDER: Record<Family, string[]> = {
   notice: ["공고번호", "사업명", "모집대상", "부제", "주관기관", "지역", "대상기업군", "공고연월", "기관장", "접수", "모집개요", "절차도", "로고", "lineSpacing", "paraSpacing"],
   plan: ["제목", "부제", "연도", "부서", "등록번호", "결재", "요약", "numbering", "lineSpacing", "body1Font", "house"],
   press: ["기관", "배포일", "보도시점", "담당부서", "책임자", "담당자", "연락처", "이메일", "제목", "부제", "사진", "붙임"],
-  official: ["수신유형", "수신", "수신자", "경유", "제목", "발신명의", "처리과", "시행일", "공개구분", "결재라인", "협조자", "연락처", "붙임"],
+  official: ["수신유형", "수신", "수신자", "경유", "제목", "발신명의", "처리과", "시행일", "공개구분", "전결", "결재라인", "협조자", "연락처", "붙임"],
 };
 
 /** blank template so a document without meta still shows the right fields */
@@ -67,6 +68,7 @@ const TEMPLATE: Record<Family, Record<string, unknown>> = {
     처리과: "",
     시행일: "",
     공개구분: "공개",
+    전결: DEFAULT_DELEGATION,
     결재라인: [],
     협조자: [],
     연락처: { 우편번호: "", 주소: "", 홈페이지: "https://gepa.kr", 전화: "", 전송: "", 이메일: "" },

@@ -4,6 +4,7 @@
  * order by the parser) used for streaming upserts and editor node mapping.
  */
 import { z } from "zod";
+import { DELEGATION_LEVELS, DEFAULT_DELEGATION, INSTITUTION_HEAD_TITLE } from "../org";
 
 export const FamilySchema = z.enum(["plan", "notice", "press", "official"]);
 export type Family = z.infer<typeof FamilySchema>;
@@ -174,7 +175,7 @@ export const NoticeMetaSchema = z.object({
   지역: z.string(),
   대상기업군: z.string().default("중소기업"),
   공고연월: z.string(),
-  기관장: z.string().default("(재)경상북도경제진흥원장"),
+  기관장: z.string().default(INSTITUTION_HEAD_TITLE),
   접수: z.object({
     이메일: z.string(),
     우편주소: z.string(),
@@ -268,14 +269,27 @@ export const OfficialMetaSchema = z
     수신자: z.array(z.string()).optional(),
     경유: z.string().default(""),
     제목: z.string().min(1),
-    /** 결문 발신명의. 비우면 lib/org.ts 가 부서에서 추론한다 */
+    /**
+     * 결문 발신명의(직위). 비우면 **실제로 쓰인 결재라인의 마지막 직위**에서 정한다 —
+     * 원장 → 기관장, 본부장 → 처리과가 속한 본부의 장, 실장·단장 → 그 실·단의 장(lib/org.ts
+     * senderTitleFor). 부서에서 바로 뽑는 것이 아니다: 마케팅팀의 원장 전결은 실장이 아니라
+     * 기관장 명의로 나간다. 우선순위는 이 값 → 직접 적은 `결재라인` 의 마지막 직위 → `전결`
+     * 단계에서 끊은 결재라인의 마지막 직위.
+     */
     발신명의: z.string().default(""),
     /** 기안 부서(팀). 시행 칸에 `<처리과>-` 로 찍힌다 */
     처리과: z.string().min(1),
     /** 시행일. 시행 전에는 빈 문자열 */
     시행일: z.string().default(""),
     공개구분: z.enum(["공개", "부분공개", "비공개"]).default("공개"),
-    /** 결재란 직위. 비우면 lib/org.ts 의 approvalLineFor(처리과) */
+    /**
+     * 전결 단계 — 결재란과 발신명의를 함께 정한다(lib/org.ts DELEGATION_LEVELS). 기본은 원장:
+     * 결재란은 처리과의 결재라인을 끝까지 쓰고 발신명의는 기관장이 된다. 전결은 그 사슬을 낮추는
+     * 선택이라 적은 문서만 짧아진다(기본값의 근거는 lib/org.ts DEFAULT_DELEGATION).
+     * `결재라인`·`발신명의`를 직접 적으면 각각 이 값보다 앞선다.
+     */
+    전결: z.enum(DELEGATION_LEVELS).default(DEFAULT_DELEGATION),
+    /** 결재란 직위. 비우면 `전결` 단계에서 끊은 approvalLineFor(처리과) */
     결재라인: z.array(z.string()).default([]),
     협조자: z.array(z.string()).default([]),
     연락처: z

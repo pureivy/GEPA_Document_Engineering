@@ -8,6 +8,7 @@ import { jsonError, readJsonBody } from "@/lib/agents/http";
 import { ensureProjectDir } from "@/lib/storage/paths";
 import { isProjectKind } from "@/lib/kinds";
 import { OfficialMetaSchema } from "@/lib/docmodel/schema";
+import { DELEGATION_LEVELS } from "@/lib/org";
 import { writeFileSync } from "node:fs";
 import path from "node:path";
 
@@ -24,14 +25,25 @@ const contactSchema = z
     부서명: z.string().trim().default(""),
     담당자: z.string().trim().optional(),
     전화: z.string().trim().default(""),
+    /** 결문 연락처의 전송(팩스) — OfficialMetaSchema.연락처.전송 과 같은 값 */
+    전송: z.string().trim().optional(),
     이메일: z.string().trim().default(""),
     우편주소: z.string().trim().optional(),
+    /** 결문 연락처의 우편번호 — OfficialMetaSchema.연락처.우편번호 과 같은 값 */
+    우편번호: z.string().trim().optional(),
     /** OfficialMetaSchema 의 수신유형과 같은 값 — 값 하나 두는 곳을 이 스키마로 통일해 둘이 갈라지지 않게 한다 */
     수신유형: OfficialMetaSchema.shape.수신유형.optional(),
     /** 수신유형=수신자 일 때의 수신 대상 */
     수신: z.string().trim().optional(),
     /** 수신유형=수신자참조 일 때의 수신자 목록 — 화면 입력 그대로(쉼표 구분 문자열); 배열로 바꾸는 것은 에이전트의 몫 */
     수신자: z.string().trim().optional(),
+    /**
+     * OfficialMetaSchema.전결 과 같은 값(둘 다 lib/org.ts 의 DELEGATION_LEVELS 를 쓴다) — 결재란과
+     * 발신명의를 함께 정한다. 여기서는 스키마의 필드를 그대로 쓰지 않는다: 그 필드는 `.default()`
+     * 를 달고 있어 `.optional()` 로 감싸도 값이 없을 때 기본값이 끼어들고(zod 4.6.5 실측),
+     * 공문이 아닌 프로젝트의 contact 에까지 전결이 저장된다.
+     */
+    전결: z.enum(DELEGATION_LEVELS).optional(),
   })
   .default({ 부서명: "", 전화: "", 이메일: "" });
 

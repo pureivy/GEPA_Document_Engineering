@@ -41,14 +41,20 @@ export interface ProjectDTO {
     부서명: string;
     담당자?: string;
     전화: string;
+    /** 결문 연락처의 전송(팩스) — OfficialMetaSchema.연락처.전송 과 같은 값 */
+    전송?: string;
     이메일: string;
     우편주소?: string;
+    /** 결문 연락처의 우편번호 — OfficialMetaSchema.연락처.우편번호 과 같은 값(우편주소 옆의 다섯 자리) */
+    우편번호?: string;
     /** 공문(official) 전용 — OfficialMetaSchema 의 같은 이름 필드와 값이 같다(program 프로젝트는 쓰지 않는다) */
     수신유형?: OfficialMeta["수신유형"];
     /** 수신유형=수신자 일 때의 수신 대상 */
     수신?: string;
     /** 수신유형=수신자참조 일 때의 수신자 목록 — 쉼표로 구분한 문자열(배열로 바꾸는 것은 에이전트의 몫) */
     수신자?: string;
+    /** 공문(official) 전용 — 결재란과 발신명의를 함께 정하는 전결 단계(OfficialMetaSchema.전결과 같은 값) */
+    전결?: OfficialMeta["전결"];
   };
   /** uploaded 기존 사업계획서 (projects/<id>/reference/<fileName>, text in reference/base-plan.md) and what changes */
   reference?: { fileName: string; changes: string };

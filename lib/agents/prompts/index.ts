@@ -53,6 +53,8 @@ function projectBrief(p: ProjectDTO, workspaceDir?: string): string {
   ];
   const recipient = recipientLine(p);
   if (recipient) lines.push(recipient);
+  // 전결은 결재란과 발신명의를 함께 정한다 — 수신유형과 같은 길(contact)로 실려 온다
+  if (p.contact.전결) lines.push(`전결: ${p.contact.전결}`);
   if (p.reference) {
     lines.push(`기존 사업계획서: ${workspaceDir ?? "<작업폴더>"}/reference/base-plan.md (원본 파일 ${p.reference.fileName}) — 이번 프로젝트는 이 계획서를 갱신하는 것이다.`);
     lines.push(`이번에 바뀌는 내용: ${p.reference.changes || "(미기재 — 연도·일정·담당만 갱신)"}`);
@@ -193,7 +195,8 @@ front-matter: 기관 (재)경상북도경제진흥원, 배포일(공고일), 보
         prompt: `${brief}\n작업 폴더: ${workspaceDir}\n\n위 내용으로 공문서(기안문)를 작성하라.
 - front-matter의 처리과는 ${project.contact.부서명}, 연락처는 전화 ${project.contact.전화} / 이메일 ${project.contact.이메일}.
 - 수신유형·수신(자)은 위 "수신유형: …" 줄의 값을 그대로 옮긴다. 수신유형이 수신자참조면 그 줄의 수신자는 쉼표로 구분된 이름 목록이므로 OfficialMetaSchema 가 요구하는 YAML 배열(수신자: [경영지원팀장, 마케팅팀장, …])로 바꿔 쓴다 — 옮겨 적기만 하면 배열이 아니라 문자열 하나가 되어 스키마를 통과하지 못한다. 위에 "수신유형: …" 줄이 없으면(예전 방식으로 만들어진 프로젝트) 지시 내용에서 판단하고, 불분명하면 수신유형: 수신자, 수신에 처리과가 속한 실·단장 직위를 적는다.
-- 발신명의는 비워 두면 처리과에서 자동으로 채워진다 — 전결 등을 명시할 때만 직접 적는다.
+- 전결은 위 "전결: …" 줄의 값을 front-matter 의 전결에 그대로 옮긴다 — 결재란을 어디서 끊을지와 발신명의가 여기서 함께 정해진다(실·단장 → 실·단장 명의, 본부장 → 본부장 명의, 원장 → 기관장 명의). 그 줄이 없으면 전결을 적지 않는다(적지 않으면 원장까지 결재하는 것이 기본값이다 — 전결은 그 사슬을 낮출 때만 적는다).
+- 발신명의와 결재라인은 비워 둔다 — 전결과 처리과에서 자동으로 채워진다. 규정 밖의 결재란을 재현해야 할 때만 결재라인을 직접 적는다.
 - 본문은 문장체로 쓰고 항목은 1. → 가. → 1) → 가) 순으로 매기며, 항목이 하나뿐이면 기호를 붙이지 않는다.
 - 붙임물이 있으면 front-matter의 붙임 목록에 적고 본문에 직접 타이핑하지 않는다. 붙임이 없으면 본문 마지막 줄 끝에 "  끝."을 직접 쓴다.
 - 시행 일련번호·접수번호는 어떤 형태로도 만들지 않는다(front-matter에 그런 키가 없다).${DOC_CONTRACT("official", "official")}${resume}`,

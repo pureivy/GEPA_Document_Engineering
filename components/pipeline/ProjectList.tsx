@@ -5,6 +5,7 @@ import { useEffect, useState } from "react";
 import { FolderOpen, Plus, RefreshCw, Trash2, Upload } from "lucide-react";
 import type { ProjectDTO } from "@/lib/contracts";
 import { OfficialMetaSchema } from "@/lib/docmodel/schema";
+import { approvalLineFor, approvalLineUpTo, DEFAULT_DELEGATION, DELEGATION_LEVELS, findUnit, senderTitleFor, type DelegationLevel } from "@/lib/org";
 import { api, errorMessage, type NewProjectInput } from "@/lib/client/api";
 import { cn, formatDateTime } from "@/lib/client/format";
 import { Button } from "@/components/ui/button";
@@ -12,7 +13,7 @@ import { Dialog } from "@/components/ui/dialog";
 import { Field, Input, Select, Textarea } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
 import { KIND_LABEL, PROJECT_KINDS, type ProjectKind } from "@/lib/kinds";
-import { PREF_PLAN_RESEARCH, useBoolPref, writePref } from "@/lib/client/prefs";
+import { PREF_PLAN_RESEARCH, saveContactPref, useBoolPref, useContactPref, writePref } from "@/lib/client/prefs";
 
 /** 종류별 한 줄 설명 — 라디오 옆에 그대로 보인다 */
 const KIND_HINT: Record<ProjectKind, string> = {
@@ -26,18 +27,28 @@ export type RecipientKind = (typeof RECIPIENT_KINDS)[number];
 /** 수신유형별로 값을 담는 front-matter 키. 내부결재는 수신 대상이 없다 */
 export const RECIPIENT_KEY: Record<RecipientKind, "" | "수신" | "수신자"> = { 내부결재: "", 수신자: "수신", 수신자참조: "수신자" };
 
+/**
+ * 공문 전결 단계 — 값은 조직 사실이라 lib/org.ts 에 한 벌만 두고 화면과 OfficialMetaSchema 가
+ * 같은 배열을 쓴다(수신유형을 스키마에서 가져오는 것과 같은 이유). 드리프트 가드는
+ * tests/ui/recipientKinds.test.ts 가 스키마와 대조한다.
+ */
+export { DELEGATION_LEVELS, DEFAULT_DELEGATION };
+
 const EMPTY: NewProjectInput = {
   kind: "program",
   title: "",
   topic: "",
   region: "안동시",
   organizer: "(재)경상북도경제진흥원",
-  contact: { 부서명: "", 담당자: "", 전화: "", 이메일: "", 우편주소: "" },
+  contact: { 부서명: "", 담당자: "", 전화: "", 전송: "", 이메일: "", 우편주소: "", 우편번호: "" },
 };
 
-/** mounted only while open, so every opening starts from a blank form */
+/** mounted only while open, so every opening starts from a blank form (연락처만 지난번 값에서 이어 쓴다) */
 function NewProjectDialog({ onClose, onCreated }: { onClose: () => void; onCreated: (p: ProjectDTO) => void }) {
-  const [form, setForm] = useState<NewProjectInput>(EMPTY);
+  // 연락처는 이 브라우저에 담아 둔 지난번 값으로 시작한다 — 프로젝트마다 다시 치지 않게 한다
+  // (user 2026-09-22). 폼이 열릴 때 한 번만 읽는다: 그 뒤의 편집은 이 프로젝트만의 것이다.
+  const saved = useContactPref();
+  const [form, setForm] = useState<NewProjectInput>(() => ({ ...EMPTY, contact: { ...EMPTY.contact, ...saved } }));
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
   // 기존 사업계획서 업로드 (선택): 파일 + 바뀌는 내용 → 업로드 후 전체 자동 실행
@@ -47,6 +58,7 @@ function NewProjectDialog({ onClose, onCreated }: { onClose: () => void; onCreat
   // 공문 전용 입력. DB 컬럼이 아니라 contact(looseObject)에 실려 프롬프트로 가고, 에이전트가 front-matter 에 쓴다(스펙 §5.4 — 연락처와 같은 근거)
   const [recipientKind, setRecipientKind] = useState<RecipientKind>("수신자");
   const [recipient, setRecipient] = useState("");
+  const [delegation, setDelegation] = useState<DelegationLevel>(DEFAULT_DELEGATION);
   const planResearch = useBoolPref(PREF_PLAN_RESEARCH, false);
   const [phase, setPhase] = useState<"" | "create" | "upload">("");
 
@@ -57,6 +69,13 @@ function NewProjectDialog({ onClose, onCreated }: { onClose: () => void; onCreat
   // with an uploaded 기존 사업계획서 the title/topic can be derived from the file + 변경 사항; the contact is always needed for the documents
   const contactOk = !!(form.contact.부서명.trim() && form.contact.전화.trim() && form.contact.이메일.trim());
   const recipientOk = recipientKind === "내부결재" || !!recipient.trim();
+  // 본부 없는 실·단(경영기획실)에는 본부장 전결이 없다 — 부서를 못 찾으면 기관 기본 결재라인에
+  // 본부장이 있으므로 그대로 둔다. 고르고 나서 부서를 바꿔 없어진 단계는 기본값으로 읽는다.
+  const unit = findUnit(form.contact.부서명);
+  const levels = DELEGATION_LEVELS.filter((l) => l !== "본부장" || !unit || !!unit.division);
+  const 전결: DelegationLevel = levels.includes(delegation) ? delegation : DEFAULT_DELEGATION;
+  const 결재란 = approvalLineUpTo(form.contact.부서명, 전결) ?? approvalLineFor(form.contact.부서명);
+  const 발신명의 = senderTitleFor(결재란[결재란.length - 1], form.contact.부서명);
   const valid = isOfficial ? contactOk && recipientOk && !!(form.title.trim() && form.topic.trim()) : contactOk && (refFile ? true : !!(form.title.trim() && form.topic.trim()));
   const missing = isOfficial
     ? [
@@ -83,9 +102,12 @@ function NewProjectDialog({ onClose, onCreated }: { onClose: () => void; onCreat
       const contact = { ...form.contact };
       if (!contact.담당자?.trim()) delete contact.담당자;
       if (!contact.우편주소?.trim()) delete contact.우편주소;
+      if (!contact.우편번호?.trim()) delete contact.우편번호;
+      if (!contact.전송?.trim()) delete contact.전송;
       // 수신유형·수신(자)는 topic 이 아니라 contact 에 얹는다(스펙 §5.4) — topic 은 공문 내용만 담는다
       if (isOfficial) {
         contact.수신유형 = recipientKind;
+        contact.전결 = 전결;
         if (recipientKind === "수신자") contact.수신 = recipient.trim();
         else if (recipientKind === "수신자참조") contact.수신자 = recipient.trim();
       }
@@ -94,6 +116,8 @@ function NewProjectDialog({ onClose, onCreated }: { onClose: () => void; onCreat
       const title = form.title.trim() || baseName;
       const topic = isOfficial ? form.topic.trim() : form.topic.trim() || (refFile ? `기존 사업계획서(${refFile.name})를 기준으로 갱신${changes.trim() ? ` — 바뀌는 내용: ${changes.trim()}` : ""}` : "");
       const p = await api.createProject({ ...form, title, topic, contact });
+      // 실제로 쓰인 연락처가 다음 프로젝트의 기본값이 된다(브라우저에만 담는다)
+      saveContactPref(form.contact);
       if (!isOfficial && refFile) {
         setPhase("upload");
         await api.uploadReference(p.id, refFile, changes, autoRun, planResearch);
@@ -182,6 +206,21 @@ function NewProjectDialog({ onClose, onCreated }: { onClose: () => void; onCreat
                 </Field>
               )}
             </div>
+            <div className="grid grid-cols-[10rem_1fr] gap-4">
+              <Field label="전결" id="delegation" required>
+                <Select id="delegation" name="delegation" value={전결} onChange={(e) => setDelegation(e.target.value as DelegationLevel)}>
+                  {levels.map((l) => (
+                    <option key={l} value={l}>
+                      {l}
+                    </option>
+                  ))}
+                </Select>
+              </Field>
+              <div className="self-end pb-2 text-[11px] text-slate-500">
+                결재란 {결재란.join(" · ")} / 발신명의 {발신명의 ?? "(부서명을 적으면 정해집니다)"}
+                {unit && !unit.division ? ` — ${unit.name}은 원장 직속이라 본부장 전결이 없습니다` : ""}
+              </div>
+            </div>
             <Field label="공문 내용" id="body" required hint="자유 서술 — 용건, 근거, 기한, 제출 방법 등. 에이전트가 항목 위계를 세워 기안문으로 씁니다">
               <Textarea
                 id="body"
@@ -222,11 +261,17 @@ function NewProjectDialog({ onClose, onCreated }: { onClose: () => void; onCreat
             <Field label="전화" id="tel" required>
               <Input id="tel" name="tel" type="tel" placeholder="054-900-3801" value={form.contact.전화} onChange={(e) => setContact("전화", e.target.value)} autoComplete="tel" />
             </Field>
+            <Field label="전송" id="fax">
+              <Input id="fax" name="fax" type="tel" placeholder="054-472-2989" value={form.contact.전송 ?? ""} onChange={(e) => setContact("전송", e.target.value)} autoComplete="fax" />
+            </Field>
             <Field label="이메일" id="email" required>
               <Input id="email" name="email" type="email" placeholder="gepa_north@naver.com" value={form.contact.이메일} onChange={(e) => setContact("이메일", e.target.value)} autoComplete="email" />
             </Field>
             <Field label="우편주소" id="street-address" className="col-span-2">
               <Input id="street-address" name="street-address" placeholder="경상북도 안동시 북순환로 387, 2층 경상북도경제진흥원" value={form.contact.우편주소 ?? ""} onChange={(e) => setContact("우편주소", e.target.value)} autoComplete="street-address" />
+            </Field>
+            <Field label="우편번호" id="postal-code">
+              <Input id="postal-code" name="postal-code" placeholder="39393" value={form.contact.우편번호 ?? ""} onChange={(e) => setContact("우편번호", e.target.value)} autoComplete="postal-code" />
             </Field>
           </div>
         </fieldset>
