@@ -49,23 +49,28 @@ const REPORT_TABLE_STYLE: FamilyStyle = {
  * 참고본에 깨끗한 짝이 없는 역할(`note`·`coverSpacer`)은 일부러 style-map 에
  * 넣지 않고 여기 상수로 둔다 — 어림짐작한 paraPr 는 나중에 찾기가 훨씬 어렵다.
  *
- * `hanging` 은 참고본 `intent` 의 절반이다(registry.ts:206 이 `intent = 2 × -hanging`).
+ * `hanging` 은 **참고본 `hp:case` 의 `intent` 를 그대로 뒤집은 값**이다.
+ * `registry.ts:206` 이 `hp:default` 에 `2 × -hanging` 을 쓰고 `254` 가 `hp:case` 에 0.5배를
+ * 걸어, 결국 **case intent = -hanging** 이 된다. 한글이 보여 주는 값도 case 쪽이다.
+ * (여기 값들이 한동안 정확히 절반이었다 — `hp:default` 를 보고 반으로 나눈 탓이다.
+ * style-map 이 역할을 다 맺고 있어 출력에는 안 쓰였지만, 역할 하나가 빠지는 순간
+ * 내어쓰기가 조용히 절반이 된다.)
  */
 const FALLBACK: Record<string, { para: ParaSpec; char: CharSpec }> = {
   coverTitle: { para: { align: "CENTER", lineSpacing: 130, prev: 500 }, char: { font: "heading", pt: 45, color: "#000094" } },
   coverSpacer: { para: { align: "CENTER", lineSpacing: 160 }, char: { font: "HY견고딕", pt: 15, spacing: -5, ratio: 98 } },
   chapterBand: { para: { align: "CENTER", lineSpacing: 90, prev: 1000 }, char: { font: "HY견고딕", pt: 30, bold: true, ratio: 95 } },
-  chipTitle: { para: { align: "JUSTIFY", lineSpacing: 130, hanging: 1816, prev: 500 }, char: { font: "heading", pt: 17 } },
-  chipLabel: { para: { align: "CENTER", lineSpacing: 130, hanging: 1816, prev: 500 }, char: { font: "heading", pt: 15, color: "#FFFFFF" } },
+  chipTitle: { para: { align: "JUSTIFY", lineSpacing: 130, hanging: 3632, prev: 500 }, char: { font: "heading", pt: 17 } },
+  chipLabel: { para: { align: "CENTER", lineSpacing: 130, hanging: 3632, prev: 500 }, char: { font: "heading", pt: 15, color: "#FFFFFF" } },
   tocLine: { para: { align: "JUSTIFY", lineSpacing: 200, left: 2000, right: 2500, prev: 500 }, char: { font: "body", pt: 14, ratio: 95 } },
   summary: { para: { align: "JUSTIFY", lineSpacing: 160 }, char: { font: "table", pt: 15, spacing: -2, ratio: 95 } },
-  subHeading: { para: { align: "JUSTIFY", lineSpacing: 160, hanging: 2020, next: 150 }, char: { font: "HY견고딕", pt: 15 } },
+  subHeading: { para: { align: "JUSTIFY", lineSpacing: 160, hanging: 4040, next: 150 }, char: { font: "HY견고딕", pt: 15 } },
   listItem: { para: { align: "JUSTIFY", lineSpacing: 180 }, char: { font: "body", pt: 13 } },
-  bullet1: { para: { align: "JUSTIFY", lineSpacing: 160, hanging: 1357, next: 150 }, char: { font: "body", pt: 15, bold: true, spacing: -5, ratio: 95 } },
+  bullet1: { para: { align: "JUSTIFY", lineSpacing: 160, hanging: 2713, next: 150 }, char: { font: "body", pt: 15, bold: true, spacing: -5, ratio: 95 } },
   // 글머리 기호 한 글자만 쓰는 역할 — paraPr 은 bullet1 과 같은 것을 적어 두되 쓰지 않는다
   // (RoleMap 이 언제나 짝을 요구한다. lib/hwpx/template.ts:RoleMap).
-  bullet1Mark: { para: { align: "JUSTIFY", lineSpacing: 160, hanging: 1357, next: 150 }, char: { font: "body", pt: 14, spacing: -9, ratio: 98 } },
-  bullet2: { para: { align: "JUSTIFY", lineSpacing: 160, hanging: 1632, next: 150 }, char: { font: "body", pt: 15, spacing: -5, ratio: 95 } },
+  bullet1Mark: { para: { align: "JUSTIFY", lineSpacing: 160, hanging: 2713, next: 150 }, char: { font: "body", pt: 14, spacing: -9, ratio: 98 } },
+  bullet2: { para: { align: "JUSTIFY", lineSpacing: 160, hanging: 3264, next: 150 }, char: { font: "body", pt: 15, spacing: -5, ratio: 95 } },
   note: { para: { align: "JUSTIFY", lineSpacing: 160 }, char: { font: "note", pt: 12 } },
   tableAnchor: { para: { align: "JUSTIFY", lineSpacing: 180 }, char: { font: "heading", pt: 14, ratio: 98 } },
 };
@@ -204,7 +209,8 @@ export function writeReport(ctx: WriterContext, doc: ReportDoc): XmlNode[] {
         ctx.warnings.push({ blockId: b.id, message: "표지 제목이 둘 이상입니다 — 첫 번째만 씁니다" });
         break;
       case "chapterBand":
-        out.push(chapterBand(ctx, b.numeral, b.title));
+        // 간지는 언제나 새 쪽에서 시작한다 — 문서 첫 블록일 때만 빼고(빈 첫 쪽이 생긴다).
+        out.push(chapterBand(ctx, b.numeral, b.title, out.length === 0));
         break;
       case "sectionChip":
         out.push(sectionChip(ctx, b.label, b.title));
@@ -313,7 +319,14 @@ function coverSpacer(ctx: WriterContext): XmlNode {
  * plan.ts 의 표지 조각과 같은 방식으로 직접 옮겨 준다. 이걸 빠뜨리면 `pageBreak` 앞에 둔
  * 간지가 앞 쪽에 붙고, `pageBreak → blank → pageBreak` 로 만든 빈 쪽도 함께 무너진다.
  */
-function chapterBand(ctx: WriterContext, numeral: string, title: string): XmlNode {
+/**
+ * 장 간지. **쪽 나눔을 작성기가 보장한다** — 앞에 `<pagebreak>` 가 있든 없든 새 쪽에서 연다.
+ * 참고본의 간지 셋(Ⅰ·Ⅱ·Ⅲ)이 모두 쪽을 차지하고, 이 서식에서 간지가 쪽 중간에 오는 경우는
+ * 없다. 작성자·에이전트가 `<pagebreak>` 를 잊으면 간지가 앞 글에 붙어 버리는데,
+ * 실제로 표본의 Ⅱ 간지가 그렇게 나가고 있었다(담당자에게 보여 준 파일에 들어 있었다).
+ * 명시적 `<pagebreak>` 와 겹쳐도 플래그라 한 번만 걸린다.
+ */
+function chapterBand(ctx: WriterContext, numeral: string, title: string, first = false): XmlNode {
   const text = `${numeral}. ${title}`;
   const ref = loadGeometry(ctx.tpl.dir, "t03");
   if (!ref) {
@@ -323,7 +336,7 @@ function chapterBand(ctx: WriterContext, numeral: string, title: string): XmlNod
   }
   const frag = cloneFragment(ref, ctx.ids);
   setCellText(frag, 0, 0, text);
-  if (ctx.pendingPageBreak) frag.attrs.pageBreak = "1";
+  if (ctx.pendingPageBreak || !first) frag.attrs.pageBreak = "1";
   ctx.pendingPageBreak = false;
   return frag;
 }

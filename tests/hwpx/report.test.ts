@@ -431,3 +431,64 @@ describe("templates/report/style-map.json", () => {
     expect(tabPr?.[0]).toContain('leader="CIRCLE"');
   });
 });
+
+/**
+ * 간지는 앞에 `<pagebreak>` 가 없어도 새 쪽에서 연다. 담당자에게 보여 준 표본의 Ⅱ 간지가
+ * 실제로 쪽 한가운데 찍히고 있었다 — 작성자가 문법을 하나 잊었을 때 문서가 깨지지 않아야 한다.
+ */
+describe("buildHwpx — report 간지 쪽 나눔", () => {
+  const FM = `---\nfamily: report\n제목: t\n보고일: 2026. 9.\n보고대상: 도지사\n부서: 기획조정실\n대상기간: 2026년\n---\n`;
+  const bandsOf = (dsl: string) => {
+    const { sectionXml } = buildHwpx(parseDsl(FM + dsl).doc, { now: NOW });
+    const sec = parseXml(sectionXml);
+    // 간지는 t03 조각(1×4 표)이고 쪽 나눔은 **바깥** 문단 속성에 실린다.
+    // `findAll` 은 표 셀 안 문단까지 돌려주므로 표를 품은 것만 고른다 — 셀 안 문단은
+    // 같은 글자를 담고 있고 pageBreak 는 언제나 0 이라, 안 거르면 이 단언이 헛돈다.
+    return findAll(sec, "hp:p")
+      .filter((p) => findAll(p, "hp:tbl").length > 0)
+      .filter((p) => JSON.stringify(p).includes("일 반 현 황") || JSON.stringify(p).includes("주요사업"));
+  };
+
+  it("`<pagebreak>` 가 없어도 간지에 쪽 나눔이 걸린다", () => {
+    const got = bandsOf("# 일 반 현 황\n본문\n# 2026년도 주요사업\n본문\n");
+    expect(got.length).toBeGreaterThanOrEqual(2);
+    for (const p of got) expect(p.attrs.pageBreak, "간지는 새 쪽에서 연다").toBe("1");
+  });
+
+  it("명시적 `<pagebreak>` 와 겹쳐도 한 번만 걸린다", () => {
+    const got = bandsOf("<pagebreak>\n# 일 반 현 황\n본문\n");
+    expect(got.length).toBeGreaterThanOrEqual(1);
+    expect(got[0]!.attrs.pageBreak).toBe("1");
+  });
+});
+
+/**
+ * 대비값(FALLBACK)의 `hanging` 이 참고본과 맞는지 본다.
+ *
+ * style-map 이 역할을 다 맺고 있어 이 값들은 지금 출력에 쓰이지 않는다 — 그래서 한동안
+ * **전부 정확히 절반**이었는데 아무 테스트도 울지 않았다. 역할 하나가 style-map 에서
+ * 빠지는 순간 내어쓰기가 조용히 절반이 되고, 그건 한글에서 열어 보기 전에는 안 보인다.
+ *
+ * 규칙: `registry.ts` 가 `hp:default` 에 `2 × -hanging` 을 쓰고 `hp:case` 에 0.5배를 걸어
+ * **case intent = -hanging** 이 된다. 한글이 보여 주는 값도 case 쪽이다.
+ */
+describe("templates/report — 대비값의 내어쓰기가 참고본과 맞는다", () => {
+  const caseIntent = (paraPr: number): number | undefined => {
+    const pr = new RegExp(`<hh:paraPr id="${paraPr}"[\\s\\S]*?</hh:paraPr>`).exec(HEADER)?.[0] ?? "";
+    const branch = /<hp:case[\s\S]*?<\/hp:case>/.exec(pr)?.[0] ?? pr;
+    const m = /<hc:intent value="(-?\d+)"/.exec(branch);
+    return m ? Number(m[1]) : undefined;
+  };
+  const src = readFileSync(join(process.cwd(), "lib/hwpx/writers/report.ts"), "utf8");
+  const styleMap = JSON.parse(readFileSync(join(DIR, "style-map.json"), "utf8")) as { para: Record<string, { paraPr: number }> };
+
+  it.each(["chipTitle", "chipLabel", "subHeading", "bullet1", "bullet1Mark", "bullet2"])("%s", (role) => {
+    const paraPr = styleMap.para[role]?.paraPr;
+    expect(paraPr, `style-map 에 ${role} 이 없다`).toBeDefined();
+    const intent = caseIntent(paraPr!);
+    expect(intent, `참고본 paraPr ${paraPr} 에 intent 가 없다`).toBeDefined();
+    const hanging = Number(new RegExp(`  ${role}: \\{ para: \\{[^}]*hanging: (\\d+)`).exec(src)?.[1]);
+    expect(hanging, `${role} 의 대비값 hanging 을 못 찾았다`).not.toBeNaN();
+    expect(hanging, "case intent = -hanging 이어야 한다").toBe(-intent!);
+  });
+});
