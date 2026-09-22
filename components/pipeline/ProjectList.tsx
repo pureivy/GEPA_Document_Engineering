@@ -76,7 +76,11 @@ function NewProjectDialog({ onClose, onCreated }: { onClose: () => void; onCreat
 
   /**
    * 공문의 수신유형·수신은 DB 컬럼이 아니라 주제(topic)에 실려 프롬프트로 간다(스펙 §5.4).
-   * front-matter 키 이름 그대로 앞에 붙여 두면 에이전트가 옮겨 적기만 하면 된다.
+   * front-matter 키 이름을 그대로 앞에 붙여 두면 `수신유형`·`수신`(수신유형=수신자)은 에이전트가
+   * 옮겨 적기만 하면 된다. **`수신자`(수신유형=수신자참조)는 다르다** — 여기서는 화면 입력을
+   * 그대로 이어 쓴 쉼표 목록(`recipient.trim()`)이라, 에이전트가 그걸 `OfficialMetaSchema` 가
+   * 요구하는 YAML 배열(`수신자: [경영지원팀장, 마케팅팀장, …]`)로 바꿔 써야 한다 — 옮겨 적기만
+   * 하면 배열이 아니라 문자열 하나가 되어 스키마를 통과하지 못한다.
    */
   const officialTopic = () => {
     const key = RECIPIENT_KEY[recipientKind];

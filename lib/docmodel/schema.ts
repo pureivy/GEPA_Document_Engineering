@@ -297,11 +297,12 @@ export type OfficialMeta = z.infer<typeof OfficialMetaSchema>;
 /**
  * 수신유형과 수신·수신자의 정합성 검사. 사람이 읽는 문제 목록을 돌려준다(빈 배열이면 정상).
  *
- * 이것을 zod `.superRefine()` 으로 넣지 않는 이유: frontmatter.ts 의 unwrapSchema(:116)는
- * Optional/Default/Nullable 만 풀기 때문에, 감싸는 순간 collectUnknownKeys 가
- * ZodObject 분기를 타지 못하고 "모르는 front-matter 키" 경고가 조용히 사라진다.
- * 다른 family 는 전부 평범한 ZodObject 이므로 공문서만 예외로 만들지 않는다.
- * 호출처: 작성기(ctx.warnings)와 검토관.
+ * 이것을 zod `.superRefine()` 으로 넣지 않는 이유: superRefine 으로 감싸도 여전히 ZodObject 라
+ * unwrapSchema(frontmatter.ts:116)·collectUnknownKeys 는 멀쩡히 동작한다(zod 4.6.5 실측) — 그건
+ * 문제가 아니다. 진짜 이유는 **판정의 성격**이다. superRefine 은 안 맞으면 파싱 자체를 실패시키는데,
+ * 이 호출처(작성기의 ctx.warnings, 검토관)는 문서를 **경고와 함께라도 만들어 내야** 한다 — 수신유형과
+ * 수신·수신자가 안 맞아도 문서는 나오고, 사람이 읽는 문제 목록만 곁들인다. 스키마 파싱을 막으면
+ * 그 자리에서 작성이 멈춘다.
  */
 export function officialMetaProblems(m: OfficialMeta): string[] {
   const out: string[] = [];

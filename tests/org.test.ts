@@ -11,6 +11,12 @@ describe("org table (user-stated 2026-09-16)", () => {
     // 2026-09-22 정정: 경영기획실의 팀은 경영관리팀이 아니라 경영지원팀이다
     // (참고 문서 수신자 목록도 "경영지원팀장, ESG·기업지원팀장, 마케팅팀장 …" 이다)
     expect(findUnit("경영지원팀")?.name).toBe("경영기획실");
+    // 옛 이름("경영관리팀")도 alias 로 계속 풀려야 한다 — 그 이름으로 만든 기존 사업계획서의
+    // 결재란이 기관 기본값(5단계)으로 조용히 바뀌면 안 된다(byte-level 회귀 금지).
+    expect(findUnit("경영관리팀")?.name).toBe("경영기획실");
+    expect(approvalLineFor("경영관리팀")).toEqual(["담당", "팀장", "실장", "원장"]);
+    expect(departmentFullName("경영관리팀")).toBe("경영기획실");
+    expect(unitHeadFor("경영관리팀")).toBe("실장 남상범");
     // 기관 문서는 가운뎃점을 쓰고(`ESG·기업지원팀`) 사람은 빼고도 친다 — 네 표기 모두 붙어야 한다
     expect(findUnit("ESG·기업지원팀")?.name).toBe("강소기업지원실");
     expect(findUnit("ESG기업지원팀")?.name).toBe("강소기업지원실");

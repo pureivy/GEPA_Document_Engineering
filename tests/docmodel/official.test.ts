@@ -17,8 +17,9 @@ describe("OfficialMetaSchema", () => {
   });
 
   it("평범한 ZodObject 여야 한다 — frontmatter 의 미지 키 검사가 shape 를 읽는다", () => {
-    // unwrapSchema(frontmatter.ts:116)는 Optional/Default/Nullable 만 푼다.
-    // superRefine 등으로 감싸면 collectUnknownKeys 가 조용히 멈춘다.
+    // superRefine 으로 감싸도 여전히 ZodObject·shape 는 살아 있다(zod 4.6.5 실측) — 그래서
+    // officialMetaProblems 를 스키마 refine 으로 넣지 않는 이유는 이게 아니라, 파싱 자체를
+    // 실패시키지 않고 문서를 경고와 함께 만들어 내야 하기 때문이다(schema.ts officialMetaProblems 참조).
     expect(OfficialMetaSchema).toBeInstanceOf(z.ZodObject);
     expect(Object.keys(OfficialMetaSchema.shape)).toContain("수신유형");
   });

@@ -13,6 +13,7 @@ import { serializeProject } from "@/lib/db/serialize";
 import { jsonError } from "@/lib/agents/http";
 import { RunConflictError } from "@/lib/agents/runManager";
 import { startStageRun } from "@/lib/stages/runIntegration";
+import { KIND_LABEL, isProjectKind, stagesOf } from "@/lib/kinds";
 import { projectDir } from "@/lib/storage/paths";
 import { extractReferenceText, referenceMarkdown, referenceExtension, REFERENCE_EXTENSIONS } from "@/lib/reference/extract";
 
@@ -40,6 +41,15 @@ export async function POST(req: Request, ctx: { params: Promise<{ id: string }> 
   const changes = String(form.get("changes") ?? "").trim().slice(0, 20_000);
   const autoRun = String(form.get("autoRun") ?? "") === "1";
   const supplementalResearch = String(form.get("supplementalResearch") ?? "") === "1";
+
+  // run route(app/api/projects/[id]/stages/[stage]/run/route.ts:39)와 같은 kind 게이트 — 이 라우트를
+  // 직접 POST 하면(autoRun=1) 공문 프로젝트 안에도 research 실행이 생길 수 있었다.
+  if (autoRun) {
+    const kind = isProjectKind(row.kind) ? row.kind : "program";
+    if (!stagesOf(kind).includes("research")) {
+      return jsonError(404, `${KIND_LABEL[kind]} 프로젝트에는 research 단계가 없습니다`);
+    }
+  }
 
   const bytes = new Uint8Array(await file.arrayBuffer());
   let extracted: { text: string; truncated: boolean };
