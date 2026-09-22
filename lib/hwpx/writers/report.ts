@@ -46,14 +46,13 @@ const REPORT_TABLE_STYLE: FamilyStyle = {
 
 /**
  * 역할별 대비값. style-map 이 맺어 준 id 가 언제나 앞서고, 여기 값은 그 id 가 없을 때만 쓴다.
- * 참고본에 깨끗한 짝이 없는 역할(`note`·`coverSpacer`·`coverMeta`)은 일부러 style-map 에
+ * 참고본에 깨끗한 짝이 없는 역할(`note`·`coverSpacer`)은 일부러 style-map 에
  * 넣지 않고 여기 상수로 둔다 — 어림짐작한 paraPr 는 나중에 찾기가 훨씬 어렵다.
  *
  * `hanging` 은 참고본 `intent` 의 절반이다(registry.ts:206 이 `intent = 2 × -hanging`).
  */
 const FALLBACK: Record<string, { para: ParaSpec; char: CharSpec }> = {
   coverTitle: { para: { align: "CENTER", lineSpacing: 130, prev: 500 }, char: { font: "heading", pt: 45, color: "#000094" } },
-  coverMeta: { para: { align: "CENTER", lineSpacing: 160 }, char: { font: "heading", pt: 17 } },
   coverSpacer: { para: { align: "CENTER", lineSpacing: 160 }, char: { font: "HY견고딕", pt: 15, spacing: -5, ratio: 98 } },
   chapterBand: { para: { align: "CENTER", lineSpacing: 90, prev: 1000 }, char: { font: "HY견고딕", pt: 30, bold: true, ratio: 95 } },
   chipTitle: { para: { align: "JUSTIFY", lineSpacing: 130, hanging: 1816, prev: 500 }, char: { font: "heading", pt: 17 } },
@@ -251,16 +250,14 @@ function cover(ctx: WriterContext, m: ReportMeta, title?: Inline[]): XmlNode[] {
   if (logo) out.push(cloneFragment(logo, ctx.ids));
   else ctx.warnings.push({ message: "report template geometry t00 missing; 표지 로고 표를 생략했습니다" });
 
-  for (let i = 0; i < 3; i++) out.push(coverSpacer(ctx));
+  for (let i = 0; i < COVER_SPACERS_ABOVE; i++) out.push(coverSpacer(ctx));
   out.push(coverTitlePara(ctx, title ?? [{ t: "text", text: m.제목 }]));
-  for (let i = 0; i < 6; i++) out.push(coverSpacer(ctx));
 
-  // 참고본 표지에는 제목 말고 글이 없다. `보고일`·`부서` 는 비어 있을 때가 많고 비면 줄도 내지
-  // 않는다. `보고대상`·`대상기간` 은 표지에 쓰지 않는다 — 목차·간지(Task 5)와 에이전트
-  // 프롬프트(Task 6)가 쓰는 값이고, 표지에 넣으면 참고본에 없는 줄이 는다.
-  if (m.보고일.trim()) out.push(coverLine(ctx, m.보고일.trim()));
-  if (m.부서.trim()) out.push(coverLine(ctx, m.부서.trim()));
-  for (let i = 0; i < 3; i++) out.push(coverSpacer(ctx));
+  // 참고본 표지에는 **제목 말고 글이 한 줄도 없다** — 로고 표(p4), 빈 문단 셋, 제목 도형(p9),
+  // 빈 문단 열셋, 기관 그림(p23)이 전부다(실측). 예전에는 여기서 `보고일`·`부서` 를 줄로
+  // 냈는데 담당자가 한글에서 보고 "필요 없다"고 했고, 참고본도 그 편이다.
+  // 그 둘은 메타로 남아 목차·간지와 에이전트 프롬프트가 쓴다 — 표지에만 안 나간다.
+  for (let i = 0; i < COVER_SPACERS_BELOW; i++) out.push(coverSpacer(ctx));
 
   // 참고본 표지 아래쪽 기관 로고(para 18, binaryItemIDRef=image2)
   const ref = ctx.tpl.pics["image2"];
@@ -299,11 +296,6 @@ function coverTitlePara(ctx: WriterContext, inlines: Inline[]): XmlNode {
   const anchor = roleSpec(ctx, "coverBox");
   const h = Number(child(box, "hp:sz")?.attrs.height ?? 0) || COVER_BOX_HEIGHT;
   return ctx.para({ paraPr: anchor.paraPr, runs: [{ charPr: anchor.charPr, nodes: [box] }], vertsize: h, lineSpacing: 100 });
-}
-
-function coverLine(ctx: WriterContext, text: string): XmlNode {
-  const s = roleSpec(ctx, "coverMeta");
-  return ctx.para({ paraPr: s.paraPr, runs: [{ charPr: s.charPr, text }], vertsize: Math.round(s.base.pt * 100), lineSpacing: s.lineSpacing });
 }
 
 function coverSpacer(ctx: WriterContext): XmlNode {
@@ -591,6 +583,10 @@ const SUBHEADING_CHIP_HEIGHT = 1552;
 
 /** 표지 제목 도형의 높이 — `geometry/cover.xml` 의 `hp:sz` 와 같다(조각이 없을 때의 대비값). */
 const COVER_BOX_HEIGHT = 9417;
+
+/** 표지의 빈 간격 문단 수 — 참고본 실측(제목 도형 p9 앞 p5~p7, 뒤 p10~p22). */
+const COVER_SPACERS_ABOVE = 3;
+const COVER_SPACERS_BELOW = 13;
 
 /**
  * 소제목 앞에 붙는 인라인 도형 칩. 참고본은 흰색→`#4E9484` 그러데이션 네모(`hp:rect` 두 장)를

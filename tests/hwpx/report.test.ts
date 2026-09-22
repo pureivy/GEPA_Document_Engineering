@@ -71,7 +71,9 @@ describe("buildHwpx — report", () => {
   it("표지·간지·본문이 문서에 들어간다", async () => {
     const text = await extractText(bytes);
     expect(text).toContain("2026년 주요업무보고");
-    expect(text).toContain("(재)경상북도경제진흥원");
+    // 표지에는 제목 말고 글이 없다 — `부서`(메타)는 표지에 나가지 않는다(담당자 지시,
+    // 참고본도 그렇다: 로고 표·빈 문단·제목 도형·빈 문단·기관 그림이 전부다).
+    expect(text).not.toContain("(재)경상북도경제진흥원");
     expect(text).toContain("Ⅰ. 일 반 현 황");
     expect(text).toContain("Ⅱ. 2026년도 주요사업");
     expect(text).toContain("중소기업 및 소상공인 등에 대한");
