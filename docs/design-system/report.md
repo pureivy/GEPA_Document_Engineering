@@ -74,6 +74,13 @@ expander 가 자동으로 매긴다(`expanders/report.ts`, `numeralStyle: "roman
 **간지 Ⅰ·Ⅱ·Ⅲ 은 본문 중간에 되풀이된다.** 공문서의 두문·결문처럼 고정된 자리가 아니라서
 작성기가 혼자 놓을 수 없고, 그래서 이 family 만 `#`/`##` 문법을 연다.
 
+**간지 `#` 줄 앞에는 쪽 나눔이 있어야 한다.** 작성기는 `chapterBand` 에 쪽 나눔을 자동으로
+걸지 않고 DSL 의 `<pagebreak>` 만 본다. `tests/fixtures/report-sample.dsl.md` 를 빌드해
+`section0.xml` 의 `pageBreak="1"` 을 세어 확인했다: 앞에 `<pagebreak>` 가 있는 Ⅰ 간지는 쪽
+머리에서 시작하고, 없는 Ⅱ 간지는 앞 내용에 이어 붙어 쪽 한가운데 찍힌다. 간지 뒷면 빈 쪽은
+`<pagebreak>` · 빈 줄 · `<pagebreak>` 석 줄로 만든다 — `emitBlank` 도 `ctx.para` 를 거치므로
+대기 중인 쪽 나눔을 먹는다(`writers/context.ts:79`).
+
 목차는 합성되지 않는다. 작성자가 ```` ```toc ```` 를 쓰지 않으면 보고순서 쪽이 통째로 빠진다
 (`expanders/report.ts` 의 `reportPrelude()` 는 빈 배열을 돌려준다 — 실측).
 
@@ -81,17 +88,17 @@ expander 가 자동으로 매긴다(`expanders/report.ts`, `numeralStyle: "roman
 
 | 역할 | paraPr | charPr | 근거 |
 |---|---|---|---|
-| `coverTitle` | 45 | 47 | `geometry/cover.xml` 의 도형 **안** 문단이 쓰는 값과 같다. 그래서 조각이 없을 때의 대비 문단도 같은 모양으로 나간다 |
+| `coverTitle` | 45 | 47 | `geometry/cover.xml` 의 도형 **안** 문단이 쓰는 값과 같다(report.ts 주석; 재측정 안 함). 그래서 조각이 없을 때의 대비 문단도 같은 모양으로 나간다 |
 | `coverBox` | 2 | 47 | 표지 제목 도형을 담는 앵커 문단 |
 | `tocHeading` | 15 | 48 | `보 고 순 서` 제목 줄. **맺어 두었지만 작성기가 아직 쓰지 않는다** — 지금은 목차 상자(`t02`)만 나간다(§7) |
 | `tocLine` | 108 | 130 | `paraPr 108` 에 `tabPrIDRef="1"` 이 딸려 오고, `tabPr 1` 이 `<hh:tabItem pos="43500" type="RIGHT" leader="CIRCLE"/>` 다(실측). **이 매핑을 놓치면 목차 점선이 사라진다** |
 | `chapterBand` | 53 | 127 | 간지 `Ⅰ. 일 반 현 황` 줄 |
-| `chipLabel` / `chipTitle` | 57 / 58 | 103 / 57 | 절 칩 1×2 표. 칸 너비 `[3719, 43905]`·높이 2980 은 `geometry/t31`(=`t34`·`t36`) 실측, 색은 참고본 borderFill 53(번호)·52(제목)·4(테두리) |
-| `summary` | 70 | 153 | 요약박스 안 문단. 상자는 `geometry/t32` 계열, 칸 색 `#F2F2F2` + 점선 네 변 |
+| `chipLabel` / `chipTitle` | 57 / 58 | 103 / 57 | 절 칩 1×2 표. 칸 너비 `[3719, 43905]`·높이 2980 은 `geometry/t31`(=`t34`·`t36`) 실측, 색은 참고본 borderFill 53(번호)·52(제목)·4(테두리) — 둘 다 report.ts 주석에서 옮겼다(재측정 안 함) |
+| `summary` | 70 | 153 | 요약박스 안 문단. 상자는 `geometry/t32` 계열, 칸 색 `#F2F2F2` + 점선 네 변(report.ts 주석; 재측정 안 함) |
 | `subHeading` | 146 | 142 | `hp:case` 실측: `intent=-4040, prev=0, next=150, lineSpacing=160` |
-| `listItem` | 86 | 102 | 참고본 일반현황의 평평한 목록(`ㅇ 1997년 …`, `ㅇ 조  직: …`) 열한 번이 모두 이 쓰임 |
+| `listItem` | 86 | 102 | 참고본 일반현황의 평평한 목록(`ㅇ 1997년 …`, `ㅇ 조  직: …`) 열한 번이 모두 이 쓰임(report.ts 주석; 재측정 안 함) |
 | `bullet1` | 147 | 10 | `hp:case` 실측: `intent=-2713, prev=0, next=150, lineSpacing=160` |
-| `bullet1Mark` | 147 | 163 | `●` 기호와 뒤 공백만 담는 run. 참고본 run 짜임(문단 117·120·123·128·136): `[143 " "] [163 " "] [10 본문]` — 기호가 본문(15pt)보다 작은 14pt다 |
+| `bullet1Mark` | 147 | 163 | `●` 기호와 뒤 공백만 담는 run. 참고본 run 짜임(문단 117·120·123·128·136): `[143 " "] [163 "U+F06D + 공백"] [10 본문]` — run 짜임은 report.ts 주석에서 옮겼고(재측정 안 함), 기호 14pt·본문 15pt 는 `header.xml` 의 charPr 163·10 에서 직접 읽었다 |
 | `bullet2` | 150 | 116 | `hp:case` 실측: `intent=-3264, prev=0, next=150, lineSpacing=160` |
 | `tableAnchor` / `blank` | 68 | 97 | 표·빈 줄 앵커 문단 |
 
@@ -113,8 +120,8 @@ style-map 에 **일부러 넣지 않은** 역할이 둘 있다: `note`(`※`)와
 ```bash
 python3 -c 'import zipfile,re,collections;
 s=zipfile.ZipFile("templates/report/reference.hwpx").read("Contents/section0.xml").decode("utf-8");
-print(s.count(""), s.count("●"));
-c=collections.Counter(pp for pp,b in re.findall(r"<hp:p\b[^>]*paraPrIDRef=\"(\d+)\"[^>]*>(.*?)</hp:p>",s,re.S) if "" in b);
+print(s.count("\uf06d"), s.count("●"));
+c=collections.Counter(pp for pp,b in re.findall(r"<hp:p\b[^>]*paraPrIDRef=\"(\d+)\"[^>]*>(.*?)</hp:p>",s,re.S) if "\uf06d" in b);
 print(len(c), c.most_common(3))'
 # → 63 0
 # → 28 [('79', 8), ('147', 6), ('117', 5)]
