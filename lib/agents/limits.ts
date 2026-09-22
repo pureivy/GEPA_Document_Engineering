@@ -27,8 +27,9 @@ export const STAGE_LIMITS: Record<RunStage, StageLimits> = {
   notice: { maxTurns: 30, wallTimeoutMs: 25 * MIN, idleTimeoutMs: DEFAULT_IDLE_TIMEOUT_MS },
   press: { maxTurns: 20, wallTimeoutMs: 15 * MIN, idleTimeoutMs: DEFAULT_IDLE_TIMEOUT_MS },
   official: { maxTurns: 20, wallTimeoutMs: 15 * MIN, idleTimeoutMs: DEFAULT_IDLE_TIMEOUT_MS },
-  // 업무보고는 참고본 골격을 채우는 일이라 공문서와 같은 크기로 둔다(실측 전 잠정값)
-  report: { maxTurns: 20, wallTimeoutMs: 15 * MIN, idleTimeoutMs: DEFAULT_IDLE_TIMEOUT_MS },
+  // 업무보고는 여섯 장을 채우며 위키를 뒤지고, 위키에 없는 대외 자료는 웹으로 찾는다
+  // (담당자 지시 2026-09-22). 조사가 붙으면서 공문서 크기로는 모자라 공고문에 맞췄다.
+  report: { maxTurns: 30, wallTimeoutMs: 25 * MIN, idleTimeoutMs: DEFAULT_IDLE_TIMEOUT_MS },
   review: { maxTurns: 15, wallTimeoutMs: 15 * MIN, idleTimeoutMs: DEFAULT_IDLE_TIMEOUT_MS },
 };
 
@@ -40,8 +41,10 @@ export const STAGE_ALLOWED_TOOLS: Record<RunStage, string[]> = {
   press: ["Read", "Write"],
   // 공문서는 사람이 사실을 이미 아는 사무 문서다. 조사 도구를 주지 않는다
   official: ["Read", "Write"],
-  // 업무보고도 사람이 실적·계획을 이미 아는 문서다 — 조사 도구를 주지 않는다
-  report: ["Read", "Write"],
+  // 업무보고는 **안을 먼저 읽고 밖을 나중에 본다.** 진흥원 실적은 내부 위키에서만 가져오고
+  // (웹에서 주운 우리 수치는 비워 두느니만 못하다), 도정 전략·경제 여건 같은 대외 자료는
+  // 위키에 없을 때 웹으로 찾는다(담당자 지시 2026-09-22). 그 구분은 프롬프트가 못 박는다.
+  report: ["WebSearch", "WebFetch", "Read", "Write", "Glob", "Grep"],
   review: ["Read"],
 };
 

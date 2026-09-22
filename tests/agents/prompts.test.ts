@@ -263,12 +263,26 @@ describe("report 단계 프롬프트", () => {
     expect(p.prompt).toContain(`${ws}`);
     expect(p.prompt).toContain("<작업폴더>/report/draft.dsl.md");
     expect(p.prompt).toContain("family: report");
-    expect(p.allowedTools).toEqual(["Read", "Write", "Glob", "Grep"]);
+    expect(p.allowedTools).toEqual(["WebSearch", "WebFetch", "Read", "Write", "Glob", "Grep"]);
   });
 
   /** 조사 단계가 없는 문서다 — 웹·하위 에이전트 도구가 새면 안 된다 */
-  it("조사 도구를 주지 않는다", () => {
-    for (const tool of ["WebSearch", "WebFetch", "Task"]) expect(p.allowedTools).not.toContain(tool);
+  /**
+   * 조사 도구 정책이 2026-09-22 에 바뀌었다(담당자 지시): 위키에 없는 **대외 자료**는
+   * 웹으로 찾는다 — 도정 전략·경제 여건 같은 것이다. 다만 **진흥원 실적은 위키에서만**
+   * 가져온다(프롬프트가 그 구분을 못 박는다). 하위 에이전트(Task)는 여전히 주지 않는다 —
+   * 업무보고는 한 사람이 골격을 채우는 일이고 병렬 조사가 필요한 문서가 아니다.
+   */
+  it("대외 자료를 찾을 웹 도구는 주되 하위 에이전트는 주지 않는다", () => {
+    for (const tool of ["WebSearch", "WebFetch"]) expect(p.allowedTools).toContain(tool);
+    expect(p.allowedTools).not.toContain("Task");
+  });
+
+  it("실적은 위키에서만 가져오라고 지시한다", () => {
+    // 웹에서 주운 우리 수치는 비워 두느니만 못하다 — 결재에 올라가는 문서다.
+    const q = buildStagePrompt({ stage: "report", project: { ...project, kind: "report" }, workspaceDir: ws, wikiDir: "/tmp/w" });
+    expect(q.prompt).toContain("위키에서만");
+    expect(q.prompt, "못 찾으면 비우라고 해야 한다").toMatch(/비운다/);
   });
 
   /**
