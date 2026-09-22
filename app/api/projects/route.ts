@@ -7,13 +7,18 @@ import { serializeProject } from "@/lib/db/serialize";
 import { jsonError, readJsonBody } from "@/lib/agents/http";
 import { ensureProjectDir } from "@/lib/storage/paths";
 import { isProjectKind } from "@/lib/kinds";
+import { OfficialMetaSchema } from "@/lib/docmodel/schema";
 import { writeFileSync } from "node:fs";
 import path from "node:path";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
 
-/** Matches `ProjectDTO.contact` in lib/contracts.ts; extra string keys are kept. */
+/**
+ * Matches `ProjectDTO.contact` in lib/contracts.ts; extra string keys are kept.
+ * 수신유형·수신·수신자는 공문(official) 전용 — `projects` 를 넓히지 않고 이 looseObject 에 얹는다
+ * (스펙 §5.4 가 연락처와 같은 근거로 허용). program 프로젝트는 이 키들을 쓰지 않는다.
+ */
 const contactSchema = z
   .looseObject({
     부서명: z.string().trim().default(""),
@@ -21,6 +26,12 @@ const contactSchema = z
     전화: z.string().trim().default(""),
     이메일: z.string().trim().default(""),
     우편주소: z.string().trim().optional(),
+    /** OfficialMetaSchema 의 수신유형과 같은 값 — 값 하나 두는 곳을 이 스키마로 통일해 둘이 갈라지지 않게 한다 */
+    수신유형: OfficialMetaSchema.shape.수신유형.optional(),
+    /** 수신유형=수신자 일 때의 수신 대상 */
+    수신: z.string().trim().optional(),
+    /** 수신유형=수신자참조 일 때의 수신자 목록 — 화면 입력 그대로(쉼표 구분 문자열); 배열로 바꾸는 것은 에이전트의 몫 */
+    수신자: z.string().trim().optional(),
   })
   .default({ 부서명: "", 전화: "", 이메일: "" });
 

@@ -35,6 +35,15 @@ const COMMON = () => `당신은 (재)경상북도경제진흥원(GEPA)의 문서
 작업 규칙: Bash는 사용하지 않는다. 필요한 참고 자료는 .claude/skills/*/SKILL.md 와 reference/ 문서를 Read로 읽는다.
 프로젝트 작업 폴더(아래 경로)의 파일만 읽고 쓴다.`;
 
+/** 공문(official) 전용 — contact.수신유형이 있으면 그 값으로 한 줄을 만든다(§5.4: DB 컬럼 없이 contact 에 얹은 값). */
+function recipientLine(p: ProjectDTO): string | null {
+  const 수신유형 = p.contact.수신유형;
+  if (!수신유형) return null;
+  if (수신유형 === "내부결재") return "수신유형: 내부결재";
+  if (수신유형 === "수신자") return `수신유형: 수신자, 수신: ${p.contact.수신 ?? ""}`;
+  return `수신유형: 수신자참조, 수신자: ${p.contact.수신자 ?? ""}`;
+}
+
 function projectBrief(p: ProjectDTO, workspaceDir?: string): string {
   const lines = [
     `프로젝트: ${p.title}`,
@@ -42,6 +51,8 @@ function projectBrief(p: ProjectDTO, workspaceDir?: string): string {
     `지역: ${p.region} / 주관기관: ${p.organizer}`,
     `담당: ${p.contact.부서명} ${p.contact.담당자 ?? ""} ☎ ${p.contact.전화} / ${p.contact.이메일}${p.contact.우편주소 ? " / " + p.contact.우편주소 : ""}`,
   ];
+  const recipient = recipientLine(p);
+  if (recipient) lines.push(recipient);
   if (p.reference) {
     lines.push(`기존 사업계획서: ${workspaceDir ?? "<작업폴더>"}/reference/base-plan.md (원본 파일 ${p.reference.fileName}) — 이번 프로젝트는 이 계획서를 갱신하는 것이다.`);
     lines.push(`이번에 바뀌는 내용: ${p.reference.changes || "(미기재 — 연도·일정·담당만 갱신)"}`);
@@ -181,7 +192,7 @@ front-matter: 기관 (재)경상북도경제진흥원, 배포일(공고일), 보
         systemPromptAppend: `${COMMON()}\n역할: 공문서 작성자. .claude/skills/gepa-official-design/SKILL.md 의 front-matter 필드·두문/결문 규격을 그대로 따른다. 별지 제1호 일반기안문이고 가변부는 수신/제목/본문/붙임 네 가지뿐이다. **시행번호·접수번호는 절대 만들지 않는다** — 전자결재가 기안 후에 채번한다.`,
         prompt: `${brief}\n작업 폴더: ${workspaceDir}\n\n위 내용으로 공문서(기안문)를 작성하라.
 - front-matter의 처리과는 ${project.contact.부서명}, 연락처는 전화 ${project.contact.전화} / 이메일 ${project.contact.이메일}.
-- 수신유형·수신(자)은 지시 내용에서 판단하고, 불분명하면 수신유형: 수신자, 수신에 처리과가 속한 실·단장 직위를 적는다.
+- 수신유형·수신(자)은 위 "수신유형: …" 줄의 값을 그대로 옮긴다. 수신유형이 수신자참조면 그 줄의 수신자는 쉼표로 구분된 이름 목록이므로 OfficialMetaSchema 가 요구하는 YAML 배열(수신자: [경영지원팀장, 마케팅팀장, …])로 바꿔 쓴다 — 옮겨 적기만 하면 배열이 아니라 문자열 하나가 되어 스키마를 통과하지 못한다. 위에 "수신유형: …" 줄이 없으면(예전 방식으로 만들어진 프로젝트) 지시 내용에서 판단하고, 불분명하면 수신유형: 수신자, 수신에 처리과가 속한 실·단장 직위를 적는다.
 - 발신명의는 비워 두면 처리과에서 자동으로 채워진다 — 전결 등을 명시할 때만 직접 적는다.
 - 본문은 문장체로 쓰고 항목은 1. → 가. → 1) → 가) 순으로 매기며, 항목이 하나뿐이면 기호를 붙이지 않는다.
 - 붙임물이 있으면 front-matter의 붙임 목록에 적고 본문에 직접 타이핑하지 않는다. 붙임이 없으면 본문 마지막 줄 끝에 "  끝."을 직접 쓴다.

@@ -43,7 +43,7 @@ function NewProjectDialog({ onClose, onCreated }: { onClose: () => void; onCreat
   const [refFile, setRefFile] = useState<File | null>(null);
   const [changes, setChanges] = useState("");
   const [autoRun, setAutoRun] = useState(true);
-  // 공문 전용 입력. DB 컬럼이 아니라 topic 에 실려 프롬프트로 가고, 에이전트가 front-matter 에 쓴다(스펙 §5.4)
+  // 공문 전용 입력. DB 컬럼이 아니라 contact(looseObject)에 실려 프롬프트로 가고, 에이전트가 front-matter 에 쓴다(스펙 §5.4 — 연락처와 같은 근거)
   const [recipientKind, setRecipientKind] = useState<RecipientKind>("수신자");
   const [recipient, setRecipient] = useState("");
   const planResearch = useBoolPref(PREF_PLAN_RESEARCH, false);
@@ -74,20 +74,6 @@ function NewProjectDialog({ onClose, onCreated }: { onClose: () => void; onCreat
         ...(!form.contact.이메일.trim() ? ["이메일"] : []),
       ];
 
-  /**
-   * 공문의 수신유형·수신은 DB 컬럼이 아니라 주제(topic)에 실려 프롬프트로 간다(스펙 §5.4).
-   * front-matter 키 이름을 그대로 앞에 붙여 두면 `수신유형`·`수신`(수신유형=수신자)은 에이전트가
-   * 옮겨 적기만 하면 된다. **`수신자`(수신유형=수신자참조)는 다르다** — 여기서는 화면 입력을
-   * 그대로 이어 쓴 쉼표 목록(`recipient.trim()`)이라, 에이전트가 그걸 `OfficialMetaSchema` 가
-   * 요구하는 YAML 배열(`수신자: [경영지원팀장, 마케팅팀장, …]`)로 바꿔 써야 한다 — 옮겨 적기만
-   * 하면 배열이 아니라 문자열 하나가 되어 스키마를 통과하지 못한다.
-   */
-  const officialTopic = () => {
-    const key = RECIPIENT_KEY[recipientKind];
-    const head = [`수신유형: ${recipientKind}`, ...(key ? [`${key}: ${recipient.trim()}`] : [])];
-    return `${head.join("\n")}\n\n${form.topic.trim()}`;
-  };
-
   const submit = async () => {
     if (!valid) return;
     setBusy(true);
@@ -96,10 +82,16 @@ function NewProjectDialog({ onClose, onCreated }: { onClose: () => void; onCreat
       const contact = { ...form.contact };
       if (!contact.담당자?.trim()) delete contact.담당자;
       if (!contact.우편주소?.trim()) delete contact.우편주소;
+      // 수신유형·수신(자)는 topic 이 아니라 contact 에 얹는다(스펙 §5.4) — topic 은 공문 내용만 담는다
+      if (isOfficial) {
+        contact.수신유형 = recipientKind;
+        if (recipientKind === "수신자") contact.수신 = recipient.trim();
+        else if (recipientKind === "수신자참조") contact.수신자 = recipient.trim();
+      }
       setPhase("create");
       const baseName = !isOfficial && refFile ? refFile.name.replace(/\.[A-Za-z0-9]+$/, "") : "";
       const title = form.title.trim() || baseName;
-      const topic = isOfficial ? officialTopic() : form.topic.trim() || (refFile ? `기존 사업계획서(${refFile.name})를 기준으로 갱신${changes.trim() ? ` — 바뀌는 내용: ${changes.trim()}` : ""}` : "");
+      const topic = isOfficial ? form.topic.trim() : form.topic.trim() || (refFile ? `기존 사업계획서(${refFile.name})를 기준으로 갱신${changes.trim() ? ` — 바뀌는 내용: ${changes.trim()}` : ""}` : "");
       const p = await api.createProject({ ...form, title, topic, contact });
       if (!isOfficial && refFile) {
         setPhase("upload");
@@ -156,6 +148,7 @@ function NewProjectDialog({ onClose, onCreated }: { onClose: () => void; onCreat
             placeholder={isOfficial ? "예) 경영평가 대응을 위한 2026년 사업 추진 현황 제출 요청" : "예) 2026년 안동시 수출기업 역량강화 지원사업"}
             value={form.title}
             onChange={(e) => set("title", e.target.value)}
+            autoComplete="off"
             autoFocus
           />
         </Field>
@@ -179,6 +172,7 @@ function NewProjectDialog({ onClose, onCreated }: { onClose: () => void; onCreat
                     placeholder={recipientKind === "수신자참조" ? "경영지원팀장, 마케팅팀장, 일자리종합지원팀장" : "경상북도지사"}
                     value={recipient}
                     onChange={(e) => setRecipient(e.target.value)}
+                    autoComplete="off"
                   />
                 </Field>
               )}
@@ -189,20 +183,21 @@ function NewProjectDialog({ onClose, onCreated }: { onClose: () => void; onCreat
                 placeholder="예) 경영평가 상시대응을 위해 각 팀의 2026년 사업 추진 현황을 매월 제출받으려 한다. 작성대상은 각 팀 전체 사업, 기준은 전월 말일 예산 집행액, 제출기한은 매월 5일까지."
                 value={form.topic}
                 onChange={(e) => set("topic", e.target.value)}
+                autoComplete="off"
               />
             </Field>
           </>
         ) : (
           <>
             <Field label="주제" hint={refFile ? "비우면 기존 계획서와 바뀌는 내용으로 채웁니다" : "자유 서술 — 목적, 대상, 지원 내용, 예산 규모 등"} required={!refFile}>
-              <Textarea rows={5} placeholder="예) 안동시 소재 수출 유망 중소기업 20개사에 수출용 홍보물 제작·마케팅·디자인 개발을 기업당 최대 300만원 지원. 7월 공고, 8월 선정, 10월 말까지 지원." value={form.topic} onChange={(e) => set("topic", e.target.value)} />
+              <Textarea rows={5} placeholder="예) 안동시 소재 수출 유망 중소기업 20개사에 수출용 홍보물 제작·마케팅·디자인 개발을 기업당 최대 300만원 지원. 7월 공고, 8월 선정, 10월 말까지 지원." value={form.topic} onChange={(e) => set("topic", e.target.value)} autoComplete="off" />
             </Field>
             <div className="grid grid-cols-2 gap-4">
               <Field label="지역" hint="예: 안동시">
-                <Input value={form.region} onChange={(e) => set("region", e.target.value)} />
+                <Input value={form.region} onChange={(e) => set("region", e.target.value)} autoComplete="off" />
               </Field>
               <Field label="주관기관">
-                <Input value={form.organizer} onChange={(e) => set("organizer", e.target.value)} />
+                <Input value={form.organizer} onChange={(e) => set("organizer", e.target.value)} autoComplete="off" />
               </Field>
             </div>
           </>
@@ -212,19 +207,19 @@ function NewProjectDialog({ onClose, onCreated }: { onClose: () => void; onCreat
           {isOfficial ? <p className="mb-2 text-[11px] text-slate-500">부서명은 공문의 처리과가 되고(결재라인·발신명의가 여기서 정해집니다), 전화·이메일은 결문 연락처에 찍힙니다.</p> : null}
           <div className="grid grid-cols-2 gap-3">
             <Field label="부서명" required>
-              <Input placeholder="북부지소" value={form.contact.부서명} onChange={(e) => setContact("부서명", e.target.value)} />
+              <Input placeholder="북부지소" value={form.contact.부서명} onChange={(e) => setContact("부서명", e.target.value)} autoComplete="organization" />
             </Field>
             <Field label="담당자">
-              <Input placeholder="홍길동 팀장" value={form.contact.담당자 ?? ""} onChange={(e) => setContact("담당자", e.target.value)} />
+              <Input placeholder="홍길동 팀장" value={form.contact.담당자 ?? ""} onChange={(e) => setContact("담당자", e.target.value)} autoComplete="name" />
             </Field>
             <Field label="전화" required>
-              <Input placeholder="054-900-3801" value={form.contact.전화} onChange={(e) => setContact("전화", e.target.value)} />
+              <Input type="tel" placeholder="054-900-3801" value={form.contact.전화} onChange={(e) => setContact("전화", e.target.value)} autoComplete="tel" />
             </Field>
             <Field label="이메일" required>
-              <Input type="email" placeholder="gepa_north@naver.com" value={form.contact.이메일} onChange={(e) => setContact("이메일", e.target.value)} />
+              <Input type="email" placeholder="gepa_north@naver.com" value={form.contact.이메일} onChange={(e) => setContact("이메일", e.target.value)} autoComplete="email" />
             </Field>
             <Field label="우편주소" className="col-span-2">
-              <Input placeholder="경상북도 안동시 북순환로 387, 2층 경상북도경제진흥원" value={form.contact.우편주소 ?? ""} onChange={(e) => setContact("우편주소", e.target.value)} />
+              <Input placeholder="경상북도 안동시 북순환로 387, 2층 경상북도경제진흥원" value={form.contact.우편주소 ?? ""} onChange={(e) => setContact("우편주소", e.target.value)} autoComplete="street-address" />
             </Field>
           </div>
         </fieldset>

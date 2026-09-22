@@ -2,7 +2,7 @@
  * Client ⇄ server contracts shared by the API routes and the browser UI.
  * (Kept dependency-free so both sides can import it.)
  */
-import type { Block, DocModel, Family } from "./docmodel/schema";
+import type { Block, DocModel, Family, OfficialMeta } from "./docmodel/schema";
 import type { ProjectKind } from "./kinds";
 
 /** 문서·파이프라인 단계 — 화면에 탭으로 보이는 것들 */
@@ -37,7 +37,19 @@ export interface ProjectDTO {
   topic: string;
   region: string;
   organizer: string;
-  contact: { 부서명: string; 담당자?: string; 전화: string; 이메일: string; 우편주소?: string };
+  contact: {
+    부서명: string;
+    담당자?: string;
+    전화: string;
+    이메일: string;
+    우편주소?: string;
+    /** 공문(official) 전용 — OfficialMetaSchema 의 같은 이름 필드와 값이 같다(program 프로젝트는 쓰지 않는다) */
+    수신유형?: OfficialMeta["수신유형"];
+    /** 수신유형=수신자 일 때의 수신 대상 */
+    수신?: string;
+    /** 수신유형=수신자참조 일 때의 수신자 목록 — 쉼표로 구분한 문자열(배열로 바꾸는 것은 에이전트의 몫) */
+    수신자?: string;
+  };
   /** uploaded 기존 사업계획서 (projects/<id>/reference/<fileName>, text in reference/base-plan.md) and what changes */
   reference?: { fileName: string; changes: string };
   createdAt: string;
