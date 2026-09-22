@@ -70,4 +70,35 @@ describe("official 단계 프롬프트", () => {
     // 지시문에는 `위 "전결: …" 줄` 이라는 안내가 늘 있으므로 브리프 줄만 본다
     expect(p.prompt).not.toMatch(/^전결: (실·단장|본부장|원장)$/m);
   });
+
+  /**
+   * 결문의 우편번호·전송(user 2026-09-22): 브리프의 담당 줄에 실리고, front-matter 의 연락처
+   * 객체(우편번호·주소·전화·전송·이메일)에 옮기라는 지시가 있어야 한다. 없으면 줄에 군더더기
+   * 구분자("/ /")를 남기지 않아야 한다.
+   */
+  it("우편번호·전송이 있으면 브리프와 지시문에 실린다", () => {
+    const q = buildStagePrompt({
+      stage: "official",
+      project: {
+        id: "x",
+        kind: "official",
+        title: "t",
+        topic: "제출 요청",
+        region: "경상북도",
+        organizer: "(재)경상북도경제진흥원",
+        contact: { 부서명: "전략기획팀", 전화: "054-470-8527", 전송: "054-472-2989", 이메일: "a@gepa.kr", 우편주소: "경상북도 안동시 북순환로 387", 우편번호: "39393" },
+        createdAt: "",
+        updatedAt: "",
+      },
+      workspaceDir: "/tmp",
+    });
+    expect(q.prompt).toContain("전송 054-472-2989");
+    expect(q.prompt).toContain("39393");
+    expect(q.prompt).toContain("연락처 객체: 우편번호·주소·홈페이지·전화·전송·이메일");
+  });
+
+  it("우편번호·전송이 없으면 브리프 줄에 군더더기 구분자를 남기지 않는다", () => {
+    expect(p.prompt).not.toMatch(/ \/ $/m);
+    expect(p.prompt).not.toContain(" /  /");
+  });
 });

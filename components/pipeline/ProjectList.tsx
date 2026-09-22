@@ -267,11 +267,11 @@ function NewProjectDialog({ onClose, onCreated }: { onClose: () => void; onCreat
             <Field label="이메일" id="email" required>
               <Input id="email" name="email" type="email" placeholder="gepa_north@naver.com" value={form.contact.이메일} onChange={(e) => setContact("이메일", e.target.value)} autoComplete="email" />
             </Field>
-            <Field label="우편주소" id="street-address" className="col-span-2">
-              <Input id="street-address" name="street-address" placeholder="경상북도 안동시 북순환로 387, 2층 경상북도경제진흥원" value={form.contact.우편주소 ?? ""} onChange={(e) => setContact("우편주소", e.target.value)} autoComplete="street-address" />
-            </Field>
             <Field label="우편번호" id="postal-code">
               <Input id="postal-code" name="postal-code" placeholder="39393" value={form.contact.우편번호 ?? ""} onChange={(e) => setContact("우편번호", e.target.value)} autoComplete="postal-code" />
+            </Field>
+            <Field label="우편주소" id="street-address" className="col-span-2">
+              <Input id="street-address" name="street-address" placeholder="경상북도 안동시 북순환로 387, 2층 경상북도경제진흥원" value={form.contact.우편주소 ?? ""} onChange={(e) => setContact("우편주소", e.target.value)} autoComplete="street-address" />
             </Field>
           </div>
         </fieldset>
