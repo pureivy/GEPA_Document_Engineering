@@ -16,6 +16,7 @@ import { startStageRun } from "@/lib/stages/runIntegration";
 import { KIND_LABEL, isProjectKind, stagesOf } from "@/lib/kinds";
 import { projectDir } from "@/lib/storage/paths";
 import { extractReferenceText, referenceMarkdown, referenceExtension, REFERENCE_EXTENSIONS } from "@/lib/reference/extract";
+import { referenceRoleFor } from "@/lib/contracts";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
@@ -61,10 +62,12 @@ export async function POST(req: Request, ctx: { params: Promise<{ id: string }> 
   const dir = join(projectDir(id), "reference");
   mkdirSync(dir, { recursive: true });
   writeFileSync(join(dir, safeName), bytes);
-  // 공문에 붙인 문서는 용도대로 자기를 소개해야 한다 — 에이전트가 여는 파일이 "기존 사업계획서"라고
-  // 적혀 있으면 프롬프트를 공문용으로 갈라 놓아도 소용이 없다. 용도는 프로젝트를 만들 때 이미
-  // contact 에 실려 저장되고(화면이 createProject → uploadReference 순으로 부른다) 여기서 읽기만 한다.
-  const role = row.kind === "official" ? serializeProject(row).contact.참고문서용도 : undefined;
+  // 사업계획서 갱신이 아닌 문서는 용도대로 자기를 소개해야 한다 — 에이전트가 여는 파일이
+  // "기존 사업계획서"라고 적혀 있으면 프롬프트를 갈라 놓아도 소용이 없다. 용도는 프로젝트를 만들 때
+  // 이미 contact 에 실려 저장되고(화면이 createProject → uploadReference 순으로 부른다) 여기서
+  // 읽기만 한다. 판정은 프롬프트와 한 곳(lib/contracts.ts referenceRoleFor)에서 나눈다.
+  const before = serializeProject(row);
+  const role = referenceRoleFor(before.kind, before.contact.참고문서용도);
   writeFileSync(join(dir, "base-plan.md"), referenceMarkdown(safeName, changes, extracted.text, role), "utf8");
   const now = new Date().toISOString();
   db.update(projects).set({ referenceName: safeName, referenceChanges: changes, updatedAt: now }).where(eq(projects.id, id)).run();

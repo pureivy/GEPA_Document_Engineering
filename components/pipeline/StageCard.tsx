@@ -1,6 +1,6 @@
 "use client";
 import Link from "next/link";
-import { ArrowRight, Download, FileSearch, FileText, Mail, Megaphone, Newspaper } from "lucide-react";
+import { ArrowRight, ClipboardList, Download, FileSearch, FileText, Mail, Megaphone, Newspaper } from "lucide-react";
 import type { RunDTO, RunStatus, Stage } from "@/lib/contracts";
 import { STAGE_LABEL } from "@/lib/contracts";
 import { api } from "@/lib/client/api";
@@ -8,7 +8,7 @@ import { cn, formatCost, formatDateTime, formatDuration, RUN_STATUS_LABEL, STAGE
 import { Badge, type BadgeTone } from "@/components/ui/badge";
 
 const TONE: Record<RunStatus, BadgeTone> = { running: "running", succeeded: "success", failed: "danger", cancelled: "warning" };
-const ICON: Record<Stage, React.ComponentType<{ className?: string }>> = { research: FileSearch, plan: FileText, notice: Megaphone, press: Newspaper, official: Mail };
+const ICON: Record<Stage, React.ComponentType<{ className?: string }>> = { research: FileSearch, plan: FileText, notice: Megaphone, press: Newspaper, official: Mail, report: ClipboardList };
 
 export interface StageCardProps {
   projectId: string;

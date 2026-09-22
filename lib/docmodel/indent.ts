@@ -72,6 +72,10 @@ export function glyphRole(glyph: Glyph): ParaRole {
     case "❍":
     case "✔":
       return "body2";
+    // 업무보고 사다리의 셋째 칸(요약문 → 소제목 → `●` → `-`). `-` 보다 한 칸 얕으므로 body2 다.
+    // 다른 family 의 indent 맵에는 `●` 가 없어 leadingSpaces 가 0 을 돌려주므로 영향이 없다.
+    case "●":
+      return "body2";
     case "-":
       return "body3";
     case "·":

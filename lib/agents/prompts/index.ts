@@ -2,7 +2,7 @@
  * Stage prompt builders. The main `claude -p` process is the writer persona for the stage;
  * research is delegated to the `researcher` subagent through the Task tool.
  */
-import { REFERENCE_CHANGES_LABEL, type Stage, type ProjectDTO, type ReferenceRole } from "../../contracts";
+import { DEFAULT_REFERENCE_ROLE, REFERENCE_CHANGES_LABEL, type Stage, type ProjectDTO, type ReferenceRole } from "../../contracts";
 import { orgSummary } from "../../org";
 
 export interface StagePromptInput {
@@ -62,6 +62,12 @@ function projectBrief(p: ProjectDTO, workspaceDir?: string): string {
   if (p.kind === "official") {
     if (p.contact.전송) lines.push(`전송: ${p.contact.전송}`);
     if (p.contact.우편번호) lines.push(`우편번호: ${p.contact.우편번호}`);
+    // 홈페이지도 결문 연락처의 한 칸이다. 비면 줄 자체를 싣지 않고 결문의 그 칸도 빈다 —
+    // 스키마 기본값이 없어졌으므로(schema.ts 연락처.홈페이지) 적지 않은 주소가 찍히지 않는다.
+    if (p.contact.홈페이지) lines.push(`홈페이지: ${p.contact.홈페이지}`);
+    // 공개구분은 결문 오른쪽 끝 칸이다. 비공개 문서를 공개로 내보내면 되돌릴 수 없어서
+    // 담당자가 화면에서 고른 값을 그대로 싣는다(적지 않으면 스키마 기본값 공개).
+    if (p.contact.공개구분) lines.push(`공개구분: ${p.contact.공개구분}`);
   }
   if (p.reference) {
     if (p.kind === "official") {
@@ -72,6 +78,12 @@ function projectBrief(p: ProjectDTO, workspaceDir?: string): string {
       lines.push(`참고 문서(용도: ${용도}): ${workspaceDir ?? "<작업폴더>"}/reference/base-plan.md (원본 파일 ${p.reference.fileName})`);
       // 비면 줄 자체를 싣지 않는다 — "(미기재 — 연도·일정·담당만 갱신)" 은 사업계획서 갱신을 전제한 문구라 공문에 맞지 않는다
       if (p.reference.changes) lines.push(`${REFERENCE_CHANGES_LABEL[용도]}: ${p.reference.changes}`);
+    } else if (p.kind === "report") {
+      // 업무보고에는 용도가 없다(화면에도 라디오가 없다) — 붙인 문서는 언제나 내용 근거자료다.
+      // 여기서 갈라 두지 않으면 사업계획서 쪽 두 줄이 그대로 실려 에이전트가 업무보고를
+      // "기존 계획서를 갱신하는 것"으로 읽는다. 아무 오류도 나지 않고 틀린 문서가 나온다.
+      lines.push(`참고 문서: ${workspaceDir ?? "<작업폴더>"}/reference/base-plan.md (원본 파일 ${p.reference.fileName})`);
+      if (p.reference.changes) lines.push(`${REFERENCE_CHANGES_LABEL[DEFAULT_REFERENCE_ROLE]}: ${p.reference.changes}`);
     } else {
       lines.push(`기존 사업계획서: ${workspaceDir ?? "<작업폴더>"}/reference/base-plan.md (원본 파일 ${p.reference.fileName}) — 이번 프로젝트는 이 계획서를 갱신하는 것이다.`);
       lines.push(`이번에 바뀌는 내용: ${p.reference.changes || "(미기재 — 연도·일정·담당만 갱신)"}`);
@@ -82,7 +94,7 @@ function projectBrief(p: ProjectDTO, workspaceDir?: string): string {
 
 /** 공문에 붙인 참고 문서의 용도. 파일만 있고 용도가 비었으면 근거자료로 본다(가장 해가 적은 쪽). */
 function referenceRole(p: ProjectDTO): ReferenceRole {
-  return p.contact.참고문서용도 ?? "근거자료";
+  return p.contact.참고문서용도 ?? DEFAULT_REFERENCE_ROLE;
 }
 
 /** Stage-specific guidance when the project was started from an uploaded 기존 사업계획서. */
@@ -108,9 +120,32 @@ function referenceGuide(p: ProjectDTO, stage: Stage | "review", workspaceDir: st
         default:
           return `\n참고 문서 ${file} 를 먼저 Read 한다. 사업명·기간·금액·대상·담당은 그 문서에 적힌 값을 그대로 쓰고, 그 문서에 없는 수치는 지어내지 않는다(없으면 그 항목을 빼거나 "별도 안내"로 적는다). 공문 본문은 1쪽 분량으로 줄인다 — 그 문서를 옮겨 적는 것이 아니라 수신자가 해야 할 일과 기한만 남긴다.`;
       }
+    // 업무보고의 참고 문서는 대개 **지난 보고서나 실적 자료**다 — 갱신할 계획서가 아니다.
+    // 이 분기가 없으면 여기서 빈 문자열이 나가고, 붙인 문서를 어떻게 쓰라는 말이 아무 데도 없다.
+    case "report":
+      return `\n참고 문서 ${file} 를 먼저 Read 한다. 실적·조직·예산 수치는 그 문서에 적힌 값만 쓰고, 그 문서에 없는 수치는 지어내지 말고 그 줄을 빼거나 "추진 중"으로 적는다. 그 문서를 옮겨 적는 것이 아니라 이번 보고의 차례에 맞게 추려 다시 쓴다.
+**연도를 옮겨 붙이지 않는다.** 이번 보고 기준으로 고치는 것은 표지·보고일·대상기간과 장 제목의 연도뿐이다. 실적 수치와 그 실적이 일어난 연도는 참고 문서에 적힌 그대로 둔다 — 지난해 실적에 올해 연도를 붙이면 있지도 않은 실적이 결재에 올라간다.`;
     default:
       return "";
   }
+}
+
+/**
+ * 업무보고가 내부 위키를 읽는 법 — 조사 단계의 `sourcesGuide` 와 성격이 다르다.
+ * 업무보고는 **밖을 조사하지 않고 안을 읽는다.** 웹검색 도구도 주지 않는다.
+ *
+ * 이 안내가 없으면 에이전트는 위키가 있다는 사실조차 모르고, 「비교 기준이 있으면 쓴다」는
+ * 규칙이 영원히 발동하지 않는다 — 실제로 그 상태였다(user 2026-09-22: "성과를 극대화해야").
+ */
+function reportWikiGuide(wikiDir: string | undefined): string {
+  if (!wikiDir) return "\n※ 내부 위키가 연결되지 않았다(GEPA_WIKI_DIR). 지시에 적힌 수치만 쓰고 비교 표기는 넣지 않는다.";
+  return `
+자료: 진흥원 내부 위키(읽기 전용 사본) ${wikiDir}. **먼저 Grep 으로 읽고 쓴다.**
+- 절을 쓰기 전에 그 사업 이름으로 위키를 훑는다: \`Grep\` 로 사업명·팀명을 찾고 나온 파일을 \`Read\` 한다.
+- **최근 3년 비교를 만든다.** 같은 사업의 연도별 수치를 찾아 \`'23년 → '24년 → '25년\` 으로 잇거나,
+  최소한 \`'24년 대비\` 를 적는다. 위키에 \`※ '25년 규모: 105개사\` 처럼 지난해 값을 병기한 줄이 있다.
+- 찾은 값의 출처를 본문에 적지 않는다(보고서에는 수치만 남는다). 다만 **위키에서 확인하지 못한 수치는 쓰지 않는다.**
+- 직원 성명·연락처·개별 기업 건의 원문은 옮기지 않는다.`;
 }
 
 /** Source-priority paragraph for research-capable stages (wiki → API tools → web). */
@@ -145,6 +180,7 @@ const REVIEW_SKILL: Record<Stage, string> = {
   notice: "gepa-notice-design",
   press: "gepa-press-style",
   official: "gepa-official-design",
+  report: "gepa-report-design",
 };
 
 export function buildStagePrompt(input: StagePromptInput): StagePrompt {
@@ -227,13 +263,31 @@ front-matter: 기관 (재)경상북도경제진흥원, 배포일(공고일), 보
       return {
         systemPromptAppend: `${COMMON()}\n역할: 공문서 작성자. .claude/skills/gepa-official-design/SKILL.md 의 front-matter 필드·두문/결문 규격을 그대로 따른다. 별지 제1호 일반기안문이고 가변부는 수신/제목/본문/붙임 네 가지뿐이다. **시행번호·접수번호는 절대 만들지 않는다** — 전자결재가 기안 후에 채번한다.`,
         prompt: `${brief}\n작업 폴더: ${workspaceDir}\n\n위 내용으로 공문서(기안문)를 작성하라.
-- front-matter의 처리과는 ${project.contact.부서명}, 연락처(front-matter 의 연락처 객체: 우편번호·주소·홈페이지·전화·전송·이메일)는 전화 ${project.contact.전화} / 이메일 ${project.contact.이메일}${project.contact.우편주소 ? ` / 주소 ${project.contact.우편주소}` : ""} 로 채운다. 위에 "전송: …" 줄이 있으면 연락처의 전송에, "우편번호: …" 줄이 있으면 연락처의 우편번호에 그 값을 그대로 옮긴다. 그 줄이 없으면(또는 그 밖의 값) 비워 두거나 스키마 기본값(홈페이지는 https://gepa.kr)을 그대로 둔다.
+- front-matter의 처리과는 ${project.contact.부서명}, 연락처(front-matter 의 연락처 객체: 우편번호·주소·홈페이지·전화·전송·이메일)는 전화 ${project.contact.전화} / 이메일 ${project.contact.이메일}${project.contact.우편주소 ? ` / 주소 ${project.contact.우편주소}` : ""} 로 채운다. 위에 "전송: …" 줄이 있으면 연락처의 전송에, "우편번호: …" 줄이 있으면 연락처의 우편번호에, "홈페이지: …" 줄이 있으면 연락처의 홈페이지에 그 값을 그대로 옮긴다. **그 줄이 없으면 그 칸을 비워 둔다 — 주소나 번호를 지어내지 않는다**(결문의 빈 칸은 빈 칸으로 나가는 것이 맞다).
+- 위에 "공개구분: …" 줄이 있으면 front-matter 의 공개구분에 그 값을 그대로 옮긴다(공개·부분공개·비공개 셋 중 하나다). 그 줄이 없으면 적지 않는다 — 적지 않으면 공개가 기본값이다.
 - 수신유형·수신(자)은 위 "수신유형: …" 줄의 값을 그대로 옮긴다. 수신유형이 수신자참조면 그 줄의 수신자는 쉼표로 구분된 이름 목록이므로 OfficialMetaSchema 가 요구하는 YAML 배열(수신자: [경영지원팀장, 마케팅팀장, …])로 바꿔 쓴다 — 옮겨 적기만 하면 배열이 아니라 문자열 하나가 되어 스키마를 통과하지 못한다. 위에 "수신유형: …" 줄이 없으면(예전 방식으로 만들어진 프로젝트) 지시 내용에서 판단하고, 불분명하면 수신유형: 수신자, 수신에 처리과가 속한 실·단장 직위를 적는다.
 - 전결은 위 "전결: …" 줄의 값을 front-matter 의 전결에 그대로 옮긴다 — 결재란을 어디서 끊을지와 발신명의가 여기서 함께 정해진다(실·단장 → 실·단장 명의, 본부장 → 본부장 명의, 원장 → 기관장 명의). 그 줄이 없으면 전결을 적지 않는다(적지 않으면 원장까지 결재하는 것이 기본값이다 — 전결은 그 사슬을 낮출 때만 적는다).
 - 발신명의와 결재라인은 비워 둔다 — 전결과 처리과에서 자동으로 채워진다. 규정 밖의 결재란을 재현해야 할 때만 결재라인을 직접 적는다.
 - 본문은 문장체로 쓰고 항목은 1. → 가. → 1) → 가) 순으로 매기며, 항목이 하나뿐이면 기호를 붙이지 않는다.
 - 붙임물이 있으면 front-matter의 붙임 목록에 적고 본문에 직접 타이핑하지 않는다. 붙임이 없으면 본문 마지막 줄 끝에 "  끝."을 직접 쓴다.
 - 시행 일련번호·접수번호는 어떤 형태로도 만들지 않는다(front-matter에 그런 키가 없다).${DOC_CONTRACT("official", "official")}${resume}`,
+        allowedTools: ["Read", "Write", "Glob", "Grep"],
+        maxTurns: 20,
+      };
+    case "report":
+      return {
+        systemPromptAppend: `${COMMON()}\n역할: 주요업무보고 작성자. .claude/skills/gepa-report-design/SKILL.md 의 사다리·요약박스·목차 규격을 그대로 따른다. 업무보고는 공고가 아니라 **실적과 계획**이다 — 근거 없는 수치는 쓰지 않는다. 목차 쪽번호는 자리표시자 ―(U+2015)를 그대로 두고 숫자를 지어내지 않는다(결재에 올라가는 문서이고 담당자가 한글에서 채운다).`,
+        prompt: `${brief}\n작업 폴더: ${workspaceDir}\n\n위 내용으로 「${project.title}」 주요업무보고를 작성하라.
+- front-matter: 제목(${project.title}), 부서(${project.contact.부서명}), 보고일·보고대상·대상기간은 위 지시에 적힌 값만 옮긴다 — 없으면 빈 문자열로 두고 날짜나 받는 사람을 지어내지 않는다. 표지에 나가는 글자는 제목뿐이다(나머지는 문서의 기록으로만 남는다).
+- 첫 블록은 \`\`\`toc 목차다. 작성기가 만들어 주지 않으므로 쓰지 않으면 보고순서 쪽이 통째로 빠진다. 장 줄은 "Ⅰ. 일 반 현 황", 절 줄은 "1. 설립목적" 꼴로 본문 차례와 같게 적는다. **쪽번호를 적지 않는다** — 작성기가 줄 끝에 자리표시자를 붙인다.
+- 장은 "# 일 반 현 황"(간지), 절은 "## 설립목적"(번호 칩)으로 쓴다. Ⅰ·Ⅱ 와 1·2 는 자동으로 매겨지므로 번호를 직접 적지 않는다. **간지에 <pagebreak> 를 쓰지 않는다** — 작성기가 새 쪽에서 열고 뒷면을 빈 쪽으로 남기는 것까지 보장한다. 손으로 넣으면 빈 쪽이 간지마다 하나씩 더 생긴다.
+- 본문 사다리는 **소제목 □ → ● → -** 세 칸뿐이다. 더 깊이 들어가지 않는다. **ㅇ 은 쓰지 않는다 — 1단계는 언제나 ● 다.**
+- 절이 요약문으로 시작할 때만 절 칩 바로 밑에 \`\`\`box 요약문을 둔다(두 줄 안팎). 목록이나 표로 시작하는 절에는 박스를 두지 않는다.
+- 수치는 근거가 있는 것만 쓴다. 위 지시에 없는 실적·예산·건수는 지어내지 말고 그 줄을 빼거나 "추진 중"으로 적는다.
+- **칸마다 맡은 일이 다르다**: \`●\` 는 무엇을 왜 했는지(30자 안팎, 수치 없이), \`-\` 는 얼마나 했는지를 수치와 단위로(38자 안팎). \`●\` 에 숫자를 넣으면 아래 줄이 할 일이 없어진다. 스킬의 「내용」 절에 참고본 한 절이 본보기로 실려 있으니 그 모양을 따른다.
+- **최근 3년 흐름을 만든다.** 위키에서 같은 사업의 연도별 수치를 찾아 \`'23년 1,204건 → '24년 1,680건 → '25년 2,851건\` 처럼 잇는다. 세 해를 못 찾으면 두 해라도 잇고(\`'24년 대비 170%↑\`), 한 해뿐이면 그 줄을 성과가 아니라 실적으로만 적는다.
+- **비교 기준이 자료에 있으면 반드시 쓴다** — \`’24년 대비 170%↑\`, \`목표 대비 120%\`, \`전년 1,680건 → 2,851건\`. 없으면 지어내지 말고, 대신 그 줄을 성과인 양 쓰지 않는다(\`교육 11명\` 은 투입이지 성과가 아니다).
+- 조직도 자리에는 <조직도> 한 줄만 둔다(글은 참고본 조각에 굳어 있다).${reportWikiGuide(input.wikiDir)}${DOC_CONTRACT("report", "report")}${resume}`,
         allowedTools: ["Read", "Write", "Glob", "Grep"],
         maxTurns: 20,
       };

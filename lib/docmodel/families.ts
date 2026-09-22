@@ -85,7 +85,10 @@ export const DOC_FAMILIES: Record<Family, DocFamilyDef> = {
   },
   report: {
     // 참고본 실측 사다리 — 편람 2타(공문)도 사업계획서 사다리도 아니다
-    indent: { "●": 0, "-": 3, "ㅇ": 0, "·": 3 },
+    // 참고본 실측(2026-09-22, 사용자가 한글에서 확인): 글머리 **앞** 공백 칸수다.
+    // `ㅇ`·`●` 는 1칸(참고본의 `charPr 143: " "` 선행 run), `-` 는 3칸(`charPr 60 " "` + `"  - "`).
+    // 0 으로 두면 `●` 가 왼쪽 끝에 붙어 참고본과 어긋난다 — 실제로 그렇게 나왔다.
+    indent: { "●": 1, "-": 3, "ㅇ": 1, "·": 3 },
     noteIndentUnderItem: undefined,
     docTitle: (doc) => (doc.meta as Extract<DocModel, { family: "report" }>["meta"]).제목,
     exportBaseName: (doc) => (doc.meta as Extract<DocModel, { family: "report" }>["meta"]).제목 + "_주요업무보고",

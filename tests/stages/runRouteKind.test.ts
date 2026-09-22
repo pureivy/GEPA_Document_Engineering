@@ -83,8 +83,16 @@ describe("실행 라우트의 kind 게이트", () => {
     expect((await run(OFFICIAL, "official", { resume: true })).status).toBe(409);
   });
 
+  /**
+   * `report` 는 예전에 여기서 "모르는 단계"의 본보기였다. 이제는 실재하는 단계라 kind 게이트에
+   * 걸려 404 가 된다(아직 어느 kind 의 목록에도 없다) — 모르는 단계 쪽은 진짜 없는 이름으로 본다.
+   */
+  it("사업 프로젝트에서 업무보고 단계 실행을 거부한다", async () => {
+    expect((await run(PROGRAM, "report")).status).toBe(404);
+  });
+
   it("모르는 단계는 400, 없는 프로젝트는 404 그대로다", async () => {
-    expect((await run(PROGRAM, "report")).status).toBe(400);
+    expect((await run(PROGRAM, "없는단계")).status).toBe(400);
     expect((await run("no-such-project", "plan")).status).toBe(404);
   });
 });
