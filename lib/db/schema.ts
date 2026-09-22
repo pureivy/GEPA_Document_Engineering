@@ -2,7 +2,7 @@ import { index, integer, real, sqliteTable, text, uniqueIndex } from "drizzle-or
 
 /** Timestamps are ISO-8601 strings (matches lib/contracts.ts DTOs). */
 
-export const STAGE_VALUES = ["research", "plan", "notice", "press", "official", "review"] as const;
+export const STAGE_VALUES = ["research", "plan", "notice", "press", "official", "report", "review"] as const;
 export const RUN_STATUS_VALUES = ["running", "succeeded", "failed", "cancelled"] as const;
 export const DOC_SOURCE_VALUES = ["agent", "user", "restore"] as const;
 

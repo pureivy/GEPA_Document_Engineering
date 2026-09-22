@@ -38,4 +38,5 @@ export const STAGE_DESCRIPTION: Record<Stage, string> = {
   notice: "사업계획서를 참여기업 모집 공고문(6-1 서식)으로 변환합니다.",
   press: "공고문과 사업계획서를 바탕으로 배포용 보도자료를 작성합니다.",
   official: "공문서를 작성합니다.",
+  report: "부서별 추진실적과 계획을 주요업무보고로 작성합니다.",
 };

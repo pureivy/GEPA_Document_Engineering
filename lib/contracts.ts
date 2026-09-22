@@ -6,10 +6,10 @@ import type { Block, DocModel, Family, OfficialMeta } from "./docmodel/schema";
 import type { ProjectKind } from "./kinds";
 
 /** 문서·파이프라인 단계 — 화면에 탭으로 보이는 것들 */
-export type Stage = "research" | "plan" | "notice" | "press" | "official";
-export const STAGES: Stage[] = ["research", "plan", "notice", "press", "official"];
-export const STAGE_LABEL: Record<Stage, string> = { research: "조사", plan: "사업계획서", notice: "공고문", press: "보도자료", official: "공문서" };
-export const STAGE_FAMILY: Partial<Record<Stage, Family>> = { plan: "plan", notice: "notice", press: "press", official: "official" };
+export type Stage = "research" | "plan" | "notice" | "press" | "official" | "report";
+export const STAGES: Stage[] = ["research", "plan", "notice", "press", "official", "report"];
+export const STAGE_LABEL: Record<Stage, string> = { research: "조사", plan: "사업계획서", notice: "공고문", press: "보도자료", official: "공문서", report: "업무보고서" };
+export const STAGE_FAMILY: Partial<Record<Stage, Family>> = { plan: "plan", notice: "notice", press: "press", official: "official", report: "report" };
 
 /** 공문에 붙인 참고 문서의 용도 — 에이전트에게 줄 지시가 이 값에 따라 갈린다 */
 export const REFERENCE_ROLES = ["근거자료", "받은공문", "붙임"] as const;

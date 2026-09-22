@@ -189,3 +189,76 @@ describe("buildStagePrompt — 공문에 붙인 참고 문서의 용도", () => 
     expect(buildStagePrompt({ stage: "plan", project: 빈변경, workspaceDir: ws }).prompt).toContain("이번에 바뀌는 내용: (미기재 — 연도·일정·담당만 갱신)");
   });
 });
+
+/**
+ * 주요업무보고(report) 단계. 담당자가 한글에서 보고 정한 서식 셋이 프롬프트에 살아 있어야 한다:
+ * 1단계는 `●`(`ㅇ` 아님), 목차 쪽번호는 짓지 않는다, 요약박스는 요약문으로 시작하는 절에만 단다.
+ */
+describe("report 단계 프롬프트", () => {
+  const 업무보고: ProjectDTO = {
+    id: "r1",
+    kind: "program",
+    title: "2026년 주요업무보고",
+    topic: "2026년 주요업무 추진실적 및 계획",
+    region: "경상북도",
+    organizer: "(재)경상북도경제진흥원",
+    contact: { 부서명: "경영기획실", 전화: "054-470-8527", 이메일: "a@gepa.kr" },
+    createdAt: "",
+    updatedAt: "",
+  };
+  const p = buildStagePrompt({ stage: "report", project: 업무보고, workspaceDir: ws });
+
+  it("업무보고 작성자를 부르고 전용 규격 스킬을 가리킨다", () => {
+    expect(p.systemPromptAppend).toContain("주요업무보고 작성자");
+    expect(p.systemPromptAppend).toContain("gepa-report-design");
+    // 공고가 아니라 실적·계획이라는 것이 역할 문장에 있어야 한다
+    expect(p.systemPromptAppend).toContain("실적과 계획");
+  });
+
+  it("사다리 세 칸을 가르치고 ㅇ 를 막는다", () => {
+    expect(p.prompt).toContain("□ → ● → -");
+    expect(p.prompt).toContain("ㅇ 은 쓰지 않는다");
+    expect(p.prompt).toContain("1단계는 언제나 ●");
+  });
+
+  /** 결재에 올라가는 문서다 — 쪽번호를 지어내면 틀린 번호가 그대로 실린다 */
+  it("목차를 직접 쓰게 하되 쪽번호는 짓지 말라고 한다", () => {
+    expect(p.prompt).toContain("```toc");
+    expect(p.prompt).toContain("쪽번호를 적지 않는다");
+    expect(p.systemPromptAppend).toContain("―(U+2015)");
+  });
+
+  it("요약박스는 요약문으로 시작하는 절에만 달라고 한다", () => {
+    expect(p.prompt).toContain("```box");
+    expect(p.prompt).toContain("목록이나 표로 시작하는 절에는 박스를 두지 않는다");
+  });
+
+  it("근거 없는 수치를 막고 날짜를 지어내지 못하게 한다", () => {
+    expect(p.prompt).toContain("추진 중");
+    expect(p.prompt).toContain("날짜나 받는 사람을 지어내지 않는다");
+  });
+
+  it("출력 계약은 report/draft.dsl.md 와 family: report 다", () => {
+    expect(p.prompt).toContain(`${ws}`);
+    expect(p.prompt).toContain("<작업폴더>/report/draft.dsl.md");
+    expect(p.prompt).toContain("family: report");
+    expect(p.allowedTools).toEqual(["Read", "Write", "Glob", "Grep"]);
+  });
+
+  /** 조사 단계가 없는 문서다 — 웹·하위 에이전트 도구가 새면 안 된다 */
+  it("조사 도구를 주지 않는다", () => {
+    for (const tool of ["WebSearch", "WebFetch", "Task"]) expect(p.allowedTools).not.toContain(tool);
+  });
+
+  /**
+   * 회귀: report 분기를 더해도 얼어붙은 네 family 의 프롬프트는 한 글자도 달라지지 않는다.
+   * projectBrief·referenceGuide 를 함께 쓰므로 여기서 한 번 더 못박는다.
+   */
+  it("기존 네 단계의 프롬프트는 그대로다", () => {
+    for (const stage of ["plan", "notice", "press", "official"] as const) {
+      const q = buildStagePrompt({ stage, project, workspaceDir: ws });
+      expect(q.prompt, stage).not.toContain("주요업무보고");
+      expect(q.systemPromptAppend, stage).not.toContain("gepa-report-design");
+    }
+  });
+});

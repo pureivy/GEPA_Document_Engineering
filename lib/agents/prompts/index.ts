@@ -145,6 +145,7 @@ const REVIEW_SKILL: Record<Stage, string> = {
   notice: "gepa-notice-design",
   press: "gepa-press-style",
   official: "gepa-official-design",
+  report: "gepa-report-design",
 };
 
 export function buildStagePrompt(input: StagePromptInput): StagePrompt {
@@ -234,6 +235,20 @@ front-matter: 기관 (재)경상북도경제진흥원, 배포일(공고일), 보
 - 본문은 문장체로 쓰고 항목은 1. → 가. → 1) → 가) 순으로 매기며, 항목이 하나뿐이면 기호를 붙이지 않는다.
 - 붙임물이 있으면 front-matter의 붙임 목록에 적고 본문에 직접 타이핑하지 않는다. 붙임이 없으면 본문 마지막 줄 끝에 "  끝."을 직접 쓴다.
 - 시행 일련번호·접수번호는 어떤 형태로도 만들지 않는다(front-matter에 그런 키가 없다).${DOC_CONTRACT("official", "official")}${resume}`,
+        allowedTools: ["Read", "Write", "Glob", "Grep"],
+        maxTurns: 20,
+      };
+    case "report":
+      return {
+        systemPromptAppend: `${COMMON()}\n역할: 주요업무보고 작성자. .claude/skills/gepa-report-design/SKILL.md 의 사다리·요약박스·목차 규격을 그대로 따른다. 업무보고는 공고가 아니라 **실적과 계획**이다 — 근거 없는 수치는 쓰지 않는다. 목차 쪽번호는 자리표시자 ―(U+2015)를 그대로 두고 숫자를 지어내지 않는다(결재에 올라가는 문서이고 담당자가 한글에서 채운다).`,
+        prompt: `${brief}\n작업 폴더: ${workspaceDir}\n\n위 내용으로 「${project.title}」 주요업무보고를 작성하라.
+- front-matter: 제목(${project.title}), 부서(${project.contact.부서명}), 보고일·보고대상·대상기간은 위 지시에 적힌 값만 옮긴다 — 없으면 빈 문자열로 두고 날짜나 받는 사람을 지어내지 않는다. 표지에 나가는 글자는 제목뿐이다(나머지는 문서의 기록으로만 남는다).
+- 첫 블록은 \`\`\`toc 목차다. 작성기가 만들어 주지 않으므로 쓰지 않으면 보고순서 쪽이 통째로 빠진다. 장 줄은 "Ⅰ. 일 반 현 황", 절 줄은 "1. 설립목적" 꼴로 본문 차례와 같게 적는다. **쪽번호를 적지 않는다** — 작성기가 줄 끝에 자리표시자를 붙인다.
+- 장은 "# 일 반 현 황"(간지), 절은 "## 설립목적"(번호 칩)으로 쓴다. Ⅰ·Ⅱ 와 1·2 는 자동으로 매겨지므로 번호를 직접 적지 않는다. 간지 줄 다음에는 <pagebreak> 를 두어 본문을 새 쪽에서 시작한다.
+- 본문 사다리는 **소제목 □ → ● → -** 세 칸뿐이다. 더 깊이 들어가지 않는다. **ㅇ 은 쓰지 않는다 — 1단계는 언제나 ● 다.**
+- 절이 요약문으로 시작할 때만 절 칩 바로 밑에 \`\`\`box 요약문을 둔다(두 줄 안팎). 목록이나 표로 시작하는 절에는 박스를 두지 않는다.
+- 수치는 근거가 있는 것만 쓴다. 위 지시에 없는 실적·예산·건수는 지어내지 말고 그 줄을 빼거나 "추진 중"으로 적는다.
+- 조직도 자리에는 <조직도> 한 줄만 둔다(글은 참고본 조각에 굳어 있다).${DOC_CONTRACT("report", "report")}${resume}`,
         allowedTools: ["Read", "Write", "Glob", "Grep"],
         maxTurns: 20,
       };
