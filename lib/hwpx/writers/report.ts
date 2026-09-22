@@ -211,6 +211,7 @@ export function writeReport(ctx: WriterContext, doc: ReportDoc): XmlNode[] {
       case "chapterBand":
         // 간지는 언제나 새 쪽에서 시작한다 — 문서 첫 블록일 때만 빼고(빈 첫 쪽이 생긴다).
         out.push(chapterBand(ctx, b.numeral, b.title, out.length === 0));
+        out.push(hiddenBackPage(ctx)); // 참고본은 간지마다 뒷면이 빈 쪽이다
         break;
       case "sectionChip":
         out.push(sectionChip(ctx, b.label, b.title));
@@ -273,6 +274,7 @@ function cover(ctx: WriterContext, m: ReportMeta, title?: Inline[]): XmlNode[] {
     const pic = pictureFrom(ref, { id: ctx.ids.nextShapeId(), instid: ctx.ids.nextShapeId(), zOrder: ctx.ids.nextZOrder() });
     out.push(ctx.para({ paraPr: s.paraPr, runs: [{ charPr: s.charPr, nodes: [pic] }], vertsize: pictureSize(pic).height, lineSpacing: 160 }));
   }
+  out.push(hiddenBackPage(ctx)); // 참고본 쪽 2 — 표지 뒷면도 빈 쪽이다
   return out;
 }
 
@@ -319,6 +321,23 @@ function hidePageNumRun(ctx: WriterContext): { charPr: number; nodes: XmlNode[] 
     charPr: s.charPr,
     nodes: [el("hp:ctrl", {}, [el("hp:pageHiding", { hideHeader: "0", hideFooter: "0", hideMasterPage: "0", hideBorder: "0", hideFill: "0", hidePageNum: "1" })])],
   };
+}
+
+/**
+ * 앞장(표지·목차·간지) **뒷면의 빈 쪽**. 참고본은 예외 없이 그렇다 — 쪽 2·4·6·10·17 이
+ * 전부 빈 쪽이고, 각각 표지·목차·간지 Ⅰ·Ⅱ·Ⅲ 의 뒷면이다(쪽별 텍스트 실측).
+ * 서식의 규칙이지 우연이 아니므로 작성기가 보장한다.
+ *
+ * 빈 쪽에도 쪽번호를 찍지 않는다(담당자 지시) — 번호만 덩그러니 남는다.
+ * 돌아가기 전에 `pendingPageBreak` 를 다시 세워 **다음 글이 또 새 쪽에서 시작**하게 한다.
+ * 이걸 빠뜨리면 빈 쪽이 만들어지는 게 아니라 다음 글이 그 쪽에 얹힌다.
+ */
+function hiddenBackPage(ctx: WriterContext): XmlNode {
+  const s = roleSpec(ctx, "coverSpacer");
+  const para = ctx.para({ paraPr: s.paraPr, runs: [hidePageNumRun(ctx)], vertsize: Math.round(s.base.pt * 100), lineSpacing: s.lineSpacing });
+  para.attrs.pageBreak = "1";
+  ctx.pendingPageBreak = true;
+  return para;
 }
 
 /** 쪽번호를 감추는 컨트롤만 담은 빈 문단 — 그 쪽 첫머리에 둔다. */
@@ -397,7 +416,10 @@ function orgChart(ctx: WriterContext, blockId: string): XmlNode[] {
   const frag = cloneFragment(ref, ctx.ids);
   if (ctx.pendingPageBreak) frag.attrs.pageBreak = "1";
   ctx.pendingPageBreak = false;
-  return [frag];
+  // 목차 쪽에도 쪽번호를 찍지 않고(담당자 지시) 뒷면을 빈 쪽으로 둔다 — 참고본 쪽 3·4 가 그렇다.
+  const r = hidePageNumRun(ctx);
+  frag.children.unshift(el("hp:run", { charPrIDRef: String(r.charPr) }, r.nodes));
+  return [frag, hiddenBackPage(ctx)];
 }
 
 // ---- 목차 ---------------------------------------------------------------------------------

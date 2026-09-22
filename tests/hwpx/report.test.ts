@@ -112,9 +112,16 @@ describe("buildHwpx — report", () => {
 
     // 읽는 쪽에서는 `●` 로 돌아온다 — 참고본을 읽을 때와 같은 판독기(@rhwp/core)로 확인한다.
     const mod = await rhwp();
-    const svg = new mod.HwpDocument(bytes).renderPageSvg(4); // 본문 첫 쪽 (앞에 표지·목차·간지·빈 쪽)
-    expect(svg).toContain("●");
-    expect(svg).not.toContain("\uF06D");
+    // 쪽 번호를 고정하지 않는다 — 앞장(표지·목차·간지)과 그 뒷면이 늘고 줄 때마다 깨진다.
+    // 실제로 두 번 깨졌다. 본문이 있는 쪽을 찾아서 본다.
+    const d = new mod.HwpDocument(bytes);
+    const svgs: string[] = [];
+    for (let i = 0; i < 16; i++) {
+      try { svgs.push(d.renderPageSvg(i)); } catch { break; }
+    }
+    const body = svgs.filter((v) => v.includes("●"));
+    expect(body.length, "글머리가 그려진 쪽이 있어야 한다").toBeGreaterThan(0);
+    for (const v of svgs) expect(v).not.toContain("\uF06D");
 
     // extractText 는 section0.xml 을 직접 읽는 우리 도우미라 이 치환을 하지 않는다.
     // 두 값이 다른 것이 정상이고, 그래서 여기 단언을 판독기 쪽에 건다.
@@ -167,10 +174,20 @@ describe("buildHwpx — report", () => {
     expect(new Set(ids).size).toBe(ids.length);
   });
 
-  it("간지 뒷면은 pageBreak → blank → pageBreak 로 만든 빈 쪽 하나다", () => {
+  /**
+   * 앞장(표지·목차·간지)은 저마다 **뒷면이 빈 쪽**이고 그 빈 쪽도 쪽번호를 감춘다.
+   * 참고본이 예외 없이 그렇다 — 쪽 2·4·6·10·17 이 각각 표지·목차·간지 Ⅰ·Ⅱ·Ⅲ 의 뒷면이다.
+   * 예전에는 작성자가 `pageBreak → blank → pageBreak` 로 손수 만들어야 했는데,
+   * 서식의 규칙이지 선택이 아니므로 작성기가 보장한다.
+   */
+  it("앞장마다 뒷면 빈 쪽이 따라오고 그 쪽도 번호를 감춘다", () => {
     const sec = parseXml(sectionXml);
-    const blanksWithBreak = findAll(sec, "hp:p").filter((p) => p.attrs.pageBreak === "1" && findAll(p, "hp:t").every((t) => t.children.length === 0));
-    expect(blanksWithBreak.length).toBe(1);
+    const backs = findAll(sec, "hp:p").filter(
+      (p) => p.attrs.pageBreak === "1" && findAll(p, "hp:pageHiding").length === 1 && findAll(p, "hp:tbl").length === 0,
+    );
+    // 표지·목차·간지 Ⅰ·간지 Ⅱ 의 뒷면 넷
+    expect(backs.length).toBe(4);
+    for (const b of backs) expect(findAll(b, "hp:t").every((t) => t.children.length === 0), "뒷면은 글자가 없어야 한다").toBe(true);
   });
 
   it("간지 조각은 구역 컨트롤(newNum)을 끌고 오지 않는다", () => {
@@ -509,9 +526,10 @@ describe("buildHwpx — report 쪽번호 감추기", () => {
     expect(sectionXml).toContain('sideChar="-"');
   });
 
-  it("표지와 간지마다 감추기가 붙는다", () => {
-    // 표본에는 간지가 둘(Ⅰ·Ⅱ) 있고 표지가 하나다.
-    expect((sectionXml.match(/hidePageNum="1"/g) ?? []).length).toBe(3);
+  it("앞장과 그 뒷면마다 감추기가 붙는다", () => {
+    // 앞장은 저마다 쪽번호를 감추고 뒷면 빈 쪽도 감춘다(참고본 쪽 1·2·3·4·5·6·9·10·16·17).
+    // 표본: 표지+뒷면, 목차+뒷면, 간지 Ⅰ+뒷면, 간지 Ⅱ+뒷면 = 여덟.
+    expect((sectionXml.match(/hidePageNum="1"/g) ?? []).length).toBe(8);
   });
 
   it("감추기는 간지 문단 **안에** 있다", () => {
