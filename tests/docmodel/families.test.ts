@@ -82,8 +82,10 @@ describe("DOC_FAMILIES.headingStyle", () => {
     expect(DOC_FAMILIES.notice.headingStyle).toBe("sectionBar");
     expect(DOC_FAMILIES.press.headingStyle).toBe("none");
   });
-  it("업무보고서는 제목 문법을 쓰지 않는다", () => {
-    expect(DOC_FAMILIES.report.headingStyle).toBe("none");
+  it("업무보고서는 사업계획서와 같은 장 띠·절 칩을 쓴다", () => {
+    // 간지 Ⅰ·Ⅱ·Ⅲ 은 본문 중간에 되풀이되므로 `#` 으로 위치를 받아야 한다.
+    expect(DOC_FAMILIES.report.headingStyle).toBe("chapterChip");
+    expect(familyContext("report", fallbackMeta("report")).allowHeadings).toBe(true);
   });
   it("headingStyle=none 인 family 는 제목 문법을 끄고 있어야 한다", () => {
     // press 는 expanders/press.ts 의 allowHeadings:false 로 parser.ts:509 에서 먼저 끊긴다.
@@ -92,6 +94,24 @@ describe("DOC_FAMILIES.headingStyle", () => {
       const ctx = familyContext(f, fallbackMeta(f));
       if (DOC_FAMILIES[f].headingStyle === "none") expect(ctx.allowHeadings, f).toBe(false);
     }
+  });
+});
+
+describe("FamilyContext.numeralStyle", () => {
+  // 예전에는 parser.ts 가 this.meta 를 사업계획서 meta 로 캐스팅해 .numbering 을 읽었다.
+  // 그 칸이 없는 family 는 `undefined !== "arabic"` 으로 **우연히** 로마자가 됐다.
+  // 이제는 확장기가 제 meta 에서 채운다 — 값이 맞는 이유로 맞아야 한다.
+  it("사업계획서는 제 meta 의 numbering 에서 정한다", () => {
+    const roman = { ...(fallbackMeta("plan") as Record<string, unknown>), numbering: "roman" };
+    const arabic = { ...(fallbackMeta("plan") as Record<string, unknown>), numbering: "arabic" };
+    expect(familyContext("plan", roman as never).numeralStyle).toBe("roman");
+    expect(familyContext("plan", arabic as never).numeralStyle).toBe("arabic");
+  });
+  it("업무보고서는 참고본대로 로마자다", () => {
+    expect(familyContext("report", fallbackMeta("report")).numeralStyle).toBe("roman");
+  });
+  it("모든 family 가 값을 갖는다", () => {
+    for (const f of FamilySchema.options) expect(["roman", "arabic"], f).toContain(familyContext(f, fallbackMeta(f)).numeralStyle);
   });
 });
 

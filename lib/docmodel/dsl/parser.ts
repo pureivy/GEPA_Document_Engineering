@@ -517,8 +517,7 @@ export class LineParser {
         const n = num ? num.n : this.chapterCounter + 1;
         this.chapterCounter = n;
         this.chipCounter = 0;
-        const meta = this.meta as Extract<DocModel, { family: "plan" }>["meta"];
-        const numeral = meta.numbering === "arabic" ? String(n) : romanNumeral(n);
+        const numeral = ctx.numeralStyle === "arabic" ? String(n) : romanNumeral(n);
         return [this.commitNew({ k: "chapterBand", numeral, title: num ? num.title : title })];
       }
       // notice

@@ -18,5 +18,6 @@ export function officialPrelude(): BlockInput[] {
 }
 
 export function officialContext(): FamilyContext {
-  return { prelude: officialPrelude(), firstSectionNumber: 1, plainRole: "plain", allowHeadings: false };
+  // allowHeadings:false 라 `#` 은 parser.ts:510 에서 끊긴다 — numeralStyle 에 닿지 않는다.
+  return { prelude: officialPrelude(), firstSectionNumber: 1, plainRole: "plain", allowHeadings: false, numeralStyle: "roman" };
 }

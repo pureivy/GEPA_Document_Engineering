@@ -234,7 +234,10 @@ function bodyLines(doc: DocModel): string[] {
   const lines: string[] = [];
   const start = preludeLength(doc);
   const blocks = doc.blocks.slice(start);
-  const isPlanRoman = doc.family === "plan" && (doc.meta as { numbering?: string }).numbering !== "arabic";
+  // 확장기가 제 meta 에서 정한 값을 읽는다 — parser.ts 의 장 띠 번호와 같은 출처다.
+  // `doc.family === "plan" && meta.numbering !== "arabic"` 로 두면 chapterChip 을 쓰는
+  // 다른 family(업무보고)가 조용히 아라비아 숫자로 직렬화되어, 파서가 만든 Ⅰ 과 어긋난다.
+  const isRoman = familyContext(doc.family, doc.meta).numeralStyle === "roman";
 
   for (let i = 0; i < blocks.length; i++) {
     const b = blocks[i];
@@ -273,7 +276,7 @@ function bodyLines(doc: DocModel): string[] {
         break;
       case "chapterBand": {
         const n = splitLeadingNumeral(`${b.numeral} x`)?.n;
-        if (n !== undefined) lines.push(`# ${isPlanRoman ? (ROMAN_NUMERALS as readonly string[])[n - 1] ?? String(n) : String(n)}. ${b.title}`);
+        if (n !== undefined) lines.push(`# ${isRoman ? (ROMAN_NUMERALS as readonly string[])[n - 1] ?? String(n) : String(n)}. ${b.title}`);
         else lines.push(`# ${b.numeral} ${b.title}`);
         break;
       }
