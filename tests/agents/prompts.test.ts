@@ -110,21 +110,42 @@ describe("official 단계 프롬프트", () => {
    * 값이 있어도 공문이 아니면 실리지 않는다. 폼의 전송·우편번호 칸은 공용 연락처 구역에 있고
    * 브라우저 기억으로 prefill 되므로, 공문을 한 번 만든 담당자가 다음에 세운 사업계획서
    * 프로젝트가 그 값을 물려받는다. kind 로 막지 않으면 얼어붙은 세 family 의 프롬프트가 조용히 바뀐다.
+   *
+   * **결문 전용 칸 네 개를 한꺼번에 본다**(전송·우편번호·홈페이지·공개구분). 이 branch 에서만
+   * 같은 꼴의 누수가 세 번 나왔다 — 전송·우편번호(5a37bf3), 참고 문서 문구(Task 7), 그리고
+   * 홈페이지·공개구분. 칸이 늘 때마다 여기 목록에 더한다.
+   *
+   * 업무보고도 함께 돌린다: 업무보고에는 결문이 없어서 네 칸 모두 쓸 데가 없고, 화면의
+   * 연락처 구역은 공용이라 앞서 만든 공문의 값이 그대로 따라온다.
    */
-  it("공문이 아닌 프로젝트는 전송·우편번호 값이 있어도 브리프에 싣지 않는다", () => {
+  it("공문이 아닌 프로젝트는 결문 전용 값이 있어도 브리프에 싣지 않는다", () => {
     const 물려받은: ProjectDTO = {
       ...project,
-      contact: { ...project.contact, 전송: "054-472-2989", 우편번호: "39393" },
+      contact: { ...project.contact, 전송: "054-472-2989", 우편번호: "39393", 홈페이지: "https://gepa.kr", 공개구분: "비공개" },
     };
-    for (const stage of ["plan", "notice", "press"] as const) {
-      const q = buildStagePrompt({ stage, project: 물려받은, workspaceDir: ws });
-      expect(q.prompt, stage).not.toMatch(/^전송: /m);
-      expect(q.prompt, stage).not.toMatch(/^우편번호: /m);
+    const 결문칸 = [/^전송: /m, /^우편번호: /m, /^홈페이지: /m, /^공개구분: /m];
+    for (const stage of ["plan", "notice", "press", "report"] as const) {
+      const q = buildStagePrompt({ stage, project: { ...물려받은, kind: stage === "report" ? "report" : "program" }, workspaceDir: ws });
+      for (const 칸 of 결문칸) expect(q.prompt, `${stage} ${칸}`).not.toMatch(칸);
     }
     // 같은 값이 공문에서는 실려야 한다 — 막는 조건이 kind 이지 값의 유무가 아님을 고정한다
     const 공문 = buildStagePrompt({ stage: "official", project: { ...물려받은, kind: "official" }, workspaceDir: ws });
     expect(공문.prompt).toMatch(/^전송: 054-472-2989$/m);
     expect(공문.prompt).toMatch(/^우편번호: 39393$/m);
+    expect(공문.prompt).toMatch(/^홈페이지: https:\/\/gepa\.kr$/m);
+    expect(공문.prompt).toMatch(/^공개구분: 비공개$/m);
+  });
+
+  /**
+   * 홈페이지·공개구분은 **비면 줄 자체가 없어야 한다.** 빈 줄("홈페이지: ")을 실으면 에이전트가
+   * 그 자리를 채울 값을 찾으려 들고, 스키마 기본값이 사라진 홈페이지는 특히 지어내기 쉽다.
+   */
+  it("공문이라도 값이 비면 그 줄 자체가 없다", () => {
+    const q = buildStagePrompt({ stage: "official", project: { ...project, kind: "official" }, workspaceDir: ws });
+    expect(q.prompt).not.toMatch(/^홈페이지: /m);
+    expect(q.prompt).not.toMatch(/^공개구분: /m);
+    // 대신 빈 칸을 비워 두라는 지시가 프롬프트에 있다(없는 주소를 지어내는 것이 이 자리의 위험이다)
+    expect(q.prompt).toContain("그 줄이 없으면 그 칸을 비워 둔다");
   });
 });
 
