@@ -97,7 +97,7 @@ export function startStageRun(opts: StartStageRunOptions): { runId: string; sess
       try {
         const r = syncWikiSnapshot(wikiSrc, wikiSnapshotDir(dataDir()));
         wikiDir = r.dir;
-        if (r.copied) console.log(`[runIntegration] wiki snapshot: ${r.copied}/${r.total} files updated`);
+        if (r.copied || r.removed) console.log(`[runIntegration] wiki snapshot: ${r.copied}/${r.total} updated, ${r.removed} removed`);
       } catch (e) {
         console.error("[runIntegration] wiki snapshot failed:", (e as Error).message);
       }
