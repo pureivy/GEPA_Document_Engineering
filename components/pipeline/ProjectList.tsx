@@ -144,8 +144,10 @@ function NewProjectDialog({ onClose, onCreated }: { onClose: () => void; onCreat
             ))}
           </div>
         </Field>
-        <Field label="제목" required={isOfficial || !refFile} hint={!isOfficial && refFile ? "비우면 파일 이름을 제목으로 씁니다" : isOfficial ? "공문의 제목 칸에 그대로 들어갑니다" : undefined}>
+        <Field label="제목" id="title" required={isOfficial || !refFile} hint={!isOfficial && refFile ? "비우면 파일 이름을 제목으로 씁니다" : isOfficial ? "공문의 제목 칸에 그대로 들어갑니다" : undefined}>
           <Input
+            id="title"
+            name="title"
             placeholder={isOfficial ? "예) 경영평가 대응을 위한 2026년 사업 추진 현황 제출 요청" : "예) 2026년 안동시 수출기업 역량강화 지원사업"}
             value={form.title}
             onChange={(e) => set("title", e.target.value)}
@@ -156,8 +158,8 @@ function NewProjectDialog({ onClose, onCreated }: { onClose: () => void; onCreat
         {isOfficial ? (
           <>
             <div className="grid grid-cols-[10rem_1fr] gap-4">
-              <Field label="수신유형" required>
-                <Select value={recipientKind} onChange={(e) => setRecipientKind(e.target.value as RecipientKind)}>
+              <Field label="수신유형" id="recipientKind" required>
+                <Select id="recipientKind" name="recipientKind" value={recipientKind} onChange={(e) => setRecipientKind(e.target.value as RecipientKind)}>
                   {RECIPIENT_KINDS.map((r) => (
                     <option key={r} value={r}>
                       {r}
@@ -168,8 +170,10 @@ function NewProjectDialog({ onClose, onCreated }: { onClose: () => void; onCreat
               {recipientKind === "내부결재" ? (
                 <div className="self-end pb-2 text-[11px] text-slate-500">내부결재는 수신 대상 없이 &ldquo;내부결재&rdquo;로 찍힙니다.</div>
               ) : (
-                <Field label={RECIPIENT_KEY[recipientKind]} required hint={recipientKind === "수신자참조" ? "여럿이면 쉼표로 구분" : "예: 경상북도지사"}>
+                <Field label={RECIPIENT_KEY[recipientKind]} id="recipient" required hint={recipientKind === "수신자참조" ? "여럿이면 쉼표로 구분" : "예: 경상북도지사"}>
                   <Input
+                    id="recipient"
+                    name="recipient"
                     placeholder={recipientKind === "수신자참조" ? "경영지원팀장, 마케팅팀장, 일자리종합지원팀장" : "경상북도지사"}
                     value={recipient}
                     onChange={(e) => setRecipient(e.target.value)}
@@ -178,8 +182,10 @@ function NewProjectDialog({ onClose, onCreated }: { onClose: () => void; onCreat
                 </Field>
               )}
             </div>
-            <Field label="공문 내용" required hint="자유 서술 — 용건, 근거, 기한, 제출 방법 등. 에이전트가 항목 위계를 세워 기안문으로 씁니다">
+            <Field label="공문 내용" id="body" required hint="자유 서술 — 용건, 근거, 기한, 제출 방법 등. 에이전트가 항목 위계를 세워 기안문으로 씁니다">
               <Textarea
+                id="body"
+                name="body"
                 rows={5}
                 placeholder="예) 경영평가 상시대응을 위해 각 팀의 2026년 사업 추진 현황을 매월 제출받으려 한다. 작성대상은 각 팀 전체 사업, 기준은 전월 말일 예산 집행액, 제출기한은 매월 5일까지."
                 value={form.topic}
@@ -190,15 +196,15 @@ function NewProjectDialog({ onClose, onCreated }: { onClose: () => void; onCreat
           </>
         ) : (
           <>
-            <Field label="주제" hint={refFile ? "비우면 기존 계획서와 바뀌는 내용으로 채웁니다" : "자유 서술 — 목적, 대상, 지원 내용, 예산 규모 등"} required={!refFile}>
-              <Textarea rows={5} placeholder="예) 안동시 소재 수출 유망 중소기업 20개사에 수출용 홍보물 제작·마케팅·디자인 개발을 기업당 최대 300만원 지원. 7월 공고, 8월 선정, 10월 말까지 지원." value={form.topic} onChange={(e) => set("topic", e.target.value)} autoComplete="off" />
+            <Field label="주제" id="topic" hint={refFile ? "비우면 기존 계획서와 바뀌는 내용으로 채웁니다" : "자유 서술 — 목적, 대상, 지원 내용, 예산 규모 등"} required={!refFile}>
+              <Textarea id="topic" name="topic" rows={5} placeholder="예) 안동시 소재 수출 유망 중소기업 20개사에 수출용 홍보물 제작·마케팅·디자인 개발을 기업당 최대 300만원 지원. 7월 공고, 8월 선정, 10월 말까지 지원." value={form.topic} onChange={(e) => set("topic", e.target.value)} autoComplete="off" />
             </Field>
             <div className="grid grid-cols-2 gap-4">
-              <Field label="지역" hint="예: 안동시">
-                <Input value={form.region} onChange={(e) => set("region", e.target.value)} autoComplete="off" />
+              <Field label="지역" id="region" hint="예: 안동시">
+                <Input id="region" name="region" value={form.region} onChange={(e) => set("region", e.target.value)} autoComplete="off" />
               </Field>
-              <Field label="주관기관">
-                <Input value={form.organizer} onChange={(e) => set("organizer", e.target.value)} autoComplete="off" />
+              <Field label="주관기관" id="organizer">
+                <Input id="organizer" name="organizer" value={form.organizer} onChange={(e) => set("organizer", e.target.value)} autoComplete="off" />
               </Field>
             </div>
           </>
@@ -207,20 +213,20 @@ function NewProjectDialog({ onClose, onCreated }: { onClose: () => void; onCreat
           <legend className="px-1 text-xs font-semibold text-slate-600">{isOfficial ? "처리과·담당 연락처" : "담당 연락처"}</legend>
           {isOfficial ? <p className="mb-2 text-[11px] text-slate-500">부서명은 공문의 처리과가 되고(결재라인·발신명의가 여기서 정해집니다), 전화·이메일은 결문 연락처에 찍힙니다.</p> : null}
           <div className="grid grid-cols-2 gap-3">
-            <Field label="부서명" required>
-              <Input placeholder="북부지소" value={form.contact.부서명} onChange={(e) => setContact("부서명", e.target.value)} autoComplete="organization" />
+            <Field label="부서명" id="organization" required>
+              <Input id="organization" name="organization" placeholder="북부지소" value={form.contact.부서명} onChange={(e) => setContact("부서명", e.target.value)} autoComplete="organization" />
             </Field>
-            <Field label="담당자">
-              <Input placeholder="홍길동 팀장" value={form.contact.담당자 ?? ""} onChange={(e) => setContact("담당자", e.target.value)} autoComplete="name" />
+            <Field label="담당자" id="name">
+              <Input id="name" name="name" placeholder="홍길동 팀장" value={form.contact.담당자 ?? ""} onChange={(e) => setContact("담당자", e.target.value)} autoComplete="name" />
             </Field>
-            <Field label="전화" required>
-              <Input type="tel" placeholder="054-900-3801" value={form.contact.전화} onChange={(e) => setContact("전화", e.target.value)} autoComplete="tel" />
+            <Field label="전화" id="tel" required>
+              <Input id="tel" name="tel" type="tel" placeholder="054-900-3801" value={form.contact.전화} onChange={(e) => setContact("전화", e.target.value)} autoComplete="tel" />
             </Field>
-            <Field label="이메일" required>
-              <Input type="email" placeholder="gepa_north@naver.com" value={form.contact.이메일} onChange={(e) => setContact("이메일", e.target.value)} autoComplete="email" />
+            <Field label="이메일" id="email" required>
+              <Input id="email" name="email" type="email" placeholder="gepa_north@naver.com" value={form.contact.이메일} onChange={(e) => setContact("이메일", e.target.value)} autoComplete="email" />
             </Field>
-            <Field label="우편주소" className="col-span-2">
-              <Input placeholder="경상북도 안동시 북순환로 387, 2층 경상북도경제진흥원" value={form.contact.우편주소 ?? ""} onChange={(e) => setContact("우편주소", e.target.value)} autoComplete="street-address" />
+            <Field label="우편주소" id="street-address" className="col-span-2">
+              <Input id="street-address" name="street-address" placeholder="경상북도 안동시 북순환로 387, 2층 경상북도경제진흥원" value={form.contact.우편주소 ?? ""} onChange={(e) => setContact("우편주소", e.target.value)} autoComplete="street-address" />
             </Field>
           </div>
         </fieldset>
@@ -232,20 +238,20 @@ function NewProjectDialog({ onClose, onCreated }: { onClose: () => void; onCreat
             <label className="flex cursor-pointer items-center gap-2 rounded border border-dashed border-slate-300 px-3 py-2 text-xs text-slate-700 hover:bg-slate-50">
               <Upload className="h-4 w-4 text-slate-400" />
               <span className="flex-1 truncate">{refFile ? `${refFile.name} (${Math.round(refFile.size / 1024)} KB)` : "파일 선택 — .hwp .hwpx .pdf .docx .md .txt"}</span>
-              <input type="file" className="hidden" accept=".hwp,.hwpx,.pdf,.docx,.md,.txt" onChange={(e) => setRefFile(e.target.files?.[0] ?? null)} />
+              <input id="referenceFile" name="referenceFile" type="file" className="hidden" accept=".hwp,.hwpx,.pdf,.docx,.md,.txt" onChange={(e) => setRefFile(e.target.files?.[0] ?? null)} />
             </label>
             {refFile ? (
               <>
-                <Field label="이번에 바뀌는 내용" hint="예) 2027년으로 연도 변경, 지원 규모 20개사 → 30개사, 기업당 한도 300만원 → 500만원, 접수 7월 → 8월">
-                  <Textarea rows={3} value={changes} onChange={(e) => setChanges(e.target.value)} placeholder="연도·기간·규모·금액·담당 등 달라지는 점을 적어 주세요" />
+                <Field label="이번에 바뀌는 내용" id="changes" hint="예) 2027년으로 연도 변경, 지원 규모 20개사 → 30개사, 기업당 한도 300만원 → 500만원, 접수 7월 → 8월">
+                  <Textarea id="changes" name="changes" rows={3} value={changes} onChange={(e) => setChanges(e.target.value)} placeholder="연도·기간·규모·금액·담당 등 달라지는 점을 적어 주세요" />
                 </Field>
                 <div className="flex flex-wrap gap-4 text-xs text-slate-700">
                   <label className="flex items-center gap-1">
-                    <input type="checkbox" className="h-3.5 w-3.5" checked={autoRun} onChange={(e) => setAutoRun(e.target.checked)} />
+                    <input id="autoRun" name="autoRun" type="checkbox" className="h-3.5 w-3.5" checked={autoRun} onChange={(e) => setAutoRun(e.target.checked)} />
                     만든 뒤 조사부터 보도자료까지 자동 실행
                   </label>
                   <label className="flex items-center gap-1" title="사업계획서 작성 중 근거가 부족하면 조사 에이전트로 보충 조사합니다(최대 2회). 이 설정은 기억되어 이후 실행에도 적용됩니다">
-                    <input type="checkbox" className="h-3.5 w-3.5" checked={planResearch} onChange={(e) => writePref(PREF_PLAN_RESEARCH, e.target.checked)} />
+                    <input id="supplementalResearch" name="supplementalResearch" type="checkbox" className="h-3.5 w-3.5" checked={planResearch} onChange={(e) => writePref(PREF_PLAN_RESEARCH, e.target.checked)} />
                     계획서 보충 조사
                   </label>
                 </div>
