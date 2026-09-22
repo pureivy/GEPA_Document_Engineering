@@ -52,20 +52,21 @@ describe("buildHwpx — report", () => {
   }, 60_000);
 
   it("본문 사다리는 반각 공백과 기호를 글자로 낸다 (- 3타)", () => {
+    // 기호별 타수 자체는 `tests/docmodel/indent.test.ts` 가 못 박는다 — 쪽을 그리지 않는
+    // 자리라 그 규칙을 훨씬 곧게 본다. 여기서는 그 타수가 글자로 나가는지만 본다.
     expect(sectionXml).toContain("<hp:t>   - 지역 우수기업 발굴");
-    // `ㅇ` 는 참고본의 평평한 목록(일반현황)이다 — 0타로 나간다
-    expect(sectionXml).toContain("<hp:t>ㅇ 성장 단계별 맞춤형 지원");
   });
 
   it("표본의 소제목은 `□` 로 쓰고 도형 칩으로 나간다", () => {
-    // 이 줄은 참고본에서 소제목 칩 줄(paraPr 146, 글자 표지 없음)인데 표본이 `ㅇ` 로 옮겨
-    // 적고 있었다. `□` 가 소제목을 가리키게 된 뒤 참고본에 맞춰 고쳤다(팀장 판정).
+    // 두 줄 다 `##` 칩 밑 `●` 바로 위 — 소제목 칸이다. 표본이 `ㅇ` 로 옮겨 적고 있었고
+    // `□` 가 소제목을 가리키게 된 뒤 고쳤다(팀장 판정).
     expect(sectionXml).not.toContain("□");
     expect(sectionXml).toContain("<hp:t> 시·군 유망기업 발굴과");
+    expect(sectionXml).toContain("<hp:t> 성장 단계별 맞춤형 지원");
     const sec = parseXml(sectionXml);
     const withChip = findAll(sec, "hp:p").filter((p) => findAll(p, "hp:container").length > 0);
-    expect(withChip.length).toBe(1);
-    expect(withChip[0].attrs.paraPrIDRef).toBe("146");
+    expect(withChip.length).toBe(2);
+    for (const p of withChip) expect(p.attrs.paraPrIDRef).toBe("146");
   });
 
   it("DSL 의 `●` 는 참고본이 쓰는 사용자 영역 문자 U+F06D 로 나간다", async () => {
