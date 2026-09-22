@@ -543,3 +543,32 @@ describe("buildHwpx — report 쪽번호 감추기", () => {
     for (const b of bands) expect(findAll(b, "hp:pageHiding").length, "간지 문단이 감추기를 품어야 한다").toBe(1);
   });
 });
+
+/**
+ * 복제 조각의 배치 캐시는 **셀 밖에서만** 버린다.
+ *
+ * 담당자가 한글에서 "표 정렬이 이상하다"며 조직도가 오른쪽으로 밀려 잘린 것을 찾아냈다.
+ * 원인은 `cloneFragment` 가 `hp:linesegarray` 를 몽땅 지운 것이었다. 조직도의 닻 문단은
+ * 참고본에서 `paraPr 56`(내어쓰기 101.8pt)을 쓰는데, 캐시가 있으면 한글이 그대로 그리고
+ * 없으면 그 내어쓰기를 적용해 표를 101.8pt 밀어 낸다.
+ *
+ * 셀 안 `vertpos` 는 셀 기준이라 조각을 옮겨도 유효하고, 최상위 문단의 것만 쪽 기준이라
+ * 버려야 한다. `t09` 의 lineseg 96개 중 95개가 `vertpos="0"` 이고 쪽 절대 좌표는 하나뿐이다.
+ */
+describe("buildHwpx — report 복제 조각의 배치 캐시", () => {
+  const { sectionXml } = buildHwpx(parseDsl(DSL).doc, { now: NOW });
+  const frag = readFileSync(join(DIR, "geometry/t09.xml"), "utf8");
+
+  it("조직도 셀 안의 배치 캐시가 살아 있다", () => {
+    const inFrag = (frag.match(/<hp:lineseg /g) ?? []).length;
+    const inOut = (sectionXml.match(/<hp:lineseg /g) ?? []).length;
+    expect(inFrag).toBeGreaterThan(90);
+    expect(inOut, "셀 캐시까지 지우면 조직도가 밀린다").toBeGreaterThan(80);
+  });
+
+  it("쪽 기준 좌표를 가진 최상위 캐시는 버린다", () => {
+    // 조각의 유일한 쪽 절대 좌표 — 조각이 다른 쪽으로 가므로 남으면 안 된다.
+    expect(frag).toContain('vertpos="47296"');
+    expect(sectionXml).not.toContain('vertpos="47296"');
+  });
+});
