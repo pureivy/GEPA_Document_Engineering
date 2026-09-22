@@ -10,7 +10,7 @@
     "typecheck": "tsc --noEmit -p tsconfig.json",
     "test": "vitest run",
     "setup:fonts": "tsx scripts/setup-fonts.ts",
-    "setup:templates": "tsx scripts/curate-template.ts notice && tsx scripts/curate-template.ts plan --allow-lineseg-diff && tsx scripts/curate-template.ts press --from-hwpx && tsx scripts/curate-template.ts official --from-hwpx && tsx scripts/extract-style-map.ts notice && tsx scripts/extract-style-map.ts plan && tsx scripts/extract-style-map.ts press && tsx scripts/extract-style-map.ts official && tsx scripts/extract-geometry.ts notice && tsx scripts/extract-geometry.ts plan && tsx scripts/extract-geometry.ts official && tsx scripts/sync-agent-skills.ts",
+    "setup:templates": "tsx scripts/curate-template.ts notice && tsx scripts/curate-template.ts plan --allow-lineseg-diff && tsx scripts/curate-template.ts press --from-hwpx && tsx scripts/curate-template.ts official --from-hwpx && tsx scripts/curate-template.ts report && tsx scripts/extract-style-map.ts notice && tsx scripts/extract-style-map.ts plan && tsx scripts/extract-style-map.ts press && tsx scripts/extract-style-map.ts official && tsx scripts/extract-style-map.ts report && tsx scripts/extract-geometry.ts notice && tsx scripts/extract-geometry.ts plan && tsx scripts/extract-geometry.ts official && tsx scripts/extract-geometry.ts report && tsx scripts/sync-agent-skills.ts",
     "golden": "tsx scripts/golden.ts notice 6-1",
     "agent:smoke": "tsx scripts/dev-agent-smoke.ts",
     "test:e2e": "playwright test",
