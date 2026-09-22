@@ -4,6 +4,7 @@ import { useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
 import { FolderOpen, Plus, RefreshCw, Trash2, Upload } from "lucide-react";
 import type { ProjectDTO } from "@/lib/contracts";
+import { OfficialMetaSchema } from "@/lib/docmodel/schema";
 import { api, errorMessage, type NewProjectInput } from "@/lib/client/api";
 import { cn, formatDateTime } from "@/lib/client/format";
 import { Button } from "@/components/ui/button";
@@ -19,11 +20,11 @@ const KIND_HINT: Record<ProjectKind, string> = {
   official: "별지 제1호 기안문 한 건을 만듭니다.",
 };
 
-/** 공문 수신유형 — 값은 OfficialMetaSchema 의 수신유형과 글자까지 같아야 한다(그대로 front-matter 로 간다) */
-const RECIPIENT_KINDS = ["내부결재", "수신자", "수신자참조"] as const;
-type RecipientKind = (typeof RECIPIENT_KINDS)[number];
+/** 공문 수신유형 — OfficialMetaSchema 에서 그대로 가져온다(손으로 다시 적으면 둘이 갈라질 수 있다). export 는 드리프트 가드 테스트용. */
+export const RECIPIENT_KINDS = OfficialMetaSchema.shape.수신유형.options;
+export type RecipientKind = (typeof RECIPIENT_KINDS)[number];
 /** 수신유형별로 값을 담는 front-matter 키. 내부결재는 수신 대상이 없다 */
-const RECIPIENT_KEY: Record<RecipientKind, "" | "수신" | "수신자"> = { 내부결재: "", 수신자: "수신", 수신자참조: "수신자" };
+export const RECIPIENT_KEY: Record<RecipientKind, "" | "수신" | "수신자"> = { 내부결재: "", 수신자: "수신", 수신자참조: "수신자" };
 
 const EMPTY: NewProjectInput = {
   kind: "program",
