@@ -249,13 +249,13 @@ function NewProjectDialog({ onClose, onCreated }: { onClose: () => void; onCreat
               label="공문 내용"
               id="body"
               required={!refFile}
-              hint={refFile ? "비우면 아래에 올린 문서의 내용으로 씁니다" : "자유 서술 — 용건, 근거, 기한, 제출 방법 등. 에이전트가 항목 위계를 세워 기안문으로 씁니다"}
+              hint={refFile ? "비우면 아래에 올린 문서의 내용으로 씁니다" : "자유 서술 — 용건, 근거, 기한, 제출 방법 등. 에이전트가 항목 위계를 세워 기안문으로 씁니다. 받는 쪽이 무언가를 써서 보내야 하면 “(붙임 서식) ○○ 양식”처럼 적어 주세요 — 서식을 별지로 만들어 붙입니다"}
             >
               <Textarea
                 id="body"
                 name="body"
                 rows={5}
-                placeholder="예) 경영평가 상시대응을 위해 각 팀의 2026년 사업 추진 현황을 매월 제출받으려 한다. 작성대상은 각 팀 전체 사업, 기준은 전월 말일 예산 집행액, 제출기한은 매월 5일까지."
+                placeholder="예) 경영평가 상시대응을 위해 각 팀의 2026년 사업 추진 현황을 매월 제출받으려 한다. 작성대상은 각 팀 전체 사업, 기준은 전월 말일 예산 집행액, 제출기한은 매월 5일까지. (붙임 서식) 사업 추진 현황 양식"
                 value={form.topic}
                 onChange={(e) => set("topic", e.target.value)}
                 autoComplete="off"
