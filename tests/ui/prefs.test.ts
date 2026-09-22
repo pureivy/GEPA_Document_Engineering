@@ -78,10 +78,25 @@ describe("연락처 pref 왕복", () => {
     useStore(s);
     s.setItem(PREF_CONTACT, "{부서명:");
     expect(readContactPref()).toEqual(EMPTY_CONTACT);
-    s.setItem(PREF_CONTACT, JSON.stringify({ 부서명: "북부지소" })); // 옛 모양(칸이 모자란다)
+    s.setItem(PREF_CONTACT, JSON.stringify({ 부서명: "북부지소" })); // 옛 모양이 아니라 칸 자체가 모자란다(담당자·전화 등도 없다)
     expect(readContactPref()).toEqual(EMPTY_CONTACT);
     s.setItem(PREF_CONTACT, JSON.stringify(["북부지소"]));
     expect(readContactPref()).toEqual(EMPTY_CONTACT);
+  });
+
+  /**
+   * user 2026-09-22(리뷰): 전송·우편번호는 이번에 늘어난 칸이라, 그 전에 이 브라우저에 담긴
+   * 값(다섯 칸)에는 이 두 키가 아예 없다. isContactPref 가 그 두 키까지 typeof 로 요구하면
+   * 옛 값 전체가 깨진 것으로 보여 EMPTY_CONTACT 로 사라진다 — 우편번호·전송을 달라고 한 요청이
+   * 그 사람이 이미 저장해 둔 연락처를 지워 버리는 것이다. 옛 다섯 칸은 그대로 읽히고, 늘어난
+   * 두 칸만 빈 문자열로 채워져야 한다.
+   */
+  it("전송·우편번호 없이 저장된 옛 다섯 칸 값은 사라지지 않고, 늘어난 두 칸만 빈 문자열로 채워 읽는다", () => {
+    const s = memoryStore();
+    useStore(s);
+    const legacyFive = { 부서명: "북부지소", 담당자: "홍길동 팀장", 전화: "054-900-3801", 이메일: "gepa_north@naver.com", 우편주소: "경상북도 안동시 북순환로 387" };
+    s.setItem(PREF_CONTACT, JSON.stringify(legacyFive));
+    expect(readContactPref()).toEqual({ ...legacyFive, 전송: "", 우편번호: "" });
   });
 
   /** boolean pref 와 같은 관행: 담지 못해도 삼키고 기본값으로 계속 간다 */

@@ -49,12 +49,15 @@ function projectBrief(p: ProjectDTO, workspaceDir?: string): string {
     `프로젝트: ${p.title}`,
     `주제: ${p.topic}`,
     `지역: ${p.region} / 주관기관: ${p.organizer}`,
-    `담당: ${p.contact.부서명} ${p.contact.담당자 ?? ""} ☎ ${p.contact.전화}${p.contact.전송 ? " / 전송 " + p.contact.전송 : ""} / ${p.contact.이메일}${p.contact.우편번호 || p.contact.우편주소 ? " / " + [p.contact.우편번호, p.contact.우편주소].filter(Boolean).join(" ") : ""}`,
+    `담당: ${p.contact.부서명} ${p.contact.담당자 ?? ""} ☎ ${p.contact.전화} / ${p.contact.이메일}${p.contact.우편주소 ? " / " + p.contact.우편주소 : ""}`,
   ];
   const recipient = recipientLine(p);
   if (recipient) lines.push(recipient);
   // 전결은 결재란과 발신명의를 함께 정한다 — 수신유형과 같은 길(contact)로 실려 온다
   if (p.contact.전결) lines.push(`전결: ${p.contact.전결}`);
+  // 결문 연락처의 전송·우편번호(공문 전용) — 담당 줄은 네 단계가 함께 쓰므로 늘리지 않고 따로 둔다
+  if (p.contact.전송) lines.push(`전송: ${p.contact.전송}`);
+  if (p.contact.우편번호) lines.push(`우편번호: ${p.contact.우편번호}`);
   if (p.reference) {
     lines.push(`기존 사업계획서: ${workspaceDir ?? "<작업폴더>"}/reference/base-plan.md (원본 파일 ${p.reference.fileName}) — 이번 프로젝트는 이 계획서를 갱신하는 것이다.`);
     lines.push(`이번에 바뀌는 내용: ${p.reference.changes || "(미기재 — 연도·일정·담당만 갱신)"}`);
@@ -193,7 +196,7 @@ front-matter: 기관 (재)경상북도경제진흥원, 배포일(공고일), 보
       return {
         systemPromptAppend: `${COMMON()}\n역할: 공문서 작성자. .claude/skills/gepa-official-design/SKILL.md 의 front-matter 필드·두문/결문 규격을 그대로 따른다. 별지 제1호 일반기안문이고 가변부는 수신/제목/본문/붙임 네 가지뿐이다. **시행번호·접수번호는 절대 만들지 않는다** — 전자결재가 기안 후에 채번한다.`,
         prompt: `${brief}\n작업 폴더: ${workspaceDir}\n\n위 내용으로 공문서(기안문)를 작성하라.
-- front-matter의 처리과는 ${project.contact.부서명}, 연락처(front-matter 의 연락처 객체: 우편번호·주소·홈페이지·전화·전송·이메일)는 전화 ${project.contact.전화} / 이메일 ${project.contact.이메일}${project.contact.우편번호 ? ` / 우편번호 ${project.contact.우편번호}` : ""}${project.contact.우편주소 ? ` / 주소 ${project.contact.우편주소}` : ""}${project.contact.전송 ? ` / 전송 ${project.contact.전송}` : ""} 로 채운다. 위에서 주지 않은 값(예: 우편번호가 없으면 우편번호)은 비워 두거나 스키마 기본값(홈페이지는 https://gepa.kr)을 그대로 둔다.
+- front-matter의 처리과는 ${project.contact.부서명}, 연락처(front-matter 의 연락처 객체: 우편번호·주소·홈페이지·전화·전송·이메일)는 전화 ${project.contact.전화} / 이메일 ${project.contact.이메일}${project.contact.우편주소 ? ` / 주소 ${project.contact.우편주소}` : ""} 로 채운다. 위에 "전송: …" 줄이 있으면 연락처의 전송에, "우편번호: …" 줄이 있으면 연락처의 우편번호에 그 값을 그대로 옮긴다. 그 줄이 없으면(또는 그 밖의 값) 비워 두거나 스키마 기본값(홈페이지는 https://gepa.kr)을 그대로 둔다.
 - 수신유형·수신(자)은 위 "수신유형: …" 줄의 값을 그대로 옮긴다. 수신유형이 수신자참조면 그 줄의 수신자는 쉼표로 구분된 이름 목록이므로 OfficialMetaSchema 가 요구하는 YAML 배열(수신자: [경영지원팀장, 마케팅팀장, …])로 바꿔 쓴다 — 옮겨 적기만 하면 배열이 아니라 문자열 하나가 되어 스키마를 통과하지 못한다. 위에 "수신유형: …" 줄이 없으면(예전 방식으로 만들어진 프로젝트) 지시 내용에서 판단하고, 불분명하면 수신유형: 수신자, 수신에 처리과가 속한 실·단장 직위를 적는다.
 - 전결은 위 "전결: …" 줄의 값을 front-matter 의 전결에 그대로 옮긴다 — 결재란을 어디서 끊을지와 발신명의가 여기서 함께 정해진다(실·단장 → 실·단장 명의, 본부장 → 본부장 명의, 원장 → 기관장 명의). 그 줄이 없으면 전결을 적지 않는다(적지 않으면 원장까지 결재하는 것이 기본값이다 — 전결은 그 사슬을 낮출 때만 적는다).
 - 발신명의와 결재라인은 비워 둔다 — 전결과 처리과에서 자동으로 채워진다. 규정 밖의 결재란을 재현해야 할 때만 결재라인을 직접 적는다.

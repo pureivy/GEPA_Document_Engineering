@@ -71,12 +71,12 @@ describe("official 단계 프롬프트", () => {
     expect(p.prompt).not.toMatch(/^전결: (실·단장|본부장|원장)$/m);
   });
 
-  /**
-   * 결문의 우편번호·전송(user 2026-09-22): 브리프의 담당 줄에 실리고, front-matter 의 연락처
-   * 객체(우편번호·주소·전화·전송·이메일)에 옮기라는 지시가 있어야 한다. 없으면 줄에 군더더기
-   * 구분자("/ /")를 남기지 않아야 한다.
+/**
+   * 결문의 우편번호·전송(user 2026-09-22): 담당 줄(네 단계가 함께 쓴다)을 늘리지 않고 수신유형·
+   * 전결처럼 따로 한 줄씩 두고, front-matter 의 연락처 객체(우편번호·주소·전화·전송·이메일)로
+   * 옮기라는 지시가 그 줄들을 가리켜야 한다.
    */
-  it("우편번호·전송이 있으면 브리프와 지시문에 실린다", () => {
+  it("우편번호·전송이 있으면 브리프에 따로 한 줄씩 실리고 지시문이 그 줄을 가리킨다", () => {
     const q = buildStagePrompt({
       stage: "official",
       project: {
@@ -92,13 +92,17 @@ describe("official 단계 프롬프트", () => {
       },
       workspaceDir: "/tmp",
     });
-    expect(q.prompt).toContain("전송 054-472-2989");
-    expect(q.prompt).toContain("39393");
+    expect(q.prompt).toMatch(/^전송: 054-472-2989$/m);
+    expect(q.prompt).toMatch(/^우편번호: 39393$/m);
+    // 담당 줄 자체는 늘리지 않는다 — 전화 뒤에 곧장 슬래시·이메일이 와야 한다(전송이 끼어들지 않는다)
+    expect(q.prompt).toMatch(/☎ 054-470-8527 \/ a@gepa\.kr/);
     expect(q.prompt).toContain("연락처 객체: 우편번호·주소·홈페이지·전화·전송·이메일");
+    expect(q.prompt).toContain('"전송: …" 줄이 있으면 연락처의 전송에');
+    expect(q.prompt).toContain('"우편번호: …" 줄이 있으면 연락처의 우편번호에');
   });
 
-  it("우편번호·전송이 없으면 브리프 줄에 군더더기 구분자를 남기지 않는다", () => {
-    expect(p.prompt).not.toMatch(/ \/ $/m);
-    expect(p.prompt).not.toContain(" /  /");
+  it("우편번호·전송이 없으면 브리프에 그 줄 자체가 없다", () => {
+    expect(p.prompt).not.toMatch(/^전송: /m);
+    expect(p.prompt).not.toMatch(/^우편번호: /m);
   });
 });
