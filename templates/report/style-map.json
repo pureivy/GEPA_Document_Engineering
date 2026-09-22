@@ -6,6 +6,7 @@
     "tocLine": { "paraPr": 108, "charPr": 130 },
     "chapterBand": { "paraPr": 53, "charPr": 127 },
     "chipTitle": { "paraPr": 58, "charPr": 57 },
+    "chipLabel": { "paraPr": 57, "charPr": 103 },
     "summary": { "paraPr": 70, "charPr": 153 },
     "subHeading": { "paraPr": 146, "charPr": 142 },
     "listItem": { "paraPr": 86, "charPr": 102 },

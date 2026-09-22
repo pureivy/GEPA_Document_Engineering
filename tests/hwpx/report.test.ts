@@ -10,6 +10,13 @@ import { findAll, parseXml } from "../../lib/hwpx/xml";
 const NOW = new Date("2026-09-22T00:00:00Z");
 const DIR = join(process.cwd(), "templates/report");
 const DSL = readFileSync(join(process.cwd(), "tests/fixtures/report-sample.dsl.md"), "utf8");
+const HEADER = readFileSync(join(DIR, "pkg/Contents/header.xml"), "utf8");
+
+/** 참고본 헤더에서 borderFill id 의 채움색을 읽는다 (id 대신 보이는 색으로 단언하려고). */
+function fillColorOf(id: string | undefined): string | undefined {
+  const bf = new RegExp(`<hh:borderFill id="${id}"[\\s\\S]*?</hh:borderFill>`).exec(HEADER);
+  return /<hc:winBrush faceColor="([^"]*)"/.exec(bf?.[0] ?? "")?.[1];
+}
 
 describe("buildHwpx — report", () => {
   const { doc, warnings } = parseDsl(DSL);
@@ -84,6 +91,27 @@ describe("buildHwpx — report", () => {
     expect(report.warnings).toEqual([]);
   });
 
+  it("번호+제목 칩은 참고본 색(#000D59 / #ECF2FA)을 쓰는 1×2 표다", () => {
+    // 참고본 t31: 칸0 borderFill 53(#000D59) / 칸1 52(#ECF2FA) / 표 테두리 4, 칸 [3719, 43905].
+    // id 로 못 박지 않는 까닭: StyleRegistry 는 **서명이 같은 첫 id** 를 돌려주므로 52 자리에는
+    // 그와 한 글자도 다르지 않은 쌍둥이 29 가 온다(둘 다 테두리 없음 + #ECF2FA). 보이는 것이
+    // 같으면 된 것이고, 정작 지켜야 할 것은 "헤더에 이미 있는 색을 다시 쓴다"는 쪽이다.
+    const sec = parseXml(sectionXml);
+    const tbl = findAll(sec, "hp:tbl").find((t) => findAll(t, "hp:cellSz").some((c) => c.attrs.width === "3719"));
+    expect(tbl).toBeDefined();
+    expect(tbl!.attrs.borderFillIDRef).toBe("4"); // 표 테두리
+    const cells = findAll(tbl!, "hp:tc");
+    expect(cells.map((c) => findAll(c, "hp:cellSz")[0].attrs.width)).toEqual(["3719", "43905"]);
+    expect(cells.map((c) => fillColorOf(c.attrs.borderFillIDRef))).toEqual(["#000D59", "#ECF2FA"]);
+    expect(sectionXml).toContain("<hp:t> 설립목적</hp:t>");
+  });
+
+  it("칩 색은 참고본 borderFill 을 다시 쓰고 새 id 를 붙이지 않는다", () => {
+    // StyleRegistry 는 서명으로 헤더를 먼저 뒤진다 — 같은 값을 달라고 하면 참고본 id 가
+    // 돌아온다. 여기서 새 borderFill 이 붙으면 색은 맞아도 참고본과 다른 id 로 갈린다.
+    expect(report.appendedStyles.filter((a) => a.kind === "borderFill")).toEqual([]);
+  });
+
   it("편집기가 넣은 표지 제목은 meta.제목 을 대신한다 (제목이 두 번 나오지 않는다)", () => {
     // 편집기 경로(prosemirror/fromPm.ts:155)는 report 에도 coverTitle 블록을 만들 수 있다.
     // 표지를 meta 에서 내면서 본문 자리에도 내면 표지와 2쪽에 제목이 두 번 선다.
@@ -99,6 +127,107 @@ describe("buildHwpx — report", () => {
     expect((built.sectionXml.match(/편집기 제목/g) ?? []).length).toBe(1);
     expect(built.report.warnings).toEqual([]);
   });
+});
+
+describe("buildHwpx — report 요약박스", () => {
+  // 요약문 상자는 ```box 로 받는다(문법 규칙은 dsl/grammar.md). 표본 DSL 의 맨 요약문 줄은
+  // 상자 없이 `summary` 서식으로만 나가므로 여기서 따로 세운 문서로 시험한다.
+  const BOX_DSL = [
+    "---",
+    "family: report",
+    "제목: 요약박스 시험",
+    "보고일: 2026. 6. 10.",
+    "부서: (재)경상북도경제진흥원",
+    "---",
+    "# 2026년도 주요사업",
+    "## 1 K-경상 프로젝트 지원",
+    "```box",
+    "경북 소상공인의 폐업 위기와 상권 활성화를 위해 닥터 지·바·고 프로젝트 운영",
+    "```",
+  ].join("\n");
+  const { doc, warnings } = parseDsl(BOX_DSL);
+  const { sectionXml, report } = buildHwpx(doc as DocModel, { now: NOW });
+
+  it("참고본 색(borderFill 9)을 쓰는 1×1 상자로 나간다", () => {
+    expect(warnings.filter((w) => w.severity === "error")).toEqual([]);
+    expect(report.warnings).toEqual([]);
+    expect(sectionXml).toContain('<hp:cellSz width="47905"');
+    expect(sectionXml).toContain('borderFillIDRef="9"');
+    expect(sectionXml).toContain("닥터 지·바·고");
+    // 상자 색도 참고본 id 를 다시 쓴다 — 새 borderFill 이 붙으면 참고본과 갈린다.
+    expect(report.appendedStyles.filter((a) => a.kind === "borderFill")).toEqual([]);
+  });
+
+  it("사업계획서와 달리 `❖` 를 기본 글머리로 끼우지 않는다", () => {
+    // 참고본 요약문에는 글머리 기호가 없다(plan.ts:textBox 는 `◇`, summaryBox 는 `❖` 를 넣는다).
+    expect(sectionXml).not.toContain("❖");
+    expect(sectionXml).toContain("<hp:t>경북 소상공인의");
+  });
+});
+
+describe("buildHwpx — report 소제목 도형 칩", () => {
+  // 참고본의 소제목은 글자 표지가 없고 인라인 도형 칩이 표지 노릇을 한다. DSL 쪽 기호는
+  // `□` 다(`ladderRole` 주석에 고른 까닭이 있다) — 표본 DSL 은 `ㅇ` 로 여덟 군데를 못 박고
+  // 있어서 여기서는 따로 세운 문서로 시험한다.
+  const SUB_DSL = [
+    "---",
+    "family: report",
+    "제목: 소제목 시험",
+    "보고일: 2026. 6. 10.",
+    "부서: (재)경상북도경제진흥원",
+    "---",
+    "# 2026년도 주요사업",
+    "## 1 청년정주",
+    "□ 청년정주지원센터 운영 청년 정주지원 및 공동체 활동 지원",
+    "● 청년 거점공간 운영",
+    "□ 로컬크리에이터 양성",
+  ].join("\n");
+  const { doc, warnings } = parseDsl(SUB_DSL);
+  const { bytes, sectionXml, report } = buildHwpx(doc as DocModel, { now: NOW });
+
+  it("DSL 이 오류 없이 파싱되고 빌드가 경고 없이 끝난다", () => {
+    expect(warnings.filter((w) => w.severity === "error")).toEqual([]);
+    expect(report.warnings).toEqual([]);
+  });
+
+  it("소제목은 인라인 도형 칩을 앞에 달고 나온다", () => {
+    expect(sectionXml).toContain("#4E9484"); // 그러데이션 색
+    expect(sectionXml).toMatch(/<hp:container[^>]*>/);
+    expect(sectionXml).toContain("청년정주지원센터 운영");
+  });
+
+  it("칩은 글머리표 문자를 대신한다 — `□` 는 글로 나가지 않는다", () => {
+    expect(sectionXml).not.toContain("□");
+    // 도형 다음은 참고본과 같이 반각 공백 하나로 시작한다.
+    expect(sectionXml).toContain("<hp:t> 청년정주지원센터 운영");
+  });
+
+  it("칩 문단은 style-map 의 소제목 문단 모양(paraPr 146)에 선다", () => {
+    const sec = parseXml(sectionXml);
+    const withChip = findAll(sec, "hp:p").filter((p) => findAll(p, "hp:container").length > 0);
+    expect(withChip.length).toBe(2);
+    for (const p of withChip) expect(p.attrs.paraPrIDRef).toBe("146");
+  });
+
+  it("칩마다 도형 id 를 새로 매긴다 (참고본 id 를 그대로 끌고 오지 않는다)", () => {
+    const sec = parseXml(sectionXml);
+    const conts = findAll(sec, "hp:container");
+    expect(conts.length).toBe(2);
+    const ids = conts.map((c) => c.attrs.id);
+    expect(ids).not.toContain("1129393238"); // 조각을 뜬 자리의 참고본 id
+    for (const c of conts) expect(c.attrs.instid).toBe(c.attrs.id);
+    // 바깥 도형 둘 + 속 네모 넷 = 서로 다른 여섯 개
+    const shapeIds = [...ids, ...findAll(sec, "hp:rect").map((r) => r.attrs.instid)];
+    expect(shapeIds.length).toBe(6);
+    expect(new Set(shapeIds).size).toBe(6);
+  });
+
+  it("@rhwp/core 검증을 contentLoss 0 으로 통과한다", async () => {
+    const v = await validateHwpx(bytes);
+    expect(v.errors).toEqual([]);
+    expect(v.ok).toBe(true);
+    expect(v.contentLoss?.count).toBe(0);
+  }, 60_000);
 });
 
 describe("templates/report/style-map.json", () => {
