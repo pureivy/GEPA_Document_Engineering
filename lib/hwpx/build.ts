@@ -95,6 +95,12 @@ export function buildHwpx(doc: DocModel, opts: BuildOptions = {}): BuildResult {
     "META-INF/container.rdf": [tpl.files["META-INF/container.rdf"], { level: 6 }],
   };
   for (const [name, bytes] of Object.entries(tpl.files)) if (name.startsWith("BinData/")) files[name] = [bytes, { level: 6 }];
+  // 바탕쪽(masterpage)도 그대로 옮긴다. section0 의 secPr 이 <hp:masterPage idRef="masterpage0"/> 로
+  // 가리키고 content.hpf 도 선언하는데 파일이 빠지면 **한글이 파일을 여는 도중 죽는다**
+  // (EXC_BAD_ACCESS, 널 역참조 — 2026-09-22 업무보고서에서 실제로 겪음). rhwp·resvg 는 통과하므로
+  // 우리 검사로는 잡히지 않는다. 업무보고서 전까지는 어느 family 의 참고본에도 바탕쪽이 없어서
+  // 이 경로가 필요한 적이 없었고, 그래서 BinData 만 복사하고 있었다.
+  for (const [name, bytes] of Object.entries(tpl.files)) if (/^Contents\/masterpage\d*\.xml$/.test(name)) files[name] = [bytes, { level: 6 }];
   files["Contents/content.hpf"] = [enc(hpf), { level: 6 }];
   files["META-INF/container.xml"] = [tpl.files["META-INF/container.xml"], { level: 6 }];
   files["META-INF/manifest.xml"] = [tpl.files["META-INF/manifest.xml"], { level: 6 }];
