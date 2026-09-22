@@ -24,6 +24,12 @@ const KIND_HINT: Record<ProjectKind, string> = {
 
 /** 공문 수신유형 — OfficialMetaSchema 에서 그대로 가져온다(손으로 다시 적으면 둘이 갈라질 수 있다). export 는 드리프트 가드 테스트용. */
 export const RECIPIENT_KINDS = OfficialMetaSchema.shape.수신유형.options;
+/**
+ * 공문 결문의 공개구분 — 값을 손으로 나열하지 않고 스키마에서 가져온다(수신유형과 같은 이유).
+ * 이 필드는 `.default("공개")` 를 달고 있어 `.options` 가 겉에 없다 — 한 겹 벗겨 읽는다.
+ */
+export const DISCLOSURE_KINDS = OfficialMetaSchema.shape.공개구분.unwrap().options;
+type DisclosureKind = (typeof DISCLOSURE_KINDS)[number];
 export type RecipientKind = (typeof RECIPIENT_KINDS)[number];
 /** 수신유형별로 값을 담는 front-matter 키. 내부결재는 수신 대상이 없다 */
 export const RECIPIENT_KEY: Record<RecipientKind, "" | "수신" | "수신자"> = { 내부결재: "", 수신자: "수신", 수신자참조: "수신자" };
@@ -51,7 +57,7 @@ const EMPTY: NewProjectInput = {
   topic: "",
   region: "안동시",
   organizer: "(재)경상북도경제진흥원",
-  contact: { 부서명: "", 담당자: "", 전화: "", 전송: "", 이메일: "", 우편주소: "", 우편번호: "" },
+  contact: { 부서명: "", 담당자: "", 전화: "", 전송: "", 이메일: "", 우편주소: "", 우편번호: "", 홈페이지: "" },
 };
 
 /** mounted only while open, so every opening starts from a blank form (연락처만 지난번 값에서 이어 쓴다) */
@@ -72,6 +78,8 @@ function NewProjectDialog({ onClose, onCreated }: { onClose: () => void; onCreat
   const [recipientKind, setRecipientKind] = useState<RecipientKind>("수신자");
   const [recipient, setRecipient] = useState("");
   const [delegation, setDelegation] = useState<DelegationLevel>(DEFAULT_DELEGATION);
+  // 공개구분은 되돌리기 어려운 선택이다 — 비공개 문서를 공개로 내보내면 주워 담을 수 없다.
+  const [disclosure, setDisclosure] = useState<DisclosureKind>(DISCLOSURE_KINDS[0]);
   const planResearch = useBoolPref(PREF_PLAN_RESEARCH, false);
   const [phase, setPhase] = useState<"" | "create" | "upload">("");
 
@@ -139,10 +147,12 @@ function NewProjectDialog({ onClose, onCreated }: { onClose: () => void; onCreat
       if (!contact.우편주소?.trim()) delete contact.우편주소;
       if (!contact.우편번호?.trim()) delete contact.우편번호;
       if (!contact.전송?.trim()) delete contact.전송;
+      if (!contact.홈페이지?.trim()) delete contact.홈페이지;
       // 수신유형·수신(자)는 topic 이 아니라 contact 에 얹는다(스펙 §5.4) — topic 은 공문 내용만 담는다
       if (isOfficial) {
         contact.수신유형 = recipientKind;
         contact.전결 = 전결;
+        contact.공개구분 = disclosure;
         if (recipientKind === "수신자") contact.수신 = recipient.trim();
         else if (recipientKind === "수신자참조") contact.수신자 = recipient.trim();
         // 파일이 없으면 키 자체를 넣지 않는다 — 용도는 붙인 문서가 있을 때만 뜻이 있다
@@ -236,7 +246,7 @@ function NewProjectDialog({ onClose, onCreated }: { onClose: () => void; onCreat
         </Field>
         {isOfficial ? (
           <>
-            <div className="grid grid-cols-[10rem_1fr] gap-4">
+            <div className="grid grid-cols-[10rem_9rem_1fr] gap-4">
               <Field label="수신유형" id="recipientKind" required>
                 <Select id="recipientKind" name="recipientKind" value={recipientKind} onChange={(e) => setRecipientKind(e.target.value as RecipientKind)}>
                   {RECIPIENT_KINDS.map((r) => (
@@ -267,6 +277,15 @@ function NewProjectDialog({ onClose, onCreated }: { onClose: () => void; onCreat
                   {levels.map((l) => (
                     <option key={l} value={l}>
                       {l}
+                    </option>
+                  ))}
+                </Select>
+              </Field>
+              <Field label="공개구분" id="disclosure" required>
+                <Select id="disclosure" name="disclosure" value={disclosure} onChange={(e) => setDisclosure(e.target.value as DisclosureKind)}>
+                  {DISCLOSURE_KINDS.map((d) => (
+                    <option key={d} value={d}>
+                      {d}
                     </option>
                   ))}
                 </Select>
@@ -324,7 +343,7 @@ function NewProjectDialog({ onClose, onCreated }: { onClose: () => void; onCreat
         )}
         <fieldset className="rounded-md border border-slate-200 p-3">
           <legend className="px-1 text-xs font-semibold text-slate-600">{isOfficial ? "처리과·담당 연락처" : "담당 연락처"}</legend>
-          {isOfficial ? <p className="mb-2 text-[11px] text-slate-500">부서명은 공문의 처리과가 되고(결재라인·발신명의가 여기서 정해집니다), 전화·이메일은 결문 연락처에 찍힙니다.</p> : null}
+          {isOfficial ? <p className="mb-2 text-[11px] text-slate-500">부서명은 공문의 처리과가 되고(결재라인·발신명의가 여기서 정해집니다), 전화·전송(팩스)·이메일·우편번호·우편주소·홈페이지는 결문 연락처에 그대로 찍힙니다. 비우면 그 칸도 빕니다.</p> : null}
           <div className="grid grid-cols-2 gap-3">
             <Field label="부서명" id="organization" required>
               <Input id="organization" name="organization" placeholder="북부지소" value={form.contact.부서명} onChange={(e) => setContact("부서명", e.target.value)} autoComplete="organization" />
@@ -335,7 +354,7 @@ function NewProjectDialog({ onClose, onCreated }: { onClose: () => void; onCreat
             <Field label="전화" id="tel" required>
               <Input id="tel" name="tel" type="tel" placeholder="054-900-3801" value={form.contact.전화} onChange={(e) => setContact("전화", e.target.value)} autoComplete="tel" />
             </Field>
-            <Field label="전송" id="fax">
+            <Field label={isOfficial ? "전송(팩스)" : "전송"} id="fax">
               <Input id="fax" name="fax" type="tel" placeholder="054-472-2989" value={form.contact.전송 ?? ""} onChange={(e) => setContact("전송", e.target.value)} autoComplete="fax" />
             </Field>
             <Field label="이메일" id="email" required>
@@ -347,6 +366,11 @@ function NewProjectDialog({ onClose, onCreated }: { onClose: () => void; onCreat
             <Field label="우편주소" id="street-address" className="col-span-2">
               <Input id="street-address" name="street-address" placeholder="경상북도 안동시 북순환로 387, 2층 경상북도경제진흥원" value={form.contact.우편주소 ?? ""} onChange={(e) => setContact("우편주소", e.target.value)} autoComplete="street-address" />
             </Field>
+            {isOfficial ? (
+              <Field label="홈페이지" id="url" className="col-span-2" hint="비우면 결문의 그 칸도 빕니다 — 참고 공문도 비워 둡니다">
+                <Input id="url" name="url" type="url" placeholder="https://gepa.kr" value={form.contact.홈페이지 ?? ""} onChange={(e) => setContact("홈페이지", e.target.value)} autoComplete="url" />
+              </Field>
+            ) : null}
           </div>
         </fieldset>
         {/* 공문·업무보고에도 파일을 붙인다 — 같은 업로드 경로를 쓰되 용도는 공문만 묻고(업무보고는 언제나

@@ -301,14 +301,20 @@ export const OfficialMetaSchema = z
       .object({
         우편번호: z.string().default(""),
         주소: z.string().default(""),
-        홈페이지: z.string().default("https://gepa.kr"),
+        /**
+         * 적지 않으면 **빈 칸으로 나간다**(user 2026-09-22). 한동안 `https://gepa.kr` 이
+         * 기본값이어서 작성자가 적지 않아도 결문에 주소가 찍혔는데, 참고본의 결문 꼬리는
+         * 이 자리가 비어 있다 — 적지 않은 값을 문서에 싣지 않는다. 흔한 경우의 손품은
+         * 화면의 placeholder 가 던다(components/pipeline/ProjectList.tsx).
+         */
+        홈페이지: z.string().default(""),
         전화: z.string().default(""),
         전송: z.string().default(""),
         이메일: z.string().default(""),
       })
       // zod v4: 객체의 .default() 는 출력 타입(각 필드 기본 적용 후)을 요구한다 — {} 는
       // 안쪽 필드 기본값과 동일한 전체 리터럴로 명시해야 통과한다(런타임 결과는 동일).
-      .default({ 우편번호: "", 주소: "", 홈페이지: "https://gepa.kr", 전화: "", 전송: "", 이메일: "" }),
+      .default({ 우편번호: "", 주소: "", 홈페이지: "", 전화: "", 전송: "", 이메일: "" }),
     붙임: z.array(z.string()).default([]),
   });
 export type OfficialMeta = z.infer<typeof OfficialMetaSchema>;

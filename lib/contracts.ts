@@ -89,6 +89,16 @@ export interface ProjectDTO {
     우편주소?: string;
     /** 결문 연락처의 우편번호 — OfficialMetaSchema.연락처.우편번호 과 같은 값(우편주소 옆의 다섯 자리) */
     우편번호?: string;
+    /**
+     * 공문(official) 전용 — 결문 연락처의 홈페이지(OfficialMetaSchema.연락처.홈페이지 와 같은 값).
+     * 비면 결문의 그 칸도 빈다: 스키마 기본값이 사라졌으므로 적지 않은 주소가 찍히지 않는다.
+     */
+    홈페이지?: string;
+    /**
+     * 공문(official) 전용 — 결문 오른쪽 끝에 찍히는 공개구분(OfficialMetaSchema.공개구분 과 같은 값).
+     * 비공개 문서를 `공개` 로 내보내는 것은 되돌릴 수 없어서 화면에서 고르게 한다.
+     */
+    공개구분?: OfficialMeta["공개구분"];
     /** 공문(official) 전용 — OfficialMetaSchema 의 같은 이름 필드와 값이 같다(program 프로젝트는 쓰지 않는다) */
     수신유형?: OfficialMeta["수신유형"];
     /** 수신유형=수신자 일 때의 수신 대상 */
