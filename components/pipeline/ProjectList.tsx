@@ -3,7 +3,7 @@ import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
 import { FolderOpen, Plus, RefreshCw, Trash2, Upload } from "lucide-react";
-import type { ProjectDTO } from "@/lib/contracts";
+import { REFERENCE_CHANGES_LABEL, REFERENCE_ROLES, type ProjectDTO, type ReferenceRole } from "@/lib/contracts";
 import { OfficialMetaSchema } from "@/lib/docmodel/schema";
 import { approvalLineFor, approvalLineUpTo, DEFAULT_DELEGATION, DELEGATION_LEVELS, findUnit, senderTitleFor, type DelegationLevel } from "@/lib/org";
 import { api, errorMessage, type NewProjectInput } from "@/lib/client/api";
@@ -34,6 +34,16 @@ export const RECIPIENT_KEY: Record<RecipientKind, "" | "수신" | "수신자"> =
  */
 export { DELEGATION_LEVELS, DEFAULT_DELEGATION };
 
+/**
+ * 용도 라디오의 표시 이름과 changes 칸 hint — 화면에서만 쓰는 문구다.
+ * 값 자체(REFERENCE_ROLES)와 changes 칸의 label 은 lib/contracts.ts 가 단일 출처다(프롬프트와 같아야 한다).
+ */
+const REFERENCE_ROLE_UI: Record<ReferenceRole, { 표시: string; hint: string }> = {
+  근거자료: { 표시: "내용 근거자료", hint: "예) 지원 대상과 접수 기간만 추려서 알림" },
+  받은공문: { 표시: "받은 공문 (회신)", hint: "예) 자료 제출 요청에 대한 회신, 제출 기한 연장 요청" },
+  붙임: { 표시: "붙임 문서", hint: "예) 2026년 사업 신청서 서식 1부" },
+};
+
 const EMPTY: NewProjectInput = {
   kind: "program",
   title: "",
@@ -55,6 +65,8 @@ function NewProjectDialog({ onClose, onCreated }: { onClose: () => void; onCreat
   const [refFile, setRefFile] = useState<File | null>(null);
   const [changes, setChanges] = useState("");
   const [autoRun, setAutoRun] = useState(true);
+  // 공문에 붙인 문서의 용도 — 프로젝트마다 다르므로 브라우저에 기억하지 않는다
+  const [refRole, setRefRole] = useState<ReferenceRole>("근거자료");
   // 공문 전용 입력. DB 컬럼이 아니라 contact(looseObject)에 실려 프롬프트로 가고, 에이전트가 front-matter 에 쓴다(스펙 §5.4 — 연락처와 같은 근거)
   const [recipientKind, setRecipientKind] = useState<RecipientKind>("수신자");
   const [recipient, setRecipient] = useState("");
@@ -76,12 +88,16 @@ function NewProjectDialog({ onClose, onCreated }: { onClose: () => void; onCreat
   const 전결: DelegationLevel = levels.includes(delegation) ? delegation : DEFAULT_DELEGATION;
   const 결재란 = approvalLineUpTo(form.contact.부서명, 전결) ?? approvalLineFor(form.contact.부서명);
   const 발신명의 = senderTitleFor(결재란[결재란.length - 1], form.contact.부서명);
-  const valid = isOfficial ? contactOk && recipientOk && !!(form.title.trim() && form.topic.trim()) : contactOk && (refFile ? true : !!(form.title.trim() && form.topic.trim()));
+  // 공문에 파일이 붙으면 내용을 그 문서로 대신할 수 있다. 제목은 그래도 필수다 —
+  // 공문 제목은 담당자가 정할 일이고, 잘못 유도한 제목이 문서 첫 줄에 그대로 박힌다.
+  const valid = isOfficial
+    ? contactOk && recipientOk && !!form.title.trim() && (!!form.topic.trim() || !!refFile)
+    : contactOk && (refFile ? true : !!(form.title.trim() && form.topic.trim()));
   const missing = isOfficial
     ? [
         ...(!form.title.trim() ? ["제목"] : []),
         ...(!recipientOk ? [RECIPIENT_KEY[recipientKind]] : []),
-        ...(!form.topic.trim() ? ["공문 내용"] : []),
+        ...(!form.topic.trim() && !refFile ? ["공문 내용"] : []),
         ...(!form.contact.부서명.trim() ? ["부서명"] : []),
         ...(!form.contact.전화.trim() ? ["전화"] : []),
         ...(!form.contact.이메일.trim() ? ["이메일"] : []),
@@ -110,17 +126,25 @@ function NewProjectDialog({ onClose, onCreated }: { onClose: () => void; onCreat
         contact.전결 = 전결;
         if (recipientKind === "수신자") contact.수신 = recipient.trim();
         else if (recipientKind === "수신자참조") contact.수신자 = recipient.trim();
+        // 파일이 없으면 키 자체를 넣지 않는다 — 용도는 붙인 문서가 있을 때만 뜻이 있다
+        if (refFile) contact.참고문서용도 = refRole;
       }
       setPhase("create");
       const baseName = !isOfficial && refFile ? refFile.name.replace(/\.[A-Za-z0-9]+$/, "") : "";
       const title = form.title.trim() || baseName;
-      const topic = isOfficial ? form.topic.trim() : form.topic.trim() || (refFile ? `기존 사업계획서(${refFile.name})를 기준으로 갱신${changes.trim() ? ` — 바뀌는 내용: ${changes.trim()}` : ""}` : "");
+      // topic 은 서버에서 한 글자 이상이라야 한다(app/api/projects/route.ts createSchema).
+      // 공문에서 내용 칸을 비우고 파일로 대신했을 때는 그 사실을 한 줄로 적어 준다 — 용도별 지시와
+      // 파일 경로는 프롬프트의 "참고 문서(용도: …)" 줄이 따로 싣는다.
+      const topic = isOfficial
+        ? form.topic.trim() || (refFile ? `첨부한 관련 문서(${refFile.name})의 내용으로 공문을 작성` : "")
+        : form.topic.trim() || (refFile ? `기존 사업계획서(${refFile.name})를 기준으로 갱신${changes.trim() ? ` — 바뀌는 내용: ${changes.trim()}` : ""}` : "");
       const p = await api.createProject({ ...form, title, topic, contact });
       // 실제로 쓰인 연락처가 다음 프로젝트의 기본값이 된다(브라우저에만 담는다)
       saveContactPref(form.contact);
-      if (!isOfficial && refFile) {
+      if (refFile) {
         setPhase("upload");
-        await api.uploadReference(p.id, refFile, changes, autoRun, planResearch);
+        // 공문에는 research 단계가 없다 — 자동 실행을 걸 곳이 없으므로 늘 false 로 보낸다
+        await api.uploadReference(p.id, refFile, changes, isOfficial ? false : autoRun, planResearch);
       }
       onCreated(p);
     } catch (e) {
@@ -221,7 +245,12 @@ function NewProjectDialog({ onClose, onCreated }: { onClose: () => void; onCreat
                 {unit && !unit.division ? ` — ${unit.name}은 원장 직속이라 본부장 전결이 없습니다` : ""}
               </div>
             </div>
-            <Field label="공문 내용" id="body" required hint="자유 서술 — 용건, 근거, 기한, 제출 방법 등. 에이전트가 항목 위계를 세워 기안문으로 씁니다">
+            <Field
+              label="공문 내용"
+              id="body"
+              required={!refFile}
+              hint={refFile ? "비우면 아래에 올린 문서의 내용으로 씁니다" : "자유 서술 — 용건, 근거, 기한, 제출 방법 등. 에이전트가 항목 위계를 세워 기안문으로 씁니다"}
+            >
               <Textarea
                 id="body"
                 name="body"
@@ -275,10 +304,14 @@ function NewProjectDialog({ onClose, onCreated }: { onClose: () => void; onCreat
             </Field>
           </div>
         </fieldset>
-        {isOfficial ? null : (
+        {/* 공문에도 파일을 붙인다 — 같은 업로드 경로를 쓰되 용도를 묻고, 자동 실행은 걸지 않는다(공문에는 조사 단계가 없다) */}
         <fieldset className="rounded-md border border-slate-200 p-3">
-          <legend className="px-1 text-xs font-semibold text-slate-600">기존 사업계획서로 시작 (선택)</legend>
-          <p className="mb-2 text-[11px] text-slate-500">지난해 사업계획서(hwp·hwpx·pdf·docx)를 올리고 바뀌는 내용을 적으면, 그 계획서를 기준으로 조사 → 사업계획서 → 공고문 → 보도자료를 자동으로 만듭니다.</p>
+          <legend className="px-1 text-xs font-semibold text-slate-600">{isOfficial ? "관련 문서 첨부 (선택)" : "기존 사업계획서로 시작 (선택)"}</legend>
+          <p className="mb-2 text-[11px] text-slate-500">
+            {isOfficial
+              ? "관련 문서를 올리면 그 내용을 읽고 공문을 씁니다. 주제 칸을 길게 적는 대신 파일로 대신할 수 있습니다."
+              : "지난해 사업계획서(hwp·hwpx·pdf·docx)를 올리고 바뀌는 내용을 적으면, 그 계획서를 기준으로 조사 → 사업계획서 → 공고문 → 보도자료를 자동으로 만듭니다."}
+          </p>
           <div className="grid gap-3">
             <label className="flex cursor-pointer items-center gap-2 rounded border border-dashed border-slate-300 px-3 py-2 text-xs text-slate-700 hover:bg-slate-50">
               <Upload className="h-4 w-4 text-slate-400" />
@@ -287,24 +320,57 @@ function NewProjectDialog({ onClose, onCreated }: { onClose: () => void; onCreat
             </label>
             {refFile ? (
               <>
-                <Field label="이번에 바뀌는 내용" id="changes" hint="예) 2027년으로 연도 변경, 지원 규모 20개사 → 30개사, 기업당 한도 300만원 → 500만원, 접수 7월 → 8월">
-                  <Textarea id="changes" name="changes" rows={3} value={changes} onChange={(e) => setChanges(e.target.value)} placeholder="연도·기간·규모·금액·담당 등 달라지는 점을 적어 주세요" />
+                {isOfficial ? (
+                  <Field label="이 문서의 용도">
+                    <div className="flex flex-wrap gap-2">
+                      {REFERENCE_ROLES.map((r) => (
+                        <div
+                          key={r}
+                          className={cn(
+                            "flex items-center gap-2 rounded-md border px-3 py-2 text-xs",
+                            refRole === r ? "border-sky-500 bg-sky-50 text-sky-900" : "border-slate-300 text-slate-700 hover:bg-slate-50",
+                          )}
+                        >
+                          <input id={`refRole-${r}`} name="refRole" type="radio" className="h-3.5 w-3.5" checked={refRole === r} onChange={() => setRefRole(r)} />
+                          <label htmlFor={`refRole-${r}`} className="cursor-pointer font-semibold">
+                            {REFERENCE_ROLE_UI[r].표시}
+                          </label>
+                        </div>
+                      ))}
+                    </div>
+                  </Field>
+                ) : null}
+                <Field
+                  label={isOfficial ? REFERENCE_CHANGES_LABEL[refRole] : "이번에 바뀌는 내용"}
+                  id="changes"
+                  hint={isOfficial ? REFERENCE_ROLE_UI[refRole].hint : "예) 2027년으로 연도 변경, 지원 규모 20개사 → 30개사, 기업당 한도 300만원 → 500만원, 접수 7월 → 8월"}
+                >
+                  <Textarea
+                    id="changes"
+                    name="changes"
+                    rows={3}
+                    value={changes}
+                    onChange={(e) => setChanges(e.target.value)}
+                    placeholder={isOfficial ? undefined : "연도·기간·규모·금액·담당 등 달라지는 점을 적어 주세요"}
+                  />
                 </Field>
-                <div className="flex flex-wrap gap-4 text-xs text-slate-700">
-                  <label className="flex items-center gap-1">
-                    <input id="autoRun" name="autoRun" type="checkbox" className="h-3.5 w-3.5" checked={autoRun} onChange={(e) => setAutoRun(e.target.checked)} />
-                    만든 뒤 조사부터 보도자료까지 자동 실행
-                  </label>
-                  <label className="flex items-center gap-1" title="사업계획서 작성 중 근거가 부족하면 조사 에이전트로 보충 조사합니다(최대 2회). 이 설정은 기억되어 이후 실행에도 적용됩니다">
-                    <input id="supplementalResearch" name="supplementalResearch" type="checkbox" className="h-3.5 w-3.5" checked={planResearch} onChange={(e) => writePref(PREF_PLAN_RESEARCH, e.target.checked)} />
-                    계획서 보충 조사
-                  </label>
-                </div>
+                {/* 자동 실행은 조사 → 보도자료 파이프라인의 것이다 — 공문에는 그 단계가 없어 아예 그리지 않는다 */}
+                {isOfficial ? null : (
+                  <div className="flex flex-wrap gap-4 text-xs text-slate-700">
+                    <label className="flex items-center gap-1">
+                      <input id="autoRun" name="autoRun" type="checkbox" className="h-3.5 w-3.5" checked={autoRun} onChange={(e) => setAutoRun(e.target.checked)} />
+                      만든 뒤 조사부터 보도자료까지 자동 실행
+                    </label>
+                    <label className="flex items-center gap-1" title="사업계획서 작성 중 근거가 부족하면 조사 에이전트로 보충 조사합니다(최대 2회). 이 설정은 기억되어 이후 실행에도 적용됩니다">
+                      <input id="supplementalResearch" name="supplementalResearch" type="checkbox" className="h-3.5 w-3.5" checked={planResearch} onChange={(e) => writePref(PREF_PLAN_RESEARCH, e.target.checked)} />
+                      계획서 보충 조사
+                    </label>
+                  </div>
+                )}
               </>
             ) : null}
           </div>
         </fieldset>
-        )}
         {error ? <p className="rounded bg-red-50 p-2 text-xs text-red-700">{error}</p> : null}
       </div>
     </Dialog>

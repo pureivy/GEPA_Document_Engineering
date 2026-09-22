@@ -1,6 +1,6 @@
 import { describe, it, expect } from "vitest";
 import { buildStagePrompt } from "../../lib/agents/prompts";
-import type { ProjectDTO } from "../../lib/contracts";
+import { REFERENCE_CHANGES_LABEL, type ProjectDTO, type ReferenceRole } from "../../lib/contracts";
 
 const project: ProjectDTO = {
   id: "p1",
@@ -125,5 +125,66 @@ describe("official 단계 프롬프트", () => {
     const 공문 = buildStagePrompt({ stage: "official", project: { ...물려받은, kind: "official" }, workspaceDir: ws });
     expect(공문.prompt).toMatch(/^전송: 054-472-2989$/m);
     expect(공문.prompt).toMatch(/^우편번호: 39393$/m);
+  });
+});
+
+/**
+ * 공문에 붙인 참고 문서(user 2026-09-22). 같은 파일이 세 가지로 쓰인다 — 내용 근거자료·받은 공문
+ * (회신용)·붙임 문서 그 자체 — 그래서 용도 이름이 브리프에 그대로 드러나고 지시가 그 값으로 갈린다.
+ */
+describe("buildStagePrompt — 공문에 붙인 참고 문서의 용도", () => {
+  const 공문 = (참고문서용도?: ReferenceRole, changes = "붙임 이름"): ProjectDTO => ({
+    ...project,
+    kind: "official",
+    contact: { ...project.contact, 수신유형: "수신자", 수신: "경상북도지사", ...(참고문서용도 ? { 참고문서용도 } : {}) },
+    reference: { fileName: "서식.hwp", changes },
+  });
+  const 프롬프트 = (p: ProjectDTO) => buildStagePrompt({ stage: "official", project: p, workspaceDir: ws }).prompt;
+
+  /** 용도 이름이 브리프에 그대로 드러나고, changes 줄의 이름이 폼의 label 과 같다 */
+  it.each([
+    ["근거자료", "이 문서에서 쓸 내용", "공문 본문은 1쪽 분량으로 줄인다"],
+    ["받은공문", "회신 취지", "관련 회신으로 적는다"],
+    ["붙임", "붙임에 적을 이름", '"1부."'],
+  ] as const)("용도 %s 는 브리프 줄과 그 용도의 지시를 싣는다", (역할, 라벨, 고유문구) => {
+    const p = 프롬프트(공문(역할, "적어 둔 값"));
+    expect(p).toMatch(new RegExp(`^참고 문서\\(용도: ${역할}\\): ${ws}/reference/base-plan.md \\(원본 파일 서식.hwp\\)$`, "m"));
+    expect(p).toMatch(new RegExp(`^${라벨}: 적어 둔 값$`, "m"));
+    expect(p).toContain(고유문구);
+    // 폼 label 과 프롬프트 줄 이름은 한 벌에서 온다 — 갈라지면 담당자가 적은 칸과 이름이 달라진다
+    expect(라벨).toBe(REFERENCE_CHANGES_LABEL[역할]);
+    // 사업계획서 전용 문구가 공문으로 새지 않는다
+    expect(p).not.toContain("기존 사업계획서:");
+    expect(p).not.toContain("이번에 바뀌는 내용:");
+  });
+
+  it("changes 가 비면 둘째 줄을 아예 싣지 않는다(사업계획서 쪽 '(미기재…)' 기본 문구를 쓰지 않는다)", () => {
+    const p = 프롬프트(공문("붙임", ""));
+    expect(p).toContain("참고 문서(용도: 붙임)");
+    expect(p).not.toMatch(/^붙임에 적을 이름: /m);
+    expect(p).not.toContain("미기재");
+  });
+
+  it("용도가 없으면(파일만 있을 때) 근거자료와 같이 다룬다", () => {
+    const 없음 = 프롬프트(공문(undefined, "쓸 내용"));
+    expect(없음).toMatch(/^참고 문서\(용도: 근거자료\): /m);
+    expect(없음).toMatch(/^이 문서에서 쓸 내용: 쓸 내용$/m);
+    expect(없음).toBe(프롬프트(공문("근거자료", "쓸 내용")));
+  });
+
+  /**
+   * 회귀: 얼어붙은 세 family 로 가는 프롬프트는 바이트 그대로여야 한다. 용도 분기는 공문에서만 탄다.
+   */
+  it("program 프로젝트의 plan·notice·press 는 기존 reference 문구 그대로다", () => {
+    const withRef: ProjectDTO = { ...project, reference: { fileName: "2026 계획서.hwp", changes: "연도 2027" } };
+    for (const stage of ["plan", "notice", "press"] as const) {
+      const p = buildStagePrompt({ stage, project: withRef, workspaceDir: ws }).prompt;
+      expect(p, stage).toContain(`기존 사업계획서: ${ws}/reference/base-plan.md (원본 파일 2026 계획서.hwp) — 이번 프로젝트는 이 계획서를 갱신하는 것이다.`);
+      expect(p, stage).toContain("이번에 바뀌는 내용: 연도 2027");
+      expect(p, stage).not.toContain("참고 문서(용도:");
+    }
+    // changes 가 비었을 때의 기본 문구도 그대로 남는다
+    const 빈변경: ProjectDTO = { ...project, reference: { fileName: "a.hwp", changes: "" } };
+    expect(buildStagePrompt({ stage: "plan", project: 빈변경, workspaceDir: ws }).prompt).toContain("이번에 바뀌는 내용: (미기재 — 연도·일정·담당만 갱신)");
   });
 });

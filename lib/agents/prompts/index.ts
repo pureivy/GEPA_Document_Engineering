@@ -2,7 +2,7 @@
  * Stage prompt builders. The main `claude -p` process is the writer persona for the stage;
  * research is delegated to the `researcher` subagent through the Task tool.
  */
-import type { Stage, ProjectDTO } from "../../contracts";
+import { REFERENCE_CHANGES_LABEL, type Stage, type ProjectDTO, type ReferenceRole } from "../../contracts";
 import { orgSummary } from "../../org";
 
 export interface StagePromptInput {
@@ -64,10 +64,25 @@ function projectBrief(p: ProjectDTO, workspaceDir?: string): string {
     if (p.contact.우편번호) lines.push(`우편번호: ${p.contact.우편번호}`);
   }
   if (p.reference) {
-    lines.push(`기존 사업계획서: ${workspaceDir ?? "<작업폴더>"}/reference/base-plan.md (원본 파일 ${p.reference.fileName}) — 이번 프로젝트는 이 계획서를 갱신하는 것이다.`);
-    lines.push(`이번에 바뀌는 내용: ${p.reference.changes || "(미기재 — 연도·일정·담당만 갱신)"}`);
+    if (p.kind === "official") {
+      // 공문에서는 같은 파일이 세 가지로 쓰인다(근거자료·받은 공문·붙임) — 용도 이름을 그대로 드러내
+      // 아래 referenceGuide 의 지시와 담당자가 적은 줄이 같은 것을 가리키게 한다.
+      // 사업계획서 쪽 두 줄은 손대지 않는다: 얼어붙은 세 family 의 프롬프트가 바뀌면 안 된다.
+      const 용도 = referenceRole(p);
+      lines.push(`참고 문서(용도: ${용도}): ${workspaceDir ?? "<작업폴더>"}/reference/base-plan.md (원본 파일 ${p.reference.fileName})`);
+      // 비면 줄 자체를 싣지 않는다 — "(미기재 — 연도·일정·담당만 갱신)" 은 사업계획서 갱신을 전제한 문구라 공문에 맞지 않는다
+      if (p.reference.changes) lines.push(`${REFERENCE_CHANGES_LABEL[용도]}: ${p.reference.changes}`);
+    } else {
+      lines.push(`기존 사업계획서: ${workspaceDir ?? "<작업폴더>"}/reference/base-plan.md (원본 파일 ${p.reference.fileName}) — 이번 프로젝트는 이 계획서를 갱신하는 것이다.`);
+      lines.push(`이번에 바뀌는 내용: ${p.reference.changes || "(미기재 — 연도·일정·담당만 갱신)"}`);
+    }
   }
   return lines.join("\n");
+}
+
+/** 공문에 붙인 참고 문서의 용도. 파일만 있고 용도가 비었으면 근거자료로 본다(가장 해가 적은 쪽). */
+function referenceRole(p: ProjectDTO): ReferenceRole {
+  return p.contact.참고문서용도 ?? "근거자료";
 }
 
 /** Stage-specific guidance when the project was started from an uploaded 기존 사업계획서. */
@@ -82,6 +97,17 @@ function referenceGuide(p: ProjectDTO, stage: Stage | "review", workspaceDir: st
     case "notice":
     case "press":
       return `\n이 프로젝트는 기존 사업계획서(${file})를 갱신한 것이다. 이번에 바뀐 내용이 공고·보도 내용에도 반영되었는지(연도·기간·규모·금액) 확인한다.`;
+    // 공문은 붙인 문서를 셋 중 어느 쪽으로 쓰느냐에 따라 지시가 완전히 갈린다 — 근거자료는 내용을 추려 쓰고,
+    // 받은 공문은 그 공문에 회신하며, 붙임은 본문에 옮기지 않고 이름만 「붙임」에 적는다.
+    case "official":
+      switch (referenceRole(p)) {
+        case "받은공문":
+          return `\n받은 공문 ${file} 를 먼저 Read 한다. 수신은 그 공문의 발신명의로 하고, 제목은 「(받은 공문의 제목)」 관련 회신으로 적는다. 본문 첫 항은 그 공문을 근거로 밝히며 시작한다(예: "귀 기관의 ○○○-1234(2026. 9. 10.)호와 관련입니다."). 문서번호·시행일이 추출된 텍스트에 없으면 지어내지 말고 그 부분을 비운 채 제목만으로 관련지어 적는다.`;
+        case "붙임":
+          return `\n붙임 문서 ${file} 를 먼저 Read 해 무엇인지 파악한다. 본문에는 이 문서를 보내는 취지와 수신자가 할 일만 간단히 적는다(내용을 본문에 옮겨 적지 않는다). 본문 끝 「붙임」에 그 문서의 이름과 "1부."를 적는다 — 이름은 "붙임에 적을 이름" 줄이 있으면 그 값을, 없으면 원본 파일명에서 확장자를 뺀 것을 쓴다.`;
+        default:
+          return `\n참고 문서 ${file} 를 먼저 Read 한다. 사업명·기간·금액·대상·담당은 그 문서에 적힌 값을 그대로 쓰고, 그 문서에 없는 수치는 지어내지 않는다(없으면 그 항목을 빼거나 "별도 안내"로 적는다). 공문 본문은 1쪽 분량으로 줄인다 — 그 문서를 옮겨 적는 것이 아니라 수신자가 해야 할 일과 기한만 남긴다.`;
+      }
     default:
       return "";
   }

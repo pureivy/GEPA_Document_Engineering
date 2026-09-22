@@ -9,6 +9,7 @@ import { ensureProjectDir } from "@/lib/storage/paths";
 import { isProjectKind } from "@/lib/kinds";
 import { OfficialMetaSchema } from "@/lib/docmodel/schema";
 import { DELEGATION_LEVELS } from "@/lib/org";
+import { REFERENCE_ROLES } from "@/lib/contracts";
 import { writeFileSync } from "node:fs";
 import path from "node:path";
 
@@ -44,6 +45,8 @@ const contactSchema = z
      * 공문이 아닌 프로젝트의 contact 에까지 전결이 저장된다.
      */
     전결: z.enum(DELEGATION_LEVELS).optional(),
+    /** 붙인 참고 문서의 용도(공문 전용) — lib/contracts.ts 의 REFERENCE_ROLES 가 단일 출처 */
+    참고문서용도: z.enum(REFERENCE_ROLES).optional(),
   })
   .default({ 부서명: "", 전화: "", 이메일: "" });
 

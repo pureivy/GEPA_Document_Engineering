@@ -11,6 +11,19 @@ export const STAGES: Stage[] = ["research", "plan", "notice", "press", "official
 export const STAGE_LABEL: Record<Stage, string> = { research: "조사", plan: "사업계획서", notice: "공고문", press: "보도자료", official: "공문서" };
 export const STAGE_FAMILY: Partial<Record<Stage, Family>> = { plan: "plan", notice: "notice", press: "press", official: "official" };
 
+/** 공문에 붙인 참고 문서의 용도 — 에이전트에게 줄 지시가 이 값에 따라 갈린다 */
+export const REFERENCE_ROLES = ["근거자료", "받은공문", "붙임"] as const;
+export type ReferenceRole = (typeof REFERENCE_ROLES)[number];
+/**
+ * 용도별로 reference.changes 칸이 무엇을 담는지 — 폼의 label 과 프롬프트에 싣는 줄 이름이
+ * 같아야 한다(다르면 담당자가 적은 것과 에이전트가 읽는 것의 이름이 갈린다). 그래서 한 벌만 둔다.
+ */
+export const REFERENCE_CHANGES_LABEL: Record<ReferenceRole, string> = {
+  근거자료: "이 문서에서 쓸 내용",
+  받은공문: "회신 취지",
+  붙임: "붙임에 적을 이름",
+};
+
 /** 실행 단위 — 문서 단계에 덧붙는 검토(review)를 포함한다. 어느 kind 의 탭에도 나오지 않는다. */
 export type RunStage = Stage | "review";
 export const RUN_STAGES: RunStage[] = [...STAGES, "review"];
@@ -55,6 +68,8 @@ export interface ProjectDTO {
     수신자?: string;
     /** 공문(official) 전용 — 결재란과 발신명의를 함께 정하는 전결 단계(OfficialMetaSchema.전결과 같은 값) */
     전결?: OfficialMeta["전결"];
+    /** 공문(official) 전용 — 붙인 참고 문서의 용도. 값이 있으면 reference 도 있다 */
+    참고문서용도?: ReferenceRole;
   };
   /** uploaded 기존 사업계획서 (projects/<id>/reference/<fileName>, text in reference/base-plan.md) and what changes */
   reference?: { fileName: string; changes: string };
