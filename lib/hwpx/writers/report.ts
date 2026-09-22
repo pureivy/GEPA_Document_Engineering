@@ -12,10 +12,9 @@
  * `<hp:pageNum pos="BOTTOM_CENTER" formatType="DIGIT" sideChar="-"/>` 를 들고 있고,
  * build.ts:65 가 구역에 pageNum 이 없을 때 그것을 첫 문단에 꽂는다(plan·press·official 과 같다).
  *
- * 이 과제에서 내지 않는 것: 조직도·목차(Task 5).
  */
-import { clone, findAll, type XmlNode } from "../xml";
-import { cloneFragment, loadGeometry, setCellText } from "../geometry";
+import { child, childrenNamed, clone, el, findAll, isNode, type XmlNode } from "../xml";
+import { cellAt, cloneFragment, loadGeometry, setCellText } from "../geometry";
 import { pictureFrom, pictureSize } from "../emit/picture";
 import { table, cellInteriorWidth, type CellSpec } from "../emit/table";
 import { emitBlank, emitTable, splitInlinesByNewline, type FamilyStyle } from "./common";
@@ -140,8 +139,23 @@ export function writeReport(ctx: WriterContext, doc: ReportDoc): XmlNode[] {
   // 표지 다음 블록은 새 쪽에서 시작한다 — 참고본도 표지 뒤가 쪽 나눔이다(para 19).
   ctx.pendingPageBreak = true;
 
-  for (const b of doc.blocks) {
+  for (let i = 0; i < doc.blocks.length; i++) {
+    const b = doc.blocks[i];
     if (b === titleBlock) continue;
+    // 목차는 한 줄씩이 아니라 **묶음**으로 나간다 — 참고본이 잇닿은 목차 줄 전부를 테두리 상자
+    // 한 칸에 담기 때문이다(tocBox 주석). 잇닿은 `tocLine` 을 여기서 먼저 걷어 간다.
+    if (b.k === "para" && b.role === "tocLine") {
+      const run: ParaBlock[] = [];
+      while (i < doc.blocks.length) {
+        const n = doc.blocks[i];
+        if (n.k !== "para" || n.role !== "tocLine") break;
+        run.push(n);
+        i++;
+      }
+      i--;
+      out.push(...tocBox(ctx, run));
+      continue;
+    }
     switch (b.k) {
       case "coverTitle":
         ctx.warnings.push({ blockId: b.id, message: "표지 제목이 둘 이상입니다 — 첫 번째만 씁니다" });
@@ -165,7 +179,8 @@ export function writeReport(ctx: WriterContext, doc: ReportDoc): XmlNode[] {
         ctx.pendingPageBreak = true;
         break;
       case "table":
-        out.push(...emitTable(ctx, REPORT_TABLE_STYLE, b));
+        if (b.role === "orgChart") out.push(...orgChart(ctx, b.id));
+        else out.push(...emitTable(ctx, REPORT_TABLE_STYLE, b));
         break;
       default:
         ctx.warnings.push({ blockId: b.id, message: `block kind "${b.k}" is not supported in 주요업무보고; skipped` });
@@ -251,6 +266,135 @@ function chapterBand(ctx: WriterContext, numeral: string, title: string): XmlNod
   if (ctx.pendingPageBreak) frag.attrs.pageBreak = "1";
   ctx.pendingPageBreak = false;
   return frag;
+}
+
+// ---- 조직도 -------------------------------------------------------------------------------
+
+/**
+ * 조직도 — 참고본 `geometry/t09.xml` 을 통째로 복제한다.
+ *
+ * **조각 번호에 주의**: 과제 개요는 조직도를 `t14` 라고 적었지만 `t14` 는 Ⅰ장 5절의
+ * **부서별 주요업무** 표(5×3)다. 조직도는 `t09`(1×1 바깥 표 + 95칸 속 표, 48190×20803)다.
+ * 개요가 `t14` 를 고른 까닭은 `강소기업육성본부` 로 grep 했기 때문으로 보인다 — `t09` 는 그 글이
+ * run 둘로 갈라져(`강소기업육성본`+`부`) 있어서 걸리지 않는다.
+ *
+ * 글을 하나도 바꾸지 않는다(계획 판정 2). 참고본에서 사람이 고칠 만한 값(`1본부, 3실, 1단,
+ * 6팀, 2지소`·`인원: 64명`)은 **표 안이 아니라** 그 앞의 평목록 문단(참고본 p125·p126,
+ * paraPr 86)이고, 그 줄은 작성자가 DSL 의 `ㅇ` 줄로 직접 쓴다. 그래서 여기서 칸 치환이 없다.
+ *
+ * 그림이 아니라 표다 — 네모와 잇는 줄을 전부 **칸 테두리**로 그린다(`hp:line` 도형이 0개다).
+ * 그래서 `cloneFragment` 가 `hp:p`·`hp:tbl` 만 새로 매겨도 온전히 복제된다. 소제목 칩처럼
+ * `hp:container`·`hp:rect` 를 따로 손볼 일이 없다.
+ *
+ * 간지(`chapterBand`)와 같이 복제 조각이라 쪽 나눔 플래그를 스스로 먹지 않는다 — 직접 옮긴다.
+ */
+function orgChart(ctx: WriterContext, blockId: string): XmlNode[] {
+  const ref = loadGeometry(ctx.tpl.dir, "t09");
+  if (!ref) {
+    ctx.warnings.push({ blockId, message: "report template geometry t09 missing; 조직도를 생략했습니다" });
+    return [];
+  }
+  const frag = cloneFragment(ref, ctx.ids);
+  if (ctx.pendingPageBreak) frag.attrs.pageBreak = "1";
+  ctx.pendingPageBreak = false;
+  return [frag];
+}
+
+// ---- 목차 ---------------------------------------------------------------------------------
+
+/**
+ * 목차 상자 — 참고본 `geometry/t02.xml`(1×1, 47062×56712, 칸 테두리 `borderFill 11` =
+ * 사방 `#999999` 실선)을 복제하고 칸 안의 글만 우리 것으로 갈아 끼운다.
+ *
+ * **과제 개요는 목차를 "표가 아닌 맨 문단 목록" 이라고 적었지만 참고본은 표다.** 실측:
+ * 참고본의 목차 열네 줄(p46…p59)은 전부 저 1×1 칸 **안**에 있고, 칸 테두리는 회색 실선이라
+ * 눈에 보이는 상자다(투명한 배치용 틀이 아니다). 맨 문단으로 내면 그 상자가 사라진다.
+ * 상자 높이 56712 는 쪽을 채우는 틀이라 줄 수와 무관하게 참고본 값을 그대로 쓴다.
+ *
+ * 줄 모양: `장/절 제목` + `hp:tab` + 쪽번호. **탭은 `hp:t` 안에 들어간다**(참고본 p49:
+ * `<hp:run charPrIDRef="66"><hp:t><hp:tab …/>7</hp:t></hp:run>`). 정지점은 문단 모양이
+ * 들고 있다 — paraPr 108 → `tabPrIDRef 1` → `<hh:tabItem pos="43500" type="RIGHT"
+ * leader="CIRCLE"/>`. 그래서 **탭 너비를 셈하지 않는다**. 참고본의 `width`·`leader`·`type` 은
+ * 한글이 배치하며 캐시한 값이라 빈 `<hp:tab/>` 하나면 정지점이 리더를 그린다.
+ *
+ * 쪽번호 자리에는 `―`(U+2015)를 둔다(계획 판정 1). 이 작성기는 쪽을 흘려 보지 않으므로 진짜
+ * 쪽번호를 알 수 없고, `0` 이나 빈칸은 진짜 쪽번호처럼 보인다 — 결재에 올리는 문서라 담당자가
+ * 한글에서 채워야 한다는 것이 눈에 띄어야 한다. **숫자를 지어내지 않는다.**
+ */
+const TOC_PLACEHOLDER = "―";
+/** 참고본 상자의 실측 너비 — 칸 안 문단의 lineseg 폭을 셈하는 데만 쓴다(높이는 조각이 들고 온다). */
+const TOC_BOX_WIDTH = 47062;
+const TOC_BOX_MARGIN = { l: 510, r: 510, t: 141, b: 141 };
+
+/**
+ * 절 줄(`1.`·`2.` …)은 장 줄(`Ⅰ.`·`Ⅱ.` …)보다 2타 들여쓴다 — 참고본 실측(p46 은 0타,
+ * p49 는 반각 공백 둘). 들여쓰기는 문단 모양이 아니라 글자로 들어간다(이 family 의 사다리와
+ * 같은 방식, 파일 첫머리 주석).
+ */
+function tocIndent(text: string): string {
+  return /^\s*\d+\s*\./.test(text) ? "  " : "";
+}
+
+function tocBox(ctx: WriterContext, lines: ParaBlock[]): XmlNode[] {
+  const s = roleSpec(ctx, "tocLine");
+  const interior = cellInteriorWidth(TOC_BOX_WIDTH, TOC_BOX_MARGIN);
+  const paras = lines.map((b) => {
+    const text = inlineText(b.inlines);
+    const indent = b.indent !== undefined ? " ".repeat(b.indent) : tocIndent(text);
+    return ctx.cellPara({
+      paraPr: s.paraPr,
+      runs: [
+        ...ctx.runsFor(prefixed(indent, b.inlines), s.base, s.charPr),
+        // 탭과 자리표시자는 한 run 안에서 `hp:t` 의 자식으로 나간다(참고본과 같은 짜임).
+        { charPr: s.charPr, nodes: [el("hp:t", {}, [el("hp:tab"), TOC_PLACEHOLDER])] },
+      ],
+      vertsize: Math.round(s.base.pt * 100),
+      lineSpacing: s.lineSpacing,
+      horzsize: interior,
+    });
+  });
+
+  // 본문 루프는 언제나 한 줄 이상 모아서 부르지만, 빈 묶음이 오면 상자를 내지 않는다 —
+  // 참고본 칸을 그대로 둔 상자는 2025년 목차를 실어 나른다(setCellParagraphs 주석).
+  if (!paras.length) return [];
+
+  const ref = loadGeometry(ctx.tpl.dir, "t02");
+  if (!ref) {
+    ctx.warnings.push({ message: "report template geometry t02 missing; 목차를 맨 문단으로 냈습니다" });
+    // 상자가 없으면 줄만이라도 낸다. `cellPara` 로 뜬 문단을 본문에 그대로 두면 쪽 나눔
+    // 플래그를 아무도 먹지 않으므로 첫 줄에서 손수 옮긴다.
+    if (paras.length && ctx.pendingPageBreak) paras[0].attrs.pageBreak = "1";
+    ctx.pendingPageBreak = false;
+    return paras;
+  }
+  const frag = cloneFragment(ref, ctx.ids);
+  if (!setCellParagraphs(frag, paras)) {
+    ctx.warnings.push({ message: "report template geometry t02 칸을 찾지 못했습니다; 목차를 맨 문단으로 냈습니다" });
+    if (paras.length && ctx.pendingPageBreak) paras[0].attrs.pageBreak = "1";
+    ctx.pendingPageBreak = false;
+    return paras;
+  }
+  if (ctx.pendingPageBreak) frag.attrs.pageBreak = "1";
+  ctx.pendingPageBreak = false;
+  return [frag];
+}
+
+/**
+ * 조각의 첫 칸 문단을 통째로 갈아 끼운다. `setCellText` 는 첫 문단 하나만 남기고 글 한 줄을
+ * 넣는 함수라 여러 문단을 담을 수 없다 — 목차는 줄마다 문단이 하나씩이라 여기 따로 둔다.
+ * 얼어붙은 family 가 쓰는 `geometry.ts` 를 건드리지 않으려고 report 쪽에 뒀다.
+ */
+function setCellParagraphs(frag: XmlNode, paras: XmlNode[]): boolean {
+  const tc = cellAt(frag, 0, 0);
+  const sl = tc && child(tc, "hp:subList");
+  if (!sl) return false;
+  // 낼 줄이 없으면 **실패로 돌려준다.** 참고본 칸을 그대로 두면 2025년 목차(진짜 쪽번호
+  // 1·5·7 …)가 문서에 실려 나간다 — 계획 판정 1 이 막으려던 바로 그 일이다.
+  // 칸에 문단이 하나도 없는 조각은 한글이 열지 못하므로 비우는 길도 없다.
+  if (!paras.length) return false;
+  sl.children = sl.children.filter((c) => !(isNode(c) && c.name === "hp:p"));
+  sl.children.push(...paras);
+  return childrenNamed(sl, "hp:p").length > 0;
 }
 
 // ---- 번호+제목 칩 · 요약박스 ---------------------------------------------------------------

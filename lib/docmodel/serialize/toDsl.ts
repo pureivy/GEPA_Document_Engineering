@@ -279,7 +279,9 @@ function bodyLines(doc: DocModel): string[] {
         break;
       }
       case "table":
-        lines.push(...tableLines(b));
+        // 조직도는 칸이 없다 — 표 문법으로 되뇌면 빈 표가 되어 왕복이 깨진다
+        if (b.role === "orgChart") lines.push("<조직도>");
+        else lines.push(...tableLines(b));
         break;
       case "chapterBand": {
         const n = splitLeadingNumeral(`${b.numeral} x`)?.n;

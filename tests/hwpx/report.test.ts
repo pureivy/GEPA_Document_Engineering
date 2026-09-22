@@ -78,7 +78,7 @@ describe("buildHwpx — report", () => {
 
     // 읽는 쪽에서는 `●` 로 돌아온다 — 참고본을 읽을 때와 같은 판독기(@rhwp/core)로 확인한다.
     const mod = await rhwp();
-    const svg = new mod.HwpDocument(bytes).renderPageSvg(3); // 본문 첫 쪽
+    const svg = new mod.HwpDocument(bytes).renderPageSvg(4); // 본문 첫 쪽 (앞에 표지·목차·간지·빈 쪽)
     expect(svg).toContain("●");
     expect(svg).not.toContain("\uF06D");
 
@@ -86,6 +86,52 @@ describe("buildHwpx — report", () => {
     // 두 값이 다른 것이 정상이고, 그래서 여기 단언을 판독기 쪽에 건다.
     expect(await extractText(bytes)).toContain("\uF06D 시·군 유망기업을 발굴하여");
   }, 60_000);
+
+  it("목차 줄은 탭과 자리표시자 `―`(U+2015)를 갖고, 지어낸 쪽번호가 없다", () => {
+    // 자리표시자는 코드포인트로 못 박는다 — em dash(U+2014)·hyphen 과 터미널에서 구별되지 않는다.
+    const tabbed = [...sectionXml.matchAll(/<hp:t><hp:tab\/>([\s\S]*?)<\/hp:t>/g)].map((m) => m[1]);
+    expect(tabbed.length).toBe(5); // 표본 ```toc 의 다섯 줄
+    for (const v of tabbed) expect([...v].map((c) => c.codePointAt(0))).toEqual([0x2015]);
+
+    // 탭 너비를 셈하지 않는다 — 정지점(paraPr 108 → tabPr 1)이 리더를 그린다.
+    expect(sectionXml).not.toMatch(/<hp:tab[^/]*width=/);
+  });
+
+  it("목차는 참고본의 테두리 상자(t02) 안에 들어간다", () => {
+    // 과제 개요는 목차를 "맨 문단 목록" 이라고 했지만 참고본 목차 열네 줄은 1×1 표
+    // (borderFill 11 = 사방 #999999 실선) 안에 있다. 맨 문단으로 내면 그 상자가 사라진다.
+    const sec = parseXml(sectionXml);
+    const box = findAll(sec, "hp:tbl").find((t) => findAll(t, "hp:t").some((n) => n.children.some((c) => typeof c !== "string" && c.name === "hp:tab")));
+    expect(box).toBeDefined();
+    const tc = findAll(box!, "hp:tc")[0];
+    expect(fillColorOf(tc.attrs.borderFillIDRef)).toBeUndefined(); // 채움 없는 테두리 상자
+    expect(findAll(tc, "hp:p").length).toBe(5);
+  });
+
+  it("목차 절 줄은 장 줄보다 2타 들여쓴다", () => {
+    // 참고본 실측: p46(`Ⅰ. 일반현황`)은 0타, p49(`  1. 성장 단계별 …`)는 반각 공백 둘.
+    expect(sectionXml).toContain("<hp:t>Ⅰ. 일 반 현 황</hp:t>");
+    expect(sectionXml).toContain("<hp:t>  1. 설립목적</hp:t>");
+  });
+
+  it("조직도는 참고본 t09 를 통째로 복제해 온다", async () => {
+    // 개요는 조직도를 `t14` 라고 적었지만 t14 는 Ⅰ장 5절 **부서별 주요업무** 표다.
+    // 조직도는 t09 — 네모와 잇는 줄이 전부 칸 테두리라 `hp:line` 도형이 하나도 없다.
+    const text = await extractText(bytes);
+    expect(text).toContain("원장");
+    expect(text).toContain("동부지소(포항)");
+    // 참고본은 이 이름을 run 둘로 갈라 담는다 — 통째로 복제됐다는 증거다.
+    expect(sectionXml).toContain("<hp:t>강소기업육성본</hp:t>");
+    expect(sectionXml).toContain("<hp:t>부</hp:t>");
+    // 사람이 고치는 값(조직·인원)은 표가 아니라 그 앞 `ㅇ` 평목록 줄이다(계획 판정 2).
+    expect(text).toContain("조  직: 1본부, 3실, 1단, 6팀, 2지소");
+  }, 60_000);
+
+  it("복제한 조각들이 도형 id 를 겹쳐 쓰지 않는다", () => {
+    const sec = parseXml(sectionXml);
+    const ids = findAll(sec, "hp:tbl").map((t) => t.attrs.id);
+    expect(new Set(ids).size).toBe(ids.length);
+  });
 
   it("간지 뒷면은 pageBreak → blank → pageBreak 로 만든 빈 쪽 하나다", () => {
     const sec = parseXml(sectionXml);

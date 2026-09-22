@@ -104,6 +104,8 @@ const MACRO_RE = /^\{\{\s*boilerplate\s*:\s*([^\s}]+)\s*([^}]*?)\s*\}\}\s*$/;
 const FENCE_OPEN_RE = /^```\s*([A-Za-z_][\w-]*)?\s*(.*?)\s*$/;
 const FENCE_CLOSE_RE = /^```\s*$/;
 const PAGEBREAK_RE = /^<pagebreak\s*\/?>\s*$/i;
+/** 조직도 자리표 — 내용은 참고본 조각에 굳어 있어 DSL 은 자리만 찍는다(schema.ts:TableRoleSchema). */
+const ORGCHART_RE = /^<(?:orgchart|조직도)\s*\/?>\s*$/i;
 const UNIT_CAPTION_RE = /^\(\s*단위\s*[:：]\s*[^)]+\)$/;
 const ATTACH_HEADING_RE = /^\[\s*별\s*첨\s*\d*\s*\]/;
 const HEADING_RE = /^(#{1,6})[ \t\u3000]+(.*?)\s*$/;
@@ -159,8 +161,9 @@ export function classifyPrefix(partial: string): "para" | "other" | "unknown" {
   }
   if (c === "<") {
     const l = t.toLowerCase();
-    if (l.startsWith("<pagebreak")) return "other";
-    return "<pagebreak".startsWith(l) ? "unknown" : "para";
+    const macros = ["<pagebreak", "<orgchart", "<조직도"];
+    if (macros.some((m) => l.startsWith(m))) return "other";
+    return macros.some((m) => m.startsWith(l)) ? "unknown" : "para";
   }
   if (c === "(") {
     const head = t.replace(/^\(\s*/, "(");
@@ -422,6 +425,18 @@ export class LineParser {
     if (PAGEBREAK_RE.test(trimmed)) {
       ev.push(...this.closeTable(), ...this.dropPendingAttrs(line));
       ev.push(this.commitNew({ k: "pageBreak" }));
+      return ev;
+    }
+
+    // 5b. 조직도 자리표 — 조각이 report 템플릿에만 있어 다른 family 에서는 낼 것이 없다.
+    // 여기서 끊지 않으면 칸 없는 표가 작성기까지 흘러가 아무 말 없이 사라진다.
+    if (ORGCHART_RE.test(trimmed)) {
+      ev.push(...this.closeTable(), ...this.dropPendingAttrs(line));
+      if (this.family !== "report") {
+        this.warn(line, `<조직도> 는 주요업무보고(report) 전용입니다 (${this.family} 에서는 건너뜁니다)`);
+        return ev;
+      }
+      ev.push(this.commitNew({ k: "table", role: "orgChart", rows: [] }));
       return ev;
     }
 

@@ -73,3 +73,38 @@ describe("chapterBand 직렬화 — 로마자는 chapterChip family 만", () => 
     expect(probe(family)).toBe("# 1. 탐침");
   });
 });
+
+/**
+ * 조직도는 새 블록 종류가 아니다 — 전역 제약("새 블록 종류를 추가하지 않는다") 때문에
+ * `table` 의 역할 하나로 얹었고, 칸은 비어 있다. 조직도의 글은 참고본 조각
+ * `templates/report/geometry/t09.xml` 에 굳어 있다(계획 판정 2).
+ */
+describe("`<조직도>` 자리표", () => {
+  const { doc, warnings } = parseDsl(REPORT_FM + "ㅇ 조  직: 1본부, 3실, 1단, 6팀, 2지소\n<조직도>\n");
+  const orgs = doc.blocks.filter((b): b is Extract<Block, { k: "table" }> => b.k === "table");
+
+  it("경고 없이 칸 없는 `table` 블록이 된다", () => {
+    expect(warnings.filter((w) => w.severity === "error")).toEqual([]);
+    expect(orgs.length).toBe(1);
+    expect(orgs[0].role).toBe("orgChart");
+    expect(orgs[0].rows).toEqual([]);
+    expect(DocModelSchema.safeParse(doc).success).toBe(true);
+  });
+
+  it("영문 `<orgchart>` 도 같은 블록이다", () => {
+    const { doc: d } = parseDsl(REPORT_FM + "<orgchart>\n");
+    expect(d.blocks.filter((b) => b.k === "table" && b.role === "orgChart").length).toBe(1);
+  });
+
+  it("다른 family 에서는 경고하고 블록을 만들지 않는다", () => {
+    // 조각이 report 템플릿에만 있다. 끊지 않으면 칸 없는 표가 작성기까지 흘러가 말없이 사라진다.
+    const { doc: d, warnings: w } = parseDsl(fixture("notice") + "<조직도>\n");
+    expect(d.blocks.some((b) => b.k === "table" && b.role === "orgChart")).toBe(false);
+    expect(w.some((x) => x.message.includes("주요업무보고(report) 전용"))).toBe(true);
+  });
+
+  it("DSL 로 되돌리면 `<조직도>` 한 줄이다 — 빈 표로 새지 않는다", () => {
+    expect(toDsl(doc as DocModel).split("\n")).toContain("<조직도>");
+    expect(toDsl(doc as DocModel)).not.toContain("|");
+  });
+});
