@@ -62,8 +62,10 @@ describe("manualMarkerIndent — 편람 번호 표지의 단계별 들여쓰기"
  */
 describe("leadingSpaces — 업무보고(report) 기호 사다리", () => {
   const ladder: [Glyph, ParaRole, number][] = [
-    ["ㅇ", "body2", 0], // 일반현황의 평평한 목록 — 0타
-    ["●", "body2", 0],
+    // 참고본 실측(사용자가 한글에서 확인, 2026-09-22): 글머리 앞 공백 칸수다.
+    // `ㅇ` 은 선행 run `" ㅇ"`, `●` 은 `charPr 143: " "` + `charPr 163: "\uF06D "` 로 둘 다 1칸.
+    ["ㅇ", "body2", 1], // 일반현황의 평평한 목록
+    ["●", "body2", 1],
     ["-", "body3", 3],
     ["·", "body4", 3],
   ];

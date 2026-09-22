@@ -73,7 +73,12 @@ describe("buildHwpx — report", () => {
     // 참고본은 이 기호를 U+F06D 로 담고 심볼 글꼴(한양신명조)이 그린다 — section0.xml 에
     // 63개, `rhwp export-text` 가 뽑은 글에 `●` 63개로 하나씩 맞는다(실측). 진짜 `●`(U+25CF)를
     // 그대로 내보내면 심볼 글꼴이 아니라 본문 글꼴로 그려져 참고본과 모양이 갈린다.
-    expect(sectionXml).toContain("<hp:t>\uF06D </hp:t>");
+    // 리터럴 부분문자열로 보지 않는다 — 터미널이 U+F06D 를 빈칸으로 그려서 실패 메시지를
+    // 읽을 수 없고(이 저장소에서 두 번 걸렸다), 앞 공백 칸수가 바뀌면 조용히 깨진다.
+    // 기호가 든 run 을 찾아 코드포인트로 본다: 사다리 1타 + U+F06D + 뒤 공백.
+    const markRun = [...sectionXml.matchAll(/<hp:t>([\s\S]*?)<\/hp:t>/g)].map((m) => m[1]).find((t) => t.includes("\uF06D"));
+    expect(markRun, "U+F06D 가 든 run 이 없다").toBeDefined();
+    expect([...markRun!].map((c) => c.codePointAt(0))).toEqual([0x20, 0xf06d, 0x20]);
     expect(sectionXml).not.toContain("●");
 
     // 읽는 쪽에서는 `●` 로 돌아온다 — 참고본을 읽을 때와 같은 판독기(@rhwp/core)로 확인한다.
