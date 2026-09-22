@@ -416,10 +416,7 @@ function orgChart(ctx: WriterContext, blockId: string): XmlNode[] {
   const frag = cloneFragment(ref, ctx.ids);
   if (ctx.pendingPageBreak) frag.attrs.pageBreak = "1";
   ctx.pendingPageBreak = false;
-  // 목차 쪽에도 쪽번호를 찍지 않고(담당자 지시) 뒷면을 빈 쪽으로 둔다 — 참고본 쪽 3·4 가 그렇다.
-  const r = hidePageNumRun(ctx);
-  frag.children.unshift(el("hp:run", { charPrIDRef: String(r.charPr) }, r.nodes));
-  return [frag, hiddenBackPage(ctx)];
+  return [frag];
 }
 
 // ---- 목차 ---------------------------------------------------------------------------------
@@ -498,7 +495,10 @@ function tocBox(ctx: WriterContext, lines: ParaBlock[]): XmlNode[] {
   }
   if (ctx.pendingPageBreak) frag.attrs.pageBreak = "1";
   ctx.pendingPageBreak = false;
-  return [frag];
+  // 목차 쪽에도 쪽번호를 찍지 않고(담당자 지시) 뒷면을 빈 쪽으로 둔다 — 참고본 쪽 3·4 가 그렇다.
+  const hide = hidePageNumRun(ctx);
+  frag.children.unshift(el("hp:run", { charPrIDRef: String(hide.charPr) }, hide.nodes));
+  return [frag, hiddenBackPage(ctx)];
 }
 
 /**
