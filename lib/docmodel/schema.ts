@@ -9,7 +9,7 @@ import { DELEGATION_LEVELS, DEFAULT_DELEGATION, INSTITUTION_HEAD_TITLE } from ".
 export const FamilySchema = z.enum(["plan", "notice", "press", "official", "report"]);
 export type Family = z.infer<typeof FamilySchema>;
 
-export const GlyphSchema = z.enum(["□", "ㅇ", "○", "◦", "-", "·", "※", "*", "❖", "◇", "■", "✔", "❍", "▪", "∙", "❶", "❷", "❸", "❹", "none"]);
+export const GlyphSchema = z.enum(["□", "ㅇ", "○", "◦", "●", "-", "·", "※", "*", "❖", "◇", "■", "✔", "❍", "▪", "∙", "❶", "❷", "❸", "❹", "none"]);
 export type Glyph = z.infer<typeof GlyphSchema>;
 
 export const AlignSchema = z.enum(["left", "center", "right", "both", "distribute"]);

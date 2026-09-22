@@ -38,7 +38,7 @@ export type TableBlock = Extract<Block, { k: "table" }>;
 // ---------------------------------------------------------------------------------------------
 // glyphs / numerals
 
-export const GLYPH_CHARS: readonly Glyph[] = ["□", "ㅇ", "○", "◦", "-", "·", "※", "*", "❖", "◇", "■", "✔", "❍", "▪", "∙", "❶", "❷", "❸", "❹"];
+export const GLYPH_CHARS: readonly Glyph[] = ["□", "ㅇ", "○", "◦", "●", "-", "·", "※", "*", "❖", "◇", "■", "✔", "❍", "▪", "∙", "❶", "❷", "❸", "❹"];
 const GLYPH_SET = new Set<string>(GLYPH_CHARS);
 /** look-alike bullets the writer model tends to use; normalized with a warning */
 const GLYPH_ALIASES: Record<string, Glyph> = { "•": "·", "ㆍ": "·", "‧": "·", "–": "-", "—": "-", "ㅁ": "□", "＊": "*", "ο": "○", "o": "ㅇ" };

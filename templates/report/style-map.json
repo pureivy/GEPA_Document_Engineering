@@ -1,0 +1,19 @@
+{
+  "family": "report",
+  "para": {
+    "coverTitle": { "paraPr": 45, "charPr": 47 },
+    "tocHeading": { "paraPr": 15, "charPr": 48 },
+    "tocLine": { "paraPr": 108, "charPr": 130 },
+    "chapterBand": { "paraPr": 53, "charPr": 127 },
+    "chipTitle": { "paraPr": 58, "charPr": 57 },
+    "summary": { "paraPr": 70, "charPr": 153 },
+    "subHeading": { "paraPr": 146, "charPr": 142 },
+    "listItem": { "paraPr": 86, "charPr": 102 },
+    "bullet1": { "paraPr": 147, "charPr": 10 },
+    "bullet1Mark": { "paraPr": 147, "charPr": 163 },
+    "bullet2": { "paraPr": 150, "charPr": 116 },
+    "tableAnchor": { "paraPr": 68, "charPr": 97 },
+    "blank": { "paraPr": 68, "charPr": 97 }
+  },
+  "borderFill": {}
+}

@@ -9,6 +9,7 @@
 import { stringify as stringifyYaml } from "yaml";
 import type { Block, Cell, DocModel, Glyph, Inline, ParaRole } from "../schema";
 import { familyContext } from "../dsl/expanders";
+import { DOC_FAMILIES } from "../families";
 import { serializeInlines, inlinesToPlain } from "../dsl/inline";
 import { GLYPH_CHARS, ROMAN_NUMERALS, splitLeadingNumeral } from "../dsl/parser";
 import { parseDsl } from "../dsl";
@@ -237,7 +238,13 @@ function bodyLines(doc: DocModel): string[] {
   // 확장기가 제 meta 에서 정한 값을 읽는다 — parser.ts 의 장 띠 번호와 같은 출처다.
   // `doc.family === "plan" && meta.numbering !== "arabic"` 로 두면 chapterChip 을 쓰는
   // 다른 family(업무보고)가 조용히 아라비아 숫자로 직렬화되어, 파서가 만든 Ⅰ 과 어긋난다.
-  const isRoman = familyContext(doc.family, doc.meta).numeralStyle === "roman";
+  //
+  // headingStyle 조건을 함께 거는 이유: `numeralStyle` 은 chapterChip family 만 읽는데
+  // (parser.ts:516) 공고문·보도자료·공문서도 값 자체는 "roman" 을 들고 있다. 그 조건 없이
+  // numeralStyle 만 보면, 그 세 family 의 DocModel 에 chapterBand 가 들어 있을 때
+  // (파서는 만들지 않지만 저장된 doc.json·편집기 왕복은 만들 수 있다) `# 1.` 이던 줄이
+  // 조용히 `# Ⅰ.` 로 바뀐다.
+  const isRoman = DOC_FAMILIES[doc.family].headingStyle === "chapterChip" && familyContext(doc.family, doc.meta).numeralStyle === "roman";
 
   for (let i = 0; i < blocks.length; i++) {
     const b = blocks[i];
