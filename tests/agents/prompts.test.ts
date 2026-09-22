@@ -262,3 +262,68 @@ describe("report 단계 프롬프트", () => {
     }
   });
 });
+
+/**
+ * 업무보고에 붙인 참고 문서 (Task 7 판정, Task 6 구현자가 미리 짚음).
+ *
+ * `projectBrief` 의 reference 분기는 "공문이면 … 아니면 기존 사업계획서" 두 갈래였다.
+ * `report` kind 가 생기는 순간 그 `아니면` 이 업무보고까지 삼켜서, 참고 문서를 붙인
+ * 업무보고 프로젝트에 **"이번 프로젝트는 이 계획서를 갱신하는 것이다"** 가 실리고
+ * `referenceGuide` 는 빈 문자열을 돌려준다 — 에이전트는 업무보고를 사업계획서 갱신으로
+ * 읽고 아무 오류 없이 틀린 문서를 쓴다. 공문의 전송·우편번호 누수와 같은 부류다.
+ *
+ * 값이 있어도 안 실리는 것과, 같은 값이 제 family 에서는 실리는 것을 함께 고정한다.
+ */
+describe("buildStagePrompt — 업무보고에 붙인 참고 문서", () => {
+  const 업무보고: ProjectDTO = {
+    ...project,
+    kind: "report",
+    title: "2026년 주요업무보고",
+    topic: "2026년 주요업무보고",
+    reference: { fileName: "2025년 주요업무보고.hwp", changes: "2025년 추진성과와 조직 현황만 추려서 씀" },
+  };
+  const p = buildStagePrompt({ stage: "report", project: 업무보고, workspaceDir: ws });
+
+  it("사업계획서 갱신 문구가 업무보고로 새지 않는다", () => {
+    expect(p.prompt).not.toContain("기존 사업계획서");
+    expect(p.prompt).not.toContain("갱신하는 것이다");
+    expect(p.prompt).not.toMatch(/^이번에 바뀌는 내용: /m);
+    expect(p.prompt).not.toContain("(미기재 — 연도·일정·담당만 갱신)");
+  });
+
+  it("참고 문서 줄과 단계 지시가 함께 실린다 — 붙인 문서가 프롬프트에서 사라지면 안 된다", () => {
+    expect(p.prompt).toMatch(/^참고 문서: \/tmp\/ws\/reference\/base-plan\.md \(원본 파일 2025년 주요업무보고\.hwp\)$/m);
+    // 화면 label·base-plan.md 의 절 제목과 같은 이름을 쓴다(lib/contracts.ts 가 단일 출처)
+    expect(p.prompt).toMatch(new RegExp(`^${REFERENCE_CHANGES_LABEL["근거자료"]}: 2025년 추진성과와 조직 현황만 추려서 씀$`, "m"));
+    expect(p.prompt).toContain(`${ws}/reference/base-plan.md 를 먼저 Read`);
+  });
+
+  /**
+   * 업무보고의 참고 문서는 대개 **지난해 업무보고**다. 그 Ⅱ장은 지나간 실적이므로("2025년도
+   * 추진성과 … 944개사, 2,771억원"), "지난 연도 표기를 이번 보고 기준으로 고친다"고만 적으면
+   * 에이전트가 그 숫자에 올해 연도를 붙인다 — 있지도 않은 실적이 결재에 올라간다.
+   * 고쳐도 되는 연도와 그대로 둘 연도를 지시가 갈라 두는지 여기서 고정한다.
+   */
+  it("실적 수치의 연도를 옮겨 붙이지 말라고 이른다", () => {
+    expect(p.prompt).toContain("연도를 옮겨 붙이지 않는다");
+    expect(p.prompt).toContain("실적 수치와 그 실적이 일어난 연도는 참고 문서에 적힌 그대로 둔다");
+  });
+
+  it("용도를 묻지 않는다 — 업무보고에는 수신유형·전결·참고문서용도가 없다", () => {
+    expect(p.prompt).not.toContain("용도:");
+    expect(p.prompt).not.toMatch(/^수신유형: /m);
+    expect(p.prompt).not.toMatch(/^전결: /m);
+  });
+
+  it("붙인 문서가 없으면 참고 문서 줄 자체가 없다", () => {
+    const q = buildStagePrompt({ stage: "report", project: { ...업무보고, reference: undefined }, workspaceDir: ws });
+    expect(q.prompt).not.toMatch(/^참고 문서: /m);
+    expect(q.prompt).not.toContain("base-plan.md");
+  });
+
+  it("같은 reference 가 사업 프로젝트에서는 기존 문구 그대로 실린다 — 막는 조건이 kind 다", () => {
+    const 사업 = buildStagePrompt({ stage: "plan", project: { ...업무보고, kind: "program" }, workspaceDir: ws });
+    expect(사업.prompt).toContain("이번 프로젝트는 이 계획서를 갱신하는 것이다.");
+    expect(사업.prompt).toMatch(/^이번에 바뀌는 내용: 2025년 추진성과와 조직 현황만 추려서 씀$/m);
+  });
+});

@@ -15,6 +15,15 @@ export const STAGE_FAMILY: Partial<Record<Stage, Family>> = { plan: "plan", noti
 export const REFERENCE_ROLES = ["근거자료", "받은공문", "붙임"] as const;
 export type ReferenceRole = (typeof REFERENCE_ROLES)[number];
 /**
+ * 용도를 묻지 않는 자리의 용도 — 가장 해가 적은 쪽(내용을 추려 쓰기만 한다).
+ *
+ * 두 자리가 이 값을 쓴다: **업무보고**(화면에 용도 라디오가 없다 — 붙인 문서는 언제나
+ * 내용 근거자료다)와 **용도 없이 올라온 공문 첨부**(라우트를 직접 POST 한 경우).
+ * 화면 label·프롬프트 줄 이름·base-plan.md 의 절 제목이 이 한 값에서 갈라져 나가야
+ * 담당자가 적은 것과 에이전트가 읽는 것의 이름이 갈리지 않는다.
+ */
+export const DEFAULT_REFERENCE_ROLE: ReferenceRole = "근거자료";
+/**
  * 용도별로 reference.changes 칸이 무엇을 담는지 — 폼의 label 과 프롬프트에 싣는 줄 이름이
  * 같아야 한다(다르면 담당자가 적은 것과 에이전트가 읽는 것의 이름이 갈린다). 그래서 한 벌만 둔다.
  */
@@ -33,6 +42,16 @@ export const REFERENCE_DOC_TITLE: Record<ReferenceRole, string> = {
   받은공문: "받은 공문",
   붙임: "붙임 문서",
 };
+/**
+ * 붙인 문서가 스스로를 뭐라고 소개할지 — `undefined` 는 "기존 사업계획서"(사업계획서 갱신)다.
+ *
+ * 프롬프트(`projectBrief`)와 에이전트가 여는 파일(`referenceMarkdown`)이 **같은 판정**을 써야
+ * 한다. 한쪽만 갈라 놓으면 위 주석이 공문에서 짚은 일이 그대로 되풀이된다.
+ * 업무보고는 용도를 묻지 않으므로(화면에 라디오가 없다) 언제나 기본 용도다.
+ */
+export function referenceRoleFor(kind: ProjectKind, 참고문서용도?: ReferenceRole): ReferenceRole | undefined {
+  return kind === "program" ? undefined : (참고문서용도 ?? DEFAULT_REFERENCE_ROLE);
+}
 
 /** 실행 단위 — 문서 단계에 덧붙는 검토(review)를 포함한다. 어느 kind 의 탭에도 나오지 않는다. */
 export type RunStage = Stage | "review";

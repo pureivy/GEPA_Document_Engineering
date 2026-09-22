@@ -2,7 +2,7 @@
  * Stage prompt builders. The main `claude -p` process is the writer persona for the stage;
  * research is delegated to the `researcher` subagent through the Task tool.
  */
-import { REFERENCE_CHANGES_LABEL, type Stage, type ProjectDTO, type ReferenceRole } from "../../contracts";
+import { DEFAULT_REFERENCE_ROLE, REFERENCE_CHANGES_LABEL, type Stage, type ProjectDTO, type ReferenceRole } from "../../contracts";
 import { orgSummary } from "../../org";
 
 export interface StagePromptInput {
@@ -72,6 +72,12 @@ function projectBrief(p: ProjectDTO, workspaceDir?: string): string {
       lines.push(`참고 문서(용도: ${용도}): ${workspaceDir ?? "<작업폴더>"}/reference/base-plan.md (원본 파일 ${p.reference.fileName})`);
       // 비면 줄 자체를 싣지 않는다 — "(미기재 — 연도·일정·담당만 갱신)" 은 사업계획서 갱신을 전제한 문구라 공문에 맞지 않는다
       if (p.reference.changes) lines.push(`${REFERENCE_CHANGES_LABEL[용도]}: ${p.reference.changes}`);
+    } else if (p.kind === "report") {
+      // 업무보고에는 용도가 없다(화면에도 라디오가 없다) — 붙인 문서는 언제나 내용 근거자료다.
+      // 여기서 갈라 두지 않으면 사업계획서 쪽 두 줄이 그대로 실려 에이전트가 업무보고를
+      // "기존 계획서를 갱신하는 것"으로 읽는다. 아무 오류도 나지 않고 틀린 문서가 나온다.
+      lines.push(`참고 문서: ${workspaceDir ?? "<작업폴더>"}/reference/base-plan.md (원본 파일 ${p.reference.fileName})`);
+      if (p.reference.changes) lines.push(`${REFERENCE_CHANGES_LABEL[DEFAULT_REFERENCE_ROLE]}: ${p.reference.changes}`);
     } else {
       lines.push(`기존 사업계획서: ${workspaceDir ?? "<작업폴더>"}/reference/base-plan.md (원본 파일 ${p.reference.fileName}) — 이번 프로젝트는 이 계획서를 갱신하는 것이다.`);
       lines.push(`이번에 바뀌는 내용: ${p.reference.changes || "(미기재 — 연도·일정·담당만 갱신)"}`);
@@ -82,7 +88,7 @@ function projectBrief(p: ProjectDTO, workspaceDir?: string): string {
 
 /** 공문에 붙인 참고 문서의 용도. 파일만 있고 용도가 비었으면 근거자료로 본다(가장 해가 적은 쪽). */
 function referenceRole(p: ProjectDTO): ReferenceRole {
-  return p.contact.참고문서용도 ?? "근거자료";
+  return p.contact.참고문서용도 ?? DEFAULT_REFERENCE_ROLE;
 }
 
 /** Stage-specific guidance when the project was started from an uploaded 기존 사업계획서. */
@@ -108,6 +114,11 @@ function referenceGuide(p: ProjectDTO, stage: Stage | "review", workspaceDir: st
         default:
           return `\n참고 문서 ${file} 를 먼저 Read 한다. 사업명·기간·금액·대상·담당은 그 문서에 적힌 값을 그대로 쓰고, 그 문서에 없는 수치는 지어내지 않는다(없으면 그 항목을 빼거나 "별도 안내"로 적는다). 공문 본문은 1쪽 분량으로 줄인다 — 그 문서를 옮겨 적는 것이 아니라 수신자가 해야 할 일과 기한만 남긴다.`;
       }
+    // 업무보고의 참고 문서는 대개 **지난 보고서나 실적 자료**다 — 갱신할 계획서가 아니다.
+    // 이 분기가 없으면 여기서 빈 문자열이 나가고, 붙인 문서를 어떻게 쓰라는 말이 아무 데도 없다.
+    case "report":
+      return `\n참고 문서 ${file} 를 먼저 Read 한다. 실적·조직·예산 수치는 그 문서에 적힌 값만 쓰고, 그 문서에 없는 수치는 지어내지 말고 그 줄을 빼거나 "추진 중"으로 적는다. 그 문서를 옮겨 적는 것이 아니라 이번 보고의 차례에 맞게 추려 다시 쓴다.
+**연도를 옮겨 붙이지 않는다.** 이번 보고 기준으로 고치는 것은 표지·보고일·대상기간과 장 제목의 연도뿐이다. 실적 수치와 그 실적이 일어난 연도는 참고 문서에 적힌 그대로 둔다 — 지난해 실적에 올해 연도를 붙이면 있지도 않은 실적이 결재에 올라간다.`;
     default:
       return "";
   }
