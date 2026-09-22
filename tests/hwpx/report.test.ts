@@ -90,7 +90,8 @@ describe("buildHwpx — report", () => {
     expect(sectionXml).toContain("<hp:t> 시·군 유망기업 발굴과");
     expect(sectionXml).toContain("<hp:t> 성장 단계별 맞춤형 지원");
     const sec = parseXml(sectionXml);
-    const withChip = findAll(sec, "hp:p").filter((p) => findAll(p, "hp:container").length > 0);
+    // 표지 제목 상자도 hp:container 라 소제목 칩만 센다 — 칩에는 drawText 가 없다
+    const withChip = findAll(sec, "hp:p").filter((p) => findAll(p, "hp:container").some((c) => findAll(c, "hp:drawText").length === 0));
     expect(withChip.length).toBe(2);
     for (const p of withChip) expect(paraPrCase(p.attrs.paraPrIDRef!).intent).toBe(paraPrCase("146").intent);
   });
@@ -218,6 +219,44 @@ describe("buildHwpx — report", () => {
   });
 });
 
+describe("buildHwpx — report 표지 제목 상자", () => {
+  const { sectionXml } = buildHwpx(parseDsl(DSL).doc, { now: NOW });
+
+  /**
+   * 참고본은 표지 제목을 **도형 안에** 둔다(문단 9 의 `hp:container`, 46673×9417 — 파랑
+   * `#558ED5`·주황 `#E46C0A` 장식 두 장과 `hp:drawText` 로 글자를 담은 한 장).
+   * 그 안 문단이 `paraPr 45 / charPr 47` 이라 style-map 의 `coverTitle` 과 값이 같고,
+   * 그래서 맨 문단으로 내보내도 **글자는 맞고 상자만 사라졌다** — 담당자가 한글에서 보고 알려줬다.
+   * 우리 게이트는 전부 초록이었다.
+   */
+  it("제목이 도형 안에 들어가고 장식 두 장이 함께 온다", () => {
+    const i = sectionXml.indexOf("2026년 주요업무보고");
+    expect(i, "표지 제목을 못 찾았다").toBeGreaterThan(-1);
+    const seg = sectionXml.slice(Math.max(0, i - 4000), i + 60);
+    expect(seg, "제목이 도형의 drawText 안에 있어야 한다").toContain("<hp:drawText");
+    expect(sectionXml).toContain('faceColor="#558ED5"');
+    expect(sectionXml).toContain('faceColor="#E46C0A"');
+  });
+
+  it("도형 안 글자를 갈아 끼우면서 캐시된 줄 배치를 지운다", () => {
+    // `hp:linesegarray` 는 한글이 참고본 글자("주 요 업 무 보 고")에 맞춰 둔 배치다.
+    // 남겨 두면 길이가 다른 새 제목이 옛 폭에 맞춰 잘못 놓인다.
+    expect(/<hp:drawText[\s\S]{0,1500}?<hp:linesegarray/.test(sectionXml)).toBe(false);
+    expect(sectionXml).not.toContain("주 요 업 무 보 고"); // 참고본 글자가 남아 있으면 치환 실패
+  });
+
+  it("표지 도형 id 를 새로 매긴다 (참고본 id 를 끌고 오지 않는다)", () => {
+    const sec = parseXml(sectionXml);
+    const cover = findAll(sec, "hp:container").find((c) => findAll(c, "hp:drawText").length > 0);
+    expect(cover, "표지 도형을 못 찾았다").toBeDefined();
+    expect(cover!.attrs.id).toBe(cover!.attrs.instid);
+    const rects = findAll(cover!, "hp:rect");
+    expect(rects.length).toBe(3);
+    expect(new Set(rects.map((r) => r.attrs.instid)).size, "사각형 instid 가 서로 달라야 한다").toBe(3);
+  });
+
+});
+
 describe("buildHwpx — report 요약박스", () => {
   // 요약문 상자는 ```box 로 받는다(문법 규칙은 dsl/grammar.md). 표본 DSL 의 맨 요약문 줄은
   // 상자 없이 `summary` 서식으로만 나가므로 여기서 따로 세운 문서로 시험한다.
@@ -298,7 +337,8 @@ describe("buildHwpx — report 소제목 도형 칩", () => {
    */
   it("칩 문단은 참고본 소제목 모양을 그대로 쓰되 간격만 담당자 값이다", () => {
     const sec = parseXml(sectionXml);
-    const withChip = findAll(sec, "hp:p").filter((p) => findAll(p, "hp:container").length > 0);
+    // 표지 제목 상자도 hp:container 라 소제목 칩만 센다 — 칩에는 drawText 가 없다
+    const withChip = findAll(sec, "hp:p").filter((p) => findAll(p, "hp:container").some((c) => findAll(c, "hp:drawText").length === 0));
     expect(withChip.length).toBe(2);
     const ref = paraPrCase("146");
     for (const p of withChip) {
@@ -330,15 +370,27 @@ describe("buildHwpx — report 소제목 도형 칩", () => {
 
   it("칩마다 도형 id 를 새로 매긴다 (참고본 id 를 그대로 끌고 오지 않는다)", () => {
     const sec = parseXml(sectionXml);
-    const conts = findAll(sec, "hp:container");
+    const conts = findAll(sec, "hp:container").filter((c) => findAll(c, "hp:drawText").length === 0); // 표지 상자 제외
     expect(conts.length).toBe(2);
     const ids = conts.map((c) => c.attrs.id);
     expect(ids).not.toContain("1129393238"); // 조각을 뜬 자리의 참고본 id
     for (const c of conts) expect(c.attrs.instid).toBe(c.attrs.id);
-    // 바깥 도형 둘 + 속 네모 넷 = 서로 다른 여섯 개
-    const shapeIds = [...ids, ...findAll(sec, "hp:rect").map((r) => r.attrs.instid)];
-    expect(shapeIds.length).toBe(6);
-    expect(new Set(shapeIds).size).toBe(6);
+    // 칩 하나당 바깥 도형 1 + 속 네모 2 = 서로 다른 여섯 개
+    const chipIds = [...ids, ...conts.flatMap((c) => findAll(c, "hp:rect").map((r) => r.attrs.instid))];
+    expect(chipIds.length).toBe(6);
+    expect(new Set(chipIds).size).toBe(6);
+  });
+
+  /**
+   * 문서 전체에서 도형 id 가 겹치지 않아야 한다. 칩만 보던 단언은 표지 상자가 생기자
+   * 숫자가 어긋나 깨졌는데, 애초에 고정할 값어치가 있는 것은 "칩이 여섯 개"가 아니라
+   * **"어느 도형도 id 를 나눠 갖지 않는다"** 이다. 겹치면 한글이 어느 쪽을 집을지 알 수 없다.
+   */
+  it("문서 안 모든 도형의 instid 가 서로 다르다", () => {
+    const sec = parseXml(sectionXml);
+    const all = [...findAll(sec, "hp:container"), ...findAll(sec, "hp:rect")].map((n) => n.attrs.instid).filter(Boolean);
+    expect(all.length).toBeGreaterThan(6); // 칩 둘 + 표지 상자
+    expect(new Set(all).size).toBe(all.length);
   });
 
   it("@rhwp/core 검증을 contentLoss 0 으로 통과한다", async () => {

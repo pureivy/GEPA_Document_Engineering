@@ -14,7 +14,7 @@
  *
  */
 import { child, childrenNamed, clone, el, findAll, isNode, type XmlNode } from "../xml";
-import { cellAt, cloneFragment, loadGeometry, setCellText } from "../geometry";
+import { cellAt, cloneFragment, loadGeometry, setCellText, setShapeText } from "../geometry";
 import { pictureFrom, pictureSize } from "../emit/picture";
 import { table, cellInteriorWidth, type CellSpec } from "../emit/table";
 import { emitBlank, emitTable, splitInlinesByNewline, type FamilyStyle } from "./common";
@@ -272,9 +272,33 @@ function cover(ctx: WriterContext, m: ReportMeta, title?: Inline[]): XmlNode[] {
   return out;
 }
 
+/**
+ * 표지 제목 — 참고본은 글자를 **도형 안에** 둔다.
+ *
+ * `geometry/cover.xml`(문단 9 의 `hp:container`, 46673×9417)은 사각형 석 장이다: 파랑
+ * `#558ED5`·주황 `#E46C0A` 장식 두 장과, `hp:drawText` 로 제목을 담은 한 장.
+ * 그 안 문단이 `paraPr 45 / charPr 47` 을 쓰는데 style-map 의 `coverTitle` 과 **같은 값**이라,
+ * 맨 문단으로 내보내도 글자는 맞고 박스만 사라졌다(담당자가 한글에서 발견).
+ *
+ * 조각이 없으면 예전대로 맨 문단을 내고 경고한다 — 표지가 통째로 비는 것보다 낫다.
+ */
 function coverTitlePara(ctx: WriterContext, inlines: Inline[]): XmlNode {
   const s = roleSpec(ctx, "coverTitle");
-  return ctx.para({ paraPr: s.paraPr, runs: ctx.runsFor(inlines, s.base, s.charPr), vertsize: Math.round(s.base.pt * 100), lineSpacing: s.lineSpacing });
+  const ref = loadGeometry(ctx.tpl.dir, "cover");
+  if (!ref) {
+    ctx.warnings.push({ message: "report template geometry cover missing; 표지 제목을 맨 문단으로 냈습니다" });
+    return ctx.para({ paraPr: s.paraPr, runs: ctx.runsFor(inlines, s.base, s.charPr), vertsize: Math.round(s.base.pt * 100), lineSpacing: s.lineSpacing });
+  }
+  const box = clone(ref);
+  const shapeId = String(ctx.ids.nextShapeId());
+  box.attrs.id = shapeId;
+  box.attrs.instid = shapeId;
+  box.attrs.zOrder = String(ctx.ids.nextZOrder());
+  for (const rect of findAll(box, "hp:rect")) rect.attrs.instid = String(ctx.ids.nextShapeId());
+  if (!setShapeText(box, inlineText(inlines))) ctx.warnings.push({ message: "report cover shape has no drawText; 표지 제목 글자를 넣지 못했습니다" });
+  const anchor = roleSpec(ctx, "coverBox");
+  const h = Number(child(box, "hp:sz")?.attrs.height ?? 0) || COVER_BOX_HEIGHT;
+  return ctx.para({ paraPr: anchor.paraPr, runs: [{ charPr: anchor.charPr, nodes: [box] }], vertsize: h, lineSpacing: 100 });
 }
 
 function coverLine(ctx: WriterContext, text: string): XmlNode {
@@ -564,6 +588,9 @@ const BULLET1_PUA = "\uF06D";
  * 줄 높이도 글자(1500)가 아니라 이 도형(1552)이 정한다.
  */
 const SUBHEADING_CHIP_HEIGHT = 1552;
+
+/** 표지 제목 도형의 높이 — `geometry/cover.xml` 의 `hp:sz` 와 같다(조각이 없을 때의 대비값). */
+const COVER_BOX_HEIGHT = 9417;
 
 /**
  * 소제목 앞에 붙는 인라인 도형 칩. 참고본은 흰색→`#4E9484` 그러데이션 네모(`hp:rect` 두 장)를

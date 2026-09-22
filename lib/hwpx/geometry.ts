@@ -81,6 +81,28 @@ export function cellAt(frag: XmlNode, row: number, col: number): XmlNode | undef
   return undefined;
 }
 
+/**
+ * Replace the text inside a drawing's `hp:drawText` — the shape's own text box.
+ *
+ * 표 셀(`setCellText`)과 같은 규칙이다: 첫 문단의 paraPr 과 첫 run 의 charPr 을 지키고
+ * 나머지 run 과 **`hp:linesegarray` 를 지운다.** 그 배열은 한글이 캐시해 둔 줄 배치라서,
+ * 글자를 갈아 끼우고 그대로 두면 새 글이 옛 자리 폭에 맞춰 잘못 놓인다.
+ */
+export function setShapeText(frag: XmlNode, text: string): boolean {
+  const dt = findAll(frag, "hp:drawText")[0];
+  if (!dt) return false;
+  const sl = child(dt, "hp:subList");
+  if (!sl) return false;
+  const p0 = childrenNamed(sl, "hp:p")[0];
+  if (!p0) return false;
+  const charPr = childrenNamed(p0, "hp:run")[0]?.attrs.charPrIDRef ?? "0";
+  sl.children = sl.children.filter((c) => !(isNode(c) && c.name === "hp:p"));
+  p0.children = p0.children.filter((c) => !(isNode(c) && (c.name === "hp:run" || c.name === "hp:linesegarray")));
+  p0.children.unshift(el("hp:run", { charPrIDRef: charPr }, [el("hp:t", {}, text ? [text] : [])]));
+  sl.children.push(p0);
+  return true;
+}
+
 /** Replace the text of a cell: keeps the first paragraph's paraPr and first run's charPr. */
 export function setCellText(frag: XmlNode, row: number, col: number, text: string): boolean {
   const tc = cellAt(frag, row, col);
