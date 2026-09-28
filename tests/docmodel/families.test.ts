@@ -16,7 +16,7 @@ describe("DOC_FAMILIES", () => {
     expect(DOC_FAMILIES.plan.indent).toEqual({ "□": 1, "ㅇ": 2, "○": 2, "◦": 2, "-": 3, "·": 4, "※": 1, "*": 2 });
     expect(DOC_FAMILIES.press.indent).toEqual({ "□": 0, "ㅇ": 1, "○": 1, "◦": 1, "-": 3, "·": 4, "※": 2, "*": 2 });
     // 업무보고는 참고본 실측 사다리다 — 편람 2타(공문)도 사업계획서 사다리도 아니다
-    expect(DOC_FAMILIES.report.indent).toEqual({ "●": 0, "-": 3, "ㅇ": 0, "·": 3 });
+    expect(DOC_FAMILIES.report.indent).toEqual({ "●": 1, "-": 3, "ㅇ": 1, "·": 3 });
   });
 });
 

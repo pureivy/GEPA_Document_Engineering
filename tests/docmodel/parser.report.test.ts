@@ -1,7 +1,8 @@
 import { describe, expect, it } from "vitest";
 import { parseDsl } from "../../lib/docmodel/dsl";
 import { toDsl } from "../../lib/docmodel/serialize/toDsl";
-import { DocModelSchema, type Block } from "../../lib/docmodel/schema";
+import { DocModelSchema, type Block, type DocModel } from "../../lib/docmodel/schema";
+import { fixture } from "./helpers";
 
 const REPORT_FM = "---\nfamily: report\n제목: 2026년 주요업무보고\n---\n";
 
@@ -37,5 +38,73 @@ describe("업무보고서 제목 문법", () => {
     expect(body).toContain("# Ⅰ. 일반현황");
     expect(body).toContain("# Ⅱ. 2026년 추진방향");
     expect(bands(parseDsl(toDsl(doc)).doc.blocks).map((b) => b.numeral)).toEqual(["Ⅰ", "Ⅱ"]);
+  });
+});
+
+/**
+ * 간지 번호를 로마자로 쓰는 family 는 `headingStyle: "chapterChip"` 인 것뿐이다.
+ *
+ * `numeralStyle` 값 자체는 공고문·보도자료·공문서도 "roman" 을 들고 있다(확장기가 모두
+ * 그렇게 채운다) — 그 셋의 파서는 `numeralStyle` 에 닿지 않으니 값이 무엇이든 상관없기
+ * 때문이다. 그래서 toDsl 이 `numeralStyle` 만 보면, 그 셋의 DocModel 에 chapterBand 가
+ * 들어 있을 때(파서는 만들지 않지만 저장된 doc.json·편집기 왕복은 만들 수 있다)
+ * `# 1.` 이던 줄이 조용히 `# Ⅰ.` 로 바뀐다. 두 갈래를 여기 나란히 못 박는다.
+ */
+describe("chapterBand 직렬화 — 로마자는 chapterChip family 만", () => {
+  const FRONT_MATTER: Record<string, string> = {
+    report: REPORT_FM,
+    notice: fixture("notice"),
+    press: "---\nfamily: press\n배포일: x\n담당부서: x\n담당자: x\n연락처: x\n제목: 제목입니다\n---\n",
+    official: "---\nfamily: official\n제목: 공문 제목\n처리과: 전략기획팀\n수신유형: 내부결재\n---\n",
+  };
+  // 파서가 만들지 않는 조합이므로 블록을 손으로 붙인다
+  const probe = (family: string): string => {
+    const { doc: base } = parseDsl(FRONT_MATTER[family]);
+    const band = { id: "probe", k: "chapterBand", numeral: "1", title: "탐침" } as Extract<Block, { k: "chapterBand" }>;
+    const line = toDsl({ ...base, blocks: [...base.blocks, band] } as DocModel).split("\n").find((l) => l.includes("탐침"));
+    return line ?? "";
+  };
+
+  it("업무보고(chapterChip)는 로마자다", () => {
+    expect(probe("report")).toBe("# Ⅰ. 탐침");
+  });
+
+  it.each(["notice", "press", "official"])("%s 는 아라비아 숫자 그대로다", (family) => {
+    expect(probe(family)).toBe("# 1. 탐침");
+  });
+});
+
+/**
+ * 조직도는 새 블록 종류가 아니다 — 전역 제약("새 블록 종류를 추가하지 않는다") 때문에
+ * `table` 의 역할 하나로 얹었고, 칸은 비어 있다. 조직도의 글은 참고본 조각
+ * `templates/report/geometry/t09.xml` 에 굳어 있다(계획 판정 2).
+ */
+describe("`<조직도>` 자리표", () => {
+  const { doc, warnings } = parseDsl(REPORT_FM + "ㅇ 조  직: 1본부, 3실, 1단, 6팀, 2지소\n<조직도>\n");
+  const orgs = doc.blocks.filter((b): b is Extract<Block, { k: "table" }> => b.k === "table");
+
+  it("경고 없이 칸 없는 `table` 블록이 된다", () => {
+    expect(warnings.filter((w) => w.severity === "error")).toEqual([]);
+    expect(orgs.length).toBe(1);
+    expect(orgs[0].role).toBe("orgChart");
+    expect(orgs[0].rows).toEqual([]);
+    expect(DocModelSchema.safeParse(doc).success).toBe(true);
+  });
+
+  it("영문 `<orgchart>` 도 같은 블록이다", () => {
+    const { doc: d } = parseDsl(REPORT_FM + "<orgchart>\n");
+    expect(d.blocks.filter((b) => b.k === "table" && b.role === "orgChart").length).toBe(1);
+  });
+
+  it("다른 family 에서는 경고하고 블록을 만들지 않는다", () => {
+    // 조각이 report 템플릿에만 있다. 끊지 않으면 칸 없는 표가 작성기까지 흘러가 말없이 사라진다.
+    const { doc: d, warnings: w } = parseDsl(fixture("notice") + "<조직도>\n");
+    expect(d.blocks.some((b) => b.k === "table" && b.role === "orgChart")).toBe(false);
+    expect(w.some((x) => x.message.includes("주요업무보고(report) 전용"))).toBe(true);
+  });
+
+  it("DSL 로 되돌리면 `<조직도>` 한 줄이다 — 빈 표로 새지 않는다", () => {
+    expect(toDsl(doc as DocModel).split("\n")).toContain("<조직도>");
+    expect(toDsl(doc as DocModel)).not.toContain("|");
   });
 });

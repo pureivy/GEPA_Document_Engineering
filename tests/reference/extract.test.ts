@@ -3,6 +3,7 @@ import { readFileSync, existsSync } from "node:fs";
 import { spawnSync } from "node:child_process";
 import { join } from "node:path";
 import { extractReferenceText, hwpxText, docxText, referenceExtension, referenceMarkdown } from "../../lib/reference/extract";
+import { DEFAULT_REFERENCE_ROLE, referenceRoleFor } from "../../lib/contracts";
 
 const planHwpx = join(process.cwd(), "templates", "plan", "reference.hwpx");
 const hasPdftotext = spawnSync("pdftotext", ["-v"]).status !== null;
@@ -73,5 +74,33 @@ describe("reference document extraction", () => {
 
   it("용도가 없으면 예전 문자열 그대로다 — 얼어붙은 세 family 가 읽는 파일", () => {
     expect(referenceMarkdown("plan.hwp", "", "본문")).toContain("(변경 사항 미기재 — 연도·일정·담당만 갱신)");
+  });
+});
+
+/**
+ * 붙인 문서가 스스로를 뭐라고 소개하는가 — **프롬프트와 base-plan.md 가 같은 판정을 써야 한다.**
+ * `projectBrief` 만 업무보고용으로 갈라 두면, 에이전트가 여는 파일은 여전히
+ * "# 기존 사업계획서 — …" 와 "(변경 사항 미기재 — 연도·일정·담당만 갱신)" 을 들고 있다
+ * (lib/contracts.ts REFERENCE_DOC_TITLE 주석이 공문에서 짚은 것과 같은 자리다).
+ */
+describe("referenceRoleFor — kind 별 참고 문서 용도", () => {
+  it("사업계획서 갱신(program)만 용도가 없다 — 얼어붙은 세 family 의 파일이 그대로여야 한다", () => {
+    expect(referenceRoleFor("program", undefined)).toBeUndefined();
+    expect(referenceRoleFor("program", "붙임")).toBeUndefined();
+    expect(referenceMarkdown("plan.hwp", "", "본문", referenceRoleFor("program", undefined))).toContain("# 기존 사업계획서 — plan.hwp");
+  });
+
+  it("업무보고는 언제나 근거자료다 — 용도를 묻지 않으므로 계획서 갱신 문구가 실리면 안 된다", () => {
+    expect(referenceRoleFor("report", undefined)).toBe(DEFAULT_REFERENCE_ROLE);
+    const md = referenceMarkdown("2025년 주요업무보고.hwp", "추진성과만 추려서 씀", "본문", referenceRoleFor("report", undefined));
+    expect(md).toContain("# 참고 문서 — 2025년 주요업무보고.hwp");
+    expect(md).toContain("## 이 문서에서 쓸 내용");
+    expect(md).not.toContain("기존 사업계획서");
+    expect(md).not.toContain("미기재");
+  });
+
+  it("공문은 고른 용도를 쓰고, 용도 없이 올라오면 근거자료로 본다(프롬프트의 referenceRole 과 같은 기본값)", () => {
+    expect(referenceRoleFor("official", "받은공문")).toBe("받은공문");
+    expect(referenceRoleFor("official", undefined)).toBe(DEFAULT_REFERENCE_ROLE);
   });
 });

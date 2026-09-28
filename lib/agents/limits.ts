@@ -27,6 +27,8 @@ export const STAGE_LIMITS: Record<RunStage, StageLimits> = {
   notice: { maxTurns: 30, wallTimeoutMs: 25 * MIN, idleTimeoutMs: DEFAULT_IDLE_TIMEOUT_MS },
   press: { maxTurns: 20, wallTimeoutMs: 15 * MIN, idleTimeoutMs: DEFAULT_IDLE_TIMEOUT_MS },
   official: { maxTurns: 20, wallTimeoutMs: 15 * MIN, idleTimeoutMs: DEFAULT_IDLE_TIMEOUT_MS },
+  // 업무보고는 참고본 골격을 채우는 일이라 공문서와 같은 크기로 둔다(실측 전 잠정값)
+  report: { maxTurns: 20, wallTimeoutMs: 15 * MIN, idleTimeoutMs: DEFAULT_IDLE_TIMEOUT_MS },
   review: { maxTurns: 15, wallTimeoutMs: 15 * MIN, idleTimeoutMs: DEFAULT_IDLE_TIMEOUT_MS },
 };
 
@@ -38,6 +40,8 @@ export const STAGE_ALLOWED_TOOLS: Record<RunStage, string[]> = {
   press: ["Read", "Write"],
   // 공문서는 사람이 사실을 이미 아는 사무 문서다. 조사 도구를 주지 않는다
   official: ["Read", "Write"],
+  // 업무보고도 사람이 실적·계획을 이미 아는 문서다 — 조사 도구를 주지 않는다
+  report: ["Read", "Write"],
   review: ["Read"],
 };
 
@@ -63,6 +67,7 @@ export const STAGE_MODELS: Record<RunStage, ModelAlias> = {
   notice: "sonnet",
   press: "sonnet",
   official: "sonnet",
+  report: "sonnet",
   review: "sonnet",
 };
 

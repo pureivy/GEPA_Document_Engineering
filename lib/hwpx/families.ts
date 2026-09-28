@@ -15,6 +15,7 @@ import { writeNotice } from "./writers/notice";
 import { writeOfficial } from "./writers/official";
 import { writePlan } from "./writers/plan";
 import { writePress } from "./writers/press";
+import { writeReport } from "./writers/report";
 
 /**
  * `write` 는 프로퍼티(화살표 함수) 타입으로 선언한다 — 메서드 표기(`write(ctx, doc): …`)는
@@ -27,16 +28,10 @@ export type HwpxFamilyTable = {
   };
 };
 
-/**
- * 업무보고 작성기 자리표시 — Task 3 이 lib/hwpx/writers/report.ts 로 옮겨 채운다.
- * 빈 배열이므로 지금 report 로 빌드하면 본문 없는 문서가 나온다(경고가 아니라 빈 문서다).
- */
-const writeReportStub: HwpxFamilyTable["report"]["write"] = () => [];
-
 export const HWPX_FAMILIES: HwpxFamilyTable = {
   notice: { write: writeNotice },
   plan: { write: writePlan },
   press: { write: writePress },
   official: { write: writeOfficial },
-  report: { write: writeReportStub },
+  report: { write: writeReport },
 };

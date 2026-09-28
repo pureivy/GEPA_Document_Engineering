@@ -6,14 +6,23 @@ import type { Block, DocModel, Family, OfficialMeta } from "./docmodel/schema";
 import type { ProjectKind } from "./kinds";
 
 /** 문서·파이프라인 단계 — 화면에 탭으로 보이는 것들 */
-export type Stage = "research" | "plan" | "notice" | "press" | "official";
-export const STAGES: Stage[] = ["research", "plan", "notice", "press", "official"];
-export const STAGE_LABEL: Record<Stage, string> = { research: "조사", plan: "사업계획서", notice: "공고문", press: "보도자료", official: "공문서" };
-export const STAGE_FAMILY: Partial<Record<Stage, Family>> = { plan: "plan", notice: "notice", press: "press", official: "official" };
+export type Stage = "research" | "plan" | "notice" | "press" | "official" | "report";
+export const STAGES: Stage[] = ["research", "plan", "notice", "press", "official", "report"];
+export const STAGE_LABEL: Record<Stage, string> = { research: "조사", plan: "사업계획서", notice: "공고문", press: "보도자료", official: "공문서", report: "업무보고서" };
+export const STAGE_FAMILY: Partial<Record<Stage, Family>> = { plan: "plan", notice: "notice", press: "press", official: "official", report: "report" };
 
 /** 공문에 붙인 참고 문서의 용도 — 에이전트에게 줄 지시가 이 값에 따라 갈린다 */
 export const REFERENCE_ROLES = ["근거자료", "받은공문", "붙임"] as const;
 export type ReferenceRole = (typeof REFERENCE_ROLES)[number];
+/**
+ * 용도를 묻지 않는 자리의 용도 — 가장 해가 적은 쪽(내용을 추려 쓰기만 한다).
+ *
+ * 두 자리가 이 값을 쓴다: **업무보고**(화면에 용도 라디오가 없다 — 붙인 문서는 언제나
+ * 내용 근거자료다)와 **용도 없이 올라온 공문 첨부**(라우트를 직접 POST 한 경우).
+ * 화면 label·프롬프트 줄 이름·base-plan.md 의 절 제목이 이 한 값에서 갈라져 나가야
+ * 담당자가 적은 것과 에이전트가 읽는 것의 이름이 갈리지 않는다.
+ */
+export const DEFAULT_REFERENCE_ROLE: ReferenceRole = "근거자료";
 /**
  * 용도별로 reference.changes 칸이 무엇을 담는지 — 폼의 label 과 프롬프트에 싣는 줄 이름이
  * 같아야 한다(다르면 담당자가 적은 것과 에이전트가 읽는 것의 이름이 갈린다). 그래서 한 벌만 둔다.
@@ -33,6 +42,16 @@ export const REFERENCE_DOC_TITLE: Record<ReferenceRole, string> = {
   받은공문: "받은 공문",
   붙임: "붙임 문서",
 };
+/**
+ * 붙인 문서가 스스로를 뭐라고 소개할지 — `undefined` 는 "기존 사업계획서"(사업계획서 갱신)다.
+ *
+ * 프롬프트(`projectBrief`)와 에이전트가 여는 파일(`referenceMarkdown`)이 **같은 판정**을 써야
+ * 한다. 한쪽만 갈라 놓으면 위 주석이 공문에서 짚은 일이 그대로 되풀이된다.
+ * 업무보고는 용도를 묻지 않으므로(화면에 라디오가 없다) 언제나 기본 용도다.
+ */
+export function referenceRoleFor(kind: ProjectKind, 참고문서용도?: ReferenceRole): ReferenceRole | undefined {
+  return kind === "program" ? undefined : (참고문서용도 ?? DEFAULT_REFERENCE_ROLE);
+}
 
 /** 실행 단위 — 문서 단계에 덧붙는 검토(review)를 포함한다. 어느 kind 의 탭에도 나오지 않는다. */
 export type RunStage = Stage | "review";
@@ -70,6 +89,16 @@ export interface ProjectDTO {
     우편주소?: string;
     /** 결문 연락처의 우편번호 — OfficialMetaSchema.연락처.우편번호 과 같은 값(우편주소 옆의 다섯 자리) */
     우편번호?: string;
+    /**
+     * 공문(official) 전용 — 결문 연락처의 홈페이지(OfficialMetaSchema.연락처.홈페이지 와 같은 값).
+     * 비면 결문의 그 칸도 빈다: 스키마 기본값이 사라졌으므로 적지 않은 주소가 찍히지 않는다.
+     */
+    홈페이지?: string;
+    /**
+     * 공문(official) 전용 — 결문 오른쪽 끝에 찍히는 공개구분(OfficialMetaSchema.공개구분 과 같은 값).
+     * 비공개 문서를 `공개` 로 내보내는 것은 되돌릴 수 없어서 화면에서 고르게 한다.
+     */
+    공개구분?: OfficialMeta["공개구분"];
     /** 공문(official) 전용 — OfficialMetaSchema 의 같은 이름 필드와 값이 같다(program 프로젝트는 쓰지 않는다) */
     수신유형?: OfficialMeta["수신유형"];
     /** 수신유형=수신자 일 때의 수신 대상 */

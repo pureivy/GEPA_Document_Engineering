@@ -47,6 +47,15 @@ const contactSchema = z
     전결: z.enum(DELEGATION_LEVELS).optional(),
     /** 붙인 참고 문서의 용도(공문 전용) — lib/contracts.ts 의 REFERENCE_ROLES 가 단일 출처 */
     참고문서용도: z.enum(REFERENCE_ROLES).optional(),
+    /** 결문 연락처의 홈페이지(공문 전용) — OfficialMetaSchema.연락처.홈페이지 와 같은 값. 비면 결문의 그 칸도 빈다 */
+    홈페이지: z.string().trim().max(200).optional(),
+    /**
+     * OfficialMetaSchema.공개구분 과 같은 값. 전결과 **같은 이유로** 스키마의 필드를 빌려 오지
+     * 않고 값을 여기 다시 적는다: 그 필드는 `.default("공개")` 를 달고 있어 `.optional()` 로
+     * 감싸도 값이 없을 때 기본값이 끼어들고(zod 4.6.5 실측), 공문이 아닌 프로젝트의 contact 에까지
+     * 공개구분이 저장된다.
+     */
+    공개구분: z.enum(["공개", "부분공개", "비공개"]).optional(),
   })
   .default({ 부서명: "", 전화: "", 이메일: "" });
 

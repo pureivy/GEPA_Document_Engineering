@@ -5,12 +5,13 @@
  */
 import type { Stage } from "./contracts";
 
-export type ProjectKind = "program" | "official";
-export const PROJECT_KINDS: ProjectKind[] = ["program", "official"];
-export const KIND_LABEL: Record<ProjectKind, string> = { program: "사업", official: "공문" };
+export type ProjectKind = "program" | "official" | "report";
+export const PROJECT_KINDS: ProjectKind[] = ["program", "official", "report"];
+export const KIND_LABEL: Record<ProjectKind, string> = { program: "사업", official: "공문", report: "업무보고" };
 export const KIND_STAGES: Record<ProjectKind, Stage[]> = {
   program: ["research", "plan", "notice", "press"],
   official: ["official"],
+  report: ["report"],
 };
 export function stagesOf(kind: ProjectKind): Stage[] {
   return KIND_STAGES[kind];

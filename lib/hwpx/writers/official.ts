@@ -66,6 +66,9 @@ export function writeOfficial(ctx: WriterContext, doc: OfficialDoc): XmlNode[] {
   let wroteFooter = false;
   // 첫 본문 문단은 두문 표와 같은 문단에 들어간다(firstBodyBlock 참조) — 본문 루프에서는 건너뛴다
   const first = firstBodyBlock(doc.blocks);
+  // 별지(붙임 서식)는 `<pagebreak>` 뒤에 온다. 결문은 본문이 끝나는 쪽에 와야 하므로 그 쪽나눔
+  // **앞**에 쓴다 — 맨 뒤에 붙이면 결재란·시행 정보가 별지로 밀린다.
+  const 별지시작 = doc.blocks.find((b) => b.k === "pageBreak");
 
   for (const b of doc.blocks) {
     if (b === first) continue;
@@ -87,6 +90,10 @@ export function writeOfficial(ctx: WriterContext, doc: OfficialDoc): XmlNode[] {
         out.push(...attachmentParas(ctx, b.items));
         break;
       case "pageBreak":
+        if (b === 별지시작 && !wroteFooter) {
+          out.push(...footTable(ctx, m, hasAttachmentBlock));
+          wroteFooter = true;
+        }
         ctx.pendingPageBreak = true;
         break;
       default:

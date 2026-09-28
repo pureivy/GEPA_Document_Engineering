@@ -305,3 +305,84 @@ describe("buildHwpx — official 첫 본문 문단", () => {
     expect(shape(sectionXml)[0].text).toContain("  ㅇ 각 팀 협조");
   }, 60_000);
 });
+
+/**
+ * 제출·회신을 요구하는 공문은 받는 쪽이 쓸 서식을 별지로 붙인다(user 2026-09-22). 별지는
+ * `<pagebreak>` 뒤에 오는데, 결문은 본문이 끝나는 쪽에 와야 한다 — 맨 뒤에 붙이면 발신명의·
+ * 결재란·시행 정보가 별지 뒤로 밀려 공문 꼴이 무너진다.
+ */
+describe("buildHwpx — official 별지(붙임 서식)", () => {
+  const DSL_별지 = `---
+family: official
+수신유형: 수신자
+수신: 전부서
+제목: 신규사업 제출 요청
+처리과: 전략기획팀
+전결: 실·단장
+붙임: ["(서식) 신규사업 사업계획(안) 1부."]
+---
+1. 제출내용: 신규사업 사업계획안
+2. 작성서식: 붙임 서식에 따라 작성
+
+<pagebreak>
+
+(서식)
+
+□ 사 업 명:
+`;
+
+  it("결문과 붙임이 별지보다 앞에 온다", async () => {
+    const { doc } = parseDsl(DSL_별지);
+    const { bytes } = buildHwpx(doc, { now: NOW });
+    const text = await extractText(bytes);
+    const 붙임 = text.indexOf("붙임  (서식) 신규사업 사업계획(안) 1부.  끝.");
+    const 발신명의 = text.indexOf("경영기획실장");
+    const 별지 = text.indexOf("(서식)\n");
+    expect(붙임).toBeGreaterThan(-1);
+    expect(발신명의).toBeGreaterThan(-1);
+    expect(별지).toBeGreaterThan(-1);
+    expect(붙임).toBeLessThan(별지);
+    expect(발신명의).toBeLessThan(별지);
+  }, 60_000);
+
+  it("별지가 없으면 결문은 그대로 맨 뒤에 온다", async () => {
+    const DSL_평범 = DSL_별지.slice(0, DSL_별지.indexOf("\n<pagebreak>")) + "\n";
+    const { doc } = parseDsl(DSL_평범);
+    const { bytes } = buildHwpx(doc, { now: NOW });
+    const text = await extractText(bytes);
+    expect(text.indexOf("2. 작성서식: 붙임 서식에 따라 작성")).toBeLessThan(text.indexOf("경영기획실장"));
+  }, 60_000);
+});
+
+/**
+ * 결문 연락처의 **홈페이지 칸** (user 2026-09-22).
+ *
+ * 스키마가 `https://gepa.kr` 을 기본값으로 들고 있어서, 작성자가 적지 않아도 결문에 주소가
+ * 찍혔다. 참고본의 결문 꼬리는 `우 / 전화 054-470-8527 /전송 054-472-2989 /
+ * nancy.kwon@gepa.kr / 공개` — **홈페이지 자리가 비어 있다.** 적지 않은 것을 채워 내보내는
+ * 것은 담당자가 쓰지 않은 값을 문서에 싣는 일이라, 빈 칸은 빈 칸으로 낸다.
+ * 화면에는 `https://gepa.kr` 을 placeholder 로 두어 흔한 경우는 한 번만 누르면 되게 했다.
+ */
+describe("buildHwpx — official 결문 홈페이지 칸", () => {
+  const footCell = (xml: string, row: number, col: number): string => {
+    const foot = childrenNamed(parseXml(xml.replace(/^<\?xml[^>]*\?>/, "")), "hp:p").find((p) => p.attrs.paraPrIDRef === "12")!;
+    const tc = cellAt(foot, row, col)!;
+    return findAll(tc, "hp:t")
+      .map((t) => t.children.filter((c) => typeof c === "string").join(""))
+      .join("")
+      .trim();
+  };
+  /** FOOT_홈페이지 = [8, 30] (lib/hwpx/writers/official.ts) */
+  const 홈페이지 = (xml: string) => footCell(xml, 8, 30);
+
+  it("적지 않으면 빈 칸으로 나간다 — 기본값을 찍지 않는다", () => {
+    const { sectionXml } = buildHwpx(parseDsl(DSL).doc, { now: NOW });
+    expect(홈페이지(sectionXml)).toBe("");
+  }, 60_000);
+
+  it("적으면 적은 대로 나간다", () => {
+    const dsl = DSL.replace("  전화: 054-470-8527", "  홈페이지: https://gepa.kr\n  전화: 054-470-8527");
+    const { sectionXml } = buildHwpx(parseDsl(dsl).doc, { now: NOW });
+    expect(홈페이지(sectionXml)).toBe("https://gepa.kr");
+  }, 60_000);
+});

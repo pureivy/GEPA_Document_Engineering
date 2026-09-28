@@ -4,7 +4,8 @@
  * 기호 사다리(leadingSpaces)와 값은 같지만 담기는 곳이 달라 따로 둔다 — glyph 가 아니라 본문 글자다.
  */
 import { describe, expect, it } from "vitest";
-import { manualMarkerIndent } from "../../lib/docmodel/indent";
+import { glyphRole, leadingSpaces, manualMarkerIndent } from "../../lib/docmodel/indent";
+import type { Glyph, ParaRole } from "../../lib/docmodel/schema";
 
 describe("manualMarkerIndent — 편람 번호 표지의 단계별 들여쓰기", () => {
   const ladder: [string, number][] = [
@@ -50,5 +51,40 @@ describe("manualMarkerIndent — 편람 번호 표지의 단계별 들여쓰기"
     expect(manualMarkerIndent("나. 두 번째")).toBe(2);
     expect(manualMarkerIndent("전. 이런 글자는 항목 기호가 아니다")).toBeUndefined();
     expect(manualMarkerIndent("각) 이것도 아니다")).toBeUndefined();
+  });
+});
+
+/**
+ * 업무보고 사다리 — 요약문(무표식) → 소제목 → `● ` → `   - `(공백 3 + 하이픈).
+ *
+ * 타수는 **들여쓰기가 실제로 사는 자리**에서 본다. 쪽을 그린 XML 에 대고 보면 표지 한 글자를
+ * 알아보려고 판독기·글꼴·쪽 나눔까지 함께 걸리는데, 그것들은 이 규칙과 상관없이 깨질 수 있다.
+ */
+describe("leadingSpaces — 업무보고(report) 기호 사다리", () => {
+  const ladder: [Glyph, ParaRole, number][] = [
+    // 참고본 실측(사용자가 한글에서 확인, 2026-09-22): 글머리 앞 공백 칸수다.
+    // `ㅇ` 은 선행 run `" ㅇ"`, `●` 은 `charPr 143: " "` + `charPr 163: "\uF06D "` 로 둘 다 1칸.
+    ["ㅇ", "body2", 1], // 일반현황의 평평한 목록
+    ["●", "body2", 1],
+    ["-", "body3", 3],
+    ["·", "body4", 3],
+  ];
+  for (const [glyph, role, indent] of ladder) {
+    it(`\`${glyph}\` → ${indent}타`, () => {
+      expect(leadingSpaces("report", glyph, role)).toBe(indent);
+    });
+  }
+
+  it("소제목 `□` 는 0타 — 기호 자리를 도형 칩이 대신한다", () => {
+    // 작성기(lib/hwpx/writers/report.ts:ladderPara)가 `□` 를 글자로 내지 않고 인라인
+    // `hp:container` 칩으로 바꾼다. 그 칩이 글줄 맨 앞에 서므로 앞 공백이 없어야 한다.
+    expect(leadingSpaces("report", "□", "body1")).toBe(0);
+  });
+
+  it("기호가 가리키는 역할은 family 를 타지 않는다", () => {
+    expect(glyphRole("ㅇ")).toBe("body2");
+    expect(glyphRole("●")).toBe("body2"); // `-` 보다 한 칸 얕다
+    expect(glyphRole("□")).toBe("body1");
+    expect(glyphRole("-")).toBe("body3");
   });
 });
