@@ -9,7 +9,7 @@ import { eq } from "drizzle-orm";
 import { getDb } from "@/lib/db/client";
 import { projects } from "@/lib/db/schema";
 import { jsonError } from "@/lib/agents/http";
-import { deleteMaterial, listMaterials, saveMaterial } from "@/lib/closeout/materials";
+import { deleteMaterial, isZipName, listMaterials, saveMaterial, saveZipMaterials } from "@/lib/closeout/materials";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
@@ -38,7 +38,10 @@ export async function POST(req: Request, ctx: { params: Promise<{ id: string }> 
   const errors: { name: string; message: string }[] = [];
   for (const f of files) {
     try {
-      saveMaterial(id, f.name, new Uint8Array(await f.arrayBuffer()));
+      const bytes = new Uint8Array(await f.arrayBuffer());
+      // 압축 파일은 풀어서 안의 자료를 하나씩 저장한다(zip 자체는 남기지 않는다)
+      if (isZipName(f.name)) errors.push(...saveZipMaterials(id, f.name, bytes).errors);
+      else saveMaterial(id, f.name, bytes);
     } catch (e) {
       errors.push({ name: f.name, message: (e as Error).message });
     }

@@ -83,6 +83,27 @@ describe("자료함", () => {
     ]);
     expect(readFileSync(path.join(materialsDir("p1"), "index.md"), "utf8")).toContain("materials/text/통장.csv.md");
   });
+  it("zip 을 풀어 안의 자료를 하나씩 저장한다(폴더는 버리고, 모르는 형식·zip 속 zip 은 알린다)", async () => {
+    const { saveZipMaterials, listMaterials } = await import("../../lib/closeout/materials");
+    const zip = zipSync({
+      "지급공문/1. 여비 지급.txt": strToU8("9월 여비 241,200원"),
+      "지급공문/2. 통장.csv": strToU8("거래일,출금\n2025-05-09,241200\n"),
+      "__MACOSX/._x": strToU8("x"),
+      "속.zip": strToU8("PK"),
+      "메모.exe": strToU8("x"),
+    });
+    const r = saveZipMaterials("pz", "자료묶음.zip", zip);
+    expect(r.saved.sort()).toEqual(["1. 여비 지급.txt", "2. 통장.csv"]);
+    expect(r.errors.map((e) => e.name)).toEqual(["자료묶음.zip/속.zip", "자료묶음.zip/메모.exe"]);
+    expect(listMaterials("pz").map((m) => m.name)).toEqual(["1. 여비 지급.txt", "2. 통장.csv"]);
+  });
+  it("UTF-8 표시가 없는 zip 의 CP949 한글 이름을 되살린다", async () => {
+    const { zipEntryName } = await import("../../lib/closeout/materials");
+    // "통장" 의 CP949 바이트(C5EB C0E5)를 fflate 처럼 latin1 로 읽은 이름
+    expect(zipEntryName(String.fromCharCode(0xc5, 0xeb, 0xc0, 0xe5) + ".pdf")).toBe("통장.pdf");
+    expect(zipEntryName("통장.pdf")).toBe("통장.pdf");
+    expect(zipEntryName("bank.pdf")).toBe("bank.pdf");
+  });
   it("모르는 형식은 저장하지 않는다(.xls 는 xlsx 로 다시 저장 안내)", async () => {
     const { saveMaterial } = await import("../../lib/closeout/materials");
     expect(() => saveMaterial("p1", "old.xls", new Uint8Array([1, 2]))).toThrow(/xlsx/);

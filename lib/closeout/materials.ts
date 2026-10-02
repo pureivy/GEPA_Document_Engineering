@@ -12,6 +12,7 @@ import { basename, join } from "node:path";
 import { projectDir } from "../storage/paths";
 import { extractReferenceText, referenceExtension } from "../reference/extract";
 import { readCsv, readXlsx, sheetsToMarkdown } from "./sheet";
+import { unzipSync } from "fflate";
 
 export const MATERIAL_EXTENSIONS = [".xlsx", ".csv", ".hwp", ".hwpx", ".pdf", ".docx", ".md", ".txt", ".png", ".jpg", ".jpeg"] as const;
 export const MATERIAL_MAX_BYTES = 30 * 1024 * 1024;
@@ -80,6 +81,61 @@ export function saveMaterial(projectId: string, rawName: string, bytes: Uint8Arr
   writeFileSync(join(dir, "text", `${name}.note`), "direct" in t ? t.direct : "", "utf8");
   writeMaterialsIndex(projectId);
   return listMaterials(projectId).find((m) => m.name === name)!;
+}
+
+/** 압축 파일 한 개의 최대 크기 — 지급 공문 PDF 수십 건을 묶으면 200MB 안팎이 된다(실사용 2026-10-02) */
+export const ZIP_MAX_BYTES = 400 * 1024 * 1024;
+
+export function isZipName(name: string): boolean {
+  return /\.zip$/i.test(name);
+}
+
+/**
+ * zip 안의 파일 이름. UTF-8 표시(general purpose flag 11번 비트)가 없으면 fflate 는 바이트를 latin1 로
+ * 읽는다 — Windows 탐색기·반디집이 만든 zip 의 한글 이름은 대개 CP949 이므로 바이트로 되돌려 다시 읽는다.
+ */
+export function zipEntryName(raw: string): string {
+  if ([...raw].some((c) => c.charCodeAt(0) > 0xff)) return raw; // 이미 UTF-8 로 풀린 이름
+  if (!/[\x80-\xff]/.test(raw)) return raw; // ASCII
+  const bytes = Uint8Array.from([...raw].map((c) => c.charCodeAt(0)));
+  try {
+    return new TextDecoder("utf-8", { fatal: true }).decode(bytes);
+  } catch {
+    return new TextDecoder("euc-kr").decode(bytes);
+  }
+}
+
+/**
+ * zip 을 풀어 안의 자료를 하나씩 저장한다. 폴더 구조는 버리고 파일 이름만 쓴다(이름이 겹치면 폴더 이름을
+ * 앞에 붙인다). 받지 않는 형식·zip 속 zip·macOS 부산물은 건너뛰고 errors 로 알린다.
+ */
+export function saveZipMaterials(projectId: string, zipName: string, bytes: Uint8Array): { saved: string[]; errors: { name: string; message: string }[] } {
+  if (bytes.byteLength > ZIP_MAX_BYTES) throw new Error(`압축 파일이 너무 큽니다(400MB 이하): ${zipName}`);
+  const entries = unzipSync(bytes);
+  const saved: string[] = [];
+  const errors: { name: string; message: string }[] = [];
+  const used = new Set<string>();
+  for (const [rawPath, data] of Object.entries(entries)) {
+    const path = zipEntryName(rawPath).replace(/\\/g, "/");
+    if (path.endsWith("/") || path.startsWith("__MACOSX/") || /(^|\/)\.DS_Store$/.test(path) || /(^|\/)Thumbs\.db$/i.test(path)) continue;
+    const parts = path.split("/").filter(Boolean);
+    let name = safeMaterialName(parts[parts.length - 1] ?? "");
+    if (!name) continue;
+    if (used.has(name) && parts.length > 1) name = safeMaterialName(`${parts[parts.length - 2]}_${name}`);
+    used.add(name);
+    if (isZipName(name)) {
+      errors.push({ name: `${zipName}/${path}`, message: "압축 파일 안의 압축 파일은 풀지 않습니다 — 따로 올려 주세요" });
+      continue;
+    }
+    try {
+      saveMaterial(projectId, name, data);
+      saved.push(name);
+    } catch (e) {
+      errors.push({ name: `${zipName}/${path}`, message: (e as Error).message });
+    }
+  }
+  if (!saved.length && !errors.length) errors.push({ name: zipName, message: "압축 파일 안에 자료가 없습니다" });
+  return { saved, errors };
 }
 
 export function deleteMaterial(projectId: string, rawName: string): boolean {

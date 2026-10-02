@@ -7,7 +7,7 @@ import { useEffect, useState } from "react";
 import { FileSpreadsheet, Trash2, Upload } from "lucide-react";
 import { api, errorMessage, type MaterialDTO } from "@/lib/client/api";
 
-const ACCEPT = ".xlsx,.csv,.hwp,.hwpx,.pdf,.docx,.md,.txt,.png,.jpg,.jpeg";
+const ACCEPT = ".zip,.xlsx,.csv,.hwp,.hwpx,.pdf,.docx,.md,.txt,.png,.jpg,.jpeg";
 
 export function MaterialsPanel({ projectId, disabled }: { projectId: string; disabled?: boolean }) {
   const [items, setItems] = useState<MaterialDTO[] | null>(null);

@@ -24,7 +24,7 @@ const KIND_HINT: Record<ProjectKind, string> = {
 };
 
 /** 정산·결과보고 자료로 받는 형식 — lib/closeout/materials.ts MATERIAL_EXTENSIONS 와 같다 */
-const MATERIAL_ACCEPT = ".xlsx,.csv,.hwp,.hwpx,.pdf,.docx,.md,.txt,.png,.jpg,.jpeg";
+const MATERIAL_ACCEPT = ".zip,.xlsx,.csv,.hwp,.hwpx,.pdf,.docx,.md,.txt,.png,.jpg,.jpeg";
 
 /** 공문 수신유형 — OfficialMetaSchema 에서 그대로 가져온다(손으로 다시 적으면 둘이 갈라질 수 있다). export 는 드리프트 가드 테스트용. */
 export const RECIPIENT_KINDS = OfficialMetaSchema.shape.수신유형.options;
@@ -473,7 +473,7 @@ function NewProjectDialog({ onClose, onCreated }: { onClose: () => void; onCreat
             <div className="grid gap-2">
               <label className="flex cursor-pointer items-center gap-2 rounded border border-dashed border-slate-300 px-3 py-2 text-xs text-slate-700 hover:bg-slate-50">
                 <Upload className="h-4 w-4 text-slate-400" />
-                <span className="flex-1 truncate">파일 선택(여러 개) — .xlsx .csv .hwp .hwpx .pdf .docx .md .txt .png .jpg</span>
+                <span className="flex-1 truncate">파일 선택(여러 개) — 압축(.zip)도 됩니다 · .xlsx .csv .hwp .hwpx .pdf .docx .png .jpg</span>
                 <input
                   id="materials"
                   name="materials"
