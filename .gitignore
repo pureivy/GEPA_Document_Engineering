@@ -59,3 +59,6 @@ next-env.d.ts
 /.next-video/
 /video/
 /agent/.omc/
+
+# 정산보고서 참고본은 담당자가 실제로 낸 문서(개인정보·통장 사본 포함) — 저장소에 올리지 않는다
+/templates/settlement/reference.hwpx

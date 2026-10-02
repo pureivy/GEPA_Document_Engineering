@@ -9,7 +9,7 @@
  * docs/design-system/closeout-settlement.md §2(V1 「위탁사업 추진실적 및 정산보고서」)를 따른다.
  */
 import { parseLooseDate, thousands } from "../docmodel/format";
-import { computeLedger, ledgerDate, ledgerValues, money, executionRate, type Ledger, type LedgerResult } from "./ledger";
+import { computeLedger, ledgerValues, money, executionRate, type Ledger, type LedgerResult } from "./ledger";
 
 const esc = (s: string) => s.replace(/\|/g, "\\|").replace(/\r?\n/g, "<br>");
 const row = (cells: string[]) => `| ${cells.join(" | ")} |`;
@@ -26,56 +26,105 @@ function baseYear(l: Ledger): number | undefined {
   return [...count.entries()].sort((a, b) => b[1] - a[1])[0]?.[0];
 }
 
+/**
+ * 표 모양과 열 이름은 담당자가 실제로 낸 정산보고서(ESG·기업지원팀, 2025 향토뿌리기업 육성 사업)를 따른다.
+ * 너비는 참고본 칸 너비(HWPUNIT ÷ 100 = pt)다.
+ */
+
+/** 세부내역 날짜: 같은 해면 "05.20.", 아니면 "2026.01.05." (참고본 표기) */
+export function dotDate(s: string, year?: number): string {
+  const d = parseLooseDate(s);
+  if (!d) return s;
+  const mm = String(d.getMonth() + 1).padStart(2, "0");
+  const dd = String(d.getDate()).padStart(2, "0");
+  return year === undefined || d.getFullYear() === year ? `${mm}.${dd}.` : `${d.getFullYear()}.${mm}.${dd}.`;
+}
+
+/** 비목 칸: "사업비(민간사업지원금)" — 수수료는 세목만("대행수수료") */
+function 비목(군: string, 세목: string): string {
+  return 군 === "수수료" ? 세목 : `${군}(${세목})`;
+}
+
+/** 집행 건의 예산 줄 찾기(ledger.computeLedger 와 같은 규칙) */
+function lineOf(r: LedgerResult, e: Ledger["집행"][number]) {
+  const k = (s?: string) => (s ?? "").replace(/\s+/g, "");
+  const all = r.groups.flatMap((g) => g.lines);
+  return all.find((l) => k(l.세부사업) === k(e.세부사업) && k(l.세목) === k(e.세목)) ?? (!e.세부사업 ? all.filter((l) => k(l.세목) === k(e.세목)).at(0) : undefined);
+}
+
+function sortedSpend(r: LedgerResult) {
+  return [...r.ledger.집행].sort((a, b) => (parseLooseDate(a.일자)?.getTime() ?? 0) - (parseLooseDate(b.일자)?.getTime() ?? 0));
+}
+
+const SPEND_HEAD = row(["지출<br>일자", "지출액", "비목", "내역", "지급처", "지출<br>번호", "지급방법"]);
+const SPEND_ATTR = "{table role=generic font=10 header-font=10 widths=38,60,112,88,94,32,58}";
+
+function spendRow(r: LedgerResult, e: Ledger["집행"][number], year?: number): string {
+  const l = lineOf(r, e);
+  return row([dotDate(e.일자, year), thousands(e.금액), esc(비목(l?.비목군 ?? "", e.세목)), esc(e.내역), esc(e.지급처), esc(e.지출번호 === undefined ? "" : String(e.지출번호)), esc(e.지급방법)]);
+}
+
 function 총괄표(r: LedgerResult): string[] {
   const lines = [
     "(단위 : 원, %)",
-    "{table role=budget header-rows=2 widths=62,72,72,40,66,56,66,48}",
-    row(["구 분", "예 산 액", "지 출 액", "<", "집행잔액", "이 자<br>발생액", "반 납 액", "비고"]),
-    row(["^", "^", "금 액", "비 율", "^", "^", "^", "^"]),
-    row(["계", money(r.예산), money(r.집행), r.집행률, money(r.잔액), money(r.이자), money(r.반납액), ""]),
+    "{table role=budget header-rows=2 font=11 header-font=12 widths=72,82,82,48,66,66,66}",
+    row(["구 분", "예 산 액", "지 출 액", "<", "집행잔액", "이 자<br>발생액", "비 고"]),
+    row(["^", "^", "금액", "비율", "^", "^", "^"]),
+    row(["계", money(r.예산), money(r.집행), r.집행률, money(r.잔액), money(r.이자), ""]),
   ];
   for (const s of r.재원) {
     const name = r.재원.length === 1 ? r.ledger.재원명 : s.이름;
-    lines.push(row([esc(name), money(s.예산), money(s.집행), executionRate(s.집행, s.예산), money(s.잔액), money(s.이자), money(s.반납액), ""]));
+    lines.push(row([esc(name), money(s.예산), money(s.집행), executionRate(s.집행, s.예산), money(s.잔액), money(s.이자), ""]));
   }
-  const 자 = r.ledger.자부담;
-  lines.push(row(["자부담", money(자), "-", "-", "-", "-", "-", ""]));
+  // 자부담이 없으면 행을 두지 않는다(참고본)
+  if (r.ledger.자부담) lines.push(row(["자부담", money(r.ledger.자부담), "-", "-", "-", "-", ""]));
   return lines;
 }
 
+/** 시간순 집행 현황 — 참고본 「② 위탁사업비 집행현황」 첫 표 */
+function 집행현황(r: LedgerResult): string[] {
+  const year = baseYear(r.ledger);
+  return ["(단위: 원)", SPEND_ATTR, SPEND_HEAD, ...sortedSpend(r).map((e) => spendRow(r, e, year)), row(["계", thousands(r.집행), "", "", "", "", ""])];
+}
+
+/** 항목별 집행 현황 — 비목군별 당초·최종 예산, 실제 집행액, 잔액 */
 function 항목별(r: LedgerResult): string[] {
-  const out = ["(단위 : 원)", "{table role=budget widths=70,110,76,76,76,74}", row(["구 분", "항 목", "예 산 액", "집 행 액", "집행잔액", "비 고"])];
-  for (const g of r.groups) {
-    g.lines.forEach((l, i) => out.push(row([i === 0 ? g.비목군 : "^", esc(l.세목), money(l.예산), money(l.집행), money(l.잔액), ""])));
-    if (g.lines.length > 1) out.push(row(["^", "소 계", money(g.예산), money(g.집행), money(g.잔액), ""]));
-  }
-  out.push(row(["합 계", "<", money(r.예산), money(r.집행), money(r.잔액), ""]));
+  const out = ["(단위: 원)", "{table role=budget font=11 header-font=11 widths=75,104,104,104,95}", row(["항목", "당초예산(변경전)", "최종예산(변경후)", "실제 집행액", "잔 액"])];
+  for (const g of r.groups) out.push(row([g.비목군, money(g.당초예산), money(g.예산), money(g.집행), money(g.잔액)]));
+  out.push(row(["합계", money(r.groups.reduce((a, g) => a + g.당초예산, 0)), money(r.예산), money(r.집행), money(r.잔액)]));
   return out;
 }
 
+/**
+ * 집행 세부내역 — 예산 줄(세부사업·세목)마다 "❍ (비목군) 이름(집행액: N원)" 머리와 표를 둔다.
+ * 집행이 없는 줄은 건너뛴다. 참고본은 이 머리를 손으로 적다가 금액을 틀렸다("38.677.110원") — 여기서는 계산한다.
+ */
 function 세부내역(r: LedgerResult): string[] {
   const year = baseYear(r.ledger);
-  const sorted = [...r.ledger.집행].sort((a, b) => (parseLooseDate(a.일자)?.getTime() ?? 0) - (parseLooseDate(b.일자)?.getTime() ?? 0));
-  const out = ["(단위 : 원)", "{table role=generic font=9 header-font=9 widths=44,62,66,130,90,32,58}", row(["일 자", "인 출 액", "비 목", "내 역", "지 급 처", "번호", "지급방법"])];
-  for (const e of sorted) {
-    out.push(row([ledgerDate(e.일자, year), thousands(e.금액), esc(e.세목), esc(e.내역), esc(e.지급처), esc(e.지출번호 === undefined ? "" : String(e.지출번호)), esc(e.지급방법)]));
+  const spend = sortedSpend(r);
+  const out: string[] = [];
+  for (const g of r.groups) {
+    for (const l of g.lines) {
+      const mine = spend.filter((e) => lineOf(r, e) === l);
+      if (!mine.length) continue;
+      out.push(`❍ (${g.비목군}) ${esc(l.세부사업 ?? l.세목)}(집행액: ${thousands(l.집행)}원)`);
+      out.push("(단위: 원)", SPEND_ATTR, SPEND_HEAD, ...mine.map((e) => spendRow(r, e, year)));
+    }
   }
-  out.push(row(["계", thousands(r.집행), "", "", "", "", ""]));
-  out.push("※ 내부품의서, 지출결의서, 각종 영수증, 회계장부, 통장 등 세부증빙자료는 별도 편철 제출");
   return out;
 }
 
+/** 사업 및 소요경비배분 변경내역 — 당초예산과 다른 줄만. 없으면 "해 당 없 음" */
 function 변경내역(r: LedgerResult): string[] {
   const changed = r.ledger.예산.filter((b) => b.당초예산 !== undefined && b.당초예산 !== b.예산);
-  const out = ["(단위 : 원)", "{table role=generic widths=90,60,70,70,130,62}", row(["세 부 내 용", "비 목", "당초예산", "변경예산", "주요 변경사유", "승인여부"])];
+  const out = ["(단위: 원)", "{table role=generic font=11 header-font=11 widths=112,82,66,66,110,46}", row(["항목", "비 목", "당초예산", "변경예산", "주요 변경사유", "승인<br>여부"])];
   if (!changed.length) out.push(row(["해 당 없 음", "<", "<", "<", "<", "<"]));
-  for (const b of changed) out.push(row([esc(b.세목), b.비목군, money(b.당초예산 ?? 0), money(b.예산), esc(b.변경사유 ?? ""), esc(b.승인 ?? "")]));
-  out.push("※ 승인여부 : 위탁기관 승인, 자체변경(내부 결재문서 사본 첨부)으로 구분 기재");
+  for (const b of changed) out.push(row([esc(b.세부사업 ?? b.비목군), esc(b.세목), money(b.당초예산 ?? 0), money(b.예산), esc(b.변경사유 ?? ""), esc(b.승인 ?? "여")]));
   return out;
 }
 
 function 잔액사유(r: LedgerResult): string[] {
-  const out = ["(단위 : 원)", "{table role=generic widths=92,72,72,72,68,106}", row(["구 분", "세부사업<br>내용", "예 산 액", "지 출 액", "집행잔액", "발 생 사 유"])];
+  const out = ["(단위: 원)", "{table role=generic widths=92,72,72,72,68,106}", row(["구 분", "세부사업<br>내용", "예 산 액", "지 출 액", "집행잔액", "발 생 사 유"])];
   out.push(row(["합 계", "<", money(r.예산), money(r.집행), money(r.잔액), ""]));
   r.groups.forEach((g, i) => {
     const reasons = [...new Set(g.lines.map((l) => l.잔액사유?.trim()).filter((s): s is string => !!s))];
@@ -87,22 +136,22 @@ function 잔액사유(r: LedgerResult): string[] {
 }
 
 /**
- * 공문 본문의 정산내역 표. 마지막 열 이름은 받는 곳에 따라 갈린다(closeout-cover.md §2.6):
- * 도 수신은 "통장잔액"(반납은 도의 정산확정 통보를 기다린다), 시군 수신은 "반납액"이 기본이다.
+ * 공문 본문의 정산내역 표 — 담당자 공문(ESG·기업지원팀-3629·3630) 그대로 Ⓐ~Ⓓ 첨자, 마지막 열 "통장잔액".
+ * `열=반납액` 을 주면 마지막 열 이름만 바꾼다(시군이 반납 의사를 요구할 때).
  */
 function 공문표(r: LedgerResult, args: MacroArgs = {}): string[] {
-  const last = args.열 === "통장잔액" ? "통장잔액" : "반납액";
-  const head = ["교부금(A)", "집행액(B)", "사업비 잔액<br>(C)=(A)-(B)", "예금이자<br>(D)", `${last}<br>(C)+(D)`, "비 고"];
+  const last = args.열 === "반납액" ? "반납액" : "통장잔액";
+  const head = ["교부금<br>Ⓐ", "집행액<br>Ⓑ", "사업비잔액<br>Ⓒ=Ⓐ-Ⓑ", "예금이자<br>Ⓓ", `${last}<br>Ⓒ+Ⓓ`];
   if (r.재원.length === 1) {
-    return ["(단위 : 원)", "{table role=budget}", row(head), row([money(r.예산), money(r.집행), money(r.잔액), money(r.이자), money(r.반납액), ""])];
+    return ["(단위: 원)", "{table role=budget}", row(head), row([money(r.예산), money(r.집행), money(r.잔액), money(r.이자), money(r.반납액)])];
   }
-  const out = ["(단위 : 원)", "{table role=budget}", row(["구 분", ...head]), row(["합 계", money(r.예산), money(r.집행), money(r.잔액), money(r.이자), money(r.반납액), ""])];
-  for (const s of r.재원) out.push(row([esc(s.이름), money(s.예산), money(s.집행), money(s.잔액), money(s.이자), money(s.반납액), ""]));
+  const out = ["(단위: 원)", "{table role=budget}", row(["구 분", ...head]), row(["합 계", money(r.예산), money(r.집행), money(r.잔액), money(r.이자), money(r.반납액)])];
+  for (const s of r.재원) out.push(row([esc(s.이름), money(s.예산), money(s.집행), money(s.잔액), money(s.이자), money(s.반납액)]));
   return out;
 }
 
 export type MacroArgs = Record<string, string>;
-export const LEDGER_TABLES: Record<string, (r: LedgerResult, args?: MacroArgs) => string[]> = { 총괄표, 항목별, 세부내역, 변경내역, 잔액사유, 공문표 };
+export const LEDGER_TABLES: Record<string, (r: LedgerResult, args?: MacroArgs) => string[]> = { 총괄표, 집행현황, 항목별, 세부내역, 변경내역, 잔액사유, 공문표 };
 export const LEDGER_TABLE_NAMES = Object.keys(LEDGER_TABLES);
 
 const LINE_RE = /^\s*\{\{\s*정산\s*:\s*([^\s}]+)((?:\s+[^\s=}]+=[^\s}]+)*)\s*\}\}\s*$/;

@@ -37,6 +37,10 @@ export interface FamilyStyle {
    */
   tableFont?: FontRole | string;
   anchorFont?: FontRole | string;
+  /** 표 모양 덮어쓰기 — 역할별 기본값 위에 얹는다(tableDefaults). 정산보고서의 참고본 표 양식 */
+  tableLook?: Partial<TableDefaults>;
+  /** 금액·숫자만 든 본문 칸을 오른쪽 정렬(정산보고서 참고본). 기본은 기존 규칙(짧으면 가운데) */
+  numericRight?: boolean;
   /** "gov" = 행정업무운영 편람 2타 사다리(□0 ㅇ2 -4 ·6); default "gepa" = reference-document habit */
   ladder?: Ladder;
   /** 문단 위 간격 (HWPUNIT, 100 = 1pt) per level: □ / ㅇ / everything else (- · ※ * plain) */
@@ -213,7 +217,24 @@ export interface TableDefaults {
   headerBottomMm?: number;
 }
 
+/**
+ * family 별 표 모양 덮어쓰기(`FamilyStyle.tableLook`)를 역할별 기본값 **위에** 얹는다. 표의 DSL 속성
+ * (`{table header-fill=…}`)은 여전히 앞선다 — tableLook 은 그 속성이 없을 때의 집안 양식이다.
+ */
 export function tableDefaults(ctx: WriterContext, fs: FamilyStyle, b: TableBlock): TableDefaults {
+  const d = roleTableDefaults(ctx, fs, b);
+  if (!fs.tableLook) return d;
+  const s: TableStyle = b.style ?? {};
+  const look = { ...fs.tableLook };
+  if (s.headerFill) delete look.headerFill;
+  if (s.totalFill) delete look.totalFill;
+  if (s.fontPt) delete look.fontPt;
+  if (s.headerFontPt) delete look.headerFontPt;
+  if (s.lineSpacing) delete look.lineSpacing;
+  return { ...d, ...look };
+}
+
+function roleTableDefaults(ctx: WriterContext, fs: FamilyStyle, b: TableBlock): TableDefaults {
   const s: TableStyle = b.style ?? {};
   const rule = fs.tableHeaderRuleMm;
   const base: TableDefaults = {
@@ -299,7 +320,8 @@ export function emitTable(ctx: WriterContext, fs: FamilyStyle, b: TableBlock): X
       const bold = c.bold ?? isHeader;
       const text = inlineText(c.inlines);
       // first (구분) column is always centred (user 2026-09-16); other body cells centre when short, justify when long
-      const alignDefault: ParaSpec["align"] = isHeader ? "CENTER" : c.align ? (c.align.toUpperCase().replace("BOTH", "JUSTIFY") as ParaSpec["align"]) : ci === 0 || text.length <= 8 || b.role === "docs" ? "CENTER" : "JUSTIFY";
+      const numeric = !!fs.numericRight && !isHeader && ci > 0 && /^[\s\-△+]*[\d,]+(\.\d+)?\s*$/.test(text) && /\d{1,3}(,\d{3})+|\d{4,}/.test(text);
+      const alignDefault: ParaSpec["align"] = isHeader ? "CENTER" : numeric ? "RIGHT" : c.align ? (c.align.toUpperCase().replace("BOTH", "JUSTIFY") as ParaSpec["align"]) : ci === 0 || text.length <= 8 || b.role === "docs" ? "CENTER" : "JUSTIFY";
       const paraPr = ctx.reg.paraPr({ align: alignDefault, lineSpacing: d.lineSpacing });
       const base: CharSpec = { font: fs.tableFont ?? "table", pt, bold };
       // paragraphs: split on '\n' (from br inlines or literal newlines)

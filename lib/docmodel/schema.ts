@@ -6,7 +6,7 @@
 import { z } from "zod";
 import { DELEGATION_LEVELS, DEFAULT_DELEGATION, INSTITUTION_HEAD_TITLE } from "../org";
 
-export const FamilySchema = z.enum(["plan", "notice", "press", "official", "report"]);
+export const FamilySchema = z.enum(["plan", "notice", "press", "official", "report", "settlement"]);
 export type Family = z.infer<typeof FamilySchema>;
 
 export const GlyphSchema = z.enum(["□", "ㅇ", "○", "◦", "●", "-", "·", "※", "*", "❖", "◇", "■", "✔", "❍", "▪", "∙", "❶", "❷", "❸", "❹", "none"]);
@@ -364,12 +364,24 @@ export const ReportMetaSchema = z.object({
 });
 export type ReportMeta = z.infer<typeof ReportMetaSchema>;
 
+/**
+ * 정산보고서 — 위탁기관 서식 「지방위탁사업비 사업추진실적 및 정산보고서」. 참고본은 담당자가 실제로 낸
+ * 정산보고서(ESG·기업지원팀, 2025 향토뿌리기업 육성 사업)다. 표지에 나가는 제목만 메타로 받고, 나머지
+ * (사업명 줄·총괄표·제출자·연락처 상자)는 본문이 그린다. `ReportMetaSchema` 와 같이 맨 z.object 로 둔다.
+ */
+export const SettlementMetaSchema = z.object({
+  제목: z.string().default("지방위탁사업비 사업추진실적 및 정산보고서"),
+  부서: z.string().default(""),
+});
+export type SettlementMeta = z.infer<typeof SettlementMetaSchema>;
+
 export const DocModelSchema = z.discriminatedUnion("family", [
   z.object({ version: z.literal(1), family: z.literal("notice"), meta: NoticeMetaSchema, blocks: z.array(BlockSchema) }),
   z.object({ version: z.literal(1), family: z.literal("plan"), meta: PlanMetaSchema, blocks: z.array(BlockSchema) }),
   z.object({ version: z.literal(1), family: z.literal("press"), meta: PressMetaSchema, blocks: z.array(BlockSchema) }),
   z.object({ version: z.literal(1), family: z.literal("official"), meta: OfficialMetaSchema, blocks: z.array(BlockSchema) }),
   z.object({ version: z.literal(1), family: z.literal("report"), meta: ReportMetaSchema, blocks: z.array(BlockSchema) }),
+  z.object({ version: z.literal(1), family: z.literal("settlement"), meta: SettlementMetaSchema, blocks: z.array(BlockSchema) }),
 ]);
 export type DocModel = z.infer<typeof DocModelSchema>;
 export type NoticeDoc = Extract<DocModel, { family: "notice" }>;
@@ -377,6 +389,7 @@ export type PlanDoc = Extract<DocModel, { family: "plan" }>;
 export type PressDoc = Extract<DocModel, { family: "press" }>;
 export type OfficialDoc = Extract<DocModel, { family: "official" }>;
 export type ReportDoc = Extract<DocModel, { family: "report" }>;
+export type SettlementDoc = Extract<DocModel, { family: "settlement" }>;
 
 export function inlineText(inlines: Inline[]): string {
   return inlines.map((i) => (i.t === "br" ? "\n" : i.text)).join("");

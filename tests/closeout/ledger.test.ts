@@ -93,14 +93,22 @@ describe("expandLedgerMacros", () => {
     const parsed = parseDsl(text);
     expect(parsed.warnings).toEqual([]);
     const tables = parsed.doc.blocks.filter((b) => b.k === "table");
-    expect(tables).toHaveLength(LEDGER_TABLE_NAMES.length);
+    // 세부내역은 예산 줄(집행이 있는 것)마다 표 하나 — ESG-1024 는 4줄이라 표 4개
+    expect(tables).toHaveLength(LEDGER_TABLE_NAMES.length - 1 + 4);
   });
 
-  it("세부내역 표의 계 행은 원장 합계다", () => {
-    const { text } = expandLedgerMacros("{{정산:세부내역}}", esg1024());
+  it("집행현황은 시간순, 계 행은 원장 합계, 비목은 비목군(세목)", () => {
+    const { text } = expandLedgerMacros("{{정산:집행현황}}", esg1024());
     expect(text).toContain("| 계 | 18,319,100 |");
-    expect(text).toContain("| 04-07 | 4,250,000 | 행사운영비 |");
-    expect(text).toContain("{table role=generic font=9");
+    expect(text).toContain("| 04.07. | 4,250,000 | 사업비(행사운영비) |");
+    expect(text).toContain("| 12.24. | 1,640,000 | 대행수수료 |");
+  });
+
+  it("세부내역은 예산 줄마다 ❍ 머리(집행액 계산)와 표", () => {
+    const { text } = expandLedgerMacros("{{정산:세부내역}}", esg1024());
+    expect(text).toContain("❍ (사업비) 행사운영비(집행액: 15,677,500원)");
+    expect(text).toContain("❍ (운영비) 국내여비(집행액: 701,600원)");
+    expect(text).toContain("{table role=generic font=10");
   });
 
   it("변경이 없으면 '해 당 없 음' 한 행", () => {

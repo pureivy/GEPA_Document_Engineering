@@ -98,4 +98,14 @@ export const DOC_FAMILIES: Record<Family, DocFamilyDef> = {
     // 공문의 `끝.` 은 시행규칙 제4조제5항의 법정 요구사항이고 업무보고에는 없다
     requiresClosingMark: false,
   },
+  settlement: {
+    // 참고본(담당자가 낸 정산보고서) 실측: 글머리 앞 반각 공백 □1 ○2 -3 ❍3
+    indent: { "□": 1, "ㅇ": 2, "○": 2, "◦": 2, "❍": 3, "-": 3, "·": 4, "※": 2, "*": 2 },
+    noteIndentUnderItem: undefined,
+    docTitle: (doc) => (doc.meta as Extract<DocModel, { family: "settlement" }>["meta"]).제목,
+    exportBaseName: (doc) => (doc.meta as Extract<DocModel, { family: "settlement" }>["meta"]).제목,
+    headingStyle: "chapterChip",
+    // 위탁기관이 정한 제출 서식이다 — 기안문이 아니라 `끝.` 을 쓰지 않는다
+    requiresClosingMark: false,
+  },
 };

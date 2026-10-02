@@ -25,7 +25,7 @@ export const STAGE_LABEL: Record<Stage, string> = {
  * 보고서형(결재란·Ⅰ□ㅇ)이고, 정산보고서도 같은 템플릿에 `표지: 없음` 으로 위탁기관 서식을 그린다.
  * 제출 공문은 별지 제1호 기안문 그대로다. `ledger`(정산자료)는 문서가 아니다 — research 처럼 파일을 남긴다.
  */
-export const STAGE_FAMILY: Partial<Record<Stage, Family>> = { plan: "plan", notice: "notice", press: "press", official: "official", report: "report", result: "plan", settlement: "plan", submit: "official" };
+export const STAGE_FAMILY: Partial<Record<Stage, Family>> = { plan: "plan", notice: "notice", press: "press", official: "official", report: "report", result: "plan", settlement: "settlement", submit: "official" };
 /**
  * 문서가 아니라 마크다운 노트를 남기는 단계와 그 파일 — 화면은 이 파일을 보여 준다.
  * research 의 notes.md 는 에이전트가, ledger 의 summary.md 는 플랫폼이 원장을 계산해 쓴다.

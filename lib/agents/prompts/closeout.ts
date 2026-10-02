@@ -52,12 +52,15 @@ export function closeoutStagePrompt(stage: Extract<Stage, "ledger" | "result" | 
     case "settlement":
       return {
         systemPromptAppend: role("정산보고서 작성자 — 위탁기관 서식 「위탁사업 추진실적 및 정산보고서」를 채운다. 표는 모두 매크로이고, 쓰는 것은 서술 칸뿐이다"),
-        prompt: `${brief}\n작업 폴더: ${ws}\n\n${ws}/ledger/summary.md, ${ws}/result/draft.dsl.md(있으면 — 결과보고서), ${ws}/materials/index.md 의 사업계획서를 읽고 정산보고서를 작성하라.
-- ${SKILL} §3 의 틀을 **그대로** 쓴다(front-matter 의 표지: 없음, numbering: arabic 포함). {재원명}은 summary.md 의 재원명과 같게 쓴다.
-- 제출자: 대표자는 원장 성명을 한 글자씩 띄워 쓰고, 실무책임자·연락처·주소는 위 담당 줄의 값을 옮긴다(없는 칸은 비운다). 귀하 줄은 "${project.contact.수신 ? project.contact.수신.replace(/\(.*\)$/, "").trim() : "(위탁기관장)"} 귀하".
-- 제출일은 "${new Date().getFullYear()}년 ${new Date().getMonth() + 1}월    일" 처럼 일을 비워 둔다(직인일).
-- 사업개요(요약) 표의 사업목적·추진실적·사업성과·활용계획, 계획 대비 추진실적, 자체평가, 개선 및 건의사항만 쓴다 — 결과보고서와 같은 사실을 더 짧게(칸마다 1~2줄).
-- ${ledgerRule}${DOC_CONTRACT("settlement", "plan")}${resume}`,
+        prompt: `${brief}
+작업 폴더: ${ws}
+
+${ws}/ledger/summary.md, ${ws}/result/draft.dsl.md(있으면 — 결과보고서), ${ws}/materials/index.md 의 사업계획서·지원 실적 자료를 읽고 정산보고서를 작성하라.
+- ${SKILL} §3 의 틀을 **그대로** 쓴다(front-matter family: settlement). 재원명은 summary.md 의 재원명과 같게 쓴다.
+- 제출일 줄은 "${new Date().getFullYear()}년 ${new Date().getMonth() + 1}월 ${new Date().getDate()}일", 제출자 줄은 "제출자: (재)경상북도경제진흥원 (직인)". 연락처 상자(\`\`\`box)의 실무책임자·전화·전송·이메일·주소는 위 담당 줄의 값을 옮기고, 없는 칸은 "-" 로 둔다.
+- 사업개요(요약) 표의 사업목적·추진실적·사업성과·문제점 및 건의, 계획 대비 추진실적 표, 사업 추진 성과(세부사업별 □ 블록과 기업별 지원 현황 표)만 쓴다 — 결과보고서와 같은 사실을 더 짧게.
+- 정산 표(총괄표·집행현황·항목별·세부내역·변경내역)는 매크로 한 줄씩이다. 직접 표를 만들지 않는다.
+- ${ledgerRule}${DOC_CONTRACT("settlement", "settlement")}${resume}`,
         allowedTools: ["Read", "Write", "Glob", "Grep"],
         maxTurns: 25,
       };
@@ -65,11 +68,14 @@ export function closeoutStagePrompt(stage: Extract<Stage, "ledger" | "result" | 
       const province = isProvince(project.contact.수신);
       return {
         systemPromptAppend: role("제출 공문 작성자 — 결과보고서·정산보고서를 붙여 위탁기관에 보내는 별지 제1호 기안문을 쓴다. .claude/skills/gepa-official-design/SKILL.md 의 front-matter·두문/결문 규격도 따른다. 시행번호·접수번호는 만들지 않는다"),
-        prompt: `${brief}\n작업 폴더: ${ws}\n\n${ws}/ledger/summary.md 와 ${ws}/result/draft.dsl.md(결과보고서 요지)를 읽고 「${project.title}」 결과 및 정산보고 공문을 작성하라.
-- front-matter: 수신유형 수신자, 수신 ${project.contact.수신 ?? "(위 수신 줄)"}, 제목 「${project.title}」 결과 및 정산보고, 처리과 ${project.contact.부서명}. 전결·공개구분·연락처(전송·우편번호·홈페이지)는 위 줄에 있는 값만 옮기고 없으면 적지 않는다. 발신명의·결재라인은 비워 둔다.
-- 붙임: [정산보고서 1부., 결과보고서 1부., 통장 거래내역 1부., 지출증빙자료 1식(별송).] — 본문에 직접 타이핑하지 않는다.
-- 본문은 ${SKILL} §4 골격. **본문 첫 줄은 "1. ", 둘째 항은 "2. " 로 번호를 직접 적어 시작한다**(그 아래 가. → 1) 순). 인사말은 "${province ? "경상북도의 무궁한 발전을 기원합니다." : "귀 기관의 무궁한 발전을 기원합니다."}", 정산내역의 첫 줄은 "${province ? "1) 통장잔액: {{정산:반납액한글}}" : "1) 반납액: {{정산:반납액한글}}"}", 표는 ${province ? "{{정산:공문표 열=통장잔액}}" : "{{정산:공문표}}"} 한 줄.
-- 추진실적 한 줄은 결과보고서의 요지에서 옮긴다(수치는 거기 있는 것만).
+        prompt: `${brief}
+작업 폴더: ${ws}
+
+${ws}/ledger/summary.md 와 ${ws}/result/draft.dsl.md(결과보고서 요지)를 읽고 「${project.title}」 정산 보고 공문을 작성하라.
+- front-matter: 수신유형 수신자, 수신 ${project.contact.수신 ?? "(위 수신 줄)"}, 제목 ${project.title} 정산 보고, 처리과 ${project.contact.부서명}. 전결·공개구분·연락처(전송·우편번호·홈페이지)는 위 줄에 있는 값만 옮기고 없으면 적지 않는다. **발신명의·결재라인은 비워 둔다** — 밖으로 나가는 공문은 작성기가 기관장 명의로 채운다.
+- 붙임: ["${project.title} 정산보고서 1부.", "${project.title} 결과보고서 1부.", "${project.title} 증빙자료(별첨) 1식."] — 본문에 직접 타이핑하지 않는다.
+- 본문은 ${SKILL} §4 골격. **본문 첫 줄은 "1. ", 둘째 항은 "2. " 로 번호를 직접 적어 시작한다**(그 아래 가. → 1) 순). 인사말은 "${province ? "경상북도의 무궁한 발전을 기원합니다." : "귀 기관의 무궁한 발전을 기원합니다."}". 정산내역의 첫 줄은 "1) 통장잔액: {{정산:반납액한글}}", 표는 {{정산:공문표}} 한 줄.
+- 사업내용 한 줄은 결과보고서의 요지에서 옮긴다(수치는 거기 있는 것만).
 - ${ledgerRule}${DOC_CONTRACT("submit", "official")}${resume}`,
         allowedTools: ["Read", "Write", "Glob", "Grep"],
         maxTurns: 20,

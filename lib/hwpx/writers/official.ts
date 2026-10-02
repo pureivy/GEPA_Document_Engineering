@@ -11,7 +11,7 @@
 import { childrenNamed, findFirst, isNode, type XmlNode } from "../xml";
 import { paragraph } from "../emit/paragraph";
 import { loadGeometry, cloneFragment, setCellText } from "../geometry";
-import { approvalLineFor, approvalLineUpTo, departmentFullName, senderTitleFor } from "../../org";
+import { approvalLineFor, approvalLineUpTo, departmentFullName, findUnit, INSTITUTION_HEAD_TITLE, senderTitleFor } from "../../org";
 import { leadingSpaces, manualMarkerIndent } from "../../docmodel/indent";
 import { inlineText, officialMetaProblems, type Block, type Inline, type OfficialDoc, type OfficialMeta } from "../../docmodel/schema";
 import type { CharSpec } from "../registry";
@@ -298,6 +298,10 @@ function 결재라인(ctx: WriterContext, m: OfficialMeta): string[] {
  */
 function 발신명의(ctx: WriterContext, m: OfficialMeta, line: string[]): string {
   if (m.발신명의.trim()) return m.발신명의.trim();
+  // 밖으로 나가는 공문(수신자·수신자참조)은 전결과 관계없이 **기관장 명의**다 — 전결은 결재란을
+  // 어디서 끊는지만 정한다(담당자 지시 2026-10-02; 실문서 ESG·기업지원팀-3629·3630: 본부장 전결,
+  // 발신명의 "(재)경상북도경제진흥원장"). 실·단장 명의는 내부결재에서만 쓴다.
+  if (m.수신유형 !== "내부결재" && !isInternalRecipient(m)) return INSTITUTION_HEAD_TITLE;
   const last = line[line.length - 1];
   const title = senderTitleFor(last, m.처리과);
   if (title) return title;
@@ -311,6 +315,22 @@ function 발신명의(ctx: WriterContext, m: OfficialMeta, line: string[]): stri
       : `발신명의가 비어 있고 처리과 "${m.처리과}"로 부서를 찾지 못해 빈 칸으로 두었습니다`,
   });
   return derived;
+}
+
+/**
+ * 받는 곳이 모두 진흥원 안인가 — "전부서", 진흥원의 팀·실·지소 이름, 또는 기관명 없이 직위만 적은 수신
+ * (경영지원팀장, 본부장). 안이면 보조기관(전결권자) 명의, 밖(경상북도지사·○○시장·다른 기관)이면 기관장 명의다.
+ */
+export function isInternalRecipient(m: Pick<OfficialMeta, "수신" | "수신자">): boolean {
+  const names = [m.수신 ?? "", ...(m.수신자 ?? [])].map((s) => s.trim()).filter(Boolean);
+  if (!names.length) return false;
+  return names.every((n) => {
+    const base = n.replace(/\(.*\)$/, "").trim();
+    if (/^(전\s*부서|각\s*(팀|부서|실)|진흥원\s*전\s*직원)/.test(base)) return true;
+    if (/(도지사|시장|군수|구청장|교육감|대표|이사장|위원장|센터장|회장|청장|총장|병원장)$/.test(base)) return false;
+    if (findUnit(base.replace(/(장|팀장|실장|지소장|단장)$/, ""))) return true;
+    return /^(원장|본부장|실장|단장|팀장|지소장)$/.test(base) || /(본부장|실장|단장|팀장|지소장)$/.test(base) && !/[(\s]/.test(base);
+  });
 }
 
 // ---- 조각 다듬기 ---------------------------------------------------------------------------

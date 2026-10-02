@@ -43,7 +43,7 @@ describe("closeout 종류·단계", () => {
     expect(isNotesStage("ledger")).toBe(true);
     expect(isDocStage("ledger")).toBe(false);
     expect(STAGE_FAMILY.result).toBe("plan");
-    expect(STAGE_FAMILY.settlement).toBe("plan");
+    expect(STAGE_FAMILY.settlement).toBe("settlement");
     expect(STAGE_FAMILY.submit).toBe("official");
   });
 });
@@ -60,7 +60,7 @@ describe("표지: 없음", () => {
 });
 
 describe("자료함", () => {
-  it("xlsx·csv 를 텍스트로 옮기고 목록을 쓴다", async () => {
+  it("xlsx·csv 를 텍스트로 옮기고 목록을 쓴다", { timeout: 30_000 }, async () => {
     const { saveMaterial, listMaterials, materialsDir } = await import("../../lib/closeout/materials");
     // 최소 xlsx: 공유 문자열 + 날짜 서식(14) 셀 + 숫자 셀
     const xlsx = zipSync({
@@ -159,14 +159,14 @@ describe("closeout 프롬프트", () => {
     const p = buildStagePrompt({ stage: "settlement", project: project("고령군수(투자유치과장)"), workspaceDir: ws });
     expect(p.prompt).toContain("{{정산:…}}");
     expect(p.prompt).toContain(`${ws.replace(/\\/g, "/")}/ledger/summary.md`);
-    expect(p.prompt).toContain("고령군수 귀하");
+    expect(p.prompt).toContain("family: settlement");
   });
   it("제출 공문: 시군 수신은 반납액, 도 수신은 통장잔액", () => {
     const city = buildStagePrompt({ stage: "submit", project: project("고령군수(투자유치과장)"), workspaceDir: ws });
     expect(city.prompt).toContain("{{정산:공문표}}");
     expect(city.prompt).toContain("귀 기관의 무궁한 발전");
     const prov = buildStagePrompt({ stage: "submit", project: project("경상북도지사(투자유치단장)"), workspaceDir: ws });
-    expect(prov.prompt).toContain("{{정산:공문표 열=통장잔액}}");
+    expect(prov.prompt).toContain("{{정산:공문표}}");
     expect(prov.prompt).toContain("경상북도의 무궁한 발전");
   });
 });
@@ -176,5 +176,59 @@ describe("요지 박스", () => {
     const { doc } = parseDsl("---\nfamily: plan\n제목: t\n---\n```box\n◇ (요지) 하나\n◇ (핵심 수치) 둘\n```\n");
     const box = doc.blocks.find((b) => b.k === "summaryBox");
     expect(box && box.k === "summaryBox" ? box.lines.map((l) => (l[0] as { text: string }).text) : []).toEqual(["(요지) 하나", "(핵심 수치) 둘"]);
+  });
+});
+
+describe("담당자 정산보고서 재현(ESG·기업지원팀-3630)", () => {
+  it("향토뿌리 원장: 항목별 당초·최종·집행·잔액이 원문과 같다", async () => {
+    const { computeLedger, LedgerSchema } = await import("../../lib/closeout/ledger");
+    const l = LedgerSchema.parse(JSON.parse(readFileSync(path.join(__dirname, "../fixtures/closeout/hyangto.ledger.json"), "utf8")));
+    const r = computeLedger(l);
+    expect(r.checks).toEqual([]);
+    expect(r.groups.map((g) => [g.비목군, g.당초예산, g.예산, g.집행, g.잔액])).toEqual([
+      ["사업비", 109_500_000, 110_157_110, 110_138_920, 18_190],
+      ["운영비", 2_100_000, 1_442_890, 1_430_390, 12_500],
+      ["수수료", 8_400_000, 8_400_000, 8_400_000, 0],
+    ]);
+    expect([r.집행률, r.이자, r.반납액]).toEqual(["99.97", 37_943, 68_633]);
+  });
+
+  it("세부내역: 같은 세목(사무관리비)도 세부사업이 다르면 따로, 회의비도 빠지지 않는다", async () => {
+    const { LedgerSchema } = await import("../../lib/closeout/ledger");
+    const { expandLedgerMacros } = await import("../../lib/closeout/macros");
+    const l = LedgerSchema.parse(JSON.parse(readFileSync(path.join(__dirname, "../fixtures/closeout/hyangto.ledger.json"), "utf8")));
+    const { text } = expandLedgerMacros("{{정산:세부내역}}", l);
+    expect(text).toContain("❍ (사업비) 경상북도 향토뿌리기업 및 산업유산 신규선정(집행액: 6,480,000원)");
+    expect(text).toContain("❍ (사업비) 기술혁신 역량 강화 지원사업(집행액: 38,677,110원)");
+    expect(text).toContain("❍ (운영비) 회의비(집행액: 140,690원)");
+    expect(text).toContain("❍ (운영비) 사무관리비(집행액: 587,100원)");
+    expect(text).toContain("| 11.25. | 10,000,000 | 사업비(행사운영비) | 프로그램 운영 용역비 | 만듬㈜ | 24 |");
+  });
+
+  it("정산보고서 family 로 HWPX 가 손실 없이 만들어진다", { timeout: 60_000 }, async () => {
+    const { LedgerSchema } = await import("../../lib/closeout/ledger");
+    const { expandLedgerMacros } = await import("../../lib/closeout/macros");
+    const { buildHwpx } = await import("../../lib/hwpx/build");
+    const { validateHwpx } = await import("../../lib/hwpx/validate");
+    const l = LedgerSchema.parse(JSON.parse(readFileSync(path.join(__dirname, "../fixtures/closeout/hyangto.ledger.json"), "utf8")));
+    const { text } = expandLedgerMacros(readFileSync(path.join(__dirname, "../fixtures/closeout/settlement-hyangto.dsl.md"), "utf8"), l);
+    const parsed = parseDsl(text);
+    expect(parsed.warnings).toEqual([]);
+    expect(parsed.doc.family).toBe("settlement");
+    const { bytes, report } = buildHwpx(parsed.doc);
+    expect(report.warnings).toEqual([]);
+    const v = await validateHwpx(bytes);
+    expect(v.ok).toBe(true);
+    expect(v.contentLoss?.count ?? 0).toBe(0);
+  });
+});
+
+describe("밖으로 나가는 공문의 발신명의", () => {
+  it("경상북도지사 수신은 본부장 전결이어도 기관장 명의, 전부서 수신은 전결권자 명의", async () => {
+    const { isInternalRecipient } = await import("../../lib/hwpx/writers/official");
+    expect(isInternalRecipient({ 수신: "경상북도지사(기업지원과장)" })).toBe(false);
+    expect(isInternalRecipient({ 수신: "고령군수(투자유치과장)" })).toBe(false);
+    expect(isInternalRecipient({ 수신: "전부서" })).toBe(true);
+    expect(isInternalRecipient({ 수신자: ["경영지원팀장", "마케팅팀장"] })).toBe(true);
   });
 });

@@ -37,6 +37,12 @@ export const LedgerSchema = z.object({
     .array(
       z.object({
         비목군: z.enum(비목군_순서),
+        /**
+         * 세부사업(단위사업) — 예: "신규선정", "기술혁신 역량 강화 지원사업". 있으면 집행 세부내역을
+         * 세부사업별로 나누고(❍ (사업비) 세부사업(집행액: …)), 같은 세목이라도 세부사업이 다르면 다른 줄이다
+         * (담당자 정산보고서: 사업비(사무관리비)=신규선정, 운영비(사무관리비)=운영비).
+         */
+        세부사업: z.string().optional(),
         세목: z.string().min(1),
         예산: Money,
         /** 변경 승인 전 금액 — 있고 예산과 다르면 변경내역 표에 나간다 */
@@ -54,6 +60,8 @@ export const LedgerSchema = z.object({
     z.object({
       일자: z.string(),
       금액: Money,
+      /** 예산 줄의 세부사업과 같은 이름 — 같은 세목이 여러 세부사업에 있을 때만 필요하다 */
+      세부사업: z.string().optional(),
       세목: z.string().min(1),
       내역: z.string().default(""),
       지급처: z.string().default(""),
@@ -78,7 +86,10 @@ export type Ledger = z.infer<typeof LedgerSchema>;
 
 export interface LineTotal {
   비목군: 비목군;
+  세부사업?: string;
   세목: string;
+  /** 변경 전 예산(없으면 예산과 같다) */
+  당초예산: number;
   예산: number;
   집행: number;
   잔액: number;
@@ -86,6 +97,7 @@ export interface LineTotal {
 }
 export interface GroupTotal {
   비목군: 비목군;
+  당초예산: number;
   예산: number;
   집행: number;
   잔액: number;
@@ -155,16 +167,28 @@ export function computeLedger(input: Ledger): LedgerResult {
   const ledger = LedgerSchema.parse(input);
   const checks: Check[] = [];
 
+  // 예산 줄의 열쇠는 (세부사업, 세목) — 같은 세목이 세부사업마다 따로 있을 수 있다
+  const keyOf = (세부사업: string | undefined, 세목: string) => `${normalizeKey(세부사업 ?? "")}|${normalizeKey(세목)}`;
+  const label = (세부사업: string | undefined, 세목: string) => (세부사업 ? `${세부사업}·${세목}` : 세목);
   const lineByKey = new Map<string, LineTotal>();
   for (const b of ledger.예산) {
-    const key = normalizeKey(b.세목);
-    if (lineByKey.has(key)) checks.push({ level: "error", message: `예산에 세목 '${b.세목}' 이 두 번 있습니다` });
-    lineByKey.set(key, { 비목군: b.비목군, 세목: b.세목, 예산: b.예산, 집행: 0, 잔액: 0, 잔액사유: b.잔액사유 });
+    const key = keyOf(b.세부사업, b.세목);
+    if (lineByKey.has(key)) checks.push({ level: "error", message: `예산에 '${label(b.세부사업, b.세목)}' 이 두 번 있습니다` });
+    lineByKey.set(key, { 비목군: b.비목군, 세부사업: b.세부사업, 세목: b.세목, 당초예산: b.당초예산 ?? b.예산, 예산: b.예산, 집행: 0, 잔액: 0, 잔액사유: b.잔액사유 });
   }
   for (const e of ledger.집행) {
-    const line = lineByKey.get(normalizeKey(e.세목));
+    let line = lineByKey.get(keyOf(e.세부사업, e.세목));
+    if (!line && !e.세부사업) {
+      // 세부사업을 적지 않은 지출 — 그 세목이 예산에 한 줄뿐이면 그 줄로 본다(여럿이면 어느 것인지 모른다)
+      const same = [...lineByKey.values()].filter((l) => normalizeKey(l.세목) === normalizeKey(e.세목));
+      if (same.length === 1) line = same[0];
+      else if (same.length > 1) {
+        checks.push({ level: "error", message: `집행 ${e.일자} ${thousands(e.금액)}원의 세목 '${e.세목}' 이 여러 세부사업에 있습니다 — 세부사업을 적어야 합니다(${same.map((l) => l.세부사업 ?? "(없음)").join(", ")})` });
+        continue;
+      }
+    }
     if (!line) {
-      checks.push({ level: "error", message: `집행 ${e.일자} ${thousands(e.금액)}원의 세목 '${e.세목}' 이 예산에 없습니다` });
+      checks.push({ level: "error", message: `집행 ${e.일자} ${thousands(e.금액)}원의 '${label(e.세부사업, e.세목)}' 이 예산에 없습니다` });
       continue;
     }
     line.집행 += e.금액;
@@ -175,10 +199,10 @@ export function computeLedger(input: Ledger): LedgerResult {
     if (!lines.length) continue;
     for (const l of lines) {
       l.잔액 = l.예산 - l.집행;
-      if (l.잔액 < 0) checks.push({ level: "warn", message: `${l.세목}: 집행액(${thousands(l.집행)})이 예산(${thousands(l.예산)})을 넘습니다` });
+      if (l.잔액 < 0) checks.push({ level: "warn", message: `${label(l.세부사업, l.세목)}: 집행액(${thousands(l.집행)})이 예산(${thousands(l.예산)})을 넘습니다` });
     }
-    const sum = (k: "예산" | "집행" | "잔액") => lines.reduce((a, l) => a + l[k], 0);
-    groups.push({ 비목군: g, 예산: sum("예산"), 집행: sum("집행"), 잔액: sum("잔액"), lines });
+    const sum = (k: "당초예산" | "예산" | "집행" | "잔액") => lines.reduce((a, l) => a + l[k], 0);
+    groups.push({ 비목군: g, 당초예산: sum("당초예산"), 예산: sum("예산"), 집행: sum("집행"), 잔액: sum("잔액"), lines });
   }
 
   const 예산 = groups.reduce((a, g) => a + g.예산, 0);
