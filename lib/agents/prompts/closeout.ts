@@ -26,6 +26,7 @@ export function closeoutStagePrompt(stage: Extract<Stage, "ledger" | "result" | 
       return {
         systemPromptAppend: role("정산 원장 작성자 — 올린 엑셀·문서의 예산과 집행 건을 정산 원장(JSON)으로 옮긴다. 계산하지 않고 옮긴다"),
         prompt: `${brief}\n작업 폴더: ${ws}\n\n1) ${ws}/materials/index.md 를 읽고 목록의 자료를 모두 읽는다(사업계획서·교부결정서 → 예산·재원·사업기간, 집행 집계표·지출결의 → 집행 건, 통장거래내역 → 일자·지급처·이자·최종잔액 대조).
+   자료가 많으면 순서를 지킨다: ① 예산(교부결정서·사업계획서 예산표) ② 집행 집계표·통장거래내역 ③ 개별 지급·지출 공문(PDF). 집계표나 통장내역이 있으면 개별 공문은 집계표에서 모호한 건만 확인한다. 집계표가 없으면 개별 지급 공문마다 지출일·금액·세목·내역·지급처를 옮긴다 — 여러 파일을 한 번에(같은 메시지에서 병렬로) Read 해 턴을 아낀다.
 2) ${SKILL} §1 의 스키마와 규칙대로 ${ws}/ledger/ledger.json 을 Write 한다. 금액은 원자료에 적힌 값을 원 단위 정수로 그대로 옮긴다 — 더하거나 나누어 만든 숫자를 넣지 않는다(합계 행은 옮기지 않는다: 프로그램이 계산한다).
 3) 세목 이름은 예산과 집행에서 똑같이 쓴다. 재원 합계와 세목 예산 합계가 같아야 한다(원자료끼리 어긋나면 교부결정서·사업계획서 예산표를 따르고 메모에 적는다).
 4) 위 지시(주제·메모)에 적힌 잔액 사유가 있으면 해당 세목의 잔액사유에 옮긴다.
@@ -34,7 +35,7 @@ export function closeoutStagePrompt(stage: Extract<Stage, "ledger" | "result" | 
 저장한 뒤 ledger.json 을 Read 로 한 번 다시 열어 JSON 문법(쉼표·따옴표)을 확인한다. 고칠 것이 있으면 Edit 로 그 부분만 고친다.
 마지막 답변은 3줄 이내: 집행 건수, 재원·예산 합계, 메모 건수.${resume}`,
         allowedTools: ["Read", "Write", "Edit", "Glob", "Grep"],
-        maxTurns: 40,
+        maxTurns: 80,
       };
     case "result":
       return {

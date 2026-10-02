@@ -14,6 +14,7 @@ export function MaterialsPanel({ projectId, disabled }: { projectId: string; dis
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [changed, setChanged] = useState(false);
+  const [progress, setProgress] = useState("");
 
   // 처음 열 때 한 번 읽는다 — 상태는 응답 콜백 안에서만 바뀐다(ProjectList 의 목록 읽기와 같은 꼴)
   useEffect(() => {
@@ -36,7 +37,7 @@ export function MaterialsPanel({ projectId, disabled }: { projectId: string; dis
     setBusy(true);
     setError(null);
     try {
-      const r = await api.uploadMaterials(projectId, files);
+      const r = await api.uploadMaterials(projectId, files, (done, total, name) => setProgress(done < total ? `${done + 1}/${total} ${name}` : ""));
       setItems(r.materials);
       setChanged(true);
       if (r.errors.length) setError(`읽지 못한 자료: ${r.errors.map((e) => `${e.name}(${e.message})`).join(", ")}`);
@@ -96,6 +97,7 @@ export function MaterialsPanel({ projectId, disabled }: { projectId: string; dis
           ))}
         </ul>
       ) : null}
+      {progress ? <p className="mt-2 text-[11px] text-sky-700">올리는 중 {progress}</p> : null}
       {changed ? <p className="mt-2 text-[11px] text-amber-700">자료가 바뀌었습니다 — ‘실행’을 눌러 정산 원장을 다시 만드세요.</p> : null}
       {error ? <p className="mt-2 rounded bg-red-50 p-2 text-[11px] text-red-700">{error}</p> : null}
     </div>

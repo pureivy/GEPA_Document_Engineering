@@ -88,6 +88,8 @@ function NewProjectDialog({ onClose, onCreated }: { onClose: () => void; onCreat
   const [phase, setPhase] = useState<"" | "create" | "upload">("");
   // 정산·결과보고 자료(여러 개) — 사업계획서·집행 집계표·통장거래내역·실적 메모
   const [materials, setMaterials] = useState<File[]>([]);
+  // 자료 업로드 진행 — 한 파일씩 올리므로 몇 번째인지 보여 준다
+  const [progress, setProgress] = useState("");
 
   const kind = form.kind;
   const isOfficial = kind === "official";
@@ -205,7 +207,7 @@ function NewProjectDialog({ onClose, onCreated }: { onClose: () => void; onCreat
       saveContactPref(form.contact);
       if (isCloseout && materials.length) {
         setPhase("upload");
-        const up = await api.uploadMaterials(p.id, materials);
+        const up = await api.uploadMaterials(p.id, materials, (done, total, name) => setProgress(done < total ? `${done + 1}/${total} ${name}` : ""));
         // 일부 파일만 실패해도 프로젝트는 쓸 수 있다 — 실패한 파일만 알리고 자동 실행은 멈춘다(빠진 자료로 원장을 만들지 않게)
         if (up.errors.length) {
           setError(`프로젝트는 만들었지만 다음 자료를 읽지 못했습니다 — 프로젝트 화면에서 다시 올려 주세요: ${up.errors.map((e) => `${e.name}(${e.message})`).join(", ")}`);
@@ -243,7 +245,7 @@ function NewProjectDialog({ onClose, onCreated }: { onClose: () => void; onCreat
           </Button>
           {!valid ? <span className="mr-2 self-center text-[11px] text-slate-500">입력 필요: {missing.join(", ")}</span> : null}
           <Button variant="primary" onClick={() => void submit()} disabled={!valid} loading={busy} title={valid ? undefined : `입력 필요: ${missing.join(", ")}`}>
-            {phase === "upload" ? "업로드·분석 중…" : (isProgram && refFile && autoRun) || (isCloseout && materials.length && autoRun) ? "만들고 자동 실행" : "만들기"}
+            {phase === "upload" ? (progress ? `자료 올리는 중 ${progress.split(" ")[0]}…` : "업로드·분석 중…") : (isProgram && refFile && autoRun) || (isCloseout && materials.length && autoRun) ? "만들고 자동 실행" : "만들기"}
           </Button>
         </>
       }
@@ -505,6 +507,7 @@ function NewProjectDialog({ onClose, onCreated }: { onClose: () => void; onCreat
                   만든 뒤 정산자료부터 제출 공문까지 자동 실행
                 </label>
               ) : null}
+              {progress ? <p className="text-[11px] text-sky-700">올리는 중 {progress} — PDF는 글자를 읽느라 파일마다 몇 초씩 걸립니다</p> : null}
             </div>
           </fieldset>
         ) : null}

@@ -22,7 +22,7 @@ async function request<T>(url: string, init?: RequestInit): Promise<T> {
   try {
     res = await fetch(url, { ...init, headers: { Accept: "application/json", ...(init?.body ? { "Content-Type": "application/json" } : {}), ...(init?.headers ?? {}) } });
   } catch (e) {
-    throw new ApiError(0, `서버에 연결할 수 없습니다 (${(e as Error).message})`);
+    throw new ApiError(0, `서버에 연결할 수 없습니다 (${(e as Error).message}) — 서버 창이 닫혔을 수 있습니다. 바탕화면의 "GEPA 문서 엔지니어링" 아이콘으로 다시 켜 주세요(입력한 내용은 이 창에 그대로 있습니다)`);
   }
   const text = await res.text();
   let body: unknown = undefined;
@@ -99,14 +99,34 @@ export const api = {
     if (!res.ok) throw new ApiError(res.status, body.error ?? `${res.status} ${res.statusText}`, body);
     return body as { project: ProjectDTO; chars: number; truncated: boolean };
   },
-  /** 정산·결과보고 자료(여러 파일) — 변환에 실패한 파일은 errors 로 돌아온다 */
-  uploadMaterials: async (id: string, files: File[]) => {
-    const fd = new FormData();
-    for (const f of files) fd.append("files", f);
-    const res = await fetch(`/api/projects/${encodeURIComponent(id)}/materials`, { method: "POST", body: fd, headers: { Accept: "application/json" } });
-    const body = (await res.json().catch(() => ({}))) as { error?: string; materials?: MaterialDTO[]; errors?: { name: string; message: string }[] };
-    if (!res.ok && !body.materials) throw new ApiError(res.status, body.error ?? `${res.status} ${res.statusText}`, body);
-    return { materials: body.materials ?? [], errors: body.errors ?? [] };
+  /**
+   * 정산·결과보고 자료(여러 파일) — **한 파일씩** 올린다. 30개·180MB 를 한 요청에 담으면 서버가 전부를
+   * 메모리에 올린 채 PDF 텍스트 추출을 몇 분씩 하다 요청 시간 제한에 걸린다(실사용 2026-10-02). 한 장씩이면
+   * 중간에 끊겨도 앞의 파일은 남고, 진행률을 보여 줄 수 있다. 변환에 실패한 파일은 errors 로 돌아온다.
+   */
+  uploadMaterials: async (id: string, files: File[], onProgress?: (done: number, total: number, name: string) => void) => {
+    let materials: MaterialDTO[] = [];
+    const errors: { name: string; message: string }[] = [];
+    for (let i = 0; i < files.length; i++) {
+      const f = files[i];
+      onProgress?.(i, files.length, f.name);
+      const fd = new FormData();
+      fd.append("files", f);
+      try {
+        const res = await fetch(`/api/projects/${encodeURIComponent(id)}/materials`, { method: "POST", body: fd, headers: { Accept: "application/json" } });
+        const body = (await res.json().catch(() => ({}))) as { error?: string; materials?: MaterialDTO[]; errors?: { name: string; message: string }[] };
+        if (body.materials) materials = body.materials;
+        if (body.errors?.length) errors.push(...body.errors);
+        else if (!res.ok) errors.push({ name: f.name, message: body.error ?? `${res.status} ${res.statusText}` });
+      } catch (e) {
+        // 서버가 내려간 경우 — 남은 파일도 모두 실패하므로 여기서 멈춘다
+        errors.push({ name: f.name, message: `서버에 연결할 수 없습니다(${errorMessage(e)})` });
+        for (const rest of files.slice(i + 1)) errors.push({ name: rest.name, message: "올리지 못함(서버 연결 끊김)" });
+        break;
+      }
+    }
+    onProgress?.(files.length, files.length, "");
+    return { materials, errors };
   },
   listMaterials: (id: string) => request<{ materials: MaterialDTO[] }>(`/api/projects/${encodeURIComponent(id)}/materials`),
   deleteMaterial: (id: string, name: string) => request<{ materials: MaterialDTO[] }>(`/api/projects/${encodeURIComponent(id)}/materials?name=${encodeURIComponent(name)}`, { method: "DELETE" }),

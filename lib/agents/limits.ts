@@ -30,7 +30,8 @@ export const STAGE_LIMITS: Record<RunStage, StageLimits> = {
   // 업무보고는 참고본 골격을 채우는 일이라 공문서와 같은 크기로 둔다(실측 전 잠정값)
   report: { maxTurns: 20, wallTimeoutMs: 15 * MIN, idleTimeoutMs: DEFAULT_IDLE_TIMEOUT_MS },
   // 정산자료는 엑셀 여러 장을 읽어 건별로 옮긴다 — 통장내역이 길면 턴이 많이 든다(실측 전 잠정값)
-  ledger: { maxTurns: 40, wallTimeoutMs: 25 * MIN, idleTimeoutMs: DEFAULT_IDLE_TIMEOUT_MS },
+  // 집계표 없이 지급 공문 PDF 30여 건만 올리는 경우가 실제로 있다(2026-10-02) — 건마다 Read 가 필요하다
+  ledger: { maxTurns: 80, wallTimeoutMs: 45 * MIN, idleTimeoutMs: DEFAULT_IDLE_TIMEOUT_MS },
   result: { maxTurns: 30, wallTimeoutMs: 25 * MIN, idleTimeoutMs: DEFAULT_IDLE_TIMEOUT_MS },
   settlement: { maxTurns: 25, wallTimeoutMs: 20 * MIN, idleTimeoutMs: DEFAULT_IDLE_TIMEOUT_MS },
   submit: { maxTurns: 20, wallTimeoutMs: 15 * MIN, idleTimeoutMs: DEFAULT_IDLE_TIMEOUT_MS },
