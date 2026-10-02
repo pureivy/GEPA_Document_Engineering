@@ -36,17 +36,25 @@ export async function POST(req: Request, ctx: { params: Promise<{ id: string }> 
   const files = form.getAll("files").filter((f): f is File => f instanceof File);
   if (!files.length) return jsonError(400, "files 필드가 없습니다");
   const errors: { name: string; message: string }[] = [];
+  let saved = 0;
   for (const f of files) {
     try {
       const bytes = new Uint8Array(await f.arrayBuffer());
       // 압축 파일은 풀어서 안의 자료를 하나씩 저장한다(zip 자체는 남기지 않는다)
-      if (isZipName(f.name)) errors.push(...saveZipMaterials(id, f.name, bytes).errors);
-      else saveMaterial(id, f.name, bytes);
+      if (isZipName(f.name)) {
+        const z = saveZipMaterials(id, f.name, bytes);
+        errors.push(...z.errors);
+        saved += z.saved.length;
+      } else {
+        saveMaterial(id, f.name, bytes);
+        saved += 1;
+      }
     } catch (e) {
       errors.push({ name: f.name, message: (e as Error).message });
     }
   }
-  return Response.json({ materials: listMaterials(id), errors }, { status: errors.length === files.length ? 422 : 201 });
+  // 하나라도 저장했으면 성공이다 — zip 안의 카드뉴스(html) 하나 때문에 51개를 받은 요청이 실패로 보이면 안 된다
+  return Response.json({ materials: listMaterials(id), errors, saved }, { status: saved > 0 ? 201 : 422 });
 }
 
 export async function DELETE(req: Request, ctx: { params: Promise<{ id: string }> }) {

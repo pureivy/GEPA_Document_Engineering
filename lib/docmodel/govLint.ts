@@ -62,6 +62,15 @@ export function lintGovStyle(doc: DocModel): GovLintIssue[] {
     if (b.k === "para" || b.k === "coverTitle") checkText(textOf(b), b.id, out);
     else if (b.k === "table") for (const r of b.rows) for (const c of r.cells) checkText(inlineText(c.inlines), b.id, out);
   }
+  // 정산보고서는 위탁기관이 정한 제출 서식이다 — 표지 "사 업 비: 금120,000,000원" 처럼 한글 병기를 하지 않는다
+  // (담당자 정산보고서·서식 원문). 기안문의 편람 규칙이 서식을 고치라고 헛울리지 않게 뺀다.
+  if (doc.family === "settlement") return out.filter((i) => i.rule !== "금액 한글 병기").concat(lintStructure(doc));
+  return out.concat(lintStructure(doc));
+}
+
+function lintStructure(doc: DocModel): GovLintIssue[] {
+  const out: GovLintIssue[] = [];
+  const blocks = doc.blocks;
 
   // ---- 항목 구분: 항목이 하나뿐이면 기호를 붙이지 않는다; 위계는 한 단계씩
   const items = blocks.map((b, i) => ({ b, i })).filter(({ b }) => b.k === "para" && b.glyph && ITEM_GLYPHS.has(b.glyph)) as { b: Extract<Block, { k: "para" }>; i: number }[];

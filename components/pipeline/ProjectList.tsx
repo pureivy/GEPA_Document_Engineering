@@ -208,7 +208,15 @@ function NewProjectDialog({ onClose, onCreated }: { onClose: () => void; onCreat
       if (isCloseout && materials.length) {
         setPhase("upload");
         const up = await api.uploadMaterials(p.id, materials, (done, total, name) => setProgress(done < total ? `${done + 1}/${total} ${name}` : ""));
-        // 일부 파일만 실패해도 프로젝트는 쓸 수 있다 — 실패한 파일만 알리고 자동 실행은 멈춘다(빠진 자료로 원장을 만들지 않게)
+        // 형식을 받지 않는 파일(카드뉴스 html 등)만 빠졌으면 알리기만 하고 계속한다. 서버 연결이 끊겨
+        // 자료가 통째로 빠졌을 때만 자동 실행을 멈춘다(빠진 자료로 원장을 만들지 않게).
+        const lost = up.errors.filter((e) => !/지원하지 않는 파일 형식|압축 파일 안의 압축/.test(e.message));
+        if (up.errors.length && !lost.length && up.materials.length) {
+          setError(`다음 파일은 형식을 받지 않아 건너뛰었습니다(나머지는 올렸습니다): ${up.errors.map((e) => e.name.split("/").pop()).join(", ")}`);
+          if (autoRun) await api.runStage(p.id, "ledger", { autoChain: true });
+          setTimeout(() => onCreated(p), 3000);
+          return;
+        }
         if (up.errors.length) {
           setError(`프로젝트는 만들었지만 다음 자료를 읽지 못했습니다 — 프로젝트 화면에서 다시 올려 주세요: ${up.errors.map((e) => `${e.name}(${e.message})`).join(", ")}`);
           setTimeout(() => onCreated(p), 4000);
