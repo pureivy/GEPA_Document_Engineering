@@ -91,7 +91,10 @@ export function lintGovStyle(doc: DocModel): GovLintIssue[] {
   }
 
   // ---- 붙임 / 끝 표시 (발신 문서·내부결재문서)
-  if (DOC_FAMILIES[doc.family].requiresClosingMark) {
+  // 위탁기관이 정한 서식(plan `표지: 없음` — 위탁사업 추진실적 및 정산보고서)은 기안문이 아니라 제출 서식이라
+  // `끝.` 을 쓰지 않는다(실문서 ESG-1024 등). 그 문서에서 헛울리지 않게 뺀다.
+  const 서식문서 = doc.family === "plan" && doc.meta.표지 === "없음";
+  if (DOC_FAMILIES[doc.family].requiresClosingMark && !서식문서) {
     const last = [...blocks].reverse().find((b) => b.k === "para" || b.k === "table" || b.k === "attachmentList");
     // 공문서는 붙임을 블록이 아니라 meta.붙임 에서 펼친다(다른 family 는 ```attach 블록을 쓴다).
     // 작성기가 그 줄 끝에 "  끝." 을 찍으므로(lib/hwpx/writers/official.ts) 본문 마지막 문단에

@@ -29,7 +29,7 @@ function baseYear(l: Ledger): number | undefined {
 function 총괄표(r: LedgerResult): string[] {
   const lines = [
     "(단위 : 원, %)",
-    "{table role=budget header-rows=2 widths=66,74,74,42,68,62,68,28}",
+    "{table role=budget header-rows=2 widths=62,72,72,40,66,56,66,48}",
     row(["구 분", "예 산 액", "지 출 액", "<", "집행잔액", "이 자<br>발생액", "반 납 액", "비고"]),
     row(["^", "^", "금 액", "비 율", "^", "^", "^", "^"]),
     row(["계", money(r.예산), money(r.집행), r.집행률, money(r.잔액), money(r.이자), money(r.반납액), ""]),

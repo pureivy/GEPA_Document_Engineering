@@ -16,12 +16,28 @@ import { leadingSpaces, manualMarkerIndent } from "../../docmodel/indent";
 import { inlineText, officialMetaProblems, type Block, type Inline, type OfficialDoc, type OfficialMeta } from "../../docmodel/schema";
 import type { CharSpec } from "../registry";
 import { WriterContext } from "./context";
+import { emitTable, type FamilyStyle } from "./common";
 
 type ParaBlock = Extract<Block, { k: "para" }>;
 
 /** style-map 역할이 없을 때의 대비값. 참고 문서는 굴림체 12pt 장평 95 / 180 %(charPr 8, paraPr 27). */
 const BODY_CHAR: CharSpec = { font: "gulim", pt: 12, ratio: 95 };
 const BODY_LINE_SPACING = 180;
+/** 본문 표(정산내역 등) — 본문 12pt 에 맞춘 10pt 표, 회색 머리글. 참고 공문 정산표 실측 모양 */
+const OFFICIAL_TABLE_STYLE: FamilyStyle = {
+  bodyPt: 12,
+  bodyLineSpacing: BODY_LINE_SPACING,
+  body1Bold: false,
+  body1Font: "body",
+  notePt: 11,
+  tableHeaderFill: "#E5E5E5",
+  tableFontPt: 10,
+  hangingIndent: true,
+  indentFamily: "official",
+  // 공문 본문 글꼴(참고 문서 header 의 굴림체) — 역할 이름이 아니라 글꼴 이름으로 준다
+  tableFont: "굴림체",
+  anchorFont: "굴림체",
+};
 
 // ---- 두문(t00) 셀 지도 ------------------------------------------------------------------
 const HEAD_수신 = [3, 1] as const;
@@ -88,6 +104,11 @@ export function writeOfficial(ctx: WriterContext, doc: OfficialDoc): XmlNode[] {
         break;
       case "attachmentList":
         out.push(...attachmentParas(ctx, b.items));
+        break;
+      case "table":
+        // 결과 및 정산보고 공문의 정산내역 표(교부금·집행액·잔액·이자·반납액)처럼 본문에 표가 드는
+        // 공문이 실문서의 다수다(closeout-cover.md §2.6). 표가 없는 공문의 출력은 그대로다.
+        out.push(...emitTable(ctx, OFFICIAL_TABLE_STYLE, b));
         break;
       case "pageBreak":
         if (b === 별지시작 && !wroteFooter) {

@@ -113,7 +113,7 @@ describe("저장 시 정산 매크로 펼침", () => {
     const s = writeLedgerSummary("pc");
     expect(s.ok).toBe(true);
     expect(existsSync(ledgerPaths("pc").summary)).toBe(true);
-  });
+  }, 30_000); // 첫 DB 초기화(마이그레이션)가 병렬 실행 중에는 5초를 넘긴다
   it("원장 JSON 이 깨져 있으면 summary.md 에 사유를 쓴다", async () => {
     const { ledgerPaths, writeLedgerSummary } = await import("../../lib/closeout/store");
     mkdirSync(ledgerPaths("broken").dir, { recursive: true });
@@ -147,5 +147,13 @@ describe("closeout 프롬프트", () => {
     const prov = buildStagePrompt({ stage: "submit", project: project("경상북도지사(투자유치단장)"), workspaceDir: ws });
     expect(prov.prompt).toContain("{{정산:공문표 열=통장잔액}}");
     expect(prov.prompt).toContain("경상북도의 무궁한 발전");
+  });
+});
+
+describe("요지 박스", () => {
+  it("둘째 줄부터 다시 적은 박스 기호는 겹치지 않게 뗀다", () => {
+    const { doc } = parseDsl("---\nfamily: plan\n제목: t\n---\n```box\n◇ (요지) 하나\n◇ (핵심 수치) 둘\n```\n");
+    const box = doc.blocks.find((b) => b.k === "summaryBox");
+    expect(box && box.k === "summaryBox" ? box.lines.map((l) => (l[0] as { text: string }).text) : []).toEqual(["(요지) 하나", "(핵심 수치) 둘"]);
   });
 });

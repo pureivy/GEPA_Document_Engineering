@@ -31,6 +31,12 @@ export interface FamilyStyle {
   hangingIndent: boolean;
   /** which leading-space ladder to use (defaults to the document family) */
   indentFamily?: Family;
+  /**
+   * 표 글꼴(기본 "table" = 맑은 고딕)과 표 앵커 문단 글꼴(기본 "body" = 휴먼명조). 공문서 템플릿에는
+   * 두 글꼴이 없다 — 그대로 두면 대체 글꼴 경고가 나므로 공문은 굴림을 쓴다.
+   */
+  tableFont?: FontRole | string;
+  anchorFont?: FontRole | string;
   /** "gov" = 행정업무운영 편람 2타 사다리(□0 ㅇ2 -4 ·6); default "gepa" = reference-document habit */
   ladder?: Ladder;
   /** 문단 위 간격 (HWPUNIT, 100 = 1pt) per level: □ / ㅇ / everything else (- · ※ * plain) */
@@ -295,7 +301,7 @@ export function emitTable(ctx: WriterContext, fs: FamilyStyle, b: TableBlock): X
       // first (구분) column is always centred (user 2026-09-16); other body cells centre when short, justify when long
       const alignDefault: ParaSpec["align"] = isHeader ? "CENTER" : c.align ? (c.align.toUpperCase().replace("BOTH", "JUSTIFY") as ParaSpec["align"]) : ci === 0 || text.length <= 8 || b.role === "docs" ? "CENTER" : "JUSTIFY";
       const paraPr = ctx.reg.paraPr({ align: alignDefault, lineSpacing: d.lineSpacing });
-      const base: CharSpec = { font: "table", pt, bold };
+      const base: CharSpec = { font: fs.tableFont ?? "table", pt, bold };
       // paragraphs: split on '\n' (from br inlines or literal newlines)
       const paras: XmlNode[] = [];
       const groups = splitInlinesByNewline(c.inlines);
@@ -354,10 +360,10 @@ export function emitTable(ctx: WriterContext, fs: FamilyStyle, b: TableBlock): X
     pageBreak: b.role === "support" ? "TABLE" : "CELL",
   });
   if (b.caption) {
-    const r = ctx.roleOr("unitCaption", { para: { align: "RIGHT", lineSpacing: 150 }, char: { font: "table", pt: 10 } });
+    const r = ctx.roleOr("unitCaption", { para: { align: "RIGHT", lineSpacing: 150 }, char: { font: fs.tableFont ?? "table", pt: 10 } });
     out.push(ctx.para({ paraPr: r.paraPr, runs: [{ charPr: r.charPr, text: b.caption }], vertsize: 1000, lineSpacing: 150 }));
   }
-  const anchor = ctx.roleOr("tableAnchor", { para: { align: "JUSTIFY", lineSpacing: fs.bodyLineSpacing }, char: { font: "body", pt: fs.bodyPt } });
+  const anchor = ctx.roleOr("tableAnchor", { para: { align: "JUSTIFY", lineSpacing: fs.bodyLineSpacing }, char: { font: fs.anchorFont ?? "body", pt: fs.bodyPt } });
   const height = rowSpecs.reduce((a, r) => a + r.height, 0);
   out.push(ctx.para({ paraPr: anchor.paraPr, runs: [{ charPr: anchor.charPr, nodes: [tblNode] }], vertsize: height, lineSpacing: 100 }));
   void width;

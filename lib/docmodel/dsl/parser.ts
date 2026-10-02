@@ -832,6 +832,9 @@ export class LineParser {
         if (b.lines.length === 0 && (content.startsWith("❖") || content.startsWith("◇"))) {
           b.glyph = content[0] as "❖" | "◇";
           content = content.slice(1).trim();
+        } else if (b.glyph && b.glyph !== "none" && content.startsWith(b.glyph)) {
+          // 작성기가 줄마다 박스 기호를 붙이므로 둘째 줄부터 적은 같은 기호는 떼어 낸다 — 두면 "◇ ◇" 로 겹친다
+          content = content.slice(1).trim();
         }
         b.lines.push(parseInlines(content, (m) => this.warn(line, m)).inlines);
         return [this.upsert(b)];

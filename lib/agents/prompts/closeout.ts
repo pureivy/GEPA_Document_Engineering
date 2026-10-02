@@ -67,7 +67,7 @@ export function closeoutStagePrompt(stage: Extract<Stage, "ledger" | "result" | 
         prompt: `${brief}\n작업 폴더: ${ws}\n\n${ws}/ledger/summary.md 와 ${ws}/result/draft.dsl.md(결과보고서 요지)를 읽고 「${project.title}」 결과 및 정산보고 공문을 작성하라.
 - front-matter: 수신유형 수신자, 수신 ${project.contact.수신 ?? "(위 수신 줄)"}, 제목 「${project.title}」 결과 및 정산보고, 처리과 ${project.contact.부서명}. 전결·공개구분·연락처(전송·우편번호·홈페이지)는 위 줄에 있는 값만 옮기고 없으면 적지 않는다. 발신명의·결재라인은 비워 둔다.
 - 붙임: [정산보고서 1부., 결과보고서 1부., 통장 거래내역 1부., 지출증빙자료 1식(별송).] — 본문에 직접 타이핑하지 않는다.
-- 본문은 ${SKILL} §4 골격. 인사말은 "${province ? "경상북도의 무궁한 발전을 기원합니다." : "귀 기관의 무궁한 발전을 기원합니다."}", 정산내역의 첫 줄은 "${province ? "1) 통장잔액: {{정산:반납액한글}}" : "1) 반납액: {{정산:반납액한글}}"}", 표는 ${province ? "{{정산:공문표 열=통장잔액}}" : "{{정산:공문표}}"} 한 줄.
+- 본문은 ${SKILL} §4 골격. **본문 첫 줄은 "1. ", 둘째 항은 "2. " 로 번호를 직접 적어 시작한다**(그 아래 가. → 1) 순). 인사말은 "${province ? "경상북도의 무궁한 발전을 기원합니다." : "귀 기관의 무궁한 발전을 기원합니다."}", 정산내역의 첫 줄은 "${province ? "1) 통장잔액: {{정산:반납액한글}}" : "1) 반납액: {{정산:반납액한글}}"}", 표는 ${province ? "{{정산:공문표 열=통장잔액}}" : "{{정산:공문표}}"} 한 줄.
 - 추진실적 한 줄은 결과보고서의 요지에서 옮긴다(수치는 거기 있는 것만).
 - ${ledgerRule}${DOC_CONTRACT("submit", "official")}${resume}`,
         allowedTools: ["Read", "Write", "Glob", "Grep"],
