@@ -244,6 +244,11 @@ export const PlanMetaSchema = z.object({
    * 결재란이 없고 표지를 본문이 직접 그린다(docs/design-system/closeout-settlement.md §2.0).
    */
   표지: z.enum(["결재", "없음"]).default("결재"),
+  /**
+   * 표지 다음 쪽(본문 첫 쪽) 맨 위에 제목을 한 줄 다시 쓴다 — 결과보고서 관행(담당자 지시 2026-10-02,
+   * 실문서: 본문 첫 쪽 제목 → ◇ 요지 박스). 사업계획서 출력을 바꾸지 않으려고 기본은 끈다.
+   */
+  본문제목: z.boolean().default(false),
 });
 export type PlanMeta = z.infer<typeof PlanMetaSchema>;
 

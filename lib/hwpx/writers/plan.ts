@@ -76,6 +76,8 @@ export function writePlan(ctx: WriterContext, doc: PlanDoc): XmlNode[] {
         break;
       case "coverTitle":
         out.push(...(bumpis ? boxedTitle(ctx, b) : coverTitle(ctx, fs, b)));
+        // 본문 첫 쪽 맨 위의 제목 한 줄 — 표지가 남긴 쪽 나눔을 이 문단이 받아 새 쪽 첫 줄이 된다
+        if (doc.meta.본문제목 && !bumpis) out.push(bodyTitle(ctx, inlineText(b.inlines).replace(/\n/g, " ")));
         break;
       case "chapterBand":
         // 문단 위 20pt, but 0 when the band opens a page (after a page break or as the first body block)
@@ -182,8 +184,22 @@ function coverTitle(ctx: WriterContext, fs: FamilyStyle, b: Extract<Block, { k: 
     const rect = findAll(title, "hp:rect")[0];
     const p = rect ? findAll(rect, "hp:p")[0] : undefined;
     if (p) {
-      const charPr = childrenNamed(p, "hp:run").find((r) => findAll(r, "hp:t").length > 0)?.attrs.charPrIDRef ?? "20";
-      p.children = [el("hp:run", { charPrIDRef: charPr }, [el("hp:t", {}, [text])])];
+      const refCharPr = childrenNamed(p, "hp:run").find((r) => findAll(r, "hp:t").length > 0)?.attrs.charPrIDRef ?? "20";
+      // 긴 제목은 상자(높이 약 2줄)를 넘쳐 한글에서 첫 줄이 상자 위로 잘린다(담당자 화면 2026-10-02).
+      // 「사업명」 뒤에서 줄을 나누고, 가장 긴 줄이 상자 폭에 들어가도록 글자 크기를 줄인다.
+      const lines = splitCoverTitle(text);
+      const info = ctx.reg.charPrInfo(Number(refCharPr));
+      const basePt = info?.pt ?? 20;
+      const boxPt = 405; // 상자 안쪽 폭(약 438pt)에서 HY헤드라인M 의 넓은 자폭 여유를 뺀 값
+      const widest = Math.max(...lines.map((l) => ctx.textWidth(l, 1) / 100));
+      const pt = Math.max(14, Math.min(basePt, Math.floor((boxPt / Math.max(widest, 1)) * 2) / 2));
+      const charPr = pt === basePt || !info ? refCharPr : String(ctx.reg.charPr({ font: info.hangul, pt, bold: info.bold, color: info.color, ratio: info.ratio, spacing: info.spacing }));
+      const kids: (XmlNode | string)[] = [];
+      lines.forEach((l, i) => {
+        if (i) kids.push(el("hp:lineBreak"));
+        kids.push(l);
+      });
+      p.children = [el("hp:run", { charPrIDRef: charPr }, [el("hp:t", {}, kids)])];
       // user 2026-09-16: 사업명 문단의 문단 위 간격 5pt → 0 (reference paraPr 26 = 가운데 120 %, prev 5pt)
       p.attrs.paraPrIDRef = String(ctx.reg.paraPr({ align: "CENTER", lineSpacing: 120, prev: 0 }));
     }
@@ -203,6 +219,28 @@ function coverTitle(ctx: WriterContext, fs: FamilyStyle, b: Extract<Block, { k: 
   for (let i = 0; i < 2; i++) out.push(blankPara(undefined));
   void fs;
   return out;
+}
+
+/**
+ * 표지 제목 줄 나누기 — 「사업명」 뒤의 꼬리(결과보고·사업계획(안))는 다음 줄로. 짧은 제목은 한 줄 그대로.
+ * 참고 문서 표지도 "「2025 ○○○」" / "결과보고" 두 줄이다.
+ */
+export function splitCoverTitle(text: string): string[] {
+  const t = text.trim();
+  const m = /^(.*」)\s*(\S.*)$/.exec(t);
+  if (m && t.length > 22) return [m[1], m[2]];
+  return [t];
+}
+
+/** 본문 첫 쪽 맨 위의 제목 한 줄(meta.본문제목) — 가운데, HY헤드라인M, 아래 여백 */
+function bodyTitle(ctx: WriterContext, text: string): XmlNode {
+  const lines = splitCoverTitle(text);
+  const widest = Math.max(...lines.map((l) => ctx.textWidth(l, 1) / 100));
+  const pt = Math.max(14, Math.min(18, Math.floor((470 / Math.max(widest, 1)) * 2) / 2));
+  const paraPr = ctx.reg.paraPr({ align: "CENTER", lineSpacing: 140, next: 1200 });
+  const charPr = ctx.reg.charPr({ font: "heading", pt });
+  // 표지는 쪽을 끝까지 채워 다음 블록이 넘쳐서 새 쪽에 오는 구조다 — 짧은 제목 한 줄은 표지 맨 아래에 붙어 버리므로 쪽을 나눈다
+  return ctx.para({ paraPr, runs: [{ charPr, text: lines.join(" ") }], vertsize: pt * 100, lineSpacing: 140, forcePageBreak: true });
 }
 
 // ---- 장 제목 밴드 (Ⅰ | | 제목) ---------------------------------------------------------

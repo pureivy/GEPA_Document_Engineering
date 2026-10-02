@@ -114,6 +114,19 @@ function 세부내역(r: LedgerResult): string[] {
   return out;
 }
 
+/**
+ * 세부사업별 집행 — 결과보고서 Ⅲ. 사업계획서 「소요예산」 표의 줄(세부사업)과 같은 단위로 당초·최종 예산과
+ * 집행액을 나란히 둔다. 결과보고는 계획서의 세부사업 순서를 그대로 따르므로 예산도 그 단위로 보여 준다.
+ */
+function 세부사업별(r: LedgerResult): string[] {
+  const out = ["(단위: 원)", "{table role=budget font=11 header-font=11 widths=58,148,72,72,72,60}", row(["구 분", "세부사업", "당초예산", "최종예산", "집 행 액", "잔 액"])];
+  for (const g of r.groups) {
+    g.lines.forEach((l, i) => out.push(row([i === 0 ? g.비목군 : "^", esc(l.세부사업 ?? l.세목), money(l.당초예산), money(l.예산), money(l.집행), money(l.잔액)])));
+  }
+  out.push(row(["합 계", "<", money(r.groups.reduce((a, g) => a + g.당초예산, 0)), money(r.예산), money(r.집행), money(r.잔액)]));
+  return out;
+}
+
 /** 사업 및 소요경비배분 변경내역 — 당초예산과 다른 줄만. 없으면 "해 당 없 음" */
 function 변경내역(r: LedgerResult): string[] {
   const changed = r.ledger.예산.filter((b) => b.당초예산 !== undefined && b.당초예산 !== b.예산);
@@ -151,7 +164,7 @@ function 공문표(r: LedgerResult, args: MacroArgs = {}): string[] {
 }
 
 export type MacroArgs = Record<string, string>;
-export const LEDGER_TABLES: Record<string, (r: LedgerResult, args?: MacroArgs) => string[]> = { 총괄표, 집행현황, 항목별, 세부내역, 변경내역, 잔액사유, 공문표 };
+export const LEDGER_TABLES: Record<string, (r: LedgerResult, args?: MacroArgs) => string[]> = { 총괄표, 집행현황, 항목별, 세부사업별, 세부내역, 변경내역, 잔액사유, 공문표 };
 export const LEDGER_TABLE_NAMES = Object.keys(LEDGER_TABLES);
 
 const LINE_RE = /^\s*\{\{\s*정산\s*:\s*([^\s}]+)((?:\s+[^\s=}]+=[^\s}]+)*)\s*\}\}\s*$/;
