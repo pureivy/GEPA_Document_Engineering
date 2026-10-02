@@ -861,7 +861,9 @@ export class LineParser {
       case "attach": {
         const b = f.block as Extract<Block, { k: "attachmentList" }>;
         if (trimmed === "" || /^끝\.?$/.test(trimmed)) return [];
-        b.items.push(trimmed);
+        // 작성기가 첫 줄 앞에 "붙임" 을 붙인다 — 적어 온 "붙임 1." 의 "붙임" 은 떼어야 "붙임 붙임 1." 로 겹치지 않는다
+        // (문법 예시도 "붙임 1. …" 으로 적혀 있어 에이전트가 그대로 따라 쓴다)
+        b.items.push(trimmed.replace(/^붙임\s+(?=\d)/, ""));
         return [this.upsert(b)];
       }
       case "image": {

@@ -39,12 +39,12 @@ export function closeoutStagePrompt(stage: Extract<Stage, "ledger" | "result" | 
       };
     case "result":
       return {
-        systemPromptAppend: role("결과보고서 작성자 — 사업을 마친 뒤 내부 결재용 결과보고(Ⅰ 사업개요 → Ⅱ 추진결과 → Ⅲ 주요성과 → Ⅳ 예산 집행 현황 → Ⅴ 총평 및 향후계획)를 쓴다"),
+        systemPromptAppend: role("결과보고서 작성자 — 사업을 마친 뒤 내부 결재용 결과보고를 표준 서식(Ⅰ 사업개요 → Ⅱ 추진결과 → Ⅲ 예산 집행 현황 → Ⅳ 성과 및 총평, 장 이름 고정)으로 쓴다"),
         prompt: `${brief}\n작업 폴더: ${ws}\n\n${ws}/materials/index.md 의 자료(특히 사업계획서·실적 자료·메모)와 ${ws}/ledger/summary.md 를 읽고 「${project.title}」 결과보고서를 작성하라.
 - ${SKILL} §2 의 front-matter·골격을 따른다. 제목은 「${project.title}」 결과보고, 부서는 ${project.contact.부서명}.
-- 사업 유형을 먼저 정하고(행사·협의체 / 교육 / 기업 지원금·바우처·시군위탁 / 소상공인 대량지원 / 해외전시·사절단 / 국내 판로 / 제작물 / 일자리) 그 유형 모듈의 표와 블록을 Ⅱ·Ⅲ 에 넣는다. 유형의 표 열과 실제 예시는 .claude/skills/gepa-closeout-design/reference/result.md §4·§8 을 Read 한다.
-- Ⅰ 사업개요는 사업계획서에서 옮긴다(추진배경·목적·사업명·기간·대상·내용). Ⅱ·Ⅲ 의 수치는 자료와 위 메모에 있는 것만 쓴다.
-- Ⅳ 예산 집행 현황은 {{정산:항목별}} 한 줄과 잔액·이자 한 줄로 쓴다.
+- 사업 유형을 먼저 정하고(기업지원금·바우처·시군위탁 / 소상공인 대량지원 / 일자리 / 해외전시·사절단 / 국내판로 / 행사·회의·교육) ${SKILL} §2 의 유형 모듈 A~F 중 하나를 □ 세부 추진결과에 넣는다. 여러 세부사업이 섞이면 지원금이 가장 큰 쪽 모듈을 쓰고 나머지는 ㅇ 줄로 요약한다.
+- Ⅱ 의 계획 대비 실적 표는 반드시 넣는다: 계획 열은 사업계획서(변경 계획이 있으면 최종)에서, 실적 열은 자료에서 옮긴다. 계획 값을 찾지 못하면 ○○ 로 둔다.
+- Ⅰ 은 계획서에서 옮기되 1쪽 이내로. 심사기준·배점표·추진절차 흐름도·추진체계는 넣지 않는다(§2 "넣지 않는다"). 본문 4~6쪽.
 - ${ledgerRule}${DOC_CONTRACT("result", "plan")}${resume}`,
         allowedTools: ["Read", "Write", "Glob", "Grep"],
         maxTurns: 30,
