@@ -6,7 +6,8 @@
  * 원본은 `materials/<이름>` 에, 에이전트가 읽을 텍스트는 `materials/text/<이름>.md` 에 둔다.
  * `materials/index.md` 가 목록이다 — 에이전트는 이것부터 읽는다.
  */
-import { existsSync, mkdirSync, readdirSync, readFileSync, rmSync, statSync, writeFileSync } from "node:fs";
+import { existsSync, mkdirSync, readdirSync, readFileSync, statSync, writeFileSync } from "node:fs";
+import { removeSync } from "../fsSafe";
 import { basename, join } from "node:path";
 import { projectDir } from "../storage/paths";
 import { extractReferenceText, referenceExtension } from "../reference/extract";
@@ -75,7 +76,7 @@ export function saveMaterial(projectId: string, rawName: string, bytes: Uint8Arr
   mkdirSync(join(dir, "text"), { recursive: true });
   writeFileSync(join(dir, name), bytes);
   if ("text" in t) writeFileSync(join(dir, "text", `${name}.md`), t.text, "utf8");
-  else rmSync(join(dir, "text", `${name}.md`), { force: true });
+  else removeSync(join(dir, "text", `${name}.md`));
   writeFileSync(join(dir, "text", `${name}.note`), "direct" in t ? t.direct : "", "utf8");
   writeMaterialsIndex(projectId);
   return listMaterials(projectId).find((m) => m.name === name)!;
@@ -85,7 +86,7 @@ export function deleteMaterial(projectId: string, rawName: string): boolean {
   const name = safeMaterialName(rawName);
   const dir = materialsDir(projectId);
   if (!existsSync(join(dir, name))) return false;
-  for (const p of [join(dir, name), join(dir, "text", `${name}.md`), join(dir, "text", `${name}.note`)]) rmSync(p, { force: true });
+  for (const p of [join(dir, name), join(dir, "text", `${name}.md`), join(dir, "text", `${name}.note`)]) removeSync(p);
   writeMaterialsIndex(projectId);
   return true;
 }

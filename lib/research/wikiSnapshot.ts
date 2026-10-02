@@ -5,7 +5,8 @@
  * made read-only (0444). Only new/changed files (size or mtime) are copied on later runs, and
  * `.md` files the source no longer has are removed from the snapshot (see the sweep below).
  */
-import { chmodSync, existsSync, mkdirSync, readdirSync, rmSync, statSync, copyFileSync, utimesSync } from "node:fs";
+import { chmodSync, existsSync, mkdirSync, readdirSync, statSync, copyFileSync, utimesSync } from "node:fs";
+import { removeSync } from "../fsSafe";
 import path from "node:path";
 
 export interface WikiSyncResult {
@@ -77,7 +78,7 @@ export function syncWikiSnapshot(srcDir: string, destDir: string): WikiSyncResul
         if (!ent.isFile() || !ent.name.endsWith(".md")) continue;
         if (seen.has(relPath)) continue;
         chmodSync(path.join(destDir, relPath), 0o644); // 사본은 0444 라 지우기 전에 푼다
-        rmSync(path.join(destDir, relPath));
+        removeSync(path.join(destDir, relPath));
         removed++;
       }
     };

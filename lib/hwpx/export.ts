@@ -3,7 +3,8 @@
  * stage directory (data/projects/<id>/<stage>/).
  */
 import { createHash } from "node:crypto";
-import { existsSync, mkdirSync, readFileSync, readdirSync, writeFileSync, rmSync } from "node:fs";
+import { existsSync, mkdirSync, readFileSync, readdirSync, writeFileSync } from "node:fs";
+import { removeSync } from "../fsSafe";
 import { join } from "node:path";
 import { lintGovStyle } from "../docmodel/govLint";
 import { buildHwpx, type BuildOptions } from "./build";
@@ -70,7 +71,7 @@ function writeRenderCache(stageDir: string, hash: string, svgs: string[]): strin
   // prune older renders (keep the 3 newest)
   const renderRoot = join(stageDir, "render");
   const dirs = readdirSync(renderRoot, { withFileTypes: true }).filter((d) => d.isDirectory()).map((d) => ({ name: d.name, t: statMtime(join(renderRoot, d.name)) })).sort((a, b) => b.t - a.t);
-  for (const d of dirs.slice(3)) rmSync(join(renderRoot, d.name), { recursive: true, force: true });
+  for (const d of dirs.slice(3)) removeSync(join(renderRoot, d.name));
   return dir;
 }
 

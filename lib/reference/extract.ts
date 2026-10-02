@@ -9,7 +9,8 @@
  */
 import { REFERENCE_CHANGES_LABEL, REFERENCE_DOC_TITLE, type ReferenceRole } from "../contracts";
 import { pdftotextBin, rhwpBin, spawnCommandSync as spawnSync } from "../platform";
-import { mkdtempSync, readFileSync, rmSync, writeFileSync } from "node:fs";
+import { mkdtempSync, readFileSync, writeFileSync } from "node:fs";
+import { removeSync } from "../fsSafe";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { unzipSync } from "fflate";
@@ -70,7 +71,7 @@ export function hwpToHwpx(bytes: Uint8Array, bin = rhwpBin()): Uint8Array {
     if (r.status !== 0) throw new Error(`rhwp export-hwpx failed (${r.status}): ${(r.stderr || r.stdout || "").slice(0, 300)}`);
     return new Uint8Array(readFileSync(dst));
   } finally {
-    rmSync(dir, { recursive: true, force: true });
+    removeSync(dir);
   }
 }
 
@@ -85,7 +86,7 @@ export function pdfText(bytes: Uint8Array, bin = pdftotextBin()): string {
     // pdftotext -layout pads columns with spaces and separates pages with form feeds
     return r.stdout.replace(/\f/g, "\n\n").replace(/[ \t]{3,}/g, "  ");
   } finally {
-    rmSync(dir, { recursive: true, force: true });
+    removeSync(dir);
   }
 }
 

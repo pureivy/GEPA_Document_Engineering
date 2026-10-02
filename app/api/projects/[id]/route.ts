@@ -6,7 +6,8 @@ import { getRunManager } from "@/lib/agents/runManager";
 import { RUN_STAGES, type RunStage } from "@/lib/agents/runner";
 import { serializeProject } from "@/lib/db/serialize";
 import { projectDir } from "@/lib/storage/paths";
-import { existsSync, rmSync } from "node:fs";
+import { existsSync } from "node:fs";
+import { removeSync } from "@/lib/fsSafe";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
@@ -38,6 +39,6 @@ export async function DELETE(_req: Request, ctx: { params: Promise<{ id: string 
   if (active) return jsonError(409, "실행 중인 단계가 있어 삭제할 수 없습니다. 먼저 중지하세요.", { activeRunId: active });
   db.delete(projects).where(eq(projects.id, id)).run();
   const dir = projectDir(id);
-  if (existsSync(dir)) rmSync(dir, { recursive: true, force: true });
+  if (existsSync(dir)) removeSync(dir);
   return Response.json({ ok: true, id });
 }
