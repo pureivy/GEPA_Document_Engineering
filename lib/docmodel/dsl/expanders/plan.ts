@@ -19,6 +19,8 @@ export function planCoverTitle(meta: PlanMeta): Extract<BlockInput, { k: "coverT
 }
 
 export function planPrelude(meta: PlanMeta): BlockInput[] {
+  // 위탁기관 서식(정산보고서)은 결재란·표지가 없다 — 본문이 첫 쪽을 직접 그린다
+  if (meta.표지 === "없음") return [];
   const blocks: BlockInput[] = [{ k: "approvalBlock" }, planCoverTitle(meta)];
   if (meta.요약) {
     for (const name of PLAN_SUMMARY_SECTIONS) {

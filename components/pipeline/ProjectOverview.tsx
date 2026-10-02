@@ -4,7 +4,7 @@ import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import { ChevronLeft, PlayCircle, RefreshCw } from "lucide-react";
 import type { RunDTO, Stage } from "@/lib/contracts";
-import { STAGE_LABEL, type ProjectDTO } from "@/lib/contracts";
+import { STAGE_LABEL, isNotesStage, type ProjectDTO } from "@/lib/contracts";
 import { KIND_LABEL, KIND_STAGES, type ProjectKind } from "@/lib/kinds";
 import { api, errorMessage } from "@/lib/client/api";
 import { PREF_PLAN_RESEARCH, useBoolPref } from "@/lib/client/prefs";
@@ -29,7 +29,7 @@ async function fetchOverview(projectId: string, stages: Stage[]): Promise<Overvi
   const results = await Promise.all(
     stages.map(async (s) => {
       try {
-        if (s === "research") return [s, !!(await api.getResearch(projectId)).markdown] as const;
+        if (isNotesStage(s)) return [s, !!(await api.getNotes(projectId, s)).markdown] as const;
         return [s, !!(await api.getDoc(projectId, s)).doc] as const;
       } catch {
         return [s, false] as const;

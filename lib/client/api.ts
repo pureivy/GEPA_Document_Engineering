@@ -52,6 +52,15 @@ export interface NewProjectInput {
   contact: ProjectDTO["contact"];
 }
 
+/** 정산·결과보고 자료 한 건 — lib/closeout/materials.ts MaterialInfo 와 같은 모양 */
+export interface MaterialDTO {
+  name: string;
+  bytes: number;
+  readPath: string;
+  mode: "text" | "direct";
+  note?: string;
+}
+
 export interface VersionDTO {
   seq: number;
   source: string;
@@ -90,6 +99,17 @@ export const api = {
     if (!res.ok) throw new ApiError(res.status, body.error ?? `${res.status} ${res.statusText}`, body);
     return body as { project: ProjectDTO; chars: number; truncated: boolean };
   },
+  /** 정산·결과보고 자료(여러 파일) — 변환에 실패한 파일은 errors 로 돌아온다 */
+  uploadMaterials: async (id: string, files: File[]) => {
+    const fd = new FormData();
+    for (const f of files) fd.append("files", f);
+    const res = await fetch(`/api/projects/${encodeURIComponent(id)}/materials`, { method: "POST", body: fd, headers: { Accept: "application/json" } });
+    const body = (await res.json().catch(() => ({}))) as { error?: string; materials?: MaterialDTO[]; errors?: { name: string; message: string }[] };
+    if (!res.ok && !body.materials) throw new ApiError(res.status, body.error ?? `${res.status} ${res.statusText}`, body);
+    return { materials: body.materials ?? [], errors: body.errors ?? [] };
+  },
+  listMaterials: (id: string) => request<{ materials: MaterialDTO[] }>(`/api/projects/${encodeURIComponent(id)}/materials`),
+  deleteMaterial: (id: string, name: string) => request<{ materials: MaterialDTO[] }>(`/api/projects/${encodeURIComponent(id)}/materials?name=${encodeURIComponent(name)}`, { method: "DELETE" }),
   deleteProject: (id: string) => request<{ ok: true; id: string }>(`/api/projects/${encodeURIComponent(id)}`, { method: "DELETE" }),
 
   // runs
@@ -109,6 +129,8 @@ export const api = {
   getDoc: (projectId: string, stage: Stage) => request<{ doc: DocModel | null; version: number }>(`${stageBase(projectId, stage)}/doc`),
   getDsl: (projectId: string, stage: Stage) => request<{ dsl?: string; markdown?: string } | string>(`${stageBase(projectId, stage)}/doc?format=dsl`, { headers: { Accept: "text/plain, application/json" } }),
   getResearch: (projectId: string) => request<{ markdown: string }>(`${stageBase(projectId, "research")}/doc`),
+  /** 노트 단계(research·ledger)의 마크다운 — lib/contracts.ts NOTES_STAGE_FILE */
+  getNotes: (projectId: string, stage: Stage) => request<{ markdown: string | null }>(`${stageBase(projectId, stage)}/doc`),
   putDoc: (projectId: string, stage: Stage, doc: DocModel) => request<{ version: number }>(`${stageBase(projectId, stage)}/doc`, { method: "PUT", body: JSON.stringify({ doc }) }),
 
   // export / render / download

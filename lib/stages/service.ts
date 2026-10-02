@@ -9,6 +9,8 @@ import { DocModelSchema, type DocModel } from "../docmodel/schema";
 import { parseDsl } from "../docmodel/dsl";
 import { normalizeDocMeta, normalizeDslText, type NormalizeChange } from "../docmodel/govNormalize";
 import { toDsl } from "../docmodel/serialize/toDsl";
+import { expandLedgerMacros, hasLedgerMacro } from "../closeout/macros";
+import { readLedger } from "../closeout/store";
 import { exportStageDoc, ensureRendered, readExportReport, readPageSvg } from "../hwpx/export";
 import type { ExportReportDTO, Stage } from "../contracts";
 import { db, schema } from "../db/client";
@@ -62,8 +64,22 @@ export function saveStageDsl(projectId: string, stage: Stage, dslText: string, s
   // user edits are saved verbatim (the editor shows lint warnings instead)
   let text = dslText;
   const normalized: NormalizeChange[] = [];
+  const macroWarnings: { line: number; message: string }[] = [];
+  // 정산 표·값은 에이전트가 타이핑하지 않는다 — `{{정산:…}}` 를 원장 계산 결과로 펼친다(lib/closeout/macros.ts).
+  // 원장이 없으면 매크로를 그대로 남기고 경고한다(표가 조용히 빠진 문서를 만들지 않는다).
+  if (source === "agent" && hasLedgerMacro(text)) {
+    const l = readLedger(projectId);
+    if (l.ok) {
+      const x = expandLedgerMacros(text, l.ledger);
+      text = x.text;
+      macroWarnings.push(...x.warnings.map((message) => ({ line: 0, message })));
+      normalized.push({ rule: "정산매크로", count: 1 });
+    } else {
+      macroWarnings.push({ line: 0, message: `정산 매크로를 펼치지 못했습니다: ${l.error}` });
+    }
+  }
   if (source === "agent") {
-    const r = normalizeDslText(dslText);
+    const r = normalizeDslText(text);
     text = r.text;
     normalized.push(...r.changes);
   }
@@ -85,7 +101,7 @@ export function saveStageDsl(projectId: string, stage: Stage, dslText: string, s
     }
   }
   const version = saveStageDoc(projectId, stage, doc, source, text);
-  return { doc, warnings: parsed.warnings, version, normalized };
+  return { doc, warnings: [...macroWarnings, ...parsed.warnings], version, normalized };
 }
 
 export function listVersions(projectId: string, stage: Stage): { seq: number; source: string; createdAt: string }[] {

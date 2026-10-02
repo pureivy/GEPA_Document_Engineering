@@ -19,7 +19,7 @@ const SCHEMAS: Record<Family, z.ZodType> = { notice: NoticeMetaSchema, plan: Pla
 /** field order + labels for fields the schema knows; unknown keys are appended */
 const ORDER: Record<Family, string[]> = {
   notice: ["공고번호", "사업명", "모집대상", "부제", "주관기관", "지역", "대상기업군", "공고연월", "기관장", "접수", "모집개요", "절차도", "로고", "lineSpacing", "paraSpacing"],
-  plan: ["제목", "부제", "연도", "부서", "등록번호", "결재", "요약", "numbering", "lineSpacing", "body1Font", "house"],
+  plan: ["제목", "부제", "연도", "부서", "등록번호", "결재", "요약", "numbering", "lineSpacing", "body1Font", "house", "표지"],
   press: ["기관", "배포일", "보도시점", "담당부서", "책임자", "담당자", "연락처", "이메일", "제목", "부제", "사진", "붙임"],
   official: ["수신유형", "수신", "수신자", "경유", "제목", "발신명의", "처리과", "시행일", "공개구분", "전결", "결재라인", "협조자", "연락처", "붙임"],
   report: ["제목", "보고일", "보고대상", "부서", "대상기간", "목차표시"],
@@ -57,6 +57,7 @@ const TEMPLATE: Record<Family, Record<string, unknown>> = {
     lineSpacing: 160,
     body1Font: "humanMyeongjoBold",
     house: "gepa",
+    표지: "결재",
   },
   press: { 기관: "(재)경상북도경제진흥원", 배포일: "", 보도시점: "즉시", 담당부서: "", 책임자: "", 담당자: "", 연락처: "", 이메일: "", 제목: "", 부제: "", 사진: false, 붙임: [] },
   official: {

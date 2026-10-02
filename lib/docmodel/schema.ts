@@ -238,6 +238,12 @@ export const PlanMetaSchema = z.object({
    * numbered navy section chips, boxed title. See docs/design-system/bumpis.md.
    */
   house: z.enum(["gepa", "bumpis"]).default("gepa"),
+  /**
+   * 첫머리 합성. "결재"(기본) = 결재란 + 제목 표지(사업계획서·결과보고서 — 내부결재 보고서형).
+   * "없음" = 아무것도 합성하지 않는다 — 위탁기관이 정한 서식(「위탁사업 추진실적 및 정산보고서」)은
+   * 결재란이 없고 표지를 본문이 직접 그린다(docs/design-system/closeout-settlement.md §2.0).
+   */
+  표지: z.enum(["결재", "없음"]).default("결재"),
 });
 export type PlanMeta = z.infer<typeof PlanMetaSchema>;
 

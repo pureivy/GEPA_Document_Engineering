@@ -1,14 +1,14 @@
 "use client";
 import Link from "next/link";
-import { ArrowRight, ClipboardList, Download, FileSearch, FileText, Mail, Megaphone, Newspaper } from "lucide-react";
+import { ArrowRight, Calculator, ClipboardCheck, ClipboardList, Download, FileSearch, FileSpreadsheet, FileText, Mail, Megaphone, Newspaper, Send } from "lucide-react";
 import type { RunDTO, RunStatus, Stage } from "@/lib/contracts";
-import { STAGE_LABEL } from "@/lib/contracts";
+import { STAGE_LABEL, isNotesStage } from "@/lib/contracts";
 import { api } from "@/lib/client/api";
 import { cn, formatCost, formatDateTime, formatDuration, RUN_STATUS_LABEL, STAGE_DESCRIPTION } from "@/lib/client/format";
 import { Badge, type BadgeTone } from "@/components/ui/badge";
 
 const TONE: Record<RunStatus, BadgeTone> = { running: "running", succeeded: "success", failed: "danger", cancelled: "warning" };
-const ICON: Record<Stage, React.ComponentType<{ className?: string }>> = { research: FileSearch, plan: FileText, notice: Megaphone, press: Newspaper, official: Mail, report: ClipboardList };
+const ICON: Record<Stage, React.ComponentType<{ className?: string }>> = { research: FileSearch, plan: FileText, notice: Megaphone, press: Newspaper, official: Mail, report: ClipboardList, ledger: Calculator, result: ClipboardCheck, settlement: FileSpreadsheet, submit: Send };
 
 export interface StageCardProps {
   projectId: string;
@@ -59,7 +59,7 @@ export function StageCard({ projectId, stage, index, latestRun, active, hasDoc, 
         </p>
       ) : null}
       <div className="mt-auto flex items-center gap-2 pt-3">
-        {hasDoc && stage !== "research" ? (
+        {hasDoc && !isNotesStage(stage) ? (
           <a href={api.downloadUrl(projectId, stage, "hwpx")} className="inline-flex items-center gap-1 rounded border border-slate-300 px-2 py-1 text-[11px] text-slate-700 hover:bg-slate-50" download>
             <Download className="h-3 w-3" /> HWPX
           </a>

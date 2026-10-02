@@ -20,7 +20,11 @@ const KIND_HINT: Record<ProjectKind, string> = {
   program: "조사 → 사업계획서 → 공고문 → 보도자료를 차례로 만듭니다.",
   official: "별지 제1호 기안문 한 건을 만듭니다.",
   report: "주요업무보고 한 건을 만듭니다(표지·보고순서·간지 포함).",
+  closeout: "사업을 마친 뒤 정산자료 → 결과보고서 → 정산보고서 → 제출 공문을 차례로 만듭니다.",
 };
+
+/** 정산·결과보고 자료로 받는 형식 — lib/closeout/materials.ts MATERIAL_EXTENSIONS 와 같다 */
+const MATERIAL_ACCEPT = ".xlsx,.csv,.hwp,.hwpx,.pdf,.docx,.md,.txt,.png,.jpg,.jpeg";
 
 /** 공문 수신유형 — OfficialMetaSchema 에서 그대로 가져온다(손으로 다시 적으면 둘이 갈라질 수 있다). export 는 드리프트 가드 테스트용. */
 export const RECIPIENT_KINDS = OfficialMetaSchema.shape.수신유형.options;
@@ -82,9 +86,13 @@ function NewProjectDialog({ onClose, onCreated }: { onClose: () => void; onCreat
   const [disclosure, setDisclosure] = useState<DisclosureKind>(DISCLOSURE_KINDS[0]);
   const planResearch = useBoolPref(PREF_PLAN_RESEARCH, false);
   const [phase, setPhase] = useState<"" | "create" | "upload">("");
+  // 정산·결과보고 자료(여러 개) — 사업계획서·집행 집계표·통장거래내역·실적 메모
+  const [materials, setMaterials] = useState<File[]>([]);
 
   const kind = form.kind;
   const isOfficial = kind === "official";
+  /** 정산·결과보고 — 제출 공문의 수신(위탁기관)과 전결을 공문처럼 받는다 */
+  const isCloseout = kind === "closeout";
   /**
    * **"공문이 아니다" 와 "사업이다" 는 다르다.** 업무보고가 생기기 전에는 같았고, 그래서 이 폼의
    * `!isOfficial` 가지에는 사업계획서 갱신 파이프라인의 것(자동 실행·"기존 사업계획서"·보충 조사)이
@@ -110,7 +118,9 @@ function NewProjectDialog({ onClose, onCreated }: { onClose: () => void; onCreat
   // 붙인 문서나 지시로 채운다(비워 두면 제목에서 주제를 만든다. 아래 submit 의 topic).
   const valid = isOfficial
     ? contactOk && recipientOk && !!form.title.trim() && (!!form.topic.trim() || !!refFile)
-    : isProgram
+    : isCloseout
+      ? contactOk && !!form.title.trim() && !!recipient.trim()
+      : isProgram
       ? contactOk && (refFile ? true : !!(form.title.trim() && form.topic.trim()))
       : contactOk && !!form.title.trim();
   const missing = isOfficial
@@ -122,6 +132,14 @@ function NewProjectDialog({ onClose, onCreated }: { onClose: () => void; onCreat
         ...(!form.contact.전화.trim() ? ["전화"] : []),
         ...(!form.contact.이메일.trim() ? ["이메일"] : []),
       ]
+    : isCloseout
+      ? [
+          ...(!form.title.trim() ? ["사업명"] : []),
+          ...(!recipient.trim() ? ["수신(위탁기관)"] : []),
+          ...(!form.contact.부서명.trim() ? ["부서명"] : []),
+          ...(!form.contact.전화.trim() ? ["전화"] : []),
+          ...(!form.contact.이메일.trim() ? ["이메일"] : []),
+        ]
     : !isProgram
       ? [
           ...(!form.title.trim() ? ["제목"] : []),
@@ -158,6 +176,13 @@ function NewProjectDialog({ onClose, onCreated }: { onClose: () => void; onCreat
         // 파일이 없으면 키 자체를 넣지 않는다 — 용도는 붙인 문서가 있을 때만 뜻이 있다
         if (refFile) contact.참고문서용도 = refRole;
       }
+      // 정산·결과보고: 제출 공문은 늘 위탁기관 한 곳에 보낸다(실문서 457건 중 수신자참조 0건 — closeout-cover.md §A)
+      if (isCloseout) {
+        contact.수신유형 = "수신자";
+        contact.수신 = recipient.trim();
+        contact.전결 = 전결;
+        contact.공개구분 = disclosure;
+      }
       setPhase("create");
       // 파일 이름을 제목으로 삼는 것은 사업계획서 갱신의 편의다 — 공문·업무보고는 제목이 필수다
       const baseName = isProgram && refFile ? refFile.name.replace(/\.[A-Za-z0-9]+$/, "") : "";
@@ -167,7 +192,9 @@ function NewProjectDialog({ onClose, onCreated }: { onClose: () => void; onCreat
       // 파일 경로는 프롬프트의 "참고 문서(용도: …)" 줄이 따로 싣는다.
       const topic = isOfficial
         ? form.topic.trim() || (refFile ? `첨부한 ${REFERENCE_DOC_TITLE[refRole]}(${refFile.name})의 내용으로 공문을 작성` : "")
-        : isProgram
+        : isCloseout
+          ? form.topic.trim() || `「${title}」 결과 및 정산보고 — 내용은 올린 자료로 작성`
+          : isProgram
           ? form.topic.trim() || (refFile ? `기존 사업계획서(${refFile.name})를 기준으로 갱신${changes.trim() ? ` — 바뀌는 내용: ${changes.trim()}` : ""}` : "")
           : // 업무보고는 주제를 묻지 않으므로 비어 있을 수 있다. 서버는 한 글자 이상을 요구하므로
             // 제목에서 만든다 — "기존 사업계획서를 갱신" 은 업무보고에 쓰면 안 되는 말이다.
@@ -176,7 +203,18 @@ function NewProjectDialog({ onClose, onCreated }: { onClose: () => void; onCreat
       const p = await api.createProject({ ...form, title, topic, contact });
       // 실제로 쓰인 연락처가 다음 프로젝트의 기본값이 된다(브라우저에만 담는다)
       saveContactPref(form.contact);
-      if (refFile) {
+      if (isCloseout && materials.length) {
+        setPhase("upload");
+        const up = await api.uploadMaterials(p.id, materials);
+        // 일부 파일만 실패해도 프로젝트는 쓸 수 있다 — 실패한 파일만 알리고 자동 실행은 멈춘다(빠진 자료로 원장을 만들지 않게)
+        if (up.errors.length) {
+          setError(`프로젝트는 만들었지만 다음 자료를 읽지 못했습니다 — 프로젝트 화면에서 다시 올려 주세요: ${up.errors.map((e) => `${e.name}(${e.message})`).join(", ")}`);
+          setTimeout(() => onCreated(p), 4000);
+          return;
+        }
+        if (autoRun) await api.runStage(p.id, "ledger", { autoChain: true });
+      }
+      if (refFile && !isCloseout) {
         setPhase("upload");
         // 공문·업무보고에는 research 단계가 없다 — 자동 실행을 걸 곳이 없으므로 늘 false 로 보낸다
         // (라우트도 같은 게이트를 둔다: app/api/projects/[id]/reference/route.ts:48).
@@ -205,7 +243,7 @@ function NewProjectDialog({ onClose, onCreated }: { onClose: () => void; onCreat
           </Button>
           {!valid ? <span className="mr-2 self-center text-[11px] text-slate-500">입력 필요: {missing.join(", ")}</span> : null}
           <Button variant="primary" onClick={() => void submit()} disabled={!valid} loading={busy} title={valid ? undefined : `입력 필요: ${missing.join(", ")}`}>
-            {phase === "upload" ? "업로드·분석 중…" : isProgram && refFile && autoRun ? "만들고 자동 실행" : "만들기"}
+            {phase === "upload" ? "업로드·분석 중…" : (isProgram && refFile && autoRun) || (isCloseout && materials.length && autoRun) ? "만들고 자동 실행" : "만들기"}
           </Button>
         </>
       }
@@ -229,15 +267,25 @@ function NewProjectDialog({ onClose, onCreated }: { onClose: () => void; onCreat
           </div>
         </Field>
         <Field
-          label="제목"
+          label={isCloseout ? "사업명" : "제목"}
           id="title"
           required={!isProgram || !refFile}
-          hint={isProgram && refFile ? "비우면 파일 이름을 제목으로 씁니다" : isOfficial ? "공문의 제목 칸에 그대로 들어갑니다" : !isProgram ? "표지에 나가는 유일한 글자입니다" : undefined}
+          hint={
+            isCloseout
+              ? "교부결정서의 사업명 그대로 — 「」 없이. 결과보고서·정산보고서·공문 제목이 여기서 만들어집니다"
+              : isProgram && refFile
+                ? "비우면 파일 이름을 제목으로 씁니다"
+                : isOfficial
+                  ? "공문의 제목 칸에 그대로 들어갑니다"
+                  : !isProgram
+                    ? "표지에 나가는 유일한 글자입니다"
+                    : undefined
+          }
         >
           <Input
             id="title"
             name="title"
-            placeholder={isOfficial ? "예) 경영평가 대응을 위한 2026년 사업 추진 현황 제출 요청" : isProgram ? "예) 2026년 안동시 수출기업 역량강화 지원사업" : "예) 2026년 주요업무보고"}
+            placeholder={isCloseout ? "예) 2025년 서비스산업 투자유치협의체" : isOfficial ? "예) 경영평가 대응을 위한 2026년 사업 추진 현황 제출 요청" : isProgram ? "예) 2026년 안동시 수출기업 역량강화 지원사업" : "예) 2026년 주요업무보고"}
             value={form.title}
             onChange={(e) => set("title", e.target.value)}
             autoComplete="off"
@@ -312,6 +360,47 @@ function NewProjectDialog({ onClose, onCreated }: { onClose: () => void; onCreat
               />
             </Field>
           </>
+        ) : isCloseout ? (
+          <>
+            <div className="grid grid-cols-[1fr_9rem_8rem] gap-4">
+              <Field label="수신(위탁기관)" id="recipient" required hint="제출 공문의 수신 — 예: 경상북도지사(투자유치단장), 고령군수(투자유치과장)">
+                <Input id="recipient" name="recipient" placeholder="경상북도지사(투자유치단장)" value={recipient} onChange={(e) => setRecipient(e.target.value)} autoComplete="off" />
+              </Field>
+              <Field label="전결" id="delegation" required>
+                <Select id="delegation" name="delegation" value={전결} onChange={(e) => setDelegation(e.target.value as DelegationLevel)}>
+                  {levels.map((l) => (
+                    <option key={l} value={l}>
+                      {l}
+                    </option>
+                  ))}
+                </Select>
+              </Field>
+              <Field label="공개구분" id="disclosure" required>
+                <Select id="disclosure" name="disclosure" value={disclosure} onChange={(e) => setDisclosure(e.target.value as DisclosureKind)}>
+                  {DISCLOSURE_KINDS.map((d) => (
+                    <option key={d} value={d}>
+                      {d}
+                    </option>
+                  ))}
+                </Select>
+              </Field>
+            </div>
+            <Field
+              label="사업 내용·실적 메모"
+              id="topic"
+              hint="자유 서술(선택) — 자료에 없는 사실만 적으면 됩니다: 사업기간, 행사 일시·장소·참석 인원, 지원 기업 수, 만족도, 상담·계약 실적, 집행잔액이 생긴 이유 등. 적지 않은 수치는 만들어 넣지 않습니다"
+            >
+              <Textarea
+                id="topic"
+                name="topic"
+                rows={5}
+                placeholder="예) 사업기간 2025. 2.~12. / 투자유치 회의 3회(4. 7. 킥오프 21명, 5. 26. 소규모 8명, 9. 30. 전체회의 22명) / 물류분야 위원 1명 추가 위촉 / 잔액은 회의비·여비 실비 정산분"
+                value={form.topic}
+                onChange={(e) => set("topic", e.target.value)}
+                autoComplete="off"
+              />
+            </Field>
+          </>
         ) : isProgram ? (
           <>
             <Field label="주제" id="topic" hint={refFile ? "비우면 기존 계획서와 바뀌는 내용으로 채웁니다" : "자유 서술 — 목적, 대상, 지원 내용, 예산 규모 등"} required={!refFile}>
@@ -373,9 +462,55 @@ function NewProjectDialog({ onClose, onCreated }: { onClose: () => void; onCreat
             ) : null}
           </div>
         </fieldset>
+        {isCloseout ? (
+          <fieldset className="rounded-md border border-slate-200 p-3">
+            <legend className="px-1 text-xs font-semibold text-slate-600">자료 올리기</legend>
+            <p className="mb-2 text-[11px] text-slate-500">
+              사업계획서(교부결정서), 예산집행 집계표, 통장거래내역, 지출결의 내려받기, 행사 결과 메모 등을 함께 올리세요. 엑셀은 양식이 달라도 됩니다 — 정산자료 단계가 읽어 원장으로 옮기고, 합계·집행률·반납액은 프로그램이 계산합니다. 나중에 프로젝트 화면에서 더 올릴 수 있습니다.
+            </p>
+            <div className="grid gap-2">
+              <label className="flex cursor-pointer items-center gap-2 rounded border border-dashed border-slate-300 px-3 py-2 text-xs text-slate-700 hover:bg-slate-50">
+                <Upload className="h-4 w-4 text-slate-400" />
+                <span className="flex-1 truncate">파일 선택(여러 개) — .xlsx .csv .hwp .hwpx .pdf .docx .md .txt .png .jpg</span>
+                <input
+                  id="materials"
+                  name="materials"
+                  type="file"
+                  multiple
+                  className="hidden"
+                  accept={MATERIAL_ACCEPT}
+                  onChange={(e) => {
+                    const picked = Array.from(e.target.files ?? []);
+                    setMaterials((cur) => [...cur.filter((c) => !picked.some((p) => p.name === c.name)), ...picked]);
+                    e.target.value = "";
+                  }}
+                />
+              </label>
+              {materials.length ? (
+                <ul className="grid gap-1 text-xs text-slate-700">
+                  {materials.map((m) => (
+                    <li key={m.name} className="flex items-center gap-2 rounded bg-slate-50 px-2 py-1">
+                      <span className="flex-1 truncate">{m.name}</span>
+                      <span className="text-slate-400">{Math.max(1, Math.round(m.size / 1024))} KB</span>
+                      <button type="button" aria-label={`${m.name} 빼기`} className="rounded p-0.5 text-slate-400 hover:text-red-600" onClick={() => setMaterials((cur) => cur.filter((c) => c !== m))}>
+                        <Trash2 className="h-3.5 w-3.5" />
+                      </button>
+                    </li>
+                  ))}
+                </ul>
+              ) : null}
+              {materials.length ? (
+                <label className="flex items-center gap-1 text-xs text-slate-700">
+                  <input id="autoRunCloseout" name="autoRunCloseout" type="checkbox" className="h-3.5 w-3.5" checked={autoRun} onChange={(e) => setAutoRun(e.target.checked)} />
+                  만든 뒤 정산자료부터 제출 공문까지 자동 실행
+                </label>
+              ) : null}
+            </div>
+          </fieldset>
+        ) : null}
         {/* 공문·업무보고에도 파일을 붙인다 — 같은 업로드 경로를 쓰되 용도는 공문만 묻고(업무보고는 언제나
-            근거자료다), 자동 실행은 걸지 않는다(둘 다 조사 단계가 없다) */}
-        <fieldset className="rounded-md border border-slate-200 p-3">
+            근거자료다), 자동 실행은 걸지 않는다(둘 다 조사 단계가 없다). 정산·결과보고는 위의 자료함을 쓴다 */}
+        <fieldset className={cn("rounded-md border border-slate-200 p-3", isCloseout && "hidden")}>
           <legend className="px-1 text-xs font-semibold text-slate-600">{isProgram ? "기존 사업계획서로 시작 (선택)" : "관련 문서 첨부 (선택)"}</legend>
           <p className="mb-2 text-[11px] text-slate-500">
             {isOfficial
@@ -560,7 +695,12 @@ export function ProjectList() {
                 </div>
                 <p className="mt-1 line-clamp-2 text-xs leading-relaxed text-slate-600">{p.topic}</p>
                 <div className="mt-3 flex flex-wrap gap-x-4 gap-y-1 text-[11px] text-slate-500">
-                  {p.kind === "program" ? (
+                  {p.kind === "closeout" ? (
+                    <>
+                      <span>부서 {p.contact?.부서명 || "-"}</span>
+                      <span>수신 {p.contact?.수신 || "-"}</span>
+                    </>
+                  ) : p.kind === "program" ? (
                     <>
                       <span>지역 {p.region || "-"}</span>
                       <span>주관 {p.organizer || "-"}</span>

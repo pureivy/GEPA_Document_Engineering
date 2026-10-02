@@ -29,6 +29,11 @@ export const STAGE_LIMITS: Record<RunStage, StageLimits> = {
   official: { maxTurns: 20, wallTimeoutMs: 15 * MIN, idleTimeoutMs: DEFAULT_IDLE_TIMEOUT_MS },
   // 업무보고는 참고본 골격을 채우는 일이라 공문서와 같은 크기로 둔다(실측 전 잠정값)
   report: { maxTurns: 20, wallTimeoutMs: 15 * MIN, idleTimeoutMs: DEFAULT_IDLE_TIMEOUT_MS },
+  // 정산자료는 엑셀 여러 장을 읽어 건별로 옮긴다 — 통장내역이 길면 턴이 많이 든다(실측 전 잠정값)
+  ledger: { maxTurns: 40, wallTimeoutMs: 25 * MIN, idleTimeoutMs: DEFAULT_IDLE_TIMEOUT_MS },
+  result: { maxTurns: 30, wallTimeoutMs: 25 * MIN, idleTimeoutMs: DEFAULT_IDLE_TIMEOUT_MS },
+  settlement: { maxTurns: 25, wallTimeoutMs: 20 * MIN, idleTimeoutMs: DEFAULT_IDLE_TIMEOUT_MS },
+  submit: { maxTurns: 20, wallTimeoutMs: 15 * MIN, idleTimeoutMs: DEFAULT_IDLE_TIMEOUT_MS },
   review: { maxTurns: 15, wallTimeoutMs: 15 * MIN, idleTimeoutMs: DEFAULT_IDLE_TIMEOUT_MS },
 };
 
@@ -42,6 +47,11 @@ export const STAGE_ALLOWED_TOOLS: Record<RunStage, string[]> = {
   official: ["Read", "Write"],
   // 업무보고도 사람이 실적·계획을 이미 아는 문서다 — 조사 도구를 주지 않는다
   report: ["Read", "Write"],
+  // 정산·결과보고는 올린 자료만 근거로 쓴다 — 조사 도구를 주지 않는다. 자료가 여러 개라 Glob·Grep 은 준다
+  ledger: ["Read", "Write", "Edit", "Glob", "Grep"],
+  result: ["Read", "Write", "Glob", "Grep"],
+  settlement: ["Read", "Write", "Glob", "Grep"],
+  submit: ["Read", "Write", "Glob", "Grep"],
   review: ["Read"],
 };
 
@@ -68,6 +78,12 @@ export const STAGE_MODELS: Record<RunStage, ModelAlias> = {
   press: "sonnet",
   official: "sonnet",
   report: "sonnet",
+  // 원장 옮기기는 양식이 제각각인 엑셀의 열을 판단하는 일이라 opus, 결과보고서도 서술이 길어 opus.
+  // 정산보고서·공문은 숫자가 매크로로 들어가고 골격이 정해져 있어 sonnet 으로 충분하다.
+  ledger: "opus",
+  result: "opus",
+  settlement: "sonnet",
+  submit: "sonnet",
   review: "sonnet",
 };
 
