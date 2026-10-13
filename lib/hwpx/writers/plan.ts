@@ -3,7 +3,7 @@ import { el, findAll, childrenNamed, type XmlNode } from "../xml";
 import type { PlanDoc, Block } from "../../docmodel/schema";
 import { inlineText } from "../../docmodel/schema";
 import { WriterContext } from "./context";
-import { emitBlank, emitImage, emitPara, emitTable, splitInlinesByNewline, type FamilyStyle } from "./common";
+import { emitBlank, emitImage, emitPara, emitPhotos, emitTable, splitInlinesByNewline, type FamilyStyle } from "./common";
 import { table, cellInteriorWidth } from "../emit/table";
 import { loadGeometry, cloneFragment, setCellText } from "../geometry";
 import { procedureFlow } from "./notice";
@@ -36,6 +36,7 @@ export function planStyle(doc: PlanDoc): FamilyStyle {
       spaceBefore: PLAN_SPACE_BEFORE,
       boldLeadingLabel: true,
       glyphMap: { "ㅇ": "○", "◦": "○" },
+      numericRight: true,
     };
   }
   // 기본(GEPA) 프로필도 글꼴·크기·표 서식은 범피스 1100일차 매뉴얼을 따른다(user, 2026-09-16):
@@ -57,6 +58,8 @@ export function planStyle(doc: PlanDoc): FamilyStyle {
     spaceBefore: PLAN_SPACE_BEFORE,
     boldLeadingLabel: true,
     glyphMap: { "ㅇ": "○", "◦": "○" },
+    // 금액 칸(10,000,000 등)은 오른쪽 정렬 — 왼쪽에 붙으면 자릿수가 어긋나 읽기 어렵다(담당자 2026-10-06)
+    numericRight: true,
   };
 }
 
@@ -109,6 +112,10 @@ export function writePlan(ctx: WriterContext, doc: PlanDoc): XmlNode[] {
       case "table":
         out.push(...emitTable(ctx, fs, b));
         break;
+      case "photos":
+        out.push(...emitPhotos(ctx, fs, b));
+        break;
+
       case "attachmentList": {
         const r = ctx.roleOr("body1", { para: { align: "JUSTIFY", lineSpacing: fs.bodyLineSpacing }, char: { font: "body", pt: fs.bodyPt } });
         b.items.forEach((it, i) => {
@@ -240,7 +247,8 @@ function bodyTitle(ctx: WriterContext, text: string): XmlNode {
   const paraPr = ctx.reg.paraPr({ align: "CENTER", lineSpacing: 140, next: 1200 });
   const charPr = ctx.reg.charPr({ font: "heading", pt });
   // 표지는 쪽을 끝까지 채워 다음 블록이 넘쳐서 새 쪽에 오는 구조다 — 짧은 제목 한 줄은 표지 맨 아래에 붙어 버리므로 쪽을 나눈다
-  return ctx.para({ paraPr, runs: [{ charPr, text: lines.join(" ") }], vertsize: pt * 100, lineSpacing: 140, forcePageBreak: true });
+  // 줄 나눔은 splitCoverTitle 그대로 — 한 줄로 이으면 폭을 넘겨 "결과 / 보고" 처럼 낱말 중간에서 꺾였다
+  return ctx.para({ paraPr, runs: [{ charPr, text: lines.join("\n") }], vertsize: pt * 100, lineSpacing: 140, forcePageBreak: true });
 }
 
 // ---- 장 제목 밴드 (Ⅰ | | 제목) ---------------------------------------------------------
@@ -276,7 +284,7 @@ export function chapterBand(ctx: WriterContext, numeral: string, title: string, 
     pageBreak: "NONE",
   });
   const anchor = ctx.roleOr("tableAnchor", { para: { align: "JUSTIFY", lineSpacing: 135 }, char: { font: "heading", pt: 16 } });
-  const paraPr = spaceBefore > 0 ? ctx.reg.paraPr({ align: "JUSTIFY", lineSpacing: 135, prev: spaceBefore }) : anchor.paraPr;
+  const paraPr = ctx.reg.keepWithNext(spaceBefore > 0 ? ctx.reg.paraPr({ align: "JUSTIFY", lineSpacing: 135, prev: spaceBefore }) : anchor.paraPr);
   return ctx.para({ paraPr, runs: [{ charPr: anchor.charPr, nodes: [tbl] }], vertsize: h, lineSpacing: 100 });
 }
 
@@ -285,20 +293,26 @@ export function chapterBand(ctx: WriterContext, numeral: string, title: string, 
 function sectionChip(ctx: WriterContext, label: string, title: string): XmlNode {
   const width = 47907;
   const margin = { l: 141, r: 141, t: 141, b: 141 };
-  const role = ctx.roleOr("chipTitle", { para: { align: "JUSTIFY", lineSpacing: 160 }, char: { font: "heading", pt: 15, bold: true } });
+  // 절 제목은 □(16pt)보다 커야 위계가 선다 — 15pt 는 본문과 구분이 안 됐다(담당자 2026-10-06)
+  const chipPt = 17;
+  const chipRole = ctx.roleOr("chipTitle", { para: { align: "JUSTIFY", lineSpacing: 160 }, char: { font: "heading", pt: chipPt, bold: true } });
+  const chipInfo = ctx.reg.charPrInfo(chipRole.charPr);
+  const role = { paraPr: chipRole.paraPr, charPr: chipInfo && chipInfo.pt === chipPt ? chipRole.charPr : ctx.reg.charPr({ font: "heading", pt: chipPt, bold: true }) };
   const bf = ctx.reg.borderFill({ l: "none", r: "none", t: {}, b: {}, fill: CHIP_FILL });
   const text = ` ${label ? label + " " : ""}${title}`.replace(/\s+$/, "");
   const tbl = table({
     id: ctx.ids.nextShapeId(),
     zOrder: ctx.ids.nextZOrder(),
     cols: [width],
-    rows: [{ height: 2631, cells: [{ col: 0, borderFill: bf, margin, paragraphs: [ctx.cellPara({ paraPr: role.paraPr, runs: [{ charPr: role.charPr, text }], vertsize: 1500, lineSpacing: 160, horzsize: cellInteriorWidth(width, margin) })] }] }],
+    rows: [{ height: 2900, cells: [{ col: 0, borderFill: bf, margin, paragraphs: [ctx.cellPara({ paraPr: role.paraPr, runs: [{ charPr: role.charPr, text }], vertsize: chipPt * 100, lineSpacing: 160, horzsize: cellInteriorWidth(width, margin) })] }] }],
     borderFill: ctx.reg.gridBorderFill(),
     inMargin: margin,
     outMargin: { l: 140, r: 140, t: 140, b: 140 },
   });
   const anchor = ctx.roleOr("tableAnchor", { para: { align: "JUSTIFY", lineSpacing: 135 }, char: { font: "heading", pt: 16 } });
-  return ctx.para({ paraPr: anchor.paraPr, runs: [{ charPr: anchor.charPr, nodes: [tbl] }], vertsize: 2631, lineSpacing: 100 });
+  // 절 제목 위 8pt — 앞 절의 표·본문에 붙어 보이지 않게, 그리고 다음 문단과 같은 쪽에
+  const paraPr = ctx.reg.keepWithNext(ctx.reg.paraPr({ align: "JUSTIFY", lineSpacing: 135, prev: 800 }));
+  return ctx.para({ paraPr, runs: [{ charPr: anchor.charPr, nodes: [tbl] }], vertsize: 2900, lineSpacing: 100 });
 }
 
 // ---- 목적 박스 (❖ …) ----------------------------------------------------------------

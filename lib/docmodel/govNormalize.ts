@@ -58,7 +58,33 @@ export function normalizeDslText(dsl: string): { text: string; changes: Normaliz
     t = countReplace(t, /원장 ○{2,3}|○{2,3} 원장/g, (m) => (m.startsWith("원장") ? `원장 ${ORG_DIRECTOR}` : `${ORG_DIRECTOR} 원장`), "원장 성명", changes);
     return t;
   });
-  return { text: out.join("\n"), changes: mergeChanges(changes) };
+  return { text: mergeLoneSubItems(out, changes).join("\n"), changes: mergeChanges(changes) };
+}
+
+/**
+ * `-` 항목 아래 `·` 항목이 하나뿐이면 위 줄 끝에 ", " 로 이어 쓴다 — 편람: 항목이 하나뿐이면 항목 기호를 붙이지 않는다
+ * (위 항목에 이어 쓰기). 작성 에이전트는 이 경고를 보지 못해 매번 그대로 냈다(결과보고 2026-10-06).
+ * 울타리(```) 안과 표 줄은 건드리지 않는다.
+ */
+function mergeLoneSubItems(lines: string[], changes: NormalizeChange[]): string[] {
+  const out: string[] = [];
+  let fenced = false;
+  let n = 0;
+  const isSub = (l: string | undefined) => !!l && /^\s*· \S/.test(l);
+  for (let i = 0; i < lines.length; i++) {
+    const line = lines[i];
+    if (/^\s*```/.test(line)) fenced = !fenced;
+    const prev = out[out.length - 1];
+    if (!fenced && isSub(line) && !isSub(prev) && !isSub(lines[i + 1]) && prev !== undefined && /^\s*- \S/.test(prev)) {
+      const body = line.replace(/^\s*·\s+/, "").trim();
+      out[out.length - 1] = `${prev.replace(/[\s.]+$/, "")}, ${body}`;
+      n++;
+      continue;
+    }
+    out.push(line);
+  }
+  if (n) changes.push({ rule: "항목 하나 이어 쓰기", count: n });
+  return out;
 }
 
 function mergeChanges(changes: NormalizeChange[]): NormalizeChange[] {

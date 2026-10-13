@@ -164,7 +164,8 @@ describe("closeout 프롬프트", () => {
   it("제출 공문: 시군 수신은 반납액, 도 수신은 통장잔액", () => {
     const city = buildStagePrompt({ stage: "submit", project: project("고령군수(투자유치과장)"), workspaceDir: ws });
     expect(city.prompt).toContain("{{정산:공문표}}");
-    expect(city.prompt).toContain("귀 기관의 무궁한 발전");
+    // 담당자 공문(3629, 고령군수 수신)은 "귀 군의" — 2026-10-07 정답 대조
+    expect(city.prompt).toContain("귀 군의 무궁한 발전");
     const prov = buildStagePrompt({ stage: "submit", project: project("경상북도지사(투자유치단장)"), workspaceDir: ws });
     expect(prov.prompt).toContain("{{정산:공문표}}");
     expect(prov.prompt).toContain("경상북도의 무궁한 발전");
@@ -230,5 +231,24 @@ describe("밖으로 나가는 공문의 발신명의", () => {
     expect(isInternalRecipient({ 수신: "고령군수(투자유치과장)" })).toBe(false);
     expect(isInternalRecipient({ 수신: "전부서" })).toBe(true);
     expect(isInternalRecipient({ 수신자: ["경영지원팀장", "마케팅팀장"] })).toBe(true);
+  });
+});
+
+describe("제출 공문 결문 연락처", () => {
+  it("에이전트가 빠뜨린 주소·우편번호를 프로젝트 담당 연락처로 채운다(고령군 2026-10-07)", async () => {
+    const { db, schema } = await import("../../lib/db/client");
+    const now = new Date().toISOString();
+    db().insert(schema.projects).values({ id: "pm", kind: "closeout", title: "t", topic: "t", createdAt: now, updatedAt: now }).run();
+    mkdirSync(path.join(tmp, "projects", "pm"), { recursive: true });
+    writeFileSync(
+      path.join(tmp, "projects", "pm", "project.json"),
+      JSON.stringify({ contact: { 부서명: "ESG·기업지원팀", 전화: "054-470-8527", 이메일: "a@gepa.kr", 우편주소: "경상북도 구미시 이계북로 7", 우편번호: "39393" } }),
+    );
+    const { saveStageDsl } = await import("../../lib/stages/service");
+    const dsl = "---\nfamily: official\n수신유형: 수신자\n수신: 고령군수(투자유치과장)\n제목: 정산 보고\n처리과: ESG·기업지원팀\n연락처: { 전화: 054-470-8527 }\n---\n1. 귀 군의 무궁한 발전을 기원합니다.\n";
+    const r = saveStageDsl("pm", "submit", dsl, "agent");
+    expect(r.doc.family === "official" && r.doc.meta.연락처.주소).toBe("경상북도 구미시 이계북로 7");
+    expect(r.doc.family === "official" && r.doc.meta.연락처.우편번호).toBe("39393");
+    expect(r.doc.family === "official" && r.doc.meta.연락처.이메일).toBe("a@gepa.kr");
   });
 });

@@ -40,9 +40,14 @@ export function dotDate(s: string, year?: number): string {
   return year === undefined || d.getFullYear() === year ? `${mm}.${dd}.` : `${d.getFullYear()}.${mm}.${dd}.`;
 }
 
-/** 비목 칸: "사업비(민간사업지원금)" — 수수료는 세목만("대행수수료") */
-function 비목(군: string, 세목: string): string {
-  return 군 === "수수료" ? 세목 : `${군}(${세목})`;
+/** 비목군의 표기 이름 — 원장의 비목군명칭(예: 사업비→직접비)이 있으면 그것 */
+function 군명(r: LedgerResult, 군: string): string {
+  return r.ledger.비목군명칭?.[군] ?? 군;
+}
+
+/** 비목 칸: "사업비(민간사업지원금)" — 수수료는 세목만("대행수수료"), 칸 이름이 통계목이면 세목만 */
+function 비목(r: LedgerResult, 군: string, 세목: string): string {
+  return 군 === "수수료" || r.ledger.비목칸 === "통계목" ? 세목 : `${군명(r, 군)}(${세목})`;
 }
 
 /** 집행 건의 예산 줄 찾기(ledger.computeLedger 와 같은 규칙) */
@@ -56,12 +61,12 @@ function sortedSpend(r: LedgerResult) {
   return [...r.ledger.집행].sort((a, b) => (parseLooseDate(a.일자)?.getTime() ?? 0) - (parseLooseDate(b.일자)?.getTime() ?? 0));
 }
 
-const SPEND_HEAD = row(["지출<br>일자", "지출액", "비목", "내역", "지급처", "지출<br>번호", "지급방법"]);
+const spendHead = (r: LedgerResult) => row(["지출<br>일자", "지출액", r.ledger.비목칸 ?? "비목", "내역", "지급처", "지출<br>번호", "지급방법"]);
 const SPEND_ATTR = "{table role=generic font=10 header-font=10 widths=38,60,112,88,94,32,58}";
 
 function spendRow(r: LedgerResult, e: Ledger["집행"][number], year?: number): string {
   const l = lineOf(r, e);
-  return row([dotDate(e.일자, year), thousands(e.금액), esc(비목(l?.비목군 ?? "", e.세목)), esc(e.내역), esc(e.지급처), esc(e.지출번호 === undefined ? "" : String(e.지출번호)), esc(e.지급방법)]);
+  return row([dotDate(e.일자, year), thousands(e.금액), esc(비목(r, l?.비목군 ?? "", e.세목)), esc(e.내역), esc(e.지급처), esc(e.지출번호 === undefined ? "" : String(e.지출번호)), esc(e.지급방법)]);
 }
 
 function 총괄표(r: LedgerResult): string[] {
@@ -84,13 +89,13 @@ function 총괄표(r: LedgerResult): string[] {
 /** 시간순 집행 현황 — 참고본 「② 위탁사업비 집행현황」 첫 표 */
 function 집행현황(r: LedgerResult): string[] {
   const year = baseYear(r.ledger);
-  return ["(단위: 원)", SPEND_ATTR, SPEND_HEAD, ...sortedSpend(r).map((e) => spendRow(r, e, year)), row(["계", thousands(r.집행), "", "", "", "", ""])];
+  return ["(단위: 원)", SPEND_ATTR, spendHead(r), ...sortedSpend(r).map((e) => spendRow(r, e, year)), row(["계", thousands(r.집행), "", "", "", "", ""])];
 }
 
 /** 항목별 집행 현황 — 비목군별 당초·최종 예산, 실제 집행액, 잔액 */
 function 항목별(r: LedgerResult): string[] {
   const out = ["(단위: 원)", "{table role=budget font=11 header-font=11 widths=75,104,104,104,95}", row(["항목", "당초예산(변경전)", "최종예산(변경후)", "실제 집행액", "잔 액"])];
-  for (const g of r.groups) out.push(row([g.비목군, money(g.당초예산), money(g.예산), money(g.집행), money(g.잔액)]));
+  for (const g of r.groups) out.push(row([군명(r, g.비목군), money(g.당초예산), money(g.예산), money(g.집행), money(g.잔액)]));
   out.push(row(["합계", money(r.groups.reduce((a, g) => a + g.당초예산, 0)), money(r.예산), money(r.집행), money(r.잔액)]));
   return out;
 }
@@ -107,8 +112,8 @@ function 세부내역(r: LedgerResult): string[] {
     for (const l of g.lines) {
       const mine = spend.filter((e) => lineOf(r, e) === l);
       if (!mine.length) continue;
-      out.push(`❍ (${g.비목군}) ${esc(l.세부사업 ?? l.세목)}(집행액: ${thousands(l.집행)}원)`);
-      out.push("(단위: 원)", SPEND_ATTR, SPEND_HEAD, ...mine.map((e) => spendRow(r, e, year)));
+      out.push(`❍ (${군명(r, g.비목군)}) ${esc(l.세부사업 ?? l.세목)}(집행액: ${thousands(l.집행)}원)`);
+      out.push("(단위: 원)", SPEND_ATTR, spendHead(r), ...mine.map((e) => spendRow(r, e, year)));
     }
   }
   return out;
@@ -121,7 +126,7 @@ function 세부내역(r: LedgerResult): string[] {
 function 세부사업별(r: LedgerResult): string[] {
   const out = ["(단위: 원)", "{table role=budget font=11 header-font=11 widths=58,148,72,72,72,60}", row(["구 분", "세부사업", "당초예산", "최종예산", "집 행 액", "잔 액"])];
   for (const g of r.groups) {
-    g.lines.forEach((l, i) => out.push(row([i === 0 ? g.비목군 : "^", esc(l.세부사업 ?? l.세목), money(l.당초예산), money(l.예산), money(l.집행), money(l.잔액)])));
+    g.lines.forEach((l, i) => out.push(row([i === 0 ? 군명(r, g.비목군) : "^", esc(l.세부사업 ?? l.세목), money(l.당초예산), money(l.예산), money(l.집행), money(l.잔액)])));
   }
   out.push(row(["합 계", "<", money(r.groups.reduce((a, g) => a + g.당초예산, 0)), money(r.예산), money(r.집행), money(r.잔액)]));
   return out;
@@ -130,9 +135,9 @@ function 세부사업별(r: LedgerResult): string[] {
 /** 사업 및 소요경비배분 변경내역 — 당초예산과 다른 줄만. 없으면 "해 당 없 음" */
 function 변경내역(r: LedgerResult): string[] {
   const changed = r.ledger.예산.filter((b) => b.당초예산 !== undefined && b.당초예산 !== b.예산);
-  const out = ["(단위: 원)", "{table role=generic font=11 header-font=11 widths=112,82,66,66,110,46}", row(["항목", "비 목", "당초예산", "변경예산", "주요 변경사유", "승인<br>여부"])];
+  const out = ["(단위: 원)", "{table role=generic font=11 header-font=11 widths=112,82,66,66,110,46}", row(["항목", r.ledger.비목칸 === "통계목" ? "통계목" : "비 목", "당초예산", "변경예산", "주요 변경사유", "승인<br>여부"])];
   if (!changed.length) out.push(row(["해 당 없 음", "<", "<", "<", "<", "<"]));
-  for (const b of changed) out.push(row([esc(b.세부사업 ?? b.비목군), esc(b.세목), money(b.당초예산 ?? 0), money(b.예산), esc(b.변경사유 ?? ""), esc(b.승인 ?? "여")]));
+  for (const b of changed) out.push(row([esc(b.세부사업 ?? 군명(r, b.비목군)), esc(b.세목), money(b.당초예산 ?? 0), money(b.예산), esc(b.변경사유 ?? ""), esc(b.승인 ?? "여")]));
   return out;
 }
 
@@ -142,7 +147,7 @@ function 잔액사유(r: LedgerResult): string[] {
   r.groups.forEach((g, i) => {
     const reasons = [...new Set(g.lines.map((l) => l.잔액사유?.trim()).filter((s): s is string => !!s))];
     const reason = g.잔액 === 0 ? "-" : reasons.length ? reasons.join(", ") : "집행잔액";
-    out.push(row([i === 0 ? esc(r.ledger.사업명) : "^", g.비목군, money(g.예산), money(g.집행), money(g.잔액), esc(reason)]));
+    out.push(row([i === 0 ? esc(r.ledger.사업명) : "^", 군명(r, g.비목군), money(g.예산), money(g.집행), money(g.잔액), esc(reason)]));
   });
   out.push("※ 발생사유 : 사업계획변경, 사업취소, 지급사유 미발생, 집행잔액, 이자 등 기재");
   return out;

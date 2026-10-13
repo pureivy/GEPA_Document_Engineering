@@ -8,6 +8,7 @@ import { rhwpBin, spawnCommandSync as spawnSync } from "../platform";
 import { DocModelSchema, type DocModel } from "../docmodel/schema";
 import { parseDsl } from "../docmodel/dsl";
 import { normalizeDocMeta, normalizeDslText, type NormalizeChange } from "../docmodel/govNormalize";
+import { resolveAsset } from "../closeout/photos";
 import { toDsl } from "../docmodel/serialize/toDsl";
 import { expandLedgerMacros, hasLedgerMacro } from "../closeout/macros";
 import { readLedger } from "../closeout/store";
@@ -58,6 +59,36 @@ export function saveStageDoc(projectId: string, stage: Stage, doc: DocModel, sou
   return seq;
 }
 
+/** 공문(official) 결문 연락처의 빈 칸을 project.json 의 담당 연락처로 채운다. 바꾼 칸이 있으면 변경 기록을 돌려준다. */
+function fillOfficialContact(projectId: string, doc: DocModel): NormalizeChange | null {
+  if (doc.family !== "official") return null;
+  const file = join(dataDir(), "projects", projectId, "project.json");
+  if (!existsSync(file)) return null;
+  let contact: Record<string, string | undefined>;
+  try {
+    contact = (JSON.parse(readFileSync(file, "utf8")) as { contact?: Record<string, string | undefined> }).contact ?? {};
+  } catch {
+    return null;
+  }
+  const c = doc.meta.연락처;
+  const pairs: [keyof typeof c, string | undefined][] = [
+    ["주소", contact.우편주소],
+    ["우편번호", contact.우편번호],
+    ["전화", contact.전화],
+    ["이메일", contact.이메일],
+    ["전송", contact.전송],
+    ["홈페이지", contact.홈페이지],
+  ];
+  let n = 0;
+  for (const [k, v] of pairs) {
+    if (v && v.trim() && !String(c[k] ?? "").trim()) {
+      (c as Record<string, string>)[k] = v.trim();
+      n++;
+    }
+  }
+  return n ? { rule: "결문 연락처 채움", count: n } : null;
+}
+
 /** Parse DSL text produced by an agent, save it, and return the doc + warnings. */
 export function saveStageDsl(projectId: string, stage: Stage, dslText: string, source: "agent" | "user" = "agent"): { doc: DocModel; warnings: { line: number; message: string }[]; version: number; normalized?: NormalizeChange[] } {
   // agent output is normalised to the 편람/house conventions before it becomes a version;
@@ -88,6 +119,10 @@ export function saveStageDsl(projectId: string, stage: Stage, dslText: string, s
   if (source === "agent") {
     const m = normalizeDocMeta(doc);
     doc = m.doc;
+    // 공문 결문의 연락처 칸은 프로젝트에 등록된 담당 연락처로 채운다 — 에이전트가 주소를 빠뜨려 결문 주소 칸이
+    // 비었다(고령군 제출 공문, 2026-10-07). 에이전트가 적은 값은 그대로 두고 빈 칸만 채운다.
+    const filled = fillOfficialContact(projectId, doc);
+    if (filled) m.changes.push(filled);
     normalized.push(...m.changes);
     if (normalized.length) {
       // meta fixes need re-serialisation; pure text fixes keep the agent's own layout
@@ -124,7 +159,8 @@ export function restoreVersion(projectId: string, stage: Stage, seq: number): Do
 export async function exportStage(projectId: string, stage: Stage): Promise<ExportReportDTO | null> {
   const doc = readStageDoc(projectId, stage);
   if (!doc) return null;
-  const { report } = await exportStageDoc(stageDir(projectId, stage), doc);
+  // 사진 대지(```photos)의 그림은 프로젝트 작업 폴더에서 읽는다
+  const { report } = await exportStageDoc(stageDir(projectId, stage), doc, { assets: (src) => resolveAsset(projectId, src) });
   await ensureRendered(stageDir(projectId, stage));
   return report;
 }

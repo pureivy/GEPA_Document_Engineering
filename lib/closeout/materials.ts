@@ -11,6 +11,7 @@ import { removeSync } from "../fsSafe";
 import { basename, join } from "node:path";
 import { projectDir } from "../storage/paths";
 import { extractReferenceText, referenceExtension } from "../reference/extract";
+import { extractHwpxPhotos, imageInfo } from "./photos";
 import { readCsv, readXlsx, sheetsToMarkdown } from "./sheet";
 import { unzipSync } from "fflate";
 
@@ -79,8 +80,56 @@ export function saveMaterial(projectId: string, rawName: string, bytes: Uint8Arr
   if ("text" in t) writeFileSync(join(dir, "text", `${name}.md`), t.text, "utf8");
   else removeSync(join(dir, "text", `${name}.md`));
   writeFileSync(join(dir, "text", `${name}.note`), "direct" in t ? t.direct : "", "utf8");
+  savePhotosOf(projectId, name, bytes);
   writeMaterialsIndex(projectId);
   return listMaterials(projectId).find((m) => m.name === name)!;
+}
+
+/**
+ * 사진: 올린 jpg·png 는 그대로 사진이고, 공문 hwpx 안의 사진은 `materials/images/<자료이름>_<n>.<ext>` 로 꺼낸다
+ * (결과보고서 사진 대지 ```photos 의 재료 — lib/closeout/photos.ts).
+ */
+function savePhotosOf(projectId: string, name: string, bytes: Uint8Array): void {
+  const dir = join(materialsDir(projectId), "images");
+  const base = name.replace(/\.[^.]+$/, "");
+  removePhotosOf(projectId, name);
+  if (!/\.hwpx$/i.test(name)) return;
+  const photos = extractHwpxPhotos(bytes);
+  if (!photos.length) return;
+  mkdirSync(dir, { recursive: true });
+  photos.forEach((p, i) => writeFileSync(join(dir, `${base}_${String(i + 1).padStart(2, "0")}${p.name.slice(p.name.lastIndexOf(".")).toLowerCase()}`), p.bytes));
+}
+
+function removePhotosOf(projectId: string, name: string): void {
+  const dir = join(materialsDir(projectId), "images");
+  if (!existsSync(dir)) return;
+  const base = name.replace(/\.[^.]+$/, "");
+  for (const f of readdirSync(dir)) if (f.startsWith(`${base}_`) && /_\d{2}\.(jpe?g|png|bmp)$/i.test(f)) removeSync(join(dir, f));
+}
+
+/** 이미 올린 자료에서 사진을 다시 꺼내고 목록을 고친다 — 사진 기능 이전에 올린 프로젝트용(scripts/extract-photos.ts) */
+export function refreshMaterialPhotos(projectId: string): number {
+  const dir = materialsDir(projectId);
+  if (!existsSync(dir)) return 0;
+  for (const m of listMaterials(projectId)) if (/\.hwpx$/i.test(m.name)) savePhotosOf(projectId, m.name, new Uint8Array(readFileSync(join(dir, m.name))));
+  writeMaterialsIndex(projectId);
+  return listPhotos(projectId).length;
+}
+
+/** 사진 목록(작업 폴더 기준 경로·픽셀 크기·출처 자료) — 올린 jpg·png 와 hwpx 에서 꺼낸 사진 */
+export function listPhotos(projectId: string): { path: string; width: number; height: number; from: string }[] {
+  const dir = materialsDir(projectId);
+  const out: { path: string; width: number; height: number; from: string }[] = [];
+  const add = (abs: string, rel: string, from: string) => {
+    const info = imageInfo(new Uint8Array(readFileSync(abs)));
+    // 카드뉴스·현수막처럼 길쭉한 그림(가로세로 2.5배 넘음)은 사진 후보에서 뺀다
+    if (info && Math.max(info.width, info.height) / Math.min(info.width, info.height) <= 2.5) out.push({ path: rel, width: info.width, height: info.height, from });
+  };
+  if (!existsSync(dir)) return out;
+  for (const n of readdirSync(dir).sort((a, b) => a.localeCompare(b, "ko"))) if (/\.(jpe?g|png|bmp)$/i.test(n) && statSync(join(dir, n)).isFile()) add(join(dir, n), `materials/${n}`, n);
+  const img = join(dir, "images");
+  if (existsSync(img)) for (const n of readdirSync(img).sort((a, b) => a.localeCompare(b, "ko"))) add(join(img, n), `materials/images/${n}`, n.replace(/_\d{2}\.(jpe?g|png|bmp)$/i, ".hwpx"));
+  return out;
 }
 
 /** 압축 파일 한 개의 최대 크기 — 지급 공문 PDF 수십 건을 묶으면 200MB 안팎이 된다(실사용 2026-10-02) */
@@ -143,6 +192,7 @@ export function deleteMaterial(projectId: string, rawName: string): boolean {
   const dir = materialsDir(projectId);
   if (!existsSync(join(dir, name))) return false;
   for (const p of [join(dir, name), join(dir, "text", `${name}.md`), join(dir, "text", `${name}.note`)]) removeSync(p);
+  removePhotosOf(projectId, name);
   writeMaterialsIndex(projectId);
   return true;
 }
@@ -151,7 +201,7 @@ export function listMaterials(projectId: string): MaterialInfo[] {
   const dir = materialsDir(projectId);
   if (!existsSync(dir)) return [];
   return readdirSync(dir)
-    .filter((n) => n !== "index.md" && n !== "text" && statSync(join(dir, n)).isFile())
+    .filter((n) => n !== "index.md" && n !== "text" && n !== "images" && statSync(join(dir, n)).isFile())
     .sort((a, b) => a.localeCompare(b, "ko"))
     .map((name) => {
       const text = existsSync(join(dir, "text", `${name}.md`));
@@ -171,5 +221,16 @@ function writeMaterialsIndex(projectId: string): void {
     ...items.map((m) => `- ${m.name} (${Math.max(1, Math.round(m.bytes / 1024))}KB) → \`${m.readPath}\` [${m.mode}]${m.note ? ` — ${m.note}` : ""}`),
     "",
   ];
+  const photos = listPhotos(projectId);
+  if (photos.length) {
+    lines.push(
+      "## 사진",
+      "",
+      "결과보고서 사진 대지(```photos)에 쓸 수 있는 사진이다. 넣기 전에 Read 로 열어 무엇을 찍은 사진인지 확인한다.",
+      "",
+      ...photos.map((p) => `- \`${p.path}\` (${p.width}×${p.height}px) — 출처: ${p.from}`),
+      "",
+    );
+  }
   writeFileSync(join(materialsDir(projectId), "index.md"), lines.join("\n"), "utf8");
 }

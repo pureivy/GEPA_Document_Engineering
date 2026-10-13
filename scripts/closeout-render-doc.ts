@@ -3,13 +3,13 @@ import { mkdirSync, readFileSync, writeFileSync } from "node:fs";
 import { join } from "node:path";
 import { Resvg } from "@resvg/resvg-js";
 import { DocModelSchema } from "../lib/docmodel/schema";
-import { buildHwpx } from "../lib/hwpx/build";
 import { renderPagesSvg, validateHwpx } from "../lib/hwpx/validate";
+import { buildLaidOut } from "../lib/hwpx/keepPass";
 async function main() {
   const [src, out] = process.argv.slice(2);
   mkdirSync(out, { recursive: true });
   const doc = DocModelSchema.parse(JSON.parse(readFileSync(src, "utf8")));
-  const { bytes, report } = buildHwpx(doc);
+  const { bytes, report } = await buildLaidOut(doc);
   writeFileSync(join(out, "out.hwpx"), bytes);
   console.log("warnings:", report.warnings);
   const v = await validateHwpx(bytes);

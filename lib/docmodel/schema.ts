@@ -125,6 +125,16 @@ export const BlockSchema = z.discriminatedUnion("k", [
   }),
   z.object({ ...Base, k: z.literal("blank"), role: z.enum(["blank", "blankSmall"]).optional() }),
   z.object({ ...Base, k: z.literal("pageBreak") }),
+  /**
+   * 사진 대지 — 결과보고서의 현장 사진. `src` 는 프로젝트 작업 폴더 기준 경로(materials/… — 올린 사진이나 공문 hwpx 에서
+   * 꺼낸 사진, lib/closeout/materials.ts), `caption` 은 사진 아래 설명. `cols` 장씩 한 줄(기본 2).
+   */
+  z.object({
+    ...Base,
+    k: z.literal("photos"),
+    cols: z.number().int().min(1).max(3).optional(),
+    items: z.array(z.object({ src: z.string().min(1), caption: z.string().default("") })),
+  }),
   z.object({
     ...Base,
     k: z.literal("image"),

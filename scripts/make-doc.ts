@@ -8,8 +8,8 @@ import { readFileSync, writeFileSync, mkdirSync } from "node:fs";
 import { dirname, resolve } from "node:path";
 import { parseDsl } from "../lib/docmodel/dsl";
 import { normalizeDslText, normalizeDocMeta } from "../lib/docmodel/govNormalize";
-import { buildHwpx } from "../lib/hwpx/build";
 import { validateHwpx } from "../lib/hwpx/validate";
+import { buildLaidOut } from "../lib/hwpx/keepPass";
 
 async function main() {
   const [src, out] = process.argv.slice(2);
@@ -37,7 +37,8 @@ async function main() {
     process.exit(1);
   }
 
-  const { bytes, report } = buildHwpx(m.doc);
+  // 플랫폼(lib/hwpx/export.ts)과 같은 배치 보정(표 쪽 채움, 홀로 남은 제목 넘김)
+  const { bytes, report } = await buildLaidOut(m.doc);
   mkdirSync(dirname(resolve(out)), { recursive: true });
   writeFileSync(resolve(out), bytes);
   console.log(

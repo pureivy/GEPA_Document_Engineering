@@ -28,8 +28,11 @@ const DATE_ZERO_PADDED = /(?<![\d.])(\d{4}|’\d{2})\. 0(\d)\. |(?<![\d.])(\d{4}
 const COLON_SPACED = /(\S) :(?=\s)/g;
 const TILDE_SPACED = /(\S) ~ (?=\S)|(\S) ~(?=\S)|(\S)~ (?=\S)/g;
 const KOREAN_TIME = /(오전|오후)\s?\d{1,2}시(\s?\d{1,2}분)?/g;
-const AMOUNT_WON = /금\s?\d{1,3}(,\d{3})+원(?!\()/g;
+// "지원금 3,677,110원" 의 '금'은 금액 표기가 아니다 — 낱말 첫머리의 '금'만 본다(2026-10-06 오탐)
+const AMOUNT_WON = /(?<![가-힣])금\s?\d{1,3}(,\d{3})+원(?!\()/g;
 const AMOUNT_NO_COMMA = /금\d{4,}원/g;
+// 보고서 본문의 화살표 — 단계·변경·인과를 → 로 줄이지 말고 문장으로 쓴다(담당자 2026-10-07: "화살표가 너무 많다")
+const ARROW = /[→⇒➡▶]/g;
 
 function textOf(b: Block): string {
   if (b.k === "para" || b.k === "coverTitle") return inlineText(b.inlines as Inline[]);
@@ -50,6 +53,8 @@ function checkText(text: string, blockId: string | undefined, out: GovLintIssue[
   for (const m of text.matchAll(TILDE_SPACED)) out.push({ blockId, rule: "물결표", severity: "warn", message: `"${m[0].trim()}" — 물결표(~)는 앞말·뒷말에 붙여 쓴다` });
   for (const m of text.matchAll(KOREAN_TIME)) out.push({ blockId, rule: "시간 표기", severity: "warn", message: `"${m[0]}" — 시간은 24시각제 숫자와 쌍점으로 쓴다(예: 15:20)` });
   for (const m of text.matchAll(AMOUNT_WON)) out.push({ blockId, rule: "금액 한글 병기", severity: "warn", message: `"${m[0]}" — 금액은 숫자 뒤 괄호에 한글을 병기한다(예: 금113,560원(금일십일만삼천오백육십원))` });
+  const arrows = text.match(ARROW)?.length ?? 0;
+  if (arrows) out.push({ blockId, rule: "화살표", severity: "warn", message: `"${text.slice(0, 24)}…" — 화살표(→)로 줄이지 말고 "…에서 …로 변경", "…하여 …" 처럼 개조식 문장으로 쓴다` });
   for (const m of text.matchAll(AMOUNT_NO_COMMA)) out.push({ blockId, rule: "금액 자릿점", severity: "warn", message: `"${m[0]}" — 금액은 세 자리마다 쉼표를 찍는다` });
 }
 

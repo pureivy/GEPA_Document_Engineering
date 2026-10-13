@@ -99,6 +99,8 @@ export function blockToMarkdown(b: Block, doc: DocModel): string[] {
       return ["---", ""];
     case "image":
       return [`![${b.asset}](${b.asset})`, ""];
+    case "photos":
+      return [...b.items.map((it) => `![${it.caption}](${it.src})`), ""];
     case "table": {
       const rows = b.rows.map((r) => r.cells.map((c) => (c.covered ? "" : inlinesToMarkdown(c.inlines, { inCell: true }))));
       return [...(b.caption ? [b.caption, ""] : []), ...table(rows, (b.headerRows ?? 1) >= 1), ""];
