@@ -1,5 +1,5 @@
 /**
- * 엑셀(.xlsx)·CSV → 에이전트가 읽는 텍스트.
+ * 엑셀(.xlsx)·CSV → 에이전트가 읽는 텍스트. 엑셀 97-2003(.xls)은 xls.ts 가 같은 Sheet[] 로 읽는다.
  *
  * 담당자가 올리는 자료(예산집행 집계표, 통장거래내역, ERP 지출결의 내려받기)는 양식이 제각각이다.
  * 여기서는 해석하지 않고 **시트를 있는 그대로 옮긴다** — 열 이름을 보고 원장 칸에 대응시키는 일은
@@ -10,11 +10,17 @@
  */
 import { unzipSync } from "fflate";
 
-const BUILTIN_DATE_FORMATS = new Set([14, 15, 16, 17, 22, 27, 30, 36, 45, 46, 47, 50, 57]);
+export const BUILTIN_DATE_FORMATS = new Set([14, 15, 16, 17, 22, 27, 30, 36, 45, 46, 47, 50, 57]);
+
+/** 사용자 정의 서식 코드가 날짜인가 — 따옴표 글자·[색]·[$-412] 를 빼고 y·m·d 가 남는가 */
+export function isDateFormatCode(code: string): boolean {
+  const c = code.replace(/"[^"]*"|\[[^\]]*\]/g, "");
+  return /[ymd]/i.test(c) && !/^[#0.,%\s]*$/.test(c);
+}
 /** 시트 하나에 싣는 최대 행 — 통장내역 수천 행이 프롬프트를 잡아먹지 않게 */
 export const SHEET_MAX_ROWS = 3000;
 
-function decode(s: string): string {
+export function decode(s: string): string {
   return s
     .replace(/&lt;/g, "<")
     .replace(/&gt;/g, ">")
@@ -40,19 +46,24 @@ function colIndex(ref: string): number {
   for (const ch of letters) n = n * 26 + (ch.charCodeAt(0) - 64);
   return n - 1;
 }
-function colName(i: number): string {
+export function colName(i: number): string {
   let s = "";
   for (let n = i + 1; n > 0; n = Math.floor((n - 1) / 26)) s = String.fromCharCode(65 + ((n - 1) % 26)) + s;
   return s;
 }
 
-/** 엑셀 일련번호 → YYYY-MM-DD (1900 체계, 1900-02-29 버그 보정) */
+/** 엑셀 일련번호 → YYYY-MM-DD (1900 체계, 1900-02-29 버그 보정). 1904 체계 파일은 호출 측이 1462 를 더한다 */
 export function excelSerialDate(serial: number): string {
   const ms = Math.round((serial - 25569) * 86400 * 1000);
   const d = new Date(ms);
   const iso = d.toISOString();
   const hasTime = serial % 1 !== 0 && Math.abs((serial % 1) * 86400) >= 1;
   return hasTime ? `${iso.slice(0, 10)} ${iso.slice(11, 16)}` : iso.slice(0, 10);
+}
+
+/** 숫자 셀 → 글자. 날짜 서식이면 YYYY-MM-DD, 아니면 부동소수 찌꺼기(0.1+0.2)를 15자리로 자른다 */
+export function cellNumber(n: number, isDate: boolean): string {
+  return isDate && n > 0 && n < 2958466 ? excelSerialDate(n) : String(+n.toPrecision(15));
 }
 
 export interface Sheet {
@@ -74,8 +85,7 @@ export function readXlsx(bytes: Uint8Array): Sheet[] {
   const styles = text("xl/styles.xml");
   const customDate = new Set<number>();
   for (const m of styles.matchAll(/<numFmt\s+numFmtId="(\d+)"\s+formatCode="([^"]*)"/g)) {
-    const code = decode(m[2]).replace(/"[^"]*"|\[[^\]]*\]/g, "");
-    if (/[ymd]/i.test(code) && !/^[#0.,%\s]*$/.test(code)) customDate.add(Number(m[1]));
+    if (isDateFormatCode(decode(m[2]))) customDate.add(Number(m[1]));
   }
   const xfDate: boolean[] = [];
   const cellXfs = /<cellXfs[^>]*>([\s\S]*?)<\/cellXfs>/.exec(styles)?.[1] ?? "";
@@ -122,7 +132,7 @@ function readSheet(name: string, xml: string, shared: string[], xfDate: boolean[
       else if (type === "str" || type === "e") value = decode(v ?? "");
       else if (v !== undefined) {
         const n = Number(v);
-        value = style >= 0 && xfDate[style] && Number.isFinite(n) && n > 0 && n < 2958466 ? excelSerialDate(n) : String(Number.isFinite(n) ? +n.toPrecision(15) : v);
+        value = Number.isFinite(n) ? cellNumber(n, style >= 0 && xfDate[style]) : v;
       }
       cells[idx] = value.replace(/\s+/g, " ").trim();
     }

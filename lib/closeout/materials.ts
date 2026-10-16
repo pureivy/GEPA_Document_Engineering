@@ -2,7 +2,7 @@
  * 정산·결과보고 자료함 — `projects/<id>/materials/`.
  *
  * 사업계획서 갱신(reference)은 파일이 하나지만, 정산·결과보고에는 여러 파일이 함께 온다:
- * 사업계획서·교부결정서(hwp/pdf), 예산집행 집계표·통장거래내역·ERP 지출결의(xlsx/csv), 행사 사진·결과 메모.
+ * 사업계획서·교부결정서(hwp/pdf), 예산집행 집계표·통장거래내역·ERP 지출결의(xlsx/xls/csv), 행사 사진·결과 메모.
  * 원본은 `materials/<이름>` 에, 에이전트가 읽을 텍스트는 `materials/text/<이름>.md` 에 둔다.
  * `materials/index.md` 가 목록이다 — 에이전트는 이것부터 읽는다.
  */
@@ -13,9 +13,10 @@ import { projectDir } from "../storage/paths";
 import { extractReferenceText, referenceExtension } from "../reference/extract";
 import { extractHwpxPhotos, imageInfo } from "./photos";
 import { readCsv, readXlsx, sheetsToMarkdown } from "./sheet";
+import { readXls } from "./xls";
 import { unzipSync } from "fflate";
 
-export const MATERIAL_EXTENSIONS = [".xlsx", ".csv", ".hwp", ".hwpx", ".pdf", ".docx", ".md", ".txt", ".png", ".jpg", ".jpeg"] as const;
+export const MATERIAL_EXTENSIONS = [".xlsx", ".xls", ".csv", ".hwp", ".hwpx", ".pdf", ".docx", ".md", ".txt", ".png", ".jpg", ".jpeg"] as const;
 export const MATERIAL_MAX_BYTES = 30 * 1024 * 1024;
 
 export interface MaterialInfo {
@@ -55,6 +56,7 @@ function decodeText(bytes: Uint8Array): string {
 export function materialText(name: string, bytes: Uint8Array): { text: string } | { direct: string } {
   const ext = materialExtension(name);
   if (ext === ".xlsx") return { text: sheetsToMarkdown(name, readXlsx(bytes)) };
+  if (ext === ".xls") return { text: sheetsToMarkdown(name, readXls(bytes)) };
   if (ext === ".csv") return { text: sheetsToMarkdown(name, [readCsv(decodeText(bytes))]) };
   if (ext === ".png" || ext === ".jpg" || ext === ".jpeg") return { direct: "이미지 — Read 로 직접 본다(통장 화면 캡처 등)" };
   if (ext && referenceExtension(name)) {
@@ -66,12 +68,12 @@ export function materialText(name: string, bytes: Uint8Array): { text: string } 
       throw e;
     }
   }
-  throw new Error(`지원하지 않는 파일 형식입니다: ${name} (${MATERIAL_EXTENSIONS.join(", ")}). .xls 는 .xlsx 로 다시 저장해 올려 주세요`);
+  throw new Error(`지원하지 않는 파일 형식입니다: ${name} (${MATERIAL_EXTENSIONS.join(", ")})`);
 }
 
 export function saveMaterial(projectId: string, rawName: string, bytes: Uint8Array): MaterialInfo {
   const name = safeMaterialName(rawName);
-  if (!name || !materialExtension(name)) throw new Error(`지원하지 않는 파일 형식입니다: ${rawName} (${MATERIAL_EXTENSIONS.join(", ")}). .xls 는 .xlsx 로 다시 저장해 올려 주세요`);
+  if (!name || !materialExtension(name)) throw new Error(`지원하지 않는 파일 형식입니다: ${rawName} (${MATERIAL_EXTENSIONS.join(", ")})`);
   if (bytes.byteLength > MATERIAL_MAX_BYTES) throw new Error(`파일이 너무 큽니다(30MB 이하): ${name}`);
   const t = materialText(name, bytes); // 먼저 변환해 보고 실패하면 저장하지 않는다
   const dir = materialsDir(projectId);

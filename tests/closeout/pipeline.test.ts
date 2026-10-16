@@ -104,9 +104,40 @@ describe("자료함", () => {
     expect(zipEntryName("통장.pdf")).toBe("통장.pdf");
     expect(zipEntryName("bank.pdf")).toBe("bank.pdf");
   });
-  it("모르는 형식은 저장하지 않는다(.xls 는 xlsx 로 다시 저장 안내)", async () => {
+  it("모르는 형식은 저장하지 않는다", async () => {
     const { saveMaterial } = await import("../../lib/closeout/materials");
-    expect(() => saveMaterial("p1", "old.xls", new Uint8Array([1, 2]))).toThrow(/xlsx/);
+    expect(() => saveMaterial("p1", "old.xlsb", new Uint8Array([1, 2]))).toThrow(/지원하지 않는/);
+  });
+  it("엑셀 97-2003(.xls)을 xlsx 와 같은 표로 옮긴다 — 날짜 서식·수식 결과·여러 시트·긴 공유 문자열", async () => {
+    const { saveMaterial, materialsDir } = await import("../../lib/closeout/materials");
+    // 엑셀로 저장한 실제 .xls: 집행(날짜·소수·수식) + 통장(400행 — 공유 문자열이 CONTINUE 레코드로 넘어간다)
+    saveMaterial("px", "집행내역.xls", new Uint8Array(readFileSync(path.join(__dirname, "../fixtures/closeout/sample.xls"))));
+    const md = readFileSync(path.join(materialsDir("px"), "text", "집행내역.xls.md"), "utf8");
+    expect(md).toContain("| 2 | 2025-05-23 | 40000 | 현수막 제작 |");
+    expect(md).toContain("| 3 | 2025-05-24 | 1234567.5 | 다과 구입 |");
+    expect(md).toContain("| 4 |  | 1274567.5 | 합계(원) | TRUE |");
+    expect(md).toContain("| 6 |  |  |  |  | -12 | 0.07 |");
+    expect(md).toContain("## 시트: 통장 (400행)");
+    expect(md).toContain("| 400 | 거래처 이름 번호 400 경상북도 | 400000 |");
+  });
+  it("이름만 .xls 인 은행 내려받기(HTML 표·EUC-KR, 탭 구분)도 읽는다", async () => {
+    const { readXls } = await import("../../lib/closeout/xls");
+    // EUC-KR HTML: "통장" = C5EB C0E5
+    const ascii = (s: string) => [...s].map((c) => c.charCodeAt(0));
+    const cp949 = Uint8Array.from([...ascii('<meta charset="euc-kr"><table><tr><td>'), 0xc5, 0xeb, 0xc0, 0xe5, ...ascii("</td><td>1</td></tr></table>")]);
+    expect(readXls(cp949)[0].rows).toEqual([["통장", "1"]]);
+    const html = '<html><head><meta charset="utf-8"></head><table><tr><td colspan=2>거래내역</td><td>조회</td></tr><tr><th>거래일시</th><th>출금액</th><th>내용</th></tr><tr><td>2025.05.23</td><td>40,000</td><td>경북기획&nbsp;현수막</td></tr></table></html>';
+    expect(readXls(new TextEncoder().encode(html))[0].rows).toEqual([
+      ["거래내역", "", "조회"],
+      ["거래일시", "출금액", "내용"],
+      ["2025.05.23", "40,000", "경북기획 현수막"],
+    ]);
+    const tsv = ["거래일", "출금"].join(String.fromCharCode(9)) + String.fromCharCode(10) + ["2025-05-23", "40000"].join(String.fromCharCode(9));
+    expect(readXls(new TextEncoder().encode(tsv))[0].rows).toEqual([
+      ["거래일", "출금"],
+      ["2025-05-23", "40000"],
+    ]);
+    expect(() => readXls(new TextEncoder().encode("hello"))).toThrow(/xlsx 로 다시 저장/);
   });
 });
 
