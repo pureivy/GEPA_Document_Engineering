@@ -34,12 +34,18 @@ export interface ParagraphSpec {
   lineseg?: boolean;
 }
 
+/** 글 속의 이 문자는 한글의 고정폭 빈칸(<hp:fwSpace/>)으로 나간다 — 양쪽 정렬에도 늘어나지 않는다 */
+export const FIXED_SPACE = " ";
+
 export function textChildren(text: string): XmlChild[] {
   const parts = text.split("\n");
   const out: XmlChild[] = [];
   parts.forEach((p, i) => {
     if (i > 0) out.push(el("hp:lineBreak"));
-    if (p) out.push(p);
+    p.split(FIXED_SPACE).forEach((s, j) => {
+      if (j > 0) out.push(el("hp:fwSpace"));
+      if (s) out.push(s);
+    });
   });
   return out;
 }

@@ -8,7 +8,8 @@
  */
 import { spawnCommandSync as spawnSync } from "../lib/platform";
 import { rhwpBin } from "../lib/platform";
-import { existsSync, mkdirSync, readFileSync, rmSync, writeFileSync } from "node:fs";
+import { existsSync, mkdirSync, readFileSync, writeFileSync } from "node:fs";
+import { removeSync } from "../lib/fsSafe";
 import { join } from "node:path";
 import { unzipSync } from "fflate";
 
@@ -52,7 +53,7 @@ try { rdJson = JSON.parse(rd.out.trim().split("\n").pop() ?? "null"); } catch { 
 
 // 3) unzip into pkg/, dropping the rhwp marker
 const pkgDir = join(dir, "pkg");
-rmSync(pkgDir, { recursive: true, force: true });
+removeSync(pkgDir);
 const entries = unzipSync(new Uint8Array(readFileSync(refHwpx)));
 const kept: string[] = [];
 for (const [name, bytes] of Object.entries(entries)) {

@@ -4,9 +4,10 @@ import { el, serialize, clone, findAll, findFirst, XML_DECL, type XmlNode } from
 import { loadTemplate } from "./template";
 import { WriterContext } from "./writers/context";
 import { HWPX_FAMILIES } from "./families";
+import { mergeCaptionTables } from "./writers/common";
 import type { DocModel } from "../docmodel/schema";
 import type { AppendedStyle } from "./registry";
-import type { BuildWarning } from "./writers/context";
+import type { AssetResolver, BuildWarning } from "./writers/context";
 import { DOC_FAMILIES } from "../docmodel/families";
 
 /**
@@ -16,7 +17,7 @@ import { DOC_FAMILIES } from "../docmodel/families";
  */
 function writeForFamily(ctx: WriterContext, doc: DocModel): XmlNode[] {
   const write = HWPX_FAMILIES[doc.family].write as (ctx: WriterContext, doc: DocModel) => XmlNode[];
-  return write(ctx, doc);
+  return mergeCaptionTables(ctx, write(ctx, doc));
 }
 
 export interface BuildReport {
@@ -34,12 +35,24 @@ export interface BuildResult {
   report: BuildReport;
   sectionXml: string;
   headerXml: string;
+  /** 쪽 아래 끝까지 채울 표 — buildLaidOut 이 쓴다 */
+  fillPageTables: { blockId: string; tblId: string }[];
 }
 
 export interface BuildOptions {
   now?: Date;
   /** 'omit' (default) leaves layout to the reader; 'approx' writes one placeholder lineseg per paragraph */
   lineseg?: "omit" | "approx";
+  /** 사진 대지(```photos)의 src → 그림 바이트(프로젝트 작업 폴더에서 읽는다, lib/closeout/photos.ts) */
+  assets?: AssetResolver;
+  /** 쪽을 채울 표의 줄 간격(블록 id → %) — buildLaidOut 이 정한다 */
+  fillSpacing?: Record<string, number>;
+  /** 본문 줄 간격 배율(hp:p id → 배율) — buildLaidOut 이 정한다 */
+  spacingBoost?: Record<string, number>;
+  /** 문단 위 간격을 없앨 문단(hp:p id) — 쪽 맨 위에 온 문단, buildLaidOut 이 한글 배치로 정한다 */
+  noPrev?: string[];
+  /** 문단별 줄 맞춤(hp:p id → 내어쓰기·자간) — buildLaidOut 이 정한다 */
+  lineFit?: Record<string, { hanging?: number; charSpacing?: number; breaks?: number[] }>;
 }
 
 function sec0(paras: XmlNode[]): XmlNode {
@@ -49,6 +62,11 @@ function sec0(paras: XmlNode[]): XmlNode {
 export function buildHwpx(doc: DocModel, opts: BuildOptions = {}): BuildResult {
   const tpl = loadTemplate(doc.family);
   const ctx = new WriterContext(tpl, doc.family, { lineseg: opts.lineseg === "approx" });
+  ctx.assets = opts.assets;
+  ctx.fillSpacing = opts.fillSpacing ?? {};
+  ctx.spacingBoost = opts.spacingBoost ?? {};
+  ctx.noPrev = new Set(opts.noPrev ?? []);
+  ctx.lineFit = opts.lineFit ?? {};
   let paras: XmlNode[] = writeForFamily(ctx, doc);
   if (paras.length === 0) paras = [ctx.para({ paraPr: 0, runs: [{ charPr: 0, text: "" }] })];
   // section properties live in the first run of the first paragraph
@@ -81,6 +99,10 @@ export function buildHwpx(doc: DocModel, opts: BuildOptions = {}): BuildResult {
     .replace(/<opf:meta name="creator" content="text">.*?<\/opf:meta>/, `<opf:meta name="creator" content="text">GEPA Document Engineering</opf:meta>`)
     .replace(/<opf:meta name="CreatedDate" content="text"\/>|<opf:meta name="CreatedDate" content="text">.*?<\/opf:meta>/, `<opf:meta name="CreatedDate" content="text">${stamp}</opf:meta>`)
     .replace(/<opf:meta name="ModifiedDate" content="text"\/>|<opf:meta name="ModifiedDate" content="text">.*?<\/opf:meta>/, `<opf:meta name="ModifiedDate" content="text">${stamp}</opf:meta>`);
+  // 사진 대지의 그림 — content.hpf 의 manifest 에 선언해야 한글이 BinData 를 찾는다
+  const hpfWithPhotos = ctx.binaries.length
+    ? hpf.replace("</opf:manifest>", ctx.binaries.map((b) => `<opf:item id="${b.id}" href="${b.href}" media-type="${b.mediaType}" isEmbeded="1"/>`).join("") + "</opf:manifest>")
+    : hpf;
   const prvText = new TextEncoder().encode(plainTextPreview(doc).slice(0, 1000));
 
   const enc = (s: string) => new TextEncoder().encode(s);
@@ -101,7 +123,8 @@ export function buildHwpx(doc: DocModel, opts: BuildOptions = {}): BuildResult {
   // 우리 검사로는 잡히지 않는다. 업무보고서 전까지는 어느 family 의 참고본에도 바탕쪽이 없어서
   // 이 경로가 필요한 적이 없었고, 그래서 BinData 만 복사하고 있었다.
   for (const [name, bytes] of Object.entries(tpl.files)) if (/^Contents\/masterpage\d*\.xml$/.test(name)) files[name] = [bytes, { level: 6 }];
-  files["Contents/content.hpf"] = [enc(hpf), { level: 6 }];
+  for (const b of ctx.binaries) files[b.href] = [b.bytes, { level: 0 }];
+  files["Contents/content.hpf"] = [enc(hpfWithPhotos), { level: 6 }];
   files["META-INF/container.xml"] = [tpl.files["META-INF/container.xml"], { level: 6 }];
   files["META-INF/manifest.xml"] = [tpl.files["META-INF/manifest.xml"], { level: 6 }];
   for (const k of Object.keys(files)) if (!files[k][0]) throw new Error(`template file missing: ${k}`);
@@ -116,7 +139,7 @@ export function buildHwpx(doc: DocModel, opts: BuildOptions = {}): BuildResult {
     warnings: [...ctx.warnings, ...ctx.reg.warnings.map((w) => ({ message: w }))],
     title,
   };
-  return { bytes, report, sectionXml, headerXml };
+  return { bytes, report, sectionXml, headerXml, fillPageTables: ctx.fillPageTables };
 }
 
 function escapeXml(s: string): string {

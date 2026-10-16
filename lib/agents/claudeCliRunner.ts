@@ -8,7 +8,7 @@
  * itself was started from inside a Claude Code session.
  */
 import type { ChildProcess } from "node:child_process";
-import { resolveClaudeBin as resolvePlatformClaudeBin, spawnCommand } from "../platform";
+import { detachChild, killTree, resolveClaudeBin as resolvePlatformClaudeBin, spawnCommand } from "../platform";
 import readline from "node:readline";
 import type { AgentEvent, AgentRunner, RunSpec } from "./runner";
 import { DEFAULT_MODEL, KILL_GRACE_MS } from "./limits";
@@ -153,21 +153,6 @@ class AsyncQueue<T> implements AsyncIterable<T> {
 
 export type KillReason = "abort" | "idle-timeout" | "wall-timeout" | "consumer-closed";
 
-function killProcessGroup(child: ChildProcess, signal: NodeJS.Signals): void {
-  const pid = child.pid;
-  if (!pid) return;
-  try {
-    // Negative pid → whole process group (child was spawned detached = its own group).
-    process.kill(-pid, signal);
-  } catch {
-    try {
-      child.kill(signal);
-    } catch {
-      /* already gone */
-    }
-  }
-}
-
 export interface ClaudeCliRunnerOptions {
   /** Override binary resolution (tests). */
   bin?: string;
@@ -224,7 +209,7 @@ export class ClaudeCliRunner implements AgentRunner {
         cwd: spec.cwd,
         env,
         stdio: ["pipe", "pipe", "pipe"],
-        detached: true,
+        detached: detachChild(),
       });
     } catch (err) {
       const message = err instanceof Error ? err.message : String(err);
@@ -238,9 +223,9 @@ export class ClaudeCliRunner implements AgentRunner {
     const kill = (reason: KillReason) => {
       if (exited || killReason) return;
       killReason = reason;
-      killProcessGroup(child, "SIGTERM");
+      killTree(child, "SIGTERM");
       killTimer = setTimeout(() => {
-        if (!exited) killProcessGroup(child, "SIGKILL");
+        if (!exited) killTree(child, "SIGKILL");
       }, killGraceMs);
       killTimer.unref();
     };

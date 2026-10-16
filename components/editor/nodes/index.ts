@@ -3,7 +3,7 @@ import type { AnyExtension } from "@tiptap/core";
 import type { Family } from "@/lib/docmodel/schema";
 import { GepaDocument } from "./document";
 import { GepaParagraph } from "./paragraph";
-import { ApprovalBlock, Blank, GepaImage, NoticeHeader, OfficialFooter, OfficialHeader, PageBreak, PressHeader } from "./atoms";
+import { ApprovalBlock, Blank, GepaImage, GepaPhotos, NoticeHeader, OfficialFooter, OfficialHeader, PageBreak, PressHeader } from "./atoms";
 import { GepaCell, GepaRow, GepaTable } from "./table";
 import {
   AttachmentItem,
@@ -66,6 +66,7 @@ export function gepaExtensions({ family, overrides = {} }: GepaExtensionOptions)
     Blank,
     PageBreak,
     GepaImage,
+    GepaPhotos,
     GepaTable.configure({ family }),
     GepaRow,
     GepaCell,

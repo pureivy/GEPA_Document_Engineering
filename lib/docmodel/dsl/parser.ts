@@ -358,6 +358,7 @@ export class LineParser {
     this.fence = null;
     if (f.name === "box" && f.block && f.block.k === "summaryBox" && f.block.lines.length === 0) this.warn(f.line, "```box 안에 내용이 없습니다");
     if (f.name === "image" && f.count > 0) this.warn(f.line, "```image 펜스 안의 내용은 무시됩니다");
+    if (f.name === "photos" && f.block && f.block.k === "photos" && f.block.items.length === 0) this.warn(f.line, "```photos 안에 사진이 없습니다");
     void line;
     return f.block ? [this.commit(f.block)] : [];
   }
@@ -776,6 +777,15 @@ export class LineParser {
         ev.push(event);
         break;
       }
+      case "photos": {
+        const kv = parseKeyValues(args);
+        const cols = kv.cols ? Number(kv.cols) : undefined;
+        if (kv.cols && !(cols && cols >= 1 && cols <= 3)) this.warn(line, `photos cols 는 1~3 입니다: ${kv.cols}`);
+        const { block, event } = this.openNew({ k: "photos", items: [], ...(cols && cols >= 1 && cols <= 3 ? { cols } : {}) });
+        this.fence = { name, args, line, block, count: 0 };
+        ev.push(event);
+        break;
+      }
       case "toc":
         this.fence = { name, args, line, block: null, count: 0 };
         break;
@@ -832,6 +842,9 @@ export class LineParser {
         if (b.lines.length === 0 && (content.startsWith("❖") || content.startsWith("◇"))) {
           b.glyph = content[0] as "❖" | "◇";
           content = content.slice(1).trim();
+        } else if (b.glyph && b.glyph !== "none" && content.startsWith(b.glyph)) {
+          // 작성기가 줄마다 박스 기호를 붙이므로 둘째 줄부터 적은 같은 기호는 떼어 낸다 — 두면 "◇ ◇" 로 겹친다
+          content = content.slice(1).trim();
         }
         b.lines.push(parseInlines(content, (m) => this.warn(line, m)).inlines);
         return [this.upsert(b)];
@@ -858,7 +871,9 @@ export class LineParser {
       case "attach": {
         const b = f.block as Extract<Block, { k: "attachmentList" }>;
         if (trimmed === "" || /^끝\.?$/.test(trimmed)) return [];
-        b.items.push(trimmed);
+        // 작성기가 첫 줄 앞에 "붙임" 을 붙인다 — 적어 온 "붙임 1." 의 "붙임" 은 떼어야 "붙임 붙임 1." 로 겹치지 않는다
+        // (문법 예시도 "붙임 1. …" 으로 적혀 있어 에이전트가 그대로 따라 쓴다)
+        b.items.push(trimmed.replace(/^붙임\s+(?=\d)/, ""));
         return [this.upsert(b)];
       }
       case "image": {
@@ -868,6 +883,16 @@ export class LineParser {
         const ev = f.block ? [this.commit(f.block)] : [];
         this.warn(f.line, "```image 펜스가 닫히지 않았습니다 (자동으로 닫음)");
         return [...ev, ...this.processBodyLine(text, line, 0)];
+      }
+      case "photos": {
+        const b = f.block as Extract<Block, { k: "photos" }>;
+        if (trimmed === "") return [];
+        // `materials/images/…jpg | 사진 설명` — 설명은 없어도 된다
+        const parts = splitPipeRow(trimmed);
+        const src = (parts[0] ?? "").replace(/^`|`$/g, "").trim();
+        if (!src) return [];
+        b.items.push({ src, caption: parts.slice(1).join(" | ").trim() });
+        return [this.upsert(b)];
       }
       case "toc": {
         if (trimmed === "") return [];

@@ -146,9 +146,13 @@ export interface ResearchPaneProps {
   running: boolean;
   loading: boolean;
   error: string | null;
+  /** 머리에 보이는 파일 이름(기본 research/notes.md) */
+  fileLabel?: string;
+  /** 노트가 없을 때의 안내(기본은 조사 단계 문구) */
+  emptyText?: string;
 }
 
-export function ResearchPane({ liveText, markdown, running, loading, error }: ResearchPaneProps) {
+export function ResearchPane({ liveText, markdown, running, loading, error, fileLabel = "research/notes.md", emptyText }: ResearchPaneProps) {
   const ref = useRef<HTMLDivElement>(null);
   const showLive = running || (!markdown && liveText);
   const body = useMemo(() => renderMarkdown(showLive ? liveText : (markdown ?? "")), [showLive, liveText, markdown]);
@@ -161,12 +165,12 @@ export function ResearchPane({ liveText, markdown, running, loading, error }: Re
     <div ref={ref} className="h-full overflow-y-auto bg-slate-100 p-6">
       <div className="mx-auto max-w-3xl rounded-lg border border-slate-200 bg-white px-8 py-6 text-[13px] leading-relaxed text-slate-800 shadow-sm">
         <div className="mb-3 flex items-center justify-between border-b border-slate-100 pb-2">
-          <div className="text-xs font-semibold text-slate-500">research/notes.md</div>
+          <div className="text-xs font-semibold text-slate-500">{fileLabel}</div>
           {running ? <span className="text-[11px] text-sky-700">작성 중…</span> : null}
         </div>
         {error ? <div className="rounded bg-red-50 p-2 text-xs text-red-700">{error}</div> : null}
         {loading ? <div className="text-xs text-slate-400">불러오는 중…</div> : null}
-        {!loading && !error && body.length === 0 ? <div className="py-10 text-center text-xs text-slate-400">{running ? "에이전트의 출력이 도착하면 여기에 표시됩니다." : "아직 조사 노트가 없습니다. ‘실행’을 눌러 조사를 시작하세요."}</div> : null}
+        {!loading && !error && body.length === 0 ? <div className="py-10 text-center text-xs text-slate-400">{running ? "에이전트의 출력이 도착하면 여기에 표시됩니다." : (emptyText ?? "아직 조사 노트가 없습니다. ‘실행’을 눌러 조사를 시작하세요.")}</div> : null}
         {body}
         {running ? <span className="hwp-caret" /> : null}
       </div>

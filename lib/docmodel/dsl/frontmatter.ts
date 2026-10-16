@@ -9,7 +9,7 @@
  */
 import { parse as parseYaml } from "yaml";
 import { z } from "zod";
-import { FamilySchema, NoticeMetaSchema, OfficialMetaSchema, PlanMetaSchema, PressMetaSchema, ReportMetaSchema, type DocModel, type Family } from "../schema";
+import { FamilySchema, NoticeMetaSchema, OfficialMetaSchema, PlanMetaSchema, PressMetaSchema, ReportMetaSchema, SettlementMetaSchema, type DocModel, type Family } from "../schema";
 
 export interface FrontMatterIssue {
   /** 1-based line number in the original DSL text (best effort; 1 when unknown) */
@@ -42,6 +42,7 @@ export const META_SCHEMAS = {
   press: PressMetaSchema,
   official: OfficialMetaSchema,
   report: ReportMetaSchema,
+  settlement: SettlementMetaSchema,
 } as const;
 
 /** `plan | notice | press | official | report` — 오류 메시지에 쓰는 family 목록 (스키마가 곧 출처다) */
@@ -251,6 +252,7 @@ export function fallbackMeta(family: Family, raw?: Record<string, unknown>): Doc
     official: { 수신유형: "내부결재", 제목: "(제목 없음)", 처리과: "(처리과 없음)" },
     // ReportMetaSchema 는 여섯 칸이 모두 .default() 라 빈 객체가 그대로 파싱된다(.min(1) 이 없다).
     report: {},
+    settlement: {},
   };
   const merged: Record<string, unknown> = { ...base[family] };
   if (raw) {

@@ -21,6 +21,7 @@ import { RESEARCH_MCP_TOOL_IDS } from "../research/tools/register";
 import { syncWikiSnapshot, wikiSnapshotDir } from "../research/wikiSnapshot";
 import { dataDir, exportStage, saveStageDsl, stageDir } from "./service";
 import { isDocStage, type ProjectDTO, type Stage } from "../contracts";
+import { writeLedgerSummary } from "../closeout/store";
 import { stagesOf, type ProjectKind } from "../kinds";
 
 export interface StartStageRunOptions {
@@ -39,6 +40,8 @@ export interface StartStageRunOptions {
   autoChain?: boolean;
   /** plan stage: allow 보충 조사 (Task/WebSearch/WebFetch), propagated along an auto-chain */
   supplementalResearch?: boolean;
+  /** ledger: 이 실행이 검증 오류를 고치라는 자동 재실행인가(한 번만 돈다 — 무한 반복 방지) */
+  ledgerAutoFix?: boolean;
 }
 
 /**
@@ -235,6 +238,34 @@ export function startStageRun(opts: StartStageRunOptions): { runId: string; sess
   };
 
   const onEnd: StartRunInput["onEnd"] = (run) => {
+    if (opts.stage === "ledger") {
+      // 원장 계산·검증은 플랫폼이 한다 — 에이전트는 Bash 가 없어 스스로 검산할 수 없다.
+      // 오류가 있으면 같은 세션에 오류 목록을 주고 **한 번** 고치게 하고, 그래도 남으면 연쇄를 멈춘다
+      // (틀린 원장으로 결과보고서·정산보고서를 만들면 매크로가 틀린 숫자를 그대로 펼친다).
+      const s = writeLedgerSummary(opts.project.id);
+      const problems = s.ok ? s.result!.checks.filter((c) => c.level === "error").map((c) => c.message) : [s.error ?? "ledger.json 을 읽지 못했습니다"];
+      if (!problems.length) {
+        chainNext(run.status);
+        return;
+      }
+      if (!opts.ledgerAutoFix && run.status === "succeeded" && run.sessionId) {
+        setTimeout(() => {
+          try {
+            startStageRun({
+              ...opts,
+              resumeSessionId: run.sessionId!,
+              ledgerAutoFix: true,
+              instruction: `[자동 검증] 프로그램이 ledger.json 을 계산해 보니 다음 문제가 있다. 원자료(materials/)를 다시 확인해 ledger.json 을 Edit 로 고친다. 원자료끼리 정말 어긋나 고칠 수 없는 것은 고치지 말고 "메모"에 그 사실을 적는다.\n- ${problems.join("\n- ")}`,
+            });
+          } catch (e) {
+            console.error("[runIntegration] ledger auto-fix failed:", (e as Error).message);
+          }
+        }, 500);
+        return;
+      }
+      publish({ type: "doc.error", message: `정산 원장 검증 오류 ${problems.length}건 — ledger/summary.md 를 확인하고 자료를 보완하거나 '이어서 수정 요청'으로 지시하세요. ${problems.slice(0, 3).join(" / ")}`, status: run.status });
+      return;
+    }
     if (opts.stage === "research") {
       const notes = join(workspaceDir, "research", "notes.md");
       if (!existsSync(notes)) publish({ type: "doc.error", message: "research/notes.md 가 생성되지 않았습니다. '이어서 수정 요청'으로 종합을 지시하세요.", status: run.status });

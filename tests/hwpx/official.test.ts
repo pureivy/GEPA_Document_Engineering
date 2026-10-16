@@ -136,7 +136,11 @@ family: official
     const { doc } = parseDsl(DSL_GLYPH.replace("1. 작성대상", "본문에 **굵은 글씨** 가 있다"));
     const { report } = buildHwpx(doc, { now: NOW });
     // 참고 문서 본문은 굴림체 12pt 장평 95 (charPr 8) — 굵은 변형도 같은 글꼴이어야 한다
-    expect(report.appendedStyles).toEqual([{ kind: "charPr", id: 25, sig: "굴림체|굴림체|12|B||#000000|0|95|NONE" }]);
+    // 결문 표를 품은 앵커 문단의 1pt 글자(같은 굴림체)가 함께 추가된다 — 앵커 줄이 결문을 다음 쪽으로 끌고 가지 않게(2026-10-06)
+    expect(report.appendedStyles).toEqual([
+      { kind: "charPr", id: 25, sig: "굴림체|굴림체|12|B||#000000|0|95|NONE" },
+      { kind: "charPr", id: 26, sig: "굴림체|굴림체|1|||#000000|0|100|NONE" },
+    ]);
   }, 60_000);
 });
 

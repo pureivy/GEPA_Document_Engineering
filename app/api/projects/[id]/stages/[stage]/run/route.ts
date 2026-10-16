@@ -9,6 +9,13 @@ import { MODEL_ALIASES } from "@/lib/agents/limits";
 import { startStageRun } from "@/lib/stages/runIntegration";
 import { KIND_LABEL, stagesOf } from "@/lib/kinds";
 import { serializeProject } from "@/lib/db/serialize";
+import { isDocStage, STAGES, type Stage } from "@/lib/contracts";
+
+/**
+ * 검토할 수 있는 단계 = 문서를 만드는 단계 전부. 손으로 나열하던 때는 업무보고(report)가 빠져
+ * 업무보고의 검토 버튼이 400 을 받았다 — STAGE_FAMILY 에서 파생해 새 문서 단계가 조용히 빠지지 않게 한다.
+ */
+const REVIEW_TARGETS = STAGES.filter(isDocStage) as [Stage, ...Stage[]];
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
@@ -18,7 +25,7 @@ const bodySchema = z.object({
   instruction: z.string().trim().max(20_000).optional(),
   resume: z.boolean().optional(),
   /** for stage=review: which stage's document to review */
-  reviewTarget: z.enum(["plan", "notice", "press", "official"]).optional(),
+  reviewTarget: z.enum(REVIEW_TARGETS).optional(),
   /** model alias for this run; defaults to the stage's configured model */
   model: z.enum(MODEL_ALIASES).optional(),
   /** start the following stages automatically when this one succeeds (research → plan → notice → press) */

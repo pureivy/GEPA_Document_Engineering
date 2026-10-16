@@ -31,3 +31,19 @@ describe("normalizeDslText — 편람 표기 자동 정규화", () => {
     expect(changes.map((c) => c.rule)).toEqual(["담당부서 정식 명칭", "책임자 자동 채움"]);
   });
 });
+
+describe("normalizeDslText — 항목 하나 이어 쓰기", () => {
+  it("- 항목 아래 · 가 하나뿐이면 위 줄에 이어 쓴다", () => {
+    const { text, changes } = normalizeDslText(["- (현장실사) 7개사 대상 현장 확인", "· 실사 중 3개사 지정 포기", "- (최종심사) 4개사 지정"].join("\n"));
+    expect(text).toBe(["- (현장실사) 7개사 대상 현장 확인, 실사 중 3개사 지정 포기", "- (최종심사) 4개사 지정"].join("\n"));
+    expect(changes.map((c) => c.rule)).toContain("항목 하나 이어 쓰기");
+  });
+  it("· 가 둘 이상이면 그대로 둔다", () => {
+    const src = ["- (변경) 두 건", "· 첫째", "· 둘째"].join("\n");
+    expect(normalizeDslText(src).text).toBe(src);
+  });
+  it("울타리 안은 건드리지 않는다", () => {
+    const src = ["```box", "- 요지", "· 하나", "```"].join("\n");
+    expect(normalizeDslText(src).text).toBe(src);
+  });
+});

@@ -31,6 +31,8 @@ export interface ParaPrSig {
   prev: number;
   next: number;
   keepWithNext: boolean;
+  /** 문단 보호 — 문단이 쪽 경계에서 나뉘지 않는다 */
+  keepLines?: boolean;
 }
 export interface BorderSide { type: string; width: string; color: string }
 export interface BorderFillSig {
@@ -120,6 +122,7 @@ export function parseHeaderCatalog(head: XmlNode): HeaderCatalog {
       prev: m("prev"),
       next: m("next"),
       keepWithNext: brk?.attrs.keepWithNext === "1",
+      keepLines: brk?.attrs.keepLines === "1",
     });
   }
 
@@ -163,7 +166,7 @@ export function charPrSignature(c: Omit<CharPrSig, "id" | "fontRefs">): string {
   return [c.hangul, c.latin, c.pt, c.bold ? "B" : "", c.italic ? "I" : "", c.color, c.spacing, c.ratio, c.underline].join("|");
 }
 export function paraPrSignature(p: Omit<ParaPrSig, "id">): string {
-  return [p.align, p.lineSpacingType, p.lineSpacing, p.intent, p.left, p.right, p.prev, p.next, p.keepWithNext ? "K" : ""].join("|");
+  return [p.align, p.lineSpacingType, p.lineSpacing, p.intent, p.left, p.right, p.prev, p.next, p.keepWithNext ? "K" : "", p.keepLines ? "L" : ""].join("|");
 }
 export function borderSideSignature(s: BorderSide): string {
   return s.type === "NONE" ? "NONE" : `${s.type} ${s.width} ${s.color}`;

@@ -88,12 +88,35 @@ export async function writeOutHwpx(projectId: string, stage: RunStage, bytes: Ui
   return p;
 }
 
-/** Append one JSON line to `run-<id>.ndjson` (synchronous: called on the event hot path). */
+/**
+ * Append one JSON line to `run-<id>.ndjson` (synchronous: called on the event hot path).
+ *
+ * On Windows an on-access virus scanner keeps the file open for a few ms after a write, so the
+ * next append loses the race with EBUSY/EPERM and the frame was being dropped. Windows has no
+ * atomic append across such a lock, so retry briefly - the frame rate is low enough that a short
+ * synchronous spin costs far less than losing the frame.
+ */
+const APPEND_RETRIES = 12;
+const APPEND_RETRY_SPIN_MS = 5;
+
 export function appendRunLogLine(projectId: string, stage: RunStage, runId: string, line: string): string {
   const p = runLogPath(projectId, stage, runId);
   mkdirSync(path.dirname(p), { recursive: true });
-  appendFileSync(p, line.endsWith("\n") ? line : `${line}\n`, "utf8");
-  return p;
+  const text = line.endsWith("\n") ? line : `${line}\n`;
+  for (let attempt = 0; ; attempt++) {
+    try {
+      appendFileSync(p, text, "utf8");
+      return p;
+    } catch (err) {
+      const code = (err as NodeJS.ErrnoException).code;
+      if (attempt >= APPEND_RETRIES || (code !== "EBUSY" && code !== "EPERM" && code !== "EACCES")) throw err;
+      // Synchronous spin: this is the event hot path and the caller has nothing to await on.
+      const until = Date.now() + APPEND_RETRY_SPIN_MS;
+      while (Date.now() < until) {
+        /* wait for the scanner to let go */
+      }
+    }
+  }
 }
 
 export function readRunLogLines(projectId: string, stage: RunStage, runId: string): string[] {

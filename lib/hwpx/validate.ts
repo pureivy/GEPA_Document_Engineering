@@ -2,7 +2,7 @@
 import { existsSync, readFileSync } from "node:fs";
 import { createRequire } from "node:module";
 import { join } from "node:path";
-import { unzipSync } from "fflate";
+import { unzipSync, zipSync } from "fflate";
 import { XMLParser } from "fast-xml-parser";
 
 type RhwpModule = {
@@ -42,6 +42,27 @@ export async function rhwp(): Promise<RhwpModule> {
   return modPromise;
 }
 
+/**
+ * rhwp 배치를 한글에 맞춘 사본 — rhwp 는 문단 위·아래 간격이 600 HWPUNIT(약 6pt) 미만이면 통째로 버리고(실측: 500 → 0,
+ * 600 → 600), 한글은 그대로 더한다. 5pt 간격 문단이 열 개 남짓인 쪽은 rhwp 가 두 줄쯤 짧게 재서 미리보기에는 들어간
+ * "※ 근거" 가 한글에서는 다음 쪽으로 넘어갔다(결과보고서 2쪽, 2026-10-13). 쪽 배치를 재거나 미리보기를 그릴 때만 그런
+ * 간격을 600 으로 올린다 — 한글보다 조금(문단마다 1pt 안쪽) 길게 재므로 넘침 쪽으로 틀리지 않는다. 내려받는 파일은 그대로.
+ */
+export const RHWP_MIN_SPACING = 600;
+export function asLaidOutByHangul(bytes: Uint8Array): Uint8Array {
+  const entries = unzipSync(bytes);
+  const name = "Contents/header.xml";
+  const header = new TextDecoder().decode(entries[name]);
+  // hp:case(HwpUnitChar)와 hp:default(두 배 값) 둘 다 올려야 rhwp 가 받는다(실측: case 600·default 1000 이면 여전히 버림)
+  const lift = (xml: string, min: number) =>
+    xml.replace(/(<hc:(?:prev|next) value=")(\d+)(")/g, (m, a: string, v: string, b: string) => (Number(v) > 0 && Number(v) < min ? `${a}${min}${b}` : m));
+  const fixed = header.replace(/<hp:case [\s\S]*?<\/hp:case>/g, (x) => lift(x, RHWP_MIN_SPACING)).replace(/<hp:default>[\s\S]*?<\/hp:default>/g, (x) => lift(x, RHWP_MIN_SPACING * 2));
+  if (fixed === header) return bytes;
+  const files: Record<string, [Uint8Array, { level: 0 | 6 }]> = {};
+  for (const [n, data] of Object.entries(entries)) files[n] = [n === name ? new TextEncoder().encode(fixed) : data, { level: n === "mimetype" || n.startsWith("BinData/") ? 0 : 6 }];
+  return zipSync(files, { mtime: new Date("1980-01-01T00:00:00Z") });
+}
+
 export interface ValidationReport {
   ok: boolean;
   pageCount: number;
@@ -77,7 +98,9 @@ export async function validateHwpx(bytes: Uint8Array): Promise<ValidationReport>
   try {
     const m = await rhwp();
     const doc = new m.HwpDocument(bytes);
-    pageCount = doc.pageCount();
+    const laid = new m.HwpDocument(asLaidOutByHangul(bytes));
+    pageCount = laid.pageCount();
+    laid.free?.();
     if (pageCount <= 0) errors.push("rhwp: pageCount is 0");
     const rep = doc.exportHwpxWithReport();
     contentLoss = JSON.parse(rep.contentLoss());
@@ -93,7 +116,7 @@ export async function validateHwpx(bytes: Uint8Array): Promise<ValidationReport>
 
 export async function renderPagesSvg(bytes: Uint8Array): Promise<string[]> {
   const m = await rhwp();
-  const doc = new m.HwpDocument(bytes);
+  const doc = new m.HwpDocument(asLaidOutByHangul(bytes));
   const n = doc.pageCount();
   const out: string[] = [];
   for (let i = 0; i < n; i++) out.push(doc.renderPageSvg(i));

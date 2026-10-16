@@ -1,7 +1,7 @@
 "use client";
 import { useCallback, useEffect, useState } from "react";
 import { Code2, Download, History, RotateCcw } from "lucide-react";
-import type { Stage } from "@/lib/contracts";
+import { isNotesStage, type Stage } from "@/lib/contracts";
 import { api, errorMessage, type VersionDTO } from "@/lib/client/api";
 import { formatDateTime } from "@/lib/client/format";
 import { Button } from "@/components/ui/button";
@@ -83,18 +83,18 @@ export function DownloadBar({ projectId, stage, hasDoc, running, historyKey, onR
     }
   };
 
-  const isResearch = stage === "research";
+  const isResearch = isNotesStage(stage);
   const disabled = !hasDoc || running;
 
   /** research has no DocModel (the download route needs one): fetch notes.md and save it client-side */
   const downloadNotes = async () => {
     try {
-      const r = await api.getResearch(projectId);
+      const r = await api.getNotes(projectId, stage);
       const blob = new Blob([r.markdown ?? ""], { type: "text/markdown;charset=utf-8" });
       const url = URL.createObjectURL(blob);
       const a = document.createElement("a");
       a.href = url;
-      a.download = `research-notes_${new Date().toISOString().slice(0, 10).replace(/-/g, "")}.md`;
+      a.download = `${stage === "ledger" ? "정산요약" : "research-notes"}_${new Date().toISOString().slice(0, 10).replace(/-/g, "")}.md`;
       a.click();
       setTimeout(() => URL.revokeObjectURL(url), 1000);
     } catch (e) {
@@ -121,7 +121,7 @@ export function DownloadBar({ projectId, stage, hasDoc, running, historyKey, onR
     <div className="flex flex-wrap items-center gap-2 border-t border-slate-200 bg-white px-3 py-2">
       {isResearch ? (
         <Button variant="outline" size="sm" className="h-8" disabled={disabled} onClick={() => void downloadNotes()}>
-          <Download className="h-3.5 w-3.5" /> 조사 노트(.md)
+          <Download className="h-3.5 w-3.5" /> {stage === "ledger" ? "정산 요약(.md)" : "조사 노트(.md)"}
         </Button>
       ) : (
         <>

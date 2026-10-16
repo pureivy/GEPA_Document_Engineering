@@ -6,7 +6,7 @@
 import { z } from "zod";
 import { DELEGATION_LEVELS, DEFAULT_DELEGATION, INSTITUTION_HEAD_TITLE } from "../org";
 
-export const FamilySchema = z.enum(["plan", "notice", "press", "official", "report"]);
+export const FamilySchema = z.enum(["plan", "notice", "press", "official", "report", "settlement"]);
 export type Family = z.infer<typeof FamilySchema>;
 
 export const GlyphSchema = z.enum(["□", "ㅇ", "○", "◦", "●", "-", "·", "※", "*", "❖", "◇", "■", "✔", "❍", "▪", "∙", "❶", "❷", "❸", "❹", "none"]);
@@ -125,6 +125,16 @@ export const BlockSchema = z.discriminatedUnion("k", [
   }),
   z.object({ ...Base, k: z.literal("blank"), role: z.enum(["blank", "blankSmall"]).optional() }),
   z.object({ ...Base, k: z.literal("pageBreak") }),
+  /**
+   * 사진 대지 — 결과보고서의 현장 사진. `src` 는 프로젝트 작업 폴더 기준 경로(materials/… — 올린 사진이나 공문 hwpx 에서
+   * 꺼낸 사진, lib/closeout/materials.ts), `caption` 은 사진 아래 설명. `cols` 장씩 한 줄(기본 2).
+   */
+  z.object({
+    ...Base,
+    k: z.literal("photos"),
+    cols: z.number().int().min(1).max(3).optional(),
+    items: z.array(z.object({ src: z.string().min(1), caption: z.string().default("") })),
+  }),
   z.object({
     ...Base,
     k: z.literal("image"),
@@ -238,6 +248,17 @@ export const PlanMetaSchema = z.object({
    * numbered navy section chips, boxed title. See docs/design-system/bumpis.md.
    */
   house: z.enum(["gepa", "bumpis"]).default("gepa"),
+  /**
+   * 첫머리 합성. "결재"(기본) = 결재란 + 제목 표지(사업계획서·결과보고서 — 내부결재 보고서형).
+   * "없음" = 아무것도 합성하지 않는다 — 위탁기관이 정한 서식(「위탁사업 추진실적 및 정산보고서」)은
+   * 결재란이 없고 표지를 본문이 직접 그린다(docs/design-system/closeout-settlement.md §2.0).
+   */
+  표지: z.enum(["결재", "없음"]).default("결재"),
+  /**
+   * 표지 다음 쪽(본문 첫 쪽) 맨 위에 제목을 한 줄 다시 쓴다 — 결과보고서 관행(담당자 지시 2026-10-02,
+   * 실문서: 본문 첫 쪽 제목 → ◇ 요지 박스). 사업계획서 출력을 바꾸지 않으려고 기본은 끈다.
+   */
+  본문제목: z.boolean().default(false),
 });
 export type PlanMeta = z.infer<typeof PlanMetaSchema>;
 
@@ -358,12 +379,24 @@ export const ReportMetaSchema = z.object({
 });
 export type ReportMeta = z.infer<typeof ReportMetaSchema>;
 
+/**
+ * 정산보고서 — 위탁기관 서식 「지방위탁사업비 사업추진실적 및 정산보고서」. 참고본은 담당자가 실제로 낸
+ * 정산보고서(ESG·기업지원팀, 2025 향토뿌리기업 육성 사업)다. 표지에 나가는 제목만 메타로 받고, 나머지
+ * (사업명 줄·총괄표·제출자·연락처 상자)는 본문이 그린다. `ReportMetaSchema` 와 같이 맨 z.object 로 둔다.
+ */
+export const SettlementMetaSchema = z.object({
+  제목: z.string().default("지방위탁사업비 사업추진실적 및 정산보고서"),
+  부서: z.string().default(""),
+});
+export type SettlementMeta = z.infer<typeof SettlementMetaSchema>;
+
 export const DocModelSchema = z.discriminatedUnion("family", [
   z.object({ version: z.literal(1), family: z.literal("notice"), meta: NoticeMetaSchema, blocks: z.array(BlockSchema) }),
   z.object({ version: z.literal(1), family: z.literal("plan"), meta: PlanMetaSchema, blocks: z.array(BlockSchema) }),
   z.object({ version: z.literal(1), family: z.literal("press"), meta: PressMetaSchema, blocks: z.array(BlockSchema) }),
   z.object({ version: z.literal(1), family: z.literal("official"), meta: OfficialMetaSchema, blocks: z.array(BlockSchema) }),
   z.object({ version: z.literal(1), family: z.literal("report"), meta: ReportMetaSchema, blocks: z.array(BlockSchema) }),
+  z.object({ version: z.literal(1), family: z.literal("settlement"), meta: SettlementMetaSchema, blocks: z.array(BlockSchema) }),
 ]);
 export type DocModel = z.infer<typeof DocModelSchema>;
 export type NoticeDoc = Extract<DocModel, { family: "notice" }>;
@@ -371,6 +404,7 @@ export type PlanDoc = Extract<DocModel, { family: "plan" }>;
 export type PressDoc = Extract<DocModel, { family: "press" }>;
 export type OfficialDoc = Extract<DocModel, { family: "official" }>;
 export type ReportDoc = Extract<DocModel, { family: "report" }>;
+export type SettlementDoc = Extract<DocModel, { family: "settlement" }>;
 
 export function inlineText(inlines: Inline[]): string {
   return inlines.map((i) => (i.t === "br" ? "\n" : i.text)).join("");

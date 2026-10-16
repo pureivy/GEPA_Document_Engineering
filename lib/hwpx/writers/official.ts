@@ -11,17 +11,37 @@
 import { childrenNamed, findFirst, isNode, type XmlNode } from "../xml";
 import { paragraph } from "../emit/paragraph";
 import { loadGeometry, cloneFragment, setCellText } from "../geometry";
-import { approvalLineFor, approvalLineUpTo, departmentFullName, senderTitleFor } from "../../org";
+import { approvalLineFor, approvalLineUpTo, departmentFullName, findUnit, INSTITUTION_HEAD_TITLE, senderTitleFor } from "../../org";
 import { leadingSpaces, manualMarkerIndent } from "../../docmodel/indent";
 import { inlineText, officialMetaProblems, type Block, type Inline, type OfficialDoc, type OfficialMeta } from "../../docmodel/schema";
-import type { CharSpec } from "../registry";
+import type { CharSpec, ParaSpec } from "../registry";
 import { WriterContext } from "./context";
+import { emitTable, orphanSpacing, type FamilyStyle } from "./common";
 
 type ParaBlock = Extract<Block, { k: "para" }>;
 
 /** style-map 역할이 없을 때의 대비값. 참고 문서는 굴림체 12pt 장평 95 / 180 %(charPr 8, paraPr 27). */
 const BODY_CHAR: CharSpec = { font: "gulim", pt: 12, ratio: 95 };
 const BODY_LINE_SPACING = 180;
+/** 본문 표(정산내역 등) — 본문 12pt 에 맞춘 10pt 표, 회색 머리글. 참고 공문 정산표 실측 모양 */
+const OFFICIAL_TABLE_STYLE: FamilyStyle = {
+  bodyPt: 12,
+  bodyLineSpacing: BODY_LINE_SPACING,
+  body1Bold: false,
+  body1Font: "body",
+  notePt: 11,
+  tableHeaderFill: "#E5E5E5",
+  tableFontPt: 10,
+  hangingIndent: true,
+  indentFamily: "official",
+  // 공문 본문 글꼴(참고 문서 header 의 굴림체) — 역할 이름이 아니라 글꼴 이름으로 준다
+  tableFont: "굴림체",
+  anchorFont: "굴림체",
+  // 금액 칸은 오른쪽 정렬(담당자 공문 3630 정산표)
+  numericRight: true,
+};
+/** 본문이 길어 줄간격을 좁힐 때의 표 — 담당자 공문 3630 의 표 줄간격(125~130 %) */
+const OFFICIAL_TABLE_STYLE_COMPACT: FamilyStyle = { ...OFFICIAL_TABLE_STYLE, tableLook: { lineSpacing: 130 } };
 
 // ---- 두문(t00) 셀 지도 ------------------------------------------------------------------
 const HEAD_수신 = [3, 1] as const;
@@ -57,6 +77,19 @@ const FOOT_이메일 = [9, 23] as const;
 const FOOT_공개구분 = [9, 39] as const;
 
 export function writeOfficial(ctx: WriterContext, doc: OfficialDoc): XmlNode[] {
+  const est = estimateBodyHeight(ctx, doc, BODY_LINE_SPACING);
+  compactSpacing = est > BODY_BUDGET;
+  if (compactSpacing && estimateBodyHeight(ctx, doc, COMPACT_LINE_SPACING) > BODY_BUDGET) {
+    ctx.warnings.push({ message: "공문 본문이 길어 결재란·시행 정보가 다음 쪽으로 넘어갈 수 있습니다 — 사업개요·붙임 줄을 한 줄씩으로 줄이세요" });
+  }
+  try {
+    return writeOfficialInner(ctx, doc);
+  } finally {
+    compactSpacing = false;
+  }
+}
+
+function writeOfficialInner(ctx: WriterContext, doc: OfficialDoc): XmlNode[] {
   const out: XmlNode[] = [];
   const m = doc.meta;
   for (const p of officialMetaProblems(m)) ctx.warnings.push({ message: p });
@@ -89,6 +122,11 @@ export function writeOfficial(ctx: WriterContext, doc: OfficialDoc): XmlNode[] {
       case "attachmentList":
         out.push(...attachmentParas(ctx, b.items));
         break;
+      case "table":
+        // 결과 및 정산보고 공문의 정산내역 표(교부금·집행액·잔액·이자·반납액)처럼 본문에 표가 드는
+        // 공문이 실문서의 다수다(closeout-cover.md §2.6). 표가 없는 공문의 출력은 그대로다.
+        out.push(...emitTable(ctx, compactSpacing ? OFFICIAL_TABLE_STYLE_COMPACT : OFFICIAL_TABLE_STYLE, b));
+        break;
       case "pageBreak":
         if (b === 별지시작 && !wroteFooter) {
           out.push(...footTable(ctx, m, hasAttachmentBlock));
@@ -112,8 +150,47 @@ function roleSpec(ctx: WriterContext, name: string): { paraPr: number; charPr: n
   const r = ctx.roleOr(name, { para: { align: "JUSTIFY", lineSpacing: BODY_LINE_SPACING }, char: BODY_CHAR });
   const c = ctx.reg.charPrInfo(r.charPr);
   const base: CharSpec = c ? { font: c.hangul, pt: c.pt, spacing: c.spacing, ratio: c.ratio } : BODY_CHAR;
-  return { ...r, base, lineSpacing: ctx.reg.paraPrInfo(r.paraPr)?.lineSpacing ?? BODY_LINE_SPACING };
+  const info = ctx.reg.paraPrInfo(r.paraPr);
+  const ls = info?.lineSpacing ?? BODY_LINE_SPACING;
+  if (compactSpacing && info && ls > COMPACT_LINE_SPACING) {
+    const paraPr = ctx.reg.paraPr({ align: info.align as ParaSpec["align"], lineSpacing: COMPACT_LINE_SPACING, hanging: info.intent < 0 ? -info.intent / 2 : undefined, firstLine: info.intent > 0 ? info.intent / 2 : undefined, left: info.left / 2, right: info.right / 2, prev: info.prev / 2, next: info.next / 2, keepWithNext: info.keepWithNext });
+    return { paraPr, charPr: r.charPr, base, lineSpacing: COMPACT_LINE_SPACING };
+  }
+  return { ...r, base, lineSpacing: ls };
 }
+
+/**
+ * 결문 표는 쪽 맨 아래에 붙는 고정 표(높이 약 82mm)라 본문이 그 자리를 침범하면 결재란이 통째로 다음 쪽으로 간다.
+ * 본문이 길면 담당자 공문(ESG·기업지원팀-3630)처럼 줄간격을 155 % 로 좁혀 한 쪽에 넣는다(담당자 2026-10-06).
+ */
+const COMPACT_LINE_SPACING = 155;
+/**
+ * 두문·결문을 뺀 본문 자리(HWPUNIT, 아래 추정식 단위). 담당자 공문 3630 과 같은 분량(본문 11줄 + 정산표 + 붙임 3줄)은
+ * 추정 180 % = 40,100 이면 결문이 다음 쪽으로 밀리고 155 % = 35,600 이면 한 쪽에 드는 것을 한글에서 확인했다(2026-10-06).
+ * 그 사이 값을 둔다.
+ */
+const BODY_BUDGET = 37500;
+
+/** 본문(두문 앵커의 첫 문단 포함) 높이 추정 — 문단 줄 수 × 글자 크기 × 줄간격 + 표 + 붙임 */
+function estimateBodyHeight(ctx: WriterContext, doc: OfficialDoc, ls: number): number {
+  const pt = BODY_CHAR.pt;
+  const line = pt * 100 * (ls / 100);
+  let h = 0;
+  for (const b of doc.blocks) {
+    if (b.k === "pageBreak") break;
+    if (b.k === "para") {
+      const t = inlineText(bodyInlines(b));
+      h += /^\s*\(단위\s*[:：]/.test(t) ? 1300 : ctx.lineCount(t, pt, OFFICIAL_TEXT_WIDTH) * line;
+    } else if (b.k === "blank") h += line;
+    else if (b.k === "table") h += b.rows.reduce((a, r) => a + Math.max(1, ...r.cells.map((c) => inlineText(c.inlines).split(String.fromCharCode(10)).length)), 0) * 1000 * 1.6 + 600;
+    else if (b.k === "attachmentList") h += b.items.length * line + 1000;
+  }
+  if (!doc.blocks.some((b) => b.k === "attachmentList")) h += doc.meta.붙임.length * line + (doc.meta.붙임.length ? 1000 : 0);
+  return h;
+}
+/** 공문 서식(별지 제1호)의 본문 폭 — 용지 59528 − 왼쪽 5102 − 오른쪽 4818 (templates/official) */
+const OFFICIAL_TEXT_WIDTH = 49608;
+let compactSpacing = false;
 
 /**
  * 두문 표와 한 문단에 들어갈 본문 블록 — **첫 본문 문단이면 무엇이든**이다.
@@ -143,7 +220,20 @@ function bodyInlines(b: ParaBlock): Inline[] {
 /** 본문 문단 — 참고 문서의 paraPr 27 / charPr 8 을 그대로 쓴다(표준 서식의 본문 줄). */
 function bodyPara(ctx: WriterContext, b: ParaBlock): XmlNode {
   const s = roleSpec(ctx, "body");
-  return ctx.para({ paraPr: s.paraPr, runs: ctx.runsFor(bodyInlines(b), s.base, s.charPr), vertsize: s.base.pt * 100, lineSpacing: s.lineSpacing, forcePageBreak: b.pageBreakBefore });
+  // "(단위: 원)" 줄은 표 오른쪽 위에 작게(담당자 공문 3630) — 본문 줄로 두면 왼쪽에 붙어 표 머리와 떨어져 보인다
+  const raw = inlineText(b.inlines).trim();
+  if (/^\(단위\s*[:：].*\)$/.test(raw)) {
+    const paraPr = ctx.reg.paraPr({ align: "RIGHT", lineSpacing: 130 });
+    const charPr = ctx.reg.charPr({ ...s.base, pt: 10 });
+    // captionParas 에 넣지 않는다 — 표와 한 문단으로 묶이면(mergeCaptionTables) 단위 줄이 표 **아래**에 그려지고
+    // 그 문단 높이가 부풀어 붙임이 쪽 아래 결문의 발신명의와 겹쳤다(담당자 2026-10-12). 공문은 한 쪽이라 단위 줄만
+    // 쪽 끝에 남을 일이 없으니 따로 둔다.
+    return ctx.para({ paraPr, runs: [{ charPr, text: raw }], vertsize: 1000, lineSpacing: 130 });
+  }
+  const inl = bodyInlines(b);
+  const sp = orphanSpacing(ctx, inlineText(inl), s.base, OFFICIAL_TEXT_WIDTH);
+  const runs = sp ? ctx.runsFor(inl, { ...s.base, spacing: sp }) : ctx.runsFor(inl, s.base, s.charPr);
+  return ctx.para({ paraPr: s.paraPr, runs, vertsize: s.base.pt * 100, lineSpacing: s.lineSpacing, forcePageBreak: b.pageBreakBefore });
 }
 
 function blankPara(ctx: WriterContext): XmlNode {
@@ -165,8 +255,17 @@ function attachmentParas(ctx: WriterContext, items: string[]): XmlNode[] {
     const head = i === 0 ? "붙임  " : "      ";
     const body = many ? `${i + 1}. ${it}` : it;
     const text = head + body + (i === list.length - 1 ? "  끝." : "");
-    return ctx.para({ paraPr: s.paraPr, runs: [{ charPr: s.charPr, text }], vertsize: s.base.pt * 100, lineSpacing: s.lineSpacing });
+    // 문단 위 여백은 "붙임" 첫 줄에만 — 줄마다 넣으면 붙임 3줄이 벌어져 결문이 다음 쪽으로 밀렸다(담당자 공문 3630 은 여백 없음)
+    const paraPr = i === 0 ? s.paraPr : noSpaceBefore(ctx, s.paraPr);
+    return ctx.para({ paraPr, runs: [{ charPr: s.charPr, text }], vertsize: s.base.pt * 100, lineSpacing: s.lineSpacing });
   });
+}
+
+/** 같은 문단 모양에서 문단 위 여백만 뺀 것 */
+function noSpaceBefore(ctx: WriterContext, paraPr: number): number {
+  const p = ctx.reg.paraPrInfo(paraPr);
+  if (!p || !p.prev) return paraPr;
+  return ctx.reg.paraPr({ align: p.align as ParaSpec["align"], lineSpacing: p.lineSpacing, hanging: p.intent < 0 ? -p.intent / 2 : undefined, firstLine: p.intent > 0 ? p.intent / 2 : undefined, left: p.left / 2, right: p.right / 2, next: p.next / 2, keepWithNext: p.keepWithNext });
 }
 
 // ---- 두문 --------------------------------------------------------------------------------
@@ -194,6 +293,11 @@ function headTable(ctx: WriterContext, m: OfficialMeta, first: ParaBlock | undef
   setCellText(head, ...HEAD_수신, 수신값(m));
   setCellText(head, ...HEAD_경유, m.경유);
   setCellText(head, ...HEAD_제목, m.제목);
+  if (compactSpacing) {
+    // 첫 문단 아래 5pt 여백과 180 % 줄간격 — 본문을 좁힐 때는 담당자 공문 3630 처럼 여백 없이
+    const info = ctx.reg.paraPrInfo(Number(head.attrs.paraPrIDRef));
+    if (info) head.attrs.paraPrIDRef = String(ctx.reg.paraPr({ align: info.align as ParaSpec["align"], lineSpacing: COMPACT_LINE_SPACING, left: info.left / 2, right: info.right / 2 }));
+  }
   if (first) {
     const s = roleSpec(ctx, "lead");
     // paragraph() 로 run 노드만 만들어 앵커에 잇는다(문단 자체는 버린다) — 하이퍼링크 같은
@@ -222,6 +326,12 @@ function footTable(ctx: WriterContext, m: OfficialMeta, hasAttachmentBlock: bool
     return out;
   }
   const foot = tableOnly(cloneFragment(ref, ctx.ids));
+  // 결문 표를 품은 문단은 글자 1pt — 12pt 로 두면 빈 줄 하나(약 7mm)를 차지해 그 줄이 쪽에 안 들어갈 때 결문 표까지
+  // 다음 쪽으로 끌고 갔다(담당자 공문 3630 의 앵커는 1pt, 2026-10-06)
+  for (const r of childrenNamed(foot, "hp:run")) {
+    const c = ctx.reg.charPrInfo(Number(r.attrs.charPrIDRef));
+    r.attrs.charPrIDRef = String(ctx.reg.charPr(c ? { font: c.hangul, pt: 1, ratio: c.ratio } : { ...BODY_CHAR, pt: 1 }));
+  }
 
   // 수신자 목록은 `수신자참조` 일 때만 — 아니면 라벨까지 비워 참고 문서의 목록이 남지 않게 한다
   const 참조 = m.수신유형 === "수신자참조";
@@ -277,6 +387,10 @@ function 결재라인(ctx: WriterContext, m: OfficialMeta): string[] {
  */
 function 발신명의(ctx: WriterContext, m: OfficialMeta, line: string[]): string {
   if (m.발신명의.trim()) return m.발신명의.trim();
+  // 밖으로 나가는 공문(수신자·수신자참조)은 전결과 관계없이 **기관장 명의**다 — 전결은 결재란을
+  // 어디서 끊는지만 정한다(담당자 지시 2026-10-02; 실문서 ESG·기업지원팀-3629·3630: 본부장 전결,
+  // 발신명의 "(재)경상북도경제진흥원장"). 실·단장 명의는 내부결재에서만 쓴다.
+  if (m.수신유형 !== "내부결재" && !isInternalRecipient(m)) return INSTITUTION_HEAD_TITLE;
   const last = line[line.length - 1];
   const title = senderTitleFor(last, m.처리과);
   if (title) return title;
@@ -290,6 +404,22 @@ function 발신명의(ctx: WriterContext, m: OfficialMeta, line: string[]): stri
       : `발신명의가 비어 있고 처리과 "${m.처리과}"로 부서를 찾지 못해 빈 칸으로 두었습니다`,
   });
   return derived;
+}
+
+/**
+ * 받는 곳이 모두 진흥원 안인가 — "전부서", 진흥원의 팀·실·지소 이름, 또는 기관명 없이 직위만 적은 수신
+ * (경영지원팀장, 본부장). 안이면 보조기관(전결권자) 명의, 밖(경상북도지사·○○시장·다른 기관)이면 기관장 명의다.
+ */
+export function isInternalRecipient(m: Pick<OfficialMeta, "수신" | "수신자">): boolean {
+  const names = [m.수신 ?? "", ...(m.수신자 ?? [])].map((s) => s.trim()).filter(Boolean);
+  if (!names.length) return false;
+  return names.every((n) => {
+    const base = n.replace(/\(.*\)$/, "").trim();
+    if (/^(전\s*부서|각\s*(팀|부서|실)|진흥원\s*전\s*직원)/.test(base)) return true;
+    if (/(도지사|시장|군수|구청장|교육감|대표|이사장|위원장|센터장|회장|청장|총장|병원장)$/.test(base)) return false;
+    if (findUnit(base.replace(/(장|팀장|실장|지소장|단장)$/, ""))) return true;
+    return /^(원장|본부장|실장|단장|팀장|지소장)$/.test(base) || /(본부장|실장|단장|팀장|지소장)$/.test(base) && !/[(\s]/.test(base);
+  });
 }
 
 // ---- 조각 다듬기 ---------------------------------------------------------------------------

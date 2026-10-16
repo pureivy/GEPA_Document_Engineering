@@ -278,6 +278,9 @@ function bodyLines(doc: DocModel): string[] {
         lines.push("```image " + parts.join(" "), "```");
         break;
       }
+      case "photos":
+        lines.push("```photos" + (b.cols ? ` cols=${b.cols}` : ""), ...b.items.map((it) => (it.caption ? `${it.src} | ${it.caption}` : it.src)), "```");
+        break;
       case "table":
         // 조직도는 칸이 없다 — 표 문법으로 되뇌면 빈 표가 되어 왕복이 깨진다
         if (b.role === "orgChart") lines.push("<조직도>");

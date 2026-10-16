@@ -28,8 +28,11 @@ const DATE_ZERO_PADDED = /(?<![\d.])(\d{4}|’\d{2})\. 0(\d)\. |(?<![\d.])(\d{4}
 const COLON_SPACED = /(\S) :(?=\s)/g;
 const TILDE_SPACED = /(\S) ~ (?=\S)|(\S) ~(?=\S)|(\S)~ (?=\S)/g;
 const KOREAN_TIME = /(오전|오후)\s?\d{1,2}시(\s?\d{1,2}분)?/g;
-const AMOUNT_WON = /금\s?\d{1,3}(,\d{3})+원(?!\()/g;
+// "지원금 3,677,110원" 의 '금'은 금액 표기가 아니다 — 낱말 첫머리의 '금'만 본다(2026-10-06 오탐)
+const AMOUNT_WON = /(?<![가-힣])금\s?\d{1,3}(,\d{3})+원(?!\()/g;
 const AMOUNT_NO_COMMA = /금\d{4,}원/g;
+// 보고서 본문의 화살표 — 단계·변경·인과를 → 로 줄이지 말고 문장으로 쓴다(담당자 2026-10-07: "화살표가 너무 많다")
+const ARROW = /[→⇒➡▶]/g;
 
 function textOf(b: Block): string {
   if (b.k === "para" || b.k === "coverTitle") return inlineText(b.inlines as Inline[]);
@@ -50,6 +53,8 @@ function checkText(text: string, blockId: string | undefined, out: GovLintIssue[
   for (const m of text.matchAll(TILDE_SPACED)) out.push({ blockId, rule: "물결표", severity: "warn", message: `"${m[0].trim()}" — 물결표(~)는 앞말·뒷말에 붙여 쓴다` });
   for (const m of text.matchAll(KOREAN_TIME)) out.push({ blockId, rule: "시간 표기", severity: "warn", message: `"${m[0]}" — 시간은 24시각제 숫자와 쌍점으로 쓴다(예: 15:20)` });
   for (const m of text.matchAll(AMOUNT_WON)) out.push({ blockId, rule: "금액 한글 병기", severity: "warn", message: `"${m[0]}" — 금액은 숫자 뒤 괄호에 한글을 병기한다(예: 금113,560원(금일십일만삼천오백육십원))` });
+  const arrows = text.match(ARROW)?.length ?? 0;
+  if (arrows) out.push({ blockId, rule: "화살표", severity: "warn", message: `"${text.slice(0, 24)}…" — 화살표(→)로 줄이지 말고 "…에서 …로 변경", "…하여 …" 처럼 개조식 문장으로 쓴다` });
   for (const m of text.matchAll(AMOUNT_NO_COMMA)) out.push({ blockId, rule: "금액 자릿점", severity: "warn", message: `"${m[0]}" — 금액은 세 자리마다 쉼표를 찍는다` });
 }
 
@@ -62,6 +67,15 @@ export function lintGovStyle(doc: DocModel): GovLintIssue[] {
     if (b.k === "para" || b.k === "coverTitle") checkText(textOf(b), b.id, out);
     else if (b.k === "table") for (const r of b.rows) for (const c of r.cells) checkText(inlineText(c.inlines), b.id, out);
   }
+  // 정산보고서는 위탁기관이 정한 제출 서식이다 — 표지 "사 업 비: 금120,000,000원" 처럼 한글 병기를 하지 않는다
+  // (담당자 정산보고서·서식 원문). 기안문의 편람 규칙이 서식을 고치라고 헛울리지 않게 뺀다.
+  if (doc.family === "settlement") return out.filter((i) => i.rule !== "금액 한글 병기").concat(lintStructure(doc));
+  return out.concat(lintStructure(doc));
+}
+
+function lintStructure(doc: DocModel): GovLintIssue[] {
+  const out: GovLintIssue[] = [];
+  const blocks = doc.blocks;
 
   // ---- 항목 구분: 항목이 하나뿐이면 기호를 붙이지 않는다; 위계는 한 단계씩
   const items = blocks.map((b, i) => ({ b, i })).filter(({ b }) => b.k === "para" && b.glyph && ITEM_GLYPHS.has(b.glyph)) as { b: Extract<Block, { k: "para" }>; i: number }[];
@@ -91,7 +105,10 @@ export function lintGovStyle(doc: DocModel): GovLintIssue[] {
   }
 
   // ---- 붙임 / 끝 표시 (발신 문서·내부결재문서)
-  if (DOC_FAMILIES[doc.family].requiresClosingMark) {
+  // 위탁기관이 정한 서식(plan `표지: 없음` — 위탁사업 추진실적 및 정산보고서)은 기안문이 아니라 제출 서식이라
+  // `끝.` 을 쓰지 않는다(실문서 ESG-1024 등). 그 문서에서 헛울리지 않게 뺀다.
+  const 서식문서 = doc.family === "plan" && doc.meta.표지 === "없음";
+  if (DOC_FAMILIES[doc.family].requiresClosingMark && !서식문서) {
     const last = [...blocks].reverse().find((b) => b.k === "para" || b.k === "table" || b.k === "attachmentList");
     // 공문서는 붙임을 블록이 아니라 meta.붙임 에서 펼친다(다른 family 는 ```attach 블록을 쓴다).
     // 작성기가 그 줄 끝에 "  끝." 을 찍으므로(lib/hwpx/writers/official.ts) 본문 마지막 문단에

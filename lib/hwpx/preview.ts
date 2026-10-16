@@ -16,7 +16,9 @@ export async function rasterizePageSvg(svg: string, width = PREVIEW_WIDTH_PX): P
   const { Resvg } = await import("@resvg/resvg-js");
   const r = new Resvg(svg, {
     fitTo: { mode: "width", value: width },
-    font: { fontDirs: [join(process.cwd(), "public/fonts")], loadSystemFonts: true, defaultFontFamily: "휴먼명조" },
+    // 200px 썸네일 — 함께 싣는 한글 글꼴(public/fonts)이면 충분하다. 시스템 글꼴을 전부 읽으면 Windows 에서 내보내기마다
+    // 수 초가 더 걸렸다(2026-10-12)
+    font: { fontDirs: [join(process.cwd(), "public/fonts")], loadSystemFonts: false, defaultFontFamily: "휴먼명조" },
     background: "#ffffff",
   });
   return r.render().asPng();
