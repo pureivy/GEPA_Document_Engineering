@@ -70,7 +70,56 @@ export function lintGovStyle(doc: DocModel): GovLintIssue[] {
   // 정산보고서는 위탁기관이 정한 제출 서식이다 — 표지 "사 업 비: 금120,000,000원" 처럼 한글 병기를 하지 않는다
   // (담당자 정산보고서·서식 원문). 기안문의 편람 규칙이 서식을 고치라고 헛울리지 않게 뺀다.
   if (doc.family === "settlement") return out.filter((i) => i.rule !== "금액 한글 병기").concat(lintStructure(doc));
-  return out.concat(lintStructure(doc));
+  return out.concat(lintStructure(doc), lintWriting(doc));
+}
+
+// ---- 공문서 기본 틀(agent/CLAUDE.md, 담당자 2026-10-19) — 개조식 항목 줄의 머리말·말투·나란한 항목
+const LABEL = /^\(([^()]{1,12})\)\s*/;
+/** 머리말 줄 안에서도 쓸 수 있는 괄호: 날짜 요일 (토), 금액 한글 병기 (금…원), 영문·한자 병기 (AI)(R&D)(代) */
+const ALLOWED_PAREN = /\([월화수목금토일]\)|\(금[가-힣]+원\)|\([A-Za-z0-9&·.\s-]+\)|\([一-鿿]+\)/g;
+const SPOKEN = /(했다|하였다|됐다|되었다|입니다|습니다|했음|하였음)\.?$|모두 (지원|완료|달성|선정)/;
+const COUNT_ONLY = /^\(사업내용\)\s*(\d+개 분야\s*)?\d+개 (세부)?사업\s*$/;
+/** 본문 한 줄 폭(약 38자) — 한글 1, 영문·숫자·기호 0.5 */
+const LINE_WIDTH = 38;
+const width = (s: string) => [...s].reduce((n, c) => n + (/[ㄱ-힣一-鿿□ㅇ※]/.test(c) ? 1 : 0.5), 0);
+
+function lintWriting(doc: DocModel): GovLintIssue[] {
+  // 보도자료 본문은 서술형 기사체다 — 종결·머리말 규칙을 적용하지 않는다
+  if (doc.family === "press") return [];
+  const out: GovLintIssue[] = [];
+  const paras = doc.blocks.filter((b): b is Extract<Block, { k: "para" }> => b.k === "para" && !!b.glyph && ITEM_GLYPHS.has(b.glyph));
+  for (const b of paras) {
+    const t = inlineText(b.inlines).trim().replace(/\s*끝\.$/, "");
+    const head = `"${b.glyph} ${t.slice(0, 22)}…"`;
+    const label = LABEL.exec(t);
+    if (label) {
+      const rest = t.slice(label[0].length);
+      if (/^[①-⑳]/.test(rest)) out.push({ blockId: b.id, rule: "번호·머리말 섞임", severity: "warn", message: `${head} — 괄호 머리말과 번호(①)를 한 줄에 섞지 않는다. 세부사업 번호는 표와 절 제목에서만 쓴다` });
+      if (/\(/.test(rest.replace(ALLOWED_PAREN, ""))) out.push({ blockId: b.id, rule: "머리말 줄 괄호", severity: "warn", message: `${head} — 괄호 머리말을 단 줄에는 다른 괄호를 쓰지 않는다. 쉼표로 잇거나 다음 줄 ※ 로 내린다` });
+    }
+    if (COUNT_ONLY.test(t)) out.push({ blockId: b.id, rule: "개수만 적은 내용", severity: "warn", message: `${head} — 「N개 세부사업」처럼 개수만 쓰지 말고 무엇을 해서 무엇을 지원했는지 쓴다` });
+    if (SPOKEN.test(t)) out.push({ blockId: b.id, rule: "말투", severity: "warn", message: `${head} — 말하듯 쓰지 않는다. 개조식 명사형(…지원, …달성)으로 끝내고 「모두 지원」 대신 「※ 목표 ○개, ○개 지원으로 100% 달성」` });
+  }
+  // 나란한 항목: 같은 기호가 이어진 줄 묶음(사이에 다른 항목 없음)
+  const blocks = doc.blocks;
+  for (let i = 0; i < blocks.length; ) {
+    const b = blocks[i];
+    if (b.k !== "para" || b.glyph !== "-") { i++; continue; }
+    const run: Extract<Block, { k: "para" }>[] = [];
+    while (i < blocks.length && blocks[i].k === "para" && (blocks[i] as Extract<Block, { k: "para" }>).glyph === "-") run.push(blocks[i++] as Extract<Block, { k: "para" }>);
+    if (run.length < 2) continue;
+    const texts = run.map((p) => inlineText(p.inlines).trim().replace(/\s*끝\.$/, ""));
+    const labels = texts.map((t) => LABEL.exec(t)?.[1]);
+    if (labels.every((l) => l !== undefined)) {
+      // 머리말 폭 맞춤 — 띄어쓰기로 글자 폭을 같게. 빈칸은 반 글자라 (판 로 확 대) = 4 + 3×0.5 = (시장 활성화) = 5 + 0.5
+      const lens = new Set(labels.map((l) => width(l!)));
+      if (lens.size > 1) out.push({ blockId: run[0].id, rule: "머리말 폭", severity: "info", message: `나란한 머리말 ${labels.map((l) => `(${l})`).join(" ")} — 띄어쓰기로 글자 폭을 맞춘다(예: (판 로 확 대) (시장 활성화))` });
+      // 나란한 항목은 모두 한 줄 — 몇 줄만 넘치면 보기 흉하다
+      const wide = run.filter((_, k) => width(`- ${texts[k]}`) > LINE_WIDTH);
+      if (wide.length && wide.length < run.length) for (const p of wide) out.push({ blockId: p.id, rule: "나란한 항목 한 줄", severity: "warn", message: `"- ${inlineText(p.inlines).trim().slice(0, 22)}…" — 나란한 항목 가운데 이 줄만 두 줄로 넘친다. 뒷말을 줄여 한 줄(약 ${LINE_WIDTH}자)로` });
+    }
+  }
+  return out;
 }
 
 function lintStructure(doc: DocModel): GovLintIssue[] {
