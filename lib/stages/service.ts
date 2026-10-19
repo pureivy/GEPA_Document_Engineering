@@ -2,7 +2,7 @@
  * Stage document service: persistence of DocModel/DSL per stage, export to HWPX, rendering,
  * version history. Used by the stage API routes and by the run manager's doc extractor.
  */
-import { existsSync, mkdirSync, readFileSync, writeFileSync, statSync } from "node:fs";
+import { existsSync, mkdirSync, readdirSync, readFileSync, writeFileSync, statSync } from "node:fs";
 import { isAbsolute, join } from "node:path";
 import { rhwpBin, spawnCommandSync as spawnSync } from "../platform";
 import { DocModelSchema, type DocModel } from "../docmodel/schema";
@@ -12,10 +12,15 @@ import { resolveAsset } from "../closeout/photos";
 import { toDsl } from "../docmodel/serialize/toDsl";
 import { expandLedgerMacros, hasLedgerMacro } from "../closeout/macros";
 import { readLedger } from "../closeout/store";
+import { computeLedger } from "../closeout/ledger";
+import { sourceAmounts, unledgeredWarnings } from "../closeout/amountCheck";
+import { materialsDir } from "../closeout/materials";
 import { exportStageDoc, ensureRendered, readExportReport, readPageSvg } from "../hwpx/export";
 import type { ExportReportDTO, Stage } from "../contracts";
 import { db, schema } from "../db/client";
 import { desc, and, eq } from "drizzle-orm";
+
+const CLOSEOUT_DOC_STAGES = new Set<string>(["result", "settlement", "submit"]);
 
 export function dataDir(): string {
   return process.env.DATA_DIR ? (isAbsolute(process.env.DATA_DIR) ? process.env.DATA_DIR : join(process.cwd(), process.env.DATA_DIR)) : join(process.cwd(), "data");
@@ -156,11 +161,29 @@ export function restoreVersion(projectId: string, stage: Stage, seq: number): Do
   return doc;
 }
 
+/**
+ * 세 문서(결과·정산·공문)의 금액은 모두 원장에서 나와야 한다 — 매크로 밖에서 적은 금액(기업별 표·본문)도
+ * 원장과 대조해 내보내기 보고서의 경고로 남긴다(화면의 「경고 N」). 에이전트 초안과 사람이 고친 판 모두.
+ */
+function ledgerAmountWarnings(projectId: string, stage: Stage, doc: DocModel): string[] {
+  if (!CLOSEOUT_DOC_STAGES.has(stage)) return [];
+  const l = readLedger(projectId);
+  if (!l.ok) return [];
+  return unledgeredWarnings(toDsl(doc), computeLedger(l.ledger), sourceAmounts(materialTexts(projectId))).map((w) => `[정산·금액 대조] ${w.message}`);
+}
+
+/** 올린 자료를 옮긴 글(materials/text/*.md) — 자료에 그대로 적힌 금액은 금액 대조에서 뺀다 */
+function materialTexts(projectId: string): string[] {
+  const dir = join(materialsDir(projectId), "text");
+  if (!existsSync(dir)) return [];
+  return readdirSync(dir).filter((n) => n.endsWith(".md")).map((n) => readFileSync(join(dir, n), "utf8"));
+}
+
 export async function exportStage(projectId: string, stage: Stage): Promise<ExportReportDTO | null> {
   const doc = readStageDoc(projectId, stage);
   if (!doc) return null;
   // 사진 대지(```photos)의 그림은 프로젝트 작업 폴더에서 읽는다
-  const { report } = await exportStageDoc(stageDir(projectId, stage), doc, { assets: (src) => resolveAsset(projectId, src) });
+  const { report } = await exportStageDoc(stageDir(projectId, stage), doc, { assets: (src) => resolveAsset(projectId, src) }, ledgerAmountWarnings(projectId, stage, doc));
   await ensureRendered(stageDir(projectId, stage));
   return report;
 }

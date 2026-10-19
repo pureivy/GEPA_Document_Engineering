@@ -12,12 +12,14 @@ import { basename, join } from "node:path";
 import { projectDir } from "../storage/paths";
 import { extractReferenceText, referenceExtension } from "../reference/extract";
 import { extractHwpxPhotos, imageInfo } from "./photos";
+import { readPhotoTaken, takenLabel, type PhotoTaken } from "./exif";
 import { readCsv, readXlsx, sheetsToMarkdown } from "./sheet";
 import { readXls } from "./xls";
 import { unzipSync } from "fflate";
 
 export const MATERIAL_EXTENSIONS = [".xlsx", ".xls", ".csv", ".hwp", ".hwpx", ".pdf", ".docx", ".md", ".txt", ".png", ".jpg", ".jpeg"] as const;
-export const MATERIAL_MAX_BYTES = 30 * 1024 * 1024;
+/** 파일 한 개의 최대 크기 — 쪽수가 많은 스캔 PDF(지급 공문 한 건 20MB 남짓)도 넉넉히 받는다 */
+export const MATERIAL_MAX_BYTES = 100 * 1024 * 1024;
 
 export interface MaterialInfo {
   name: string;
@@ -74,7 +76,7 @@ export function materialText(name: string, bytes: Uint8Array): { text: string } 
 export function saveMaterial(projectId: string, rawName: string, bytes: Uint8Array): MaterialInfo {
   const name = safeMaterialName(rawName);
   if (!name || !materialExtension(name)) throw new Error(`지원하지 않는 파일 형식입니다: ${rawName} (${MATERIAL_EXTENSIONS.join(", ")})`);
-  if (bytes.byteLength > MATERIAL_MAX_BYTES) throw new Error(`파일이 너무 큽니다(30MB 이하): ${name}`);
+  if (bytes.byteLength > MATERIAL_MAX_BYTES) throw new Error(`파일이 너무 큽니다(100MB 이하): ${name}`);
   const t = materialText(name, bytes); // 먼저 변환해 보고 실패하면 저장하지 않는다
   const dir = materialsDir(projectId);
   mkdirSync(join(dir, "text"), { recursive: true });
@@ -119,13 +121,14 @@ export function refreshMaterialPhotos(projectId: string): number {
 }
 
 /** 사진 목록(작업 폴더 기준 경로·픽셀 크기·출처 자료) — 올린 jpg·png 와 hwpx 에서 꺼낸 사진 */
-export function listPhotos(projectId: string): { path: string; width: number; height: number; from: string }[] {
+export function listPhotos(projectId: string): { path: string; width: number; height: number; from: string; taken?: PhotoTaken }[] {
   const dir = materialsDir(projectId);
-  const out: { path: string; width: number; height: number; from: string }[] = [];
+  const out: { path: string; width: number; height: number; from: string; taken?: PhotoTaken }[] = [];
   const add = (abs: string, rel: string, from: string) => {
-    const info = imageInfo(new Uint8Array(readFileSync(abs)));
+    const bytes = new Uint8Array(readFileSync(abs));
+    const info = imageInfo(bytes);
     // 카드뉴스·현수막처럼 길쭉한 그림(가로세로 2.5배 넘음)은 사진 후보에서 뺀다
-    if (info && Math.max(info.width, info.height) / Math.min(info.width, info.height) <= 2.5) out.push({ path: rel, width: info.width, height: info.height, from });
+    if (info && Math.max(info.width, info.height) / Math.min(info.width, info.height) <= 2.5) out.push({ path: rel, width: info.width, height: info.height, from, taken: readPhotoTaken(bytes) });
   };
   if (!existsSync(dir)) return out;
   for (const n of readdirSync(dir).sort((a, b) => a.localeCompare(b, "ko"))) if (/\.(jpe?g|png|bmp)$/i.test(n) && statSync(join(dir, n)).isFile()) add(join(dir, n), `materials/${n}`, n);
@@ -229,8 +232,9 @@ function writeMaterialsIndex(projectId: string): void {
       "## 사진",
       "",
       "결과보고서 사진 대지(```photos)에 쓸 수 있는 사진이다. 넣기 전에 Read 로 열어 무엇을 찍은 사진인지 확인한다.",
+      "촬영일은 사진 파일(EXIF)에 남은 날짜다 — 세부사업 일정과 맞춰 어느 행사·회차 사진인지 정하고 설명의 날짜로 쓴다. 「촬영일 없음」은 메신저로 주고받아 정보가 지워진 사진이니 그림과 파일 이름으로 판단한다.",
       "",
-      ...photos.map((p) => `- \`${p.path}\` (${p.width}×${p.height}px) — 출처: ${p.from}`),
+      ...photos.map((p) => `- \`${p.path}\` (${p.width}×${p.height}px) — 출처: ${p.from} — ${p.taken ? `촬영 ${takenLabel(p.taken)}` : "촬영일 없음"}`),
       "",
     );
   }

@@ -74,6 +74,9 @@ export const LedgerSchema = z.object({
       지급처: z.string().default(""),
       지출번호: z.union([z.string(), z.number()]).optional(),
       지급방법: z.string().default(""),
+      /** 기업 지원금 지급 건만 — 지급 공문의 지원 항목·내용(「기업별」 표의 칸, 예: "사업화(R&D)", "생면 생산 자동화 공급 로봇 도입") */
+      지원항목: z.string().optional(),
+      지원내용: z.string().optional(),
       /** 원자료 위치(파일·시트·행) — 검토용, 문서에는 나가지 않는다 */
       출처: z.string().optional(),
     }),

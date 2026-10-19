@@ -25,7 +25,7 @@ export function sha1(bytes: Uint8Array): string {
   return createHash("sha1").update(bytes).digest("hex").slice(0, 16);
 }
 
-export async function exportStageDoc(stageDir: string, doc: DocModel, opts: BuildOptions = {}): Promise<ExportResult> {
+export async function exportStageDoc(stageDir: string, doc: DocModel, opts: BuildOptions = {}, extraWarnings: string[] = []): Promise<ExportResult> {
   mkdirSync(stageDir, { recursive: true });
   // 배치 보정 — 표를 쪽 끝까지 채우고, 쪽 끝에 홀로 남은 제목을 다음 쪽으로(keepPass.ts)
   let built;
@@ -44,6 +44,7 @@ export async function exportStageDoc(stageDir: string, doc: DocModel, opts: Buil
   let svgs: string[] = [];
   const warnings = built.report.warnings.map((w) => (w.blockId ? `[${w.blockId}] ${w.message}` : w.message));
   if (layoutError) warnings.push(`쪽·줄 맞춤을 건너뛰었습니다: ${layoutError}`);
+  warnings.push(...extraWarnings);
   // 행정업무운영 편람 작성 기준(docs/design-system/gov-manual.md) — deterministic checks, non-blocking
   for (const i of lintGovStyle(doc)) warnings.push(`[편람${i.severity === "info" ? "·참고" : ""}·${i.rule}]${i.blockId ? ` [${i.blockId}]` : ""} ${i.message}${i.fix ? ` → ${i.fix}` : ""}`);
   if (v.ok) {

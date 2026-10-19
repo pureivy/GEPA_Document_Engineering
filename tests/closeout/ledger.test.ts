@@ -82,7 +82,8 @@ describe("expandLedgerMacros", () => {
     "numbering: arabic",
     "---",
     "□ 사업비: {{정산:예산액한글}}",
-    ...LEDGER_TABLE_NAMES.map((n) => `{{정산:${n}}}`),
+    // 기업별은 지원금 지급이 있는 원장에서 본다(tests/closeout/amounts.test.ts) — ESG-1024 는 행사 사업이다
+    ...LEDGER_TABLE_NAMES.filter((n) => n !== "기업별").map((n) => `{{정산:${n}}}`),
   ].join("\n");
 
   it("모든 표 매크로가 경고 없이 표로 파싱된다", () => {
@@ -94,7 +95,7 @@ describe("expandLedgerMacros", () => {
     expect(parsed.warnings).toEqual([]);
     const tables = parsed.doc.blocks.filter((b) => b.k === "table");
     // 세부내역은 예산 줄(집행이 있는 것)마다 표 하나 — ESG-1024 는 4줄이라 표 4개
-    expect(tables).toHaveLength(LEDGER_TABLE_NAMES.length - 1 + 4);
+    expect(tables).toHaveLength(LEDGER_TABLE_NAMES.length - 2 + 4); // 세부내역(4개로 펼침)·기업별(뺌)
   });
 
   it("집행현황은 시간순, 계 행은 원장 합계, 비목은 비목군(세목)", () => {

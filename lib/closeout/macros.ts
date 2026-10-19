@@ -168,16 +168,56 @@ function 공문표(r: LedgerResult, args: MacroArgs = {}): string[] {
   return out;
 }
 
+/**
+ * 기업별 지원 현황 — 결과보고서 Ⅱ·정산보고서 「사업 추진 성과」의 기업 표. 에이전트가 지급 공문을 보고 금액을 치던
+ * 표를 원장의 집행 건으로 만든다: 지급처별로 묶어(추가 지급은 더해) 첫 지급 순서로 늘어놓고, 합계는 계산한다.
+ *
+ *   {{정산:기업별 세부사업="기술혁신 역량 강화 지원사업"}}   그 세부사업의 지원금 지급만
+ *   {{정산:기업별}}                                          세부사업이 없는 사업 — 지원금 세목 전체
+ *   세목=사업화지원금                                         지원금 세목 이름이 "지원금"을 담지 않을 때
+ *
+ * 지원항목·지원내용 칸은 원장 집행 건의 같은 이름 값이다(정산자료 단계가 지급 공문에서 옮긴다). 없으면 ○○.
+ */
+function 기업별(r: LedgerResult, args: MacroArgs = {}): string[] {
+  const k = (s?: string) => (s ?? "").replace(/\s+/g, "");
+  const want세목 = args.세목 ? (s: string) => k(s) === k(args.세목) : (s: string) => /지원금/.test(s);
+  const rows = new Map<string, { 지급처: string; 금액: number; 항목: string[]; 내용: string[] }>();
+  for (const e of sortedSpend(r)) {
+    if (!want세목(e.세목)) continue;
+    if (args.세부사업 !== undefined && k(lineOf(r, e)?.세부사업 ?? e.세부사업) !== k(args.세부사업)) continue;
+    const row0 = rows.get(e.지급처) ?? { 지급처: e.지급처, 금액: 0, 항목: [], 내용: [] };
+    row0.금액 += e.금액;
+    if (e.지원항목 && !row0.항목.includes(e.지원항목)) row0.항목.push(e.지원항목);
+    if (e.지원내용 && !row0.내용.includes(e.지원내용)) row0.내용.push(e.지원내용);
+    rows.set(e.지급처, row0);
+  }
+  const list = [...rows.values()];
+  const with항목 = list.some((x) => x.항목.length);
+  const out = ["(단위: 원)"];
+  if (!list.length) return [`(기업별 지원 내역 없음${args.세부사업 ? ` — ${args.세부사업}` : ""})`];
+  if (with항목) out.push("{table role=generic widths=32,118,84,170,78}", row(["연번", "기업명", "지원항목", "지원내용", "지원금액"]));
+  else out.push("{table role=generic widths=32,130,230,90}", row(["연번", "기업명", "지원내용", "지원금액"]));
+  list.forEach((x, i) => {
+    const cells = [String(i + 1), esc(x.지급처), ...(with항목 ? [esc(x.항목.join(", ") || "○○")] : []), esc(x.내용.join("<br>") || "○○"), thousands(x.금액)];
+    out.push(row(cells));
+  });
+  const total = list.reduce((a, x) => a + x.금액, 0);
+  out.push(row(["합 계", "<", ...(with항목 ? ["<"] : []), "<", thousands(total)]));
+  return out;
+}
+
 export type MacroArgs = Record<string, string>;
-export const LEDGER_TABLES: Record<string, (r: LedgerResult, args?: MacroArgs) => string[]> = { 총괄표, 집행현황, 항목별, 세부사업별, 세부내역, 변경내역, 잔액사유, 공문표 };
+export const LEDGER_TABLES: Record<string, (r: LedgerResult, args?: MacroArgs) => string[]> = { 총괄표, 집행현황, 항목별, 세부사업별, 세부내역, 기업별, 변경내역, 잔액사유, 공문표 };
 export const LEDGER_TABLE_NAMES = Object.keys(LEDGER_TABLES);
 
-const LINE_RE = /^\s*\{\{\s*정산\s*:\s*([^\s}]+)((?:\s+[^\s=}]+=[^\s}]+)*)\s*\}\}\s*$/;
+// 인자 값은 빈칸이 없으면 그대로, 있으면 따옴표로 감싼다: 세부사업="기술혁신 역량 강화 지원사업"
+const ARG = String.raw`[^\s=}]+=(?:"[^"]*"|“[^”]*”|[^\s}"“]+)`;
+const LINE_RE = new RegExp(String.raw`^\s*\{\{\s*정산\s*:\s*([^\s}]+)((?:\s+${ARG})*)\s*\}\}\s*$`);
 const INLINE_RE = /\{\{\s*정산\s*:\s*([^\s}]+)\s*\}\}/g;
 
 function parseArgs(s: string | undefined): MacroArgs {
   const out: MacroArgs = {};
-  for (const m of (s ?? "").matchAll(/([^\s=}]+)=([^\s}]+)/g)) out[m[1]] = m[2];
+  for (const m of (s ?? "").matchAll(/([^\s=}]+)=(?:"([^"]*)"|“([^”]*)”|([^\s}"“]+))/g)) out[m[1]] = m[2] ?? m[3] ?? m[4];
   return out;
 }
 
@@ -197,7 +237,9 @@ export function expandLedgerMacros(dsl: string, ledger: Ledger): { text: string;
   for (const line of dsl.split(/\r?\n/)) {
     const m = LINE_RE.exec(line);
     if (m && LEDGER_TABLES[m[1]]) {
-      out.push(...LEDGER_TABLES[m[1]](result, parseArgs(m[2])));
+      const lines = LEDGER_TABLES[m[1]](result, parseArgs(m[2]));
+      if (lines[0]?.startsWith("(기업별 지원 내역 없음")) warnings.push(`${line.trim()} — 원장에 맞는 지원금 지급 건이 없습니다(세부사업 이름이 원장과 같은지 확인)`);
+      out.push(...lines);
       continue;
     }
     out.push(
