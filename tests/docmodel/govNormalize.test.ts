@@ -46,4 +46,8 @@ describe("normalizeDslText — 항목 하나 이어 쓰기", () => {
     const src = ["```box", "- 요지", "· 하나", "```"].join("\n");
     expect(normalizeDslText(src).text).toBe(src);
   });
+  it("사진 대지의 파일 경로는 그대로 두고 설명의 날짜만 고친다", () => {
+    const src = ["```photos", "materials/사진2_판매전(2025.10.25.).jpg | 판매전(2025.10.25.)", "```", "ㅇ 2025.10.25. 개최"].join("\n");
+    expect(normalizeDslText(src).text).toBe(["```photos", "materials/사진2_판매전(2025.10.25.).jpg | 판매전(2025. 10. 25.)", "```", "ㅇ 2025. 10. 25. 개최"].join("\n"));
+  });
 });

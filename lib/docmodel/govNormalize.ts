@@ -36,29 +36,44 @@ function countReplace(text: string, re: RegExp, repl: string | ((...m: string[])
 export function normalizeDslText(dsl: string): { text: string; changes: NormalizeChange[] } {
   const changes: NormalizeChange[] = [];
   const lines = dsl.split("\n");
+  let photos = false;
   const out = lines.map((line) => {
-    let t = line;
-    // 붙은 날짜: 2026.7.14. / 2026.07.14 → 2026. 7. 14.
-    t = countReplace(t, /(?<![\d.])((?:19|20)\d{2})\.(\d{1,2})\.(\d{1,2})\.?(?![\d.])/g, (_m, y, mo, d) => `${y}. ${Number(mo)}. ${Number(d)}.`, "날짜 띄어쓰기", changes);
-    // 0 제거: 2026. 07. 01. → 2026. 7. 1.  (month and day)
-    t = countReplace(t, /((?:19|20)\d{2}|’\d{2})\. 0(\d)\./g, (_m, y, mo) => `${y}. ${mo}.`, "날짜 0 생략", changes);
-    t = countReplace(t, /((?:19|20)\d{2}|’\d{2})\. (\d{1,2})\. 0(\d)(?=[.(\s]|$)/g, (_m, y, mo, d) => `${y}. ${mo}. ${d}`, "날짜 0 생략", changes);
-    // 연도 없는 월.일 (기간의 뒷부분 `~07. 15.`, `(07. 01.)`): 0 제거
-    t = countReplace(t, /(?<=^|[~\s(])0(\d)\. (?=\d)/g, (_m, mo) => `${mo}. `, "날짜 0 생략", changes);
-    t = countReplace(t, /(?<=(?:^|[~\s(])\d{1,2}\. )0(\d)(?=[.(\s]|$)/g, (_m, d) => d, "날짜 0 생략", changes);
-    // 요일 앞 마침표: 2026. 7. 14(화) → 2026. 7. 14.(화)
-    t = countReplace(t, /((?:19|20)\d{2}|’\d{2})\. (\d{1,2})\. (\d{1,2})(\(\S)/g, (_m, y, mo, d, rest) => `${y}. ${mo}. ${d}.${rest}`, "날짜 마침표", changes);
-    // 물결표: 앞뒤 공백 제거 (` ~ `, ` ~`, `~ `)
-    t = countReplace(t, /(\S)(?: ~ | ~|~ )(?=\S)/g, (_m, a) => `${a}~`, "물결표", changes);
-    // 쌍점: 앞 공백 제거 (라벨: 값) — but not inside times like 18 : 00 (rare) or URLs
-    t = countReplace(t, /([가-힣A-Za-z)\]]) :(?=\s)/g, (_m, a) => `${a}:`, "쌍점", changes);
-    // 끝. 앞 두 타
-    t = countReplace(t, /(\S)(?: {0,1}| {3,})끝\.\s*$/g, (_m, a) => `${a}  끝.`, "끝 표시 간격", changes);
-    // 원장 자리표시자
-    t = countReplace(t, /원장 ○{2,3}|○{2,3} 원장/g, (m) => (m.startsWith("원장") ? `원장 ${ORG_DIRECTOR}` : `${ORG_DIRECTOR} 원장`), "원장 성명", changes);
-    return t;
+    // 사진 대지(```photos) 줄의 앞쪽은 파일 경로다 — `사진2_판매전(2025.10.25.).jpg` 의 날짜를 고치면 그림을 못 찾는다
+    // (시험 사업 2026-10-19). 경로는 그대로 두고 `|` 뒤 설명만 고친다.
+    if (/^\s*```/.test(line)) {
+      photos = !photos && /^\s*```photos\b/.test(line);
+      return line;
+    }
+    if (photos) {
+      const bar = line.indexOf("|");
+      return bar < 0 ? line : line.slice(0, bar + 1) + normalizeLine(line.slice(bar + 1), changes);
+    }
+    return normalizeLine(line, changes);
   });
   return { text: mergeLoneSubItems(out, changes).join("\n"), changes: mergeChanges(changes) };
+}
+
+function normalizeLine(line: string, changes: NormalizeChange[]): string {
+  let t = line;
+  // 붙은 날짜: 2026.7.14. / 2026.07.14 → 2026. 7. 14.
+  t = countReplace(t, /(?<![\d.])((?:19|20)\d{2})\.(\d{1,2})\.(\d{1,2})\.?(?![\d.])/g, (_m, y, mo, d) => `${y}. ${Number(mo)}. ${Number(d)}.`, "날짜 띄어쓰기", changes);
+  // 0 제거: 2026. 07. 01. → 2026. 7. 1.  (month and day)
+  t = countReplace(t, /((?:19|20)\d{2}|’\d{2})\. 0(\d)\./g, (_m, y, mo) => `${y}. ${mo}.`, "날짜 0 생략", changes);
+  t = countReplace(t, /((?:19|20)\d{2}|’\d{2})\. (\d{1,2})\. 0(\d)(?=[.(\s]|$)/g, (_m, y, mo, d) => `${y}. ${mo}. ${d}`, "날짜 0 생략", changes);
+  // 연도 없는 월.일 (기간의 뒷부분 `~07. 15.`, `(07. 01.)`): 0 제거
+  t = countReplace(t, /(?<=^|[~\s(])0(\d)\. (?=\d)/g, (_m, mo) => `${mo}. `, "날짜 0 생략", changes);
+  t = countReplace(t, /(?<=(?:^|[~\s(])\d{1,2}\. )0(\d)(?=[.(\s]|$)/g, (_m, d) => d, "날짜 0 생략", changes);
+  // 요일 앞 마침표: 2026. 7. 14(화) → 2026. 7. 14.(화)
+  t = countReplace(t, /((?:19|20)\d{2}|’\d{2})\. (\d{1,2})\. (\d{1,2})(\(\S)/g, (_m, y, mo, d, rest) => `${y}. ${mo}. ${d}.${rest}`, "날짜 마침표", changes);
+  // 물결표: 앞뒤 공백 제거 (` ~ `, ` ~`, `~ `)
+  t = countReplace(t, /(\S)(?: ~ | ~|~ )(?=\S)/g, (_m, a) => `${a}~`, "물결표", changes);
+  // 쌍점: 앞 공백 제거 (라벨: 값) — but not inside times like 18 : 00 (rare) or URLs
+  t = countReplace(t, /([가-힣A-Za-z)\]]) :(?=\s)/g, (_m, a) => `${a}:`, "쌍점", changes);
+  // 끝. 앞 두 타
+  t = countReplace(t, /(\S)(?: {0,1}| {3,})끝\.\s*$/g, (_m, a) => `${a}  끝.`, "끝 표시 간격", changes);
+  // 원장 자리표시자
+  t = countReplace(t, /원장 ○{2,3}|○{2,3} 원장/g, (m) => (m.startsWith("원장") ? `원장 ${ORG_DIRECTOR}` : `${ORG_DIRECTOR} 원장`), "원장 성명", changes);
+  return t;
 }
 
 /**

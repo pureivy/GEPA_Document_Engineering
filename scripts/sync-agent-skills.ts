@@ -20,6 +20,9 @@ const pairs: [string, string][] = [
   ["docs/design-system/closeout-cover.md", "agent/.claude/skills/gepa-closeout-design/reference/cover.md"],
   // 결과보고서 표준 서식 — "사업 결과보고" 212건에서 필수 항목만 추린 것(장 4개 + 유형 모듈 A~F)
   ["docs/design-system/closeout-result-standard.md", "agent/.claude/skills/gepa-closeout-design/reference/result-standard.md"],
+  ["docs/design-system/closeout-result-writing.md", "agent/.claude/skills/gepa-closeout-design/reference/result-writing.md"],
+  // 결과·정산보고도 공문서 — 편람 표기 기준을 함께 보낸다(담당자 2026-10-19)
+  ["docs/design-system/gov-manual.md", "agent/.claude/skills/gepa-closeout-design/reference/gov-manual.md"],
 ];
 for (const [src, dst] of pairs) {
   const s = join(root, src), d = join(root, dst);
