@@ -46,8 +46,8 @@ export function readStageDsl(projectId: string, stage: Stage): string | null {
   const p = join(stageDir(projectId, stage), "draft.dsl.md");
   return existsSync(p) ? readFileSync(p, "utf8") : null;
 }
-export function readResearchNotes(projectId: string): string | null {
-  const p = join(stageDir(projectId, "research"), "notes.md");
+export function readResearchNotes(projectId: string, stage: "research" | "analysis" = "research"): string | null {
+  const p = join(stageDir(projectId, stage), "notes.md");
   return existsSync(p) ? readFileSync(p, "utf8") : null;
 }
 

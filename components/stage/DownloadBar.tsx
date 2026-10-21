@@ -94,7 +94,7 @@ export function DownloadBar({ projectId, stage, hasDoc, running, historyKey, onR
       const url = URL.createObjectURL(blob);
       const a = document.createElement("a");
       a.href = url;
-      a.download = `${stage === "ledger" ? "정산요약" : "research-notes"}_${new Date().toISOString().slice(0, 10).replace(/-/g, "")}.md`;
+      a.download = `${stage === "ledger" ? "정산요약" : stage === "analysis" ? "성과분석" : "research-notes"}_${new Date().toISOString().slice(0, 10).replace(/-/g, "")}.md`;
       a.click();
       setTimeout(() => URL.revokeObjectURL(url), 1000);
     } catch (e) {
@@ -121,7 +121,7 @@ export function DownloadBar({ projectId, stage, hasDoc, running, historyKey, onR
     <div className="flex flex-wrap items-center gap-2 border-t border-slate-200 bg-white px-3 py-2">
       {isResearch ? (
         <Button variant="outline" size="sm" className="h-8" disabled={disabled} onClick={() => void downloadNotes()}>
-          <Download className="h-3.5 w-3.5" /> {stage === "ledger" ? "정산 요약(.md)" : "조사 노트(.md)"}
+          <Download className="h-3.5 w-3.5" /> {stage === "ledger" ? "정산 요약(.md)" : stage === "analysis" ? "성과 분석(.md)" : "조사 노트(.md)"}
         </Button>
       ) : (
         <>

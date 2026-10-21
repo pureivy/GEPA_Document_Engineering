@@ -488,7 +488,7 @@ export function StageRunner({ projectId, stage, kind, defaultModel }: StageRunne
               {/* 정산자료 단계는 자료함을 함께 보여 준다 — 원장은 올린 자료에서만 나온다 */}
               {stage === "ledger" ? <MaterialsPanel projectId={projectId} disabled={running} /> : null}
               <div className="min-h-0 flex-1">
-                <ResearchPane liveText={liveText} markdown={markdown} running={running} loading={mdLoading && !docLoaded} error={null} fileLabel={NOTES_STAGE_FILE[stage]} emptyText={stage === "ledger" ? "아직 정산 원장이 없습니다. 자료(엑셀)를 올리고 ‘실행’을 누르세요." : undefined} />
+                <ResearchPane liveText={liveText} markdown={markdown} running={running} loading={mdLoading && !docLoaded} error={null} fileLabel={NOTES_STAGE_FILE[stage]} emptyText={stage === "ledger" ? "아직 정산 원장이 없습니다. 자료(엑셀)를 올리고 ‘실행’을 누르세요." : stage === "analysis" ? "아직 성과 분석 메모가 없습니다. ‘실행’을 누르면 올린 자료와 홈페이지(gepa.kr) 보도자료·행사사진을 읽고 정리합니다." : undefined} />
               </div>
             </div>
           ) : (
@@ -543,7 +543,7 @@ export function StageRunner({ projectId, stage, kind, defaultModel }: StageRunne
         <Separator className="w-1 shrink-0 bg-slate-200 transition-colors hover:bg-sky-400 data-[separator=active]:bg-sky-500" />
         <Panel id="render" defaultSize="32%" minSize={220} collapsible className="min-h-0">
           {isResearch ? (
-            <div className="flex h-full items-center justify-center bg-slate-100 p-6 text-center text-xs text-slate-500">{stage === "ledger" ? "정산자료 단계는 렌더가 없습니다. 원장의 숫자는 결과보고서·정산보고서·공문의 정산 표로 자동으로 들어갑니다." : "조사 단계는 렌더가 없습니다. 노트는 다음 단계(사업계획서)의 입력으로 쓰입니다."}</div>
+            <div className="flex h-full items-center justify-center bg-slate-100 p-6 text-center text-xs text-slate-500">{stage === "ledger" ? "정산자료 단계는 렌더가 없습니다. 원장의 숫자는 결과보고서·정산보고서·공문의 정산 표로 자동으로 들어갑니다." : stage === "analysis" ? "성과 분석 단계는 렌더가 없습니다. 메모를 검토하고 고칠 곳은 ‘이어서 수정 요청’으로 지시하세요 — 결과보고서는 이 메모로 씁니다. 차년도 반영사항은 내년 사업계획서 자료로 내려받아 쓸 수 있습니다." : "조사 단계는 렌더가 없습니다. 노트는 다음 단계(사업계획서)의 입력으로 쓰입니다."}</div>
           ) : (
             <RenderPane projectId={projectId} stage={stage} refreshKey={refreshKey} running={running} hasDoc={!!doc} />
           )}

@@ -12,6 +12,7 @@ import { validateHwpx, renderPagesSvg } from "./validate";
 import { embedPreview } from "./preview";
 import { buildLaidOut } from "./keepPass";
 import { hangulLayout, pngPageSvg } from "./hangul";
+import { pageSplitWarnings } from "./pageSplit";
 import type { DocModel } from "../docmodel/schema";
 import type { ExportReportDTO } from "../contracts";
 
@@ -49,7 +50,10 @@ export async function exportStageDoc(stageDir: string, doc: DocModel, opts: Buil
   for (const i of lintGovStyle(doc)) warnings.push(`[편람${i.severity === "info" ? "·참고" : ""}·${i.rule}]${i.blockId ? ` [${i.blockId}]` : ""} ${i.message}${i.fix ? ` → ${i.fix}` : ""}`);
   if (v.ok) {
     try {
-      svgs = await renderPages(built.bytes);
+      const r = await renderPages(built.bytes);
+      svgs = r.svgs;
+      // 한글이 나눈 쪽으로 장·절이 애매하게 쪼개졌는지(pageSplit.ts) — 한글이 없으면 쪽 글이 없어 건너뛴다
+      if (r.texts) warnings.push(...pageSplitWarnings(r.texts));
       const pv = await embedPreview(built.bytes, svgs[0]);
       bytes = pv.bytes;
       if (!pv.embedded && pv.error) warnings.push(`미리보기 이미지 생성 실패: ${pv.error}`);
@@ -80,10 +84,10 @@ export async function exportStageDoc(stageDir: string, doc: DocModel, opts: Buil
  * 미리보기 쪽 그림 — 한글이 있으면 한글이 그린 그림(내려받는 파일과 똑같다), 없으면 rhwp.
  * rhwp 는 한글과 배치가 달라 미리보기와 내려받은 파일의 쪽 넘김이 어긋났다(담당자 2026-10-13).
  */
-async function renderPages(bytes: Uint8Array): Promise<string[]> {
+async function renderPages(bytes: Uint8Array): Promise<{ svgs: string[]; texts?: string[] }> {
   const hw = await hangulLayout(bytes, { images: true });
-  if (hw?.pngs.length) return hw.pngs.map(pngPageSvg);
-  return renderPagesSvg(bytes);
+  if (hw?.pngs.length) return { svgs: hw.pngs.map(pngPageSvg), texts: hw.texts };
+  return { svgs: await renderPagesSvg(bytes) };
 }
 
 function writeRenderCache(stageDir: string, hash: string, svgs: string[]): string {
@@ -115,7 +119,7 @@ export async function ensureRendered(stageDir: string): Promise<{ pages: number;
     const m = JSON.parse(readFileSync(join(dir, "manifest.json"), "utf8")) as { pages: number };
     return { pages: m.pages, hash, dir };
   }
-  const svgs = await renderPages(bytes);
+  const { svgs } = await renderPages(bytes);
   writeRenderCache(stageDir, hash, svgs);
   return { pages: svgs.length, hash, dir };
 }

@@ -16,6 +16,7 @@ import { readPhotoTaken, takenLabel, type PhotoTaken } from "./exif";
 import { readCsv, readXlsx, sheetsToMarkdown } from "./sheet";
 import { readXls } from "./xls";
 import { unzipSync } from "fflate";
+import { GEPA_BOARDS, readSavedGepaPosts } from "./gepaSite";
 
 export const MATERIAL_EXTENSIONS = [".xlsx", ".xls", ".csv", ".hwp", ".hwpx", ".pdf", ".docx", ".md", ".txt", ".png", ".jpg", ".jpeg"] as const;
 /** 파일 한 개의 최대 크기 — 쪽수가 많은 스캔 PDF(지급 공문 한 건 20MB 남짓)도 넉넉히 받는다 */
@@ -83,6 +84,9 @@ export function saveMaterial(projectId: string, rawName: string, bytes: Uint8Arr
   writeFileSync(join(dir, name), bytes);
   if ("text" in t) writeFileSync(join(dir, "text", `${name}.md`), t.text, "utf8");
   else removeSync(join(dir, "text", `${name}.md`));
+  // 다시 올린 스캔 PDF 는 글자 인식을 처음부터(scanPdf.ts — 쪽 그림·실패 표시를 지운다)
+  removeSync(join(dir, "text", `${name}.scanfail`));
+  if (/\.pdf$/i.test(name)) removeSync(join(dir, "pages", name.replace(/\.pdf$/i, "")));
   writeFileSync(join(dir, "text", `${name}.note`), "direct" in t ? t.direct : "", "utf8");
   savePhotosOf(projectId, name, bytes);
   writeMaterialsIndex(projectId);
@@ -134,6 +138,12 @@ export function listPhotos(projectId: string): { path: string; width: number; he
   for (const n of readdirSync(dir).sort((a, b) => a.localeCompare(b, "ko"))) if (/\.(jpe?g|png|bmp)$/i.test(n) && statSync(join(dir, n)).isFile()) add(join(dir, n), `materials/${n}`, n);
   const img = join(dir, "images");
   if (existsSync(img)) for (const n of readdirSync(img).sort((a, b) => a.localeCompare(b, "ko"))) add(join(img, n), `materials/images/${n}`, n.replace(/_\d{2}\.(jpe?g|png|bmp)$/i, ".hwpx"));
+  // 홈페이지(gepa.kr)에서 받은 사진 — 출처는 게시글 제목·게시일(lib/closeout/gepaSite.ts)
+  for (const post of readSavedGepaPosts(dir))
+    for (const rel of post.photos) {
+      const abs = join(projectDir(projectId), rel);
+      if (existsSync(abs)) add(abs, rel, `gepa.kr ${GEPA_BOARDS[post.board].label} 「${post.title}」(게시 ${post.date})`);
+    }
   return out;
 }
 
@@ -196,7 +206,7 @@ export function deleteMaterial(projectId: string, rawName: string): boolean {
   const name = safeMaterialName(rawName);
   const dir = materialsDir(projectId);
   if (!existsSync(join(dir, name))) return false;
-  for (const p of [join(dir, name), join(dir, "text", `${name}.md`), join(dir, "text", `${name}.note`)]) removeSync(p);
+  for (const p of [join(dir, name), join(dir, "text", `${name}.md`), join(dir, "text", `${name}.note`), join(dir, "text", `${name}.scanfail`), join(dir, "pages", name.replace(/\.pdf$/i, ""))]) removeSync(p);
   removePhotosOf(projectId, name);
   writeMaterialsIndex(projectId);
   return true;
@@ -216,7 +226,7 @@ export function listMaterials(projectId: string): MaterialInfo[] {
     });
 }
 
-function writeMaterialsIndex(projectId: string): void {
+export function writeMaterialsIndex(projectId: string): void {
   const items = listMaterials(projectId);
   const lines = [
     "# 올린 자료",
@@ -235,6 +245,19 @@ function writeMaterialsIndex(projectId: string): void {
       "촬영일은 사진 파일(EXIF)에 남은 날짜다 — 세부사업 일정과 맞춰 어느 행사·회차 사진인지 정하고 설명의 날짜로 쓴다. 「촬영일 없음」은 메신저로 주고받아 정보가 지워진 사진이니 그림과 파일 이름으로 판단한다.",
       "",
       ...photos.map((p) => `- \`${p.path}\` (${p.width}×${p.height}px) — 출처: ${p.from} — ${p.taken ? `촬영 ${takenLabel(p.taken)}` : "촬영일 없음"}`),
+      "",
+    );
+  }
+  const posts = readSavedGepaPosts(materialsDir(projectId));
+  if (posts.length) {
+    lines.push(
+      "## 홈페이지 자료(gepa.kr)",
+      "",
+      "진흥원 홈페이지 보도자료·행사사진 게시판에서 사업명·세부사업 이름으로 찾은 글이다 — **이 사업의 행사가 아닐 수 있다.**",
+      "글을 Read 해 사업명·행사 이름·일시가 이 사업의 계획·실적과 맞는지 먼저 확인하고, 맞는 글만 쓴다. 작성일은 게시일이다(행사일은 본문에서).",
+      "사진은 올린 자료에 그 행사 사진이 없을 때만 사진 대지에 쓴다. 보도자료 본문은 행사 일시·참석 규모·내용을 확인하는 근거로 쓴다.",
+      "",
+      ...posts.map((p) => `- [${GEPA_BOARDS[p.board].label}] ${p.title} (게시 ${p.date}) → \`${p.textPath}\`${p.photos.length ? ` — 사진 ${p.photos.length}장` : ""}`),
       "",
     );
   }

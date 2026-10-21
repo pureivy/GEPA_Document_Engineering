@@ -68,7 +68,8 @@ afterAll(() => {
 describe("stage run integration (replayed notice run)", () => {
   it("streams doc frames, saves a version, exports and renders HWPX", async () => {
     const rm = getRunManager();
-    const { runId } = startStageRun({ project, stage: "notice", runner: new ReplayRunner(fixture()) });
+    // docAutoFix: 이 실행을 다듬기 실행으로 표시해 내보내기 경고로 한 번 더 도는 자동 다듬기를 끈다(그 동작은 pipeline.test.ts)
+    const { runId } = startStageRun({ project, stage: "notice", runner: new ReplayRunner(fixture()), docAutoFix: true });
     const frames: RunFrame[] = [];
     const unsub = rm.subscribe(runId, (f) => frames.push(f));
     await rm.waitForRun(runId);

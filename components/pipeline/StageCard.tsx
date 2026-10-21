@@ -1,6 +1,6 @@
 "use client";
 import Link from "next/link";
-import { ArrowRight, Calculator, ClipboardCheck, ClipboardList, Download, FileSearch, FileSpreadsheet, FileText, Mail, Megaphone, Newspaper, Send } from "lucide-react";
+import { ArrowRight, Calculator, ChartNoAxesCombined, ClipboardCheck, ClipboardList, Download, FileSearch, FileSpreadsheet, FileText, Mail, Megaphone, Newspaper, Send } from "lucide-react";
 import type { RunDTO, RunStatus, Stage } from "@/lib/contracts";
 import { STAGE_LABEL, isNotesStage } from "@/lib/contracts";
 import { api } from "@/lib/client/api";
@@ -8,7 +8,7 @@ import { cn, formatCost, formatDateTime, formatDuration, RUN_STATUS_LABEL, STAGE
 import { Badge, type BadgeTone } from "@/components/ui/badge";
 
 const TONE: Record<RunStatus, BadgeTone> = { running: "running", succeeded: "success", failed: "danger", cancelled: "warning" };
-const ICON: Record<Stage, React.ComponentType<{ className?: string }>> = { research: FileSearch, plan: FileText, notice: Megaphone, press: Newspaper, official: Mail, report: ClipboardList, ledger: Calculator, result: ClipboardCheck, settlement: FileSpreadsheet, submit: Send };
+const ICON: Record<Stage, React.ComponentType<{ className?: string }>> = { research: FileSearch, plan: FileText, notice: Megaphone, press: Newspaper, official: Mail, report: ClipboardList, ledger: Calculator, analysis: ChartNoAxesCombined, result: ClipboardCheck, settlement: FileSpreadsheet, submit: Send };
 
 export interface StageCardProps {
   projectId: string;

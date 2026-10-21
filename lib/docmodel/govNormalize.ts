@@ -12,6 +12,8 @@
  *   - 쌍점 앞 공백 제거:               `원장 : 김` → `원장: 김`
  *   - `끝.` 앞 두 타:                   `… 도모 끝.` / `…도모끝.` → `… 도모  끝.`
  *   - 원장 자리표시자:                  `원장 ○○○` / `○○○ 원장` → 실제 원장 성명
+ *   - 같은 글자 수 머리말 붙여 쓰기:   `- (서 류 심 사)` `- (현 장 실 사)` → `- (서류심사)` `- (현장실사)`
+ *   - 표 연도 열 자릿점 빼기:           `| 1,982 |` → `| 1982 |` (머리칸이 설립연도·사업연도 등인 열만)
  * Meta (press) fixes: 담당부서 → 실·단 정식 명칭, 책임자 비어 있으면 조직표의 책임자.
  */
 import type { DocModel } from "./schema";
@@ -50,7 +52,89 @@ export function normalizeDslText(dsl: string): { text: string; changes: Normaliz
     }
     return normalizeLine(line, changes);
   });
-  return { text: mergeLoneSubItems(out, changes).join("\n"), changes: mergeChanges(changes) };
+  return { text: equalLabelsUnspaced(yearCommasInTables(mergeLoneSubItems(out, changes), changes), changes).join("\n"), changes: mergeChanges(changes) };
+}
+
+/**
+ * 나란한 괄호 머리말이 띄어쓰기를 빼면 모두 같은 글자 수면 띄어쓰기를 뺀다: `(서 류 심 사)` `(현 장 실 사)` `(심 의 의 결)`
+ * → `(서류심사)` `(현장실사)` `(심의의결)`. 띄어쓰기는 글자 수가 다른 머리말의 폭을 맞출 때만 쓴다(담당자 2026-10-21:
+ * "다 네글자니까 … 띄어쓰기는 뭐하러 해"). 같은 기호(`ㅇ`·`-`)로 이어진 줄 묶음만 보고, 글자 수가 하나라도 다르면 그대로 둔다.
+ */
+function equalLabelsUnspaced(lines: string[], changes: NormalizeChange[]): string[] {
+  const out = [...lines];
+  const item = /^(\s*(?:ㅇ|-)\s+)\(([^()]{2,12})\)/;
+  let n = 0;
+  let fenced = false;
+  for (let i = 0; i < out.length; i++) {
+    if (/^\s*```/.test(out[i])) fenced = !fenced;
+    const m = !fenced && item.exec(out[i]);
+    if (!m) continue;
+    const glyph = m[1].trim();
+    let end = i;
+    while (end + 1 < out.length && item.exec(out[end + 1])?.[1].trim() === glyph) end++;
+    const labels = out.slice(i, end + 1).map((l) => item.exec(l)![2]);
+    // 폭 맞춤 공백만 뺀다: 한 글자씩 띄운 `사 업 포 기`, 여러 칸 띄운 `계    획`. 낱말 사이 공백(`지원금 상향`)은 그대로
+    const padded = (l: string) => /\s{2,}/.test(l) || (/\s/.test(l) && l.trim().split(/\s+/).every((t) => [...t].length === 1));
+    const compact = labels.map((l) => (padded(l) ? l.replace(/\s+/g, "") : l));
+    // `-` 줄이 하나뿐이면 맞출 상대가 없다. `ㅇ` 줄은 하나여도 같은 절의 다른 ㅇ 머리말((계    획)·(추진실적))과
+    // 폭을 맞춘 것이라 그대로 둔다
+    const minRun = glyph === "-" ? 1 : 2;
+    if (labels.length >= minRun && new Set(compact.map((c) => [...c].length)).size === 1 && labels.some((l, k) => l !== compact[k])) {
+      for (let k = i; k <= end; k++) {
+        const mm = item.exec(out[k])!;
+        if (mm[2] === compact[k - i]) continue;
+        out[k] = `${mm[1]}(${compact[k - i]})${out[k].slice(mm[0].length)}`;
+        n++;
+      }
+    }
+    i = end;
+  }
+  if (n) changes.push({ rule: "같은 글자 수 머리말 붙여 쓰기", count: n });
+  return out;
+}
+
+/** 머리칸이 이런 말이면 연도 열이다 — `설립연도`, `사업연도`, `창업년도`, `준공` 등 */
+const YEAR_HEADER = /연도|년도|설립|창업|개업|준공|건립/;
+
+/**
+ * 표의 연도 열에서 자릿점을 뺀다: `1,982` → `1982`. 연도는 금액이 아니라 쉼표를 넣지 않는다(담당자 2026-10-21,
+ * 향토뿌리기업 설립연도). 머리칸이 연도 열인 칸만 고친다 — 금액 열의 `2,025`(원)는 건드리지 않는다.
+ * 정렬은 내보낼 때 정한다(common.ts — 연도는 가운데).
+ */
+function yearCommasInTables(lines: string[], changes: NormalizeChange[]): string[] {
+  const isRow = (l: string) => /^\s*\|.*\|\s*$/.test(l);
+  const isSep = (l: string) => /^\s*\|(\s*:?-{3,}:?\s*\|)+\s*$/.test(l);
+  const cells = (l: string) => l.trim().slice(1, -1).split("|");
+  const out = [...lines];
+  let n = 0;
+  let fenced = false;
+  for (let i = 0; i < out.length; i++) {
+    if (/^\s*```/.test(out[i])) fenced = !fenced;
+    if (fenced || !isRow(out[i])) continue;
+    // 표 한 덩어리: 연속한 `|` 줄. 구분선(|---|) 위가 머리행(두 줄 머리 포함)
+    let end = i;
+    while (end + 1 < out.length && isRow(out[end + 1])) end++;
+    const sep = out.slice(i, end + 1).findIndex(isSep);
+    if (sep > 0) {
+      const yearCols = new Set<number>();
+      for (let r = i; r < i + sep; r++) cells(out[r]).forEach((c, ci) => YEAR_HEADER.test(c) && yearCols.add(ci));
+      for (let r = i + sep + 1; r <= end && yearCols.size; r++) {
+        const cs = cells(out[r]);
+        let hit = false;
+        const fixed = cs.map((c, ci) => {
+          const m = yearCols.has(ci) && /^(\s*)([12]),(\d{3})(\s*)$/.exec(c);
+          if (!m || !/^(19|20)\d{2}$/.test(m[2] + m[3])) return c;
+          hit = true;
+          n++;
+          return `${m[1]}${m[2]}${m[3]}${m[4]}`;
+        });
+        if (hit) out[r] = out[r].replace(/^(\s*)\|.*\|(\s*)$/, (_a, pre, post) => `${pre}|${fixed.join("|")}|${post}`);
+      }
+    }
+    i = end;
+  }
+  if (n) changes.push({ rule: "연도 자릿점 빼기", count: n });
+  return out;
 }
 
 function normalizeLine(line: string, changes: NormalizeChange[]): string {

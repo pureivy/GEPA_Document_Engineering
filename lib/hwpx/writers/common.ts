@@ -445,11 +445,17 @@ export function emitTable(ctx: WriterContext, fs: FamilyStyle, b: TableBlock): X
   // 열 단위 정렬: 세 줄 이상 꺾이는 본문 칸이 있는 열은 왼쪽, 아니면 가운데 — 칸마다 글자 수로 정하면 한 열에서
   // 가운데·왼쪽이 섞였다(결과보고서 기업명 열 "다온한옥스테이" 가운데 / "로컬상점온기(이수진)" 왼쪽, 2026-10-13)
   const longCol: boolean[] = Array(colCount).fill(false);
+  // 금액 칸: 자릿점이 있거나 네 자리 이상인 수. 쉼표 없는 1900~2099 네 자리(설립연도 1982 등)는 연도 —
+  // 금액처럼 오른쪽에 붙이지 않고 가운데(담당자 2026-10-21)
+  const isAmount = (text: string) => !/^\s*(19|20)\d{2}\s*$/.test(text) && /^[\s\-△+]*[\d,]+(\.\d+)?\s*$/.test(text) && /\d{1,3}(,\d{3})+|\d{4,}/.test(text);
+  // 금액 칸이 있는 열 — 그 열의 0 표시 `-` 도 숫자처럼 오른쪽에 둔다(엑셀처럼, 담당자 2026-10-21 정산 잔액 열)
+  const amountCol: boolean[] = Array(colCount).fill(false);
   {
     b.rows.forEach((row, ri) => {
       if (ri < headerRows || row.isHeader) return;
       grid[ri].forEach((c, ci) => {
         if (!c || (c.colSpan ?? 1) !== 1) return;
+        if (isAmount(inlineText(c.inlines))) amountCol[ci] = true;
         const interior = cellInteriorWidth(cols[ci], margin);
         const n = splitInlinesByNewline(c.inlines).reduce((a, g) => a + ctx.wrapLines(inlineText(g), d.fontPt, interior * 1.1), 0);
         if (n >= 3) longCol[ci] = true;
@@ -489,7 +495,8 @@ export function emitTable(ctx: WriterContext, fs: FamilyStyle, b: TableBlock): X
       const bold = c.bold ?? isHeader;
       const text = inlineText(c.inlines);
       // first (구분) column is always centred (user 2026-09-16); other body cells centre when short, justify when long
-      const numeric = !!fs.numericRight && !isHeader && ci > 0 && /^[\s\-△+]*[\d,]+(\.\d+)?\s*$/.test(text) && /\d{1,3}(,\d{3})+|\d{4,}/.test(text);
+      const zeroDash = /^\s*[-–—]\s*$/.test(text) && amountCol[ci];
+      const numeric = !!fs.numericRight && !isHeader && ci > 0 && (isAmount(text) || zeroDash);
       // 좁은 칸(안쪽 폭 200pt 미만)의 긴 글은 왼쪽 정렬 — 양쪽 정렬은 빈칸이 적은 줄을 크게 벌린다(담당자 2026-10-06)
       const longAlign: ParaSpec["align"] = interior < 20000 ? "LEFT" : "JUSTIFY";
       // 머리행 없는 서식형 표(정산 사업개요 요약): 첫 열(항목)은 가운데, 여러 칸을 합친 값 칸은 왼쪽, 나머지는 열 단위

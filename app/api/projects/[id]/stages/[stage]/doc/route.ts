@@ -11,7 +11,7 @@ export const dynamic = "force-dynamic";
 export async function GET(req: NextRequest, ctx: { params: Promise<{ id: string; stage: string }> }) {
   const { id, stage } = await ctx.params;
   const s = stage as Stage;
-  if (s === "research") return Response.json({ markdown: readResearchNotes(id) });
+  if (s === "research" || s === "analysis") return Response.json({ markdown: readResearchNotes(id, s) });
   if (s === "ledger") return Response.json({ markdown: readLedgerSummary(id) });
   const format = req.nextUrl.searchParams.get("format");
   const doc = readStageDoc(id, s);

@@ -36,8 +36,12 @@ const project = (수신: string): ProjectDTO => ({
 });
 
 describe("closeout 종류·단계", () => {
-  it("정산자료 → 결과보고서 → 정산보고서 → 제출 공문", () => {
-    expect(stagesOf("closeout")).toEqual(["ledger", "result", "settlement", "submit"]);
+  it("정산자료 → 성과 분석 → 결과보고서 → 정산보고서 → 제출 공문", () => {
+    expect(stagesOf("closeout")).toEqual(["ledger", "analysis", "result", "settlement", "submit"]);
+  });
+  it("성과 분석은 노트 단계다(문서가 아니라 analysis/notes.md)", () => {
+    expect(isNotesStage("analysis")).toBe(true);
+    expect(isDocStage("analysis")).toBe(false);
   });
   it("정산자료는 노트 단계, 나머지는 기존 family 를 쓴다", () => {
     expect(isNotesStage("ledger")).toBe(true);
@@ -179,12 +183,24 @@ describe("저장 시 정산 매크로 펼침", () => {
 describe("closeout 프롬프트", () => {
   const ws = "/data/projects/closeout1";
   it("모든 단계가 정산 규격 스킬을 읽게 한다", () => {
-    for (const stage of ["ledger", "result", "settlement", "submit"] as const) {
+    for (const stage of ["ledger", "analysis", "result", "settlement", "submit"] as const) {
       const p = buildStagePrompt({ stage, project: project("고령군수(투자유치과장)"), workspaceDir: ws });
       expect(p.systemPromptAppend).toContain("gepa-closeout-design/SKILL.md");
       expect(p.prompt).toContain(`${ws}/materials/index.md`);
       expect(p.allowedTools).not.toContain("WebSearch");
     }
+  });
+  it("성과 분석은 메모를 쓰고, 결과보고서·정산보고서는 그 메모를 읽는다", () => {
+    const a = buildStagePrompt({ stage: "analysis", project: project("고령군수(투자유치과장)"), workspaceDir: ws });
+    expect(a.prompt).toContain(`${ws}/analysis/notes.md`);
+    expect(a.prompt).toContain("홈페이지 자료(gepa.kr)");
+    expect(a.allowedTools).toContain("Edit");
+    for (const stage of ["result", "settlement"] as const) expect(buildStagePrompt({ stage, project: project("고령군수(투자유치과장)"), workspaceDir: ws }).prompt).toContain(`${ws}/analysis/notes.md`);
+  });
+  it("성과 분석 이어서 수정은 메모를 Edit 로 고친다(전체를 다시 쓰지 않는다)", () => {
+    const a = buildStagePrompt({ stage: "analysis", project: project("고령군수(투자유치과장)"), workspaceDir: ws, instruction: "우수사례를 빼라" });
+    expect(a.prompt).toContain("우수사례를 빼라");
+    expect(a.prompt).toContain("Edit 로 고친다");
   });
   it("문서 단계는 숫자를 매크로로 쓰라고 한다", () => {
     const p = buildStagePrompt({ stage: "settlement", project: project("고령군수(투자유치과장)"), workspaceDir: ws });
@@ -281,5 +297,31 @@ describe("제출 공문 결문 연락처", () => {
     expect(r.doc.family === "official" && r.doc.meta.연락처.주소).toBe("경상북도 구미시 이계북로 7");
     expect(r.doc.family === "official" && r.doc.meta.연락처.우편번호).toBe("39393");
     expect(r.doc.family === "official" && r.doc.meta.연락처.이메일).toBe("a@gepa.kr");
+  });
+});
+
+describe("문서 단계 자동 다듬기(내보내기 경고 → 한 번 고치기, 담당자 2026-10-21)", () => {
+  it("에이전트가 고칠 수 있는 경고만 고른다", async () => {
+    const { fixableWarnings } = await import("@/lib/stages/runIntegration");
+    const w = [
+      "[편람·장황한 항목] [b10] 세 줄을 넘는다",
+      "[편람·참고·머리말 폭] [b11] 폭 맞춤",
+      "[쪽 나눔] 3쪽 맨 위에 …",
+      "[정산·금액 대조] 원장에 없는 금액",
+      "렌더 실패: timeout",
+      "미리보기 이미지 생성 실패: x",
+    ];
+    expect(fixableWarnings(w)).toEqual([w[0], w[2], w[3]]);
+  });
+
+  it("지시에는 경고 목록과 대원칙(핵심을 빼지 않는다)을 담고, 20건까지만 늘어놓는다", async () => {
+    const { docAutoFixInstruction } = await import("@/lib/stages/runIntegration");
+    const text = docAutoFixInstruction("result", Array.from({ length: 23 }, (_, i) => `[편람·말투] ${i}`));
+    expect(text).toContain("result/draft.dsl.md");
+    expect(text).toContain("Edit 로 고친다");
+    expect(text).toContain("핵심을 빼지 않는다");
+    expect(text).toContain("[편람·말투] 19");
+    expect(text).not.toContain("[편람·말투] 20");
+    expect(text).toContain("그 밖에 3건");
   });
 });

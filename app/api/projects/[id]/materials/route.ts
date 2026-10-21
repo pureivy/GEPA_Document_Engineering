@@ -10,6 +10,7 @@ import { getDb } from "@/lib/db/client";
 import { projects } from "@/lib/db/schema";
 import { jsonError } from "@/lib/agents/http";
 import { deleteMaterial, isZipName, listMaterials, saveMaterial, saveZipMaterials } from "@/lib/closeout/materials";
+import { startScanPending } from "@/lib/closeout/scanPdf";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
@@ -53,6 +54,8 @@ export async function POST(req: Request, ctx: { params: Promise<{ id: string }> 
       errors.push({ name: f.name, message: (e as Error).message });
     }
   }
+  // 스캔 PDF 는 뒤에서 글자 인식한다(한 쪽 1초 남짓 — 업로드 응답을 붙잡지 않는다)
+  if (saved > 0) void startScanPending(id).catch((e) => console.error("[materials] 글자 인식 실패:", e));
   // 하나라도 저장했으면 성공이다 — zip 안의 카드뉴스(html) 하나 때문에 51개를 받은 요청이 실패로 보이면 안 된다
   return Response.json({ materials: listMaterials(id), errors, saved }, { status: saved > 0 ? 201 : 422 });
 }

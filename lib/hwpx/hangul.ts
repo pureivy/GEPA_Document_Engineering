@@ -22,8 +22,13 @@ export interface HangulLayout {
 const SCRIPT = String.raw`param([string]$src, [string]$out, [int]$dpi, [int]$images)
 $ErrorActionPreference = "Stop"
 Add-Type -AssemblyName System.Drawing
+$before = @(Get-Process Hwp -ErrorAction SilentlyContinue | ForEach-Object { $_.Id })
 $h = New-Object -ComObject HWPFrame.HwpObject
+# the automation hwp.exe this script started - written first so the caller can kill it if we are cut off
+$mine = @(Get-CimInstance Win32_Process -Filter "Name='Hwp.exe'" | Where-Object { $before -notcontains $_.ProcessId -and $_.CommandLine -match '-Automation' } | ForEach-Object { $_.ProcessId })
+[IO.File]::WriteAllText((Join-Path $out "pid.txt"), ($mine -join ","))
 try {
+  try { $h.XHwpWindows.Item(0).Visible = $false } catch {}
   $h.SetMessageBoxMode(0x00010000) | Out-Null
   if (-not $h.Open($src, "HWPX", "forceopen:true")) { throw "open failed" }
   $n = $h.PageCount
@@ -41,8 +46,26 @@ try {
 } finally {
   try { $h.Clear(1) } catch {}
   try { $h.Quit() } catch {}
+  Start-Sleep -Milliseconds 500
+  foreach ($p in $mine) { Stop-Process -Id $p -Force -ErrorAction SilentlyContinue }
 }
 `;
+
+/**
+ * 스크립트가 띄운 한글을 끝낸다. 시간 초과로 PowerShell 이 끊기면 finally 의 Quit 이 돌지 않아 한글이 남는다 —
+ * 화면에 빈 까만 창이 뜨고, 보이지 않는 hwp.exe 가 하나에 70MB 씩 쌓였다(담당자 2026-10-21, 5개).
+ */
+function killHangul(out: string): void {
+  const f = join(out, "pid.txt");
+  if (!existsSync(f)) return;
+  for (const pid of readFileSync(f, "utf8").split(",").map(Number).filter((n) => n > 0)) {
+    try {
+      process.kill(pid);
+    } catch {
+      /* 이미 끝남 */
+    }
+  }
+}
 
 let available: boolean | undefined;
 /** 한글 자동화 개체가 등록돼 있는지(HKCR\HWPFrame.HwpObject) — 한 번만 본다. GEPA_NO_HANGUL=1 이면 끈다 */
@@ -100,6 +123,7 @@ export function hangulLayout(bytes: Uint8Array, opts: { images?: boolean; dpi?: 
     } catch {
       return undefined;
     } finally {
+      killHangul(join(dir, "out"));
       removeSync(dir);
     }
   });

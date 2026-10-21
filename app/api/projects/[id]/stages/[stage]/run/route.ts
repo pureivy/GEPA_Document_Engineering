@@ -6,7 +6,8 @@ import { jsonError, readJsonBody } from "@/lib/agents/http";
 import { getRunManager, RunConflictError } from "@/lib/agents/runManager";
 import { isRunStage } from "@/lib/agents/runner";
 import { MODEL_ALIASES } from "@/lib/agents/limits";
-import { startStageRun } from "@/lib/stages/runIntegration";
+import { prepareStage, SCAN_STAGES, startStageRun } from "@/lib/stages/runIntegration";
+import { scanBacklog, startScanPending } from "@/lib/closeout/scanPdf";
 import { KIND_LABEL, stagesOf } from "@/lib/kinds";
 import { serializeProject } from "@/lib/db/serialize";
 import { isDocStage, STAGES, type Stage } from "@/lib/contracts";
@@ -56,7 +57,16 @@ export async function POST(req: Request, ctx: { params: Promise<{ id: string; st
     if (!last?.sessionId) return jsonError(409, "이어서 진행할 이전 실행이 없습니다");
     resumeSessionId = last.sessionId;
   }
+  // 스캔 PDF 글자 인식이 남았으면 시작하지 않는다 — 십여 분 걸릴 수 있어 이 요청을 붙잡아 둘 수 없다(인식은 뒤에서 계속)
+  if (project.kind === "closeout" && SCAN_STAGES.has(stage) && !resumeSessionId) {
+    const { pending, running } = scanBacklog(id);
+    if (pending > 0 || running) {
+      void startScanPending(id).catch((e) => console.error("[run] 글자 인식 실패:", e));
+      return jsonError(409, `스캔 PDF 글자 인식 중입니다(남은 자료 ${pending}개). 끝난 뒤 다시 실행하세요 — 한 쪽에 1초 남짓 걸립니다`);
+    }
+  }
   try {
+    if (stage !== "review") await prepareStage(project, stage, !!resumeSessionId);
     const { runId, sessionId } = startStageRun({
       project,
       stage,

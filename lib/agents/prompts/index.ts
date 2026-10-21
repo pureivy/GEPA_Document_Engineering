@@ -188,6 +188,7 @@ const REVIEW_SKILL: Record<Stage, string> = {
   official: "gepa-official-design",
   report: "gepa-report-design",
   ledger: "gepa-closeout-design",
+  analysis: "gepa-closeout-design",
   result: "gepa-closeout-design",
   settlement: "gepa-closeout-design",
   submit: "gepa-closeout-design",
@@ -302,10 +303,14 @@ front-matter: 기관 (재)경상북도경제진흥원, 배포일(공고일), 보
         maxTurns: 20,
       };
     case "ledger":
+    case "analysis":
     case "result":
     case "settlement":
     case "submit":
-      return closeoutStagePrompt(stage, { ...input, brief, resume });
+      return closeoutStagePrompt(stage, { ...input, brief, resume: stage === "analysis" && instruction ? `
+
+[추가 지시] ${instruction}
+기존 analysis/notes.md 를 위 지시에 맞게 Edit 로 고친다(전체를 다시 쓰지 않는다).` : resume });
     default:
       throw new Error(`${stage} 단계의 프롬프트가 아직 구현되지 않았습니다`);
   }
