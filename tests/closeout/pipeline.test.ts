@@ -87,6 +87,19 @@ describe("자료함", () => {
     ]);
     expect(readFileSync(path.join(materialsDir("p1"), "index.md"), "utf8")).toContain("materials/text/통장.csv.md");
   });
+  it("전년도 참고자료는 따로 된 자료함(prior/)에 두고 올해 자료 목록·사진에 섞지 않는다(담당자 2026-10-22)", async () => {
+    const { saveMaterial, listMaterials, materialsDir, deleteMaterial } = await import("../../lib/closeout/materials");
+    saveMaterial("pp", "통장.csv", new TextEncoder().encode("거래일,출금\n2025-05-09,241200\n"));
+    saveMaterial("pp", "2024 결과보고.txt", new TextEncoder().encode("ㅇ 3개사 신규지정"), "prior");
+    expect(listMaterials("pp").map((m) => m.name)).toEqual(["통장.csv"]);
+    expect(listMaterials("pp", "prior").map((m) => [m.name, m.readPath])).toEqual([["2024 결과보고.txt", "prior/text/2024 결과보고.txt.md"]]);
+    expect(readFileSync(path.join(materialsDir("pp"), "index.md"), "utf8")).not.toContain("2024 결과보고");
+    const priorIndex = readFileSync(path.join(materialsDir("pp", "prior"), "index.md"), "utf8");
+    expect(priorIndex).toContain("prior/text/2024 결과보고.txt.md");
+    expect(priorIndex).toContain("올해 사업에 있었던 일이 아니다");
+    expect(deleteMaterial("pp", "2024 결과보고.txt", "prior")).toBe(true);
+    expect(listMaterials("pp", "prior")).toEqual([]);
+  });
   it("zip 을 풀어 안의 자료를 하나씩 저장한다(폴더는 버리고, 모르는 형식·zip 속 zip 은 알린다)", async () => {
     const { saveZipMaterials, listMaterials } = await import("../../lib/closeout/materials");
     const zip = zipSync({
@@ -310,8 +323,9 @@ describe("문서 단계 자동 다듬기(내보내기 경고 → 한 번 고치�
       "[정산·금액 대조] 원장에 없는 금액",
       "렌더 실패: timeout",
       "미리보기 이미지 생성 실패: x",
+      "[편람·참고·항목 하나] [b77] \"- 내용 변경: …\" — 항목이 하나뿐이면",
     ];
-    expect(fixableWarnings(w)).toEqual([w[0], w[2], w[3]]);
+    expect(fixableWarnings(w)).toEqual([w[0], w[2], w[3], w[6]]);
   });
 
   it("지시에는 경고 목록과 대원칙(핵심을 빼지 않는다)을 담고, 20건까지만 늘어놓는다", async () => {

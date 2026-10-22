@@ -487,6 +487,8 @@ export function StageRunner({ projectId, stage, kind, defaultModel }: StageRunne
             <div className="flex h-full min-h-0 flex-col">
               {/* 정산자료 단계는 자료함을 함께 보여 준다 — 원장은 올린 자료에서만 나온다 */}
               {stage === "ledger" ? <MaterialsPanel projectId={projectId} disabled={running} /> : null}
+              {/* 전년도 참고자료는 원장이 아니라 성과 분석이 읽는다 — 두 단계 모두에서 올리고 뺄 수 있게 */}
+              {stage === "ledger" || stage === "analysis" ? <MaterialsPanel projectId={projectId} disabled={running} box="prior" /> : null}
               <div className="min-h-0 flex-1">
                 <ResearchPane liveText={liveText} markdown={markdown} running={running} loading={mdLoading && !docLoaded} error={null} fileLabel={NOTES_STAGE_FILE[stage]} emptyText={stage === "ledger" ? "아직 정산 원장이 없습니다. 자료(엑셀)를 올리고 ‘실행’을 누르세요." : stage === "analysis" ? "아직 성과 분석 메모가 없습니다. ‘실행’을 누르면 올린 자료와 홈페이지(gepa.kr) 보도자료·행사사진을 읽고 정리합니다." : undefined} />
               </div>

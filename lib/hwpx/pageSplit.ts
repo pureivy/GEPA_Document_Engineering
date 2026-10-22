@@ -14,6 +14,9 @@ const MAX_SPILL = 3;
 
 const NEW_BLOCK = /^\s*(□|[ⅠⅡⅢⅣⅤⅥⅦⅧ]\s|[○ㅇ]\s*\(계\s*획\))/;
 
+/** 표 위의 단위 줄 — 이 줄만 넘어왔으면 바로 아래 빈 줄은 띠가 아니라 함께 넘어온 표다(정산보고서 4·5쪽, 2026-10-22) */
+const UNIT_CAPTION = /^\s*\(단위\s*:/;
+
 export interface PageSplit {
   /** 1부터 */
   page: number;
@@ -32,6 +35,7 @@ export function findPageSplits(pageTexts: string[]): PageSplit[] {
     let i = 0;
     while (i < lines.length && lines[i].trim() !== "" && !NEW_BLOCK.test(lines[i])) i++;
     if (i === 0 || i > MAX_SPILL || i >= lines.length) continue;
+    if (UNIT_CAPTION.test(lines[i - 1])) continue;
     // 넘어온 문단 아래: (빈 줄 = 띠) 다음 첫 글 줄이 새 장·절이어야 한다
     let k = i;
     while (k < lines.length && lines[k].trim() === "") k++;

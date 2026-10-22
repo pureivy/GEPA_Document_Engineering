@@ -14,7 +14,8 @@ import { expandLedgerMacros, hasLedgerMacro } from "../closeout/macros";
 import { readLedger } from "../closeout/store";
 import { computeLedger } from "../closeout/ledger";
 import { sourceAmounts, unledgeredWarnings } from "../closeout/amountCheck";
-import { materialsDir } from "../closeout/materials";
+import { materialsDir, type MaterialBox } from "../closeout/materials";
+import { priorCopyWarnings } from "../closeout/priorCopy";
 import { exportStageDoc, ensureRendered, readExportReport, readPageSvg } from "../hwpx/export";
 import type { ExportReportDTO, Stage } from "../contracts";
 import { db, schema } from "../db/client";
@@ -172,9 +173,15 @@ function ledgerAmountWarnings(projectId: string, stage: Stage, doc: DocModel): s
   return unledgeredWarnings(toDsl(doc), computeLedger(l.ledger), sourceAmounts(materialTexts(projectId))).map((w) => `[정산·금액 대조] ${w.message}`);
 }
 
+/** 결과보고서 Ⅳ 가 전년도 참고자료(prior/)의 문장을 그대로 옮겼는지(lib/closeout/priorCopy.ts) */
+function priorCopyStageWarnings(projectId: string, stage: Stage, doc: DocModel): string[] {
+  if (stage !== "result") return [];
+  return priorCopyWarnings(toDsl(doc), materialTexts(projectId, "prior"));
+}
+
 /** 올린 자료를 옮긴 글(materials/text/*.md) — 자료에 그대로 적힌 금액은 금액 대조에서 뺀다 */
-function materialTexts(projectId: string): string[] {
-  const dir = join(materialsDir(projectId), "text");
+function materialTexts(projectId: string, box: MaterialBox = "materials"): string[] {
+  const dir = join(materialsDir(projectId, box), "text");
   if (!existsSync(dir)) return [];
   return readdirSync(dir).filter((n) => n.endsWith(".md")).map((n) => readFileSync(join(dir, n), "utf8"));
 }
@@ -183,7 +190,7 @@ export async function exportStage(projectId: string, stage: Stage): Promise<Expo
   const doc = readStageDoc(projectId, stage);
   if (!doc) return null;
   // 사진 대지(```photos)의 그림은 프로젝트 작업 폴더에서 읽는다
-  const { report } = await exportStageDoc(stageDir(projectId, stage), doc, { assets: (src) => resolveAsset(projectId, src) }, ledgerAmountWarnings(projectId, stage, doc));
+  const { report } = await exportStageDoc(stageDir(projectId, stage), doc, { assets: (src) => resolveAsset(projectId, src) }, [...ledgerAmountWarnings(projectId, stage, doc), ...priorCopyStageWarnings(projectId, stage, doc)]);
   await ensureRendered(stageDir(projectId, stage));
   return report;
 }

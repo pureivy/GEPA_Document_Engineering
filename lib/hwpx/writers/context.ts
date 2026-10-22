@@ -6,6 +6,7 @@ import type { Template } from "../template";
 import { paragraph, type RunSpec } from "../emit/paragraph";
 import type { Inline, Family } from "../../docmodel/schema";
 import { LINESEG_WIDTH } from "../units";
+import type { LineFit } from "../build";
 
 export interface BuildWarning {
   blockId?: string;
@@ -67,7 +68,7 @@ export class WriterContext {
   /** 문단 위 간격을 없앨 문단(hp:p id) — 쪽 맨 위에 온 제목·띠는 위 여백 없이(담당자 2026-10-13) */
   noPrev = new Set<string>();
   /** 문단별 줄 맞춤(hp:p id → 내어쓰기 HWPUNIT·자간 %) — 실제 배치로 재서 정한다(keepPass.fitLines) */
-  lineFit: Record<string, { hanging?: number; charSpacing?: number; breaks?: number[] }> = {};
+  lineFit: Record<string, LineFit> = {};
   /** build option: emit approximate linesegs (see docs/adr/0003-lineseg.md) */
   lineseg = false;
   constructor(readonly tpl: Template, readonly family: Family, opts: { lineseg?: boolean } = {}) {
@@ -199,6 +200,7 @@ export class WriterContext {
     if (!fit) return { paraPr, runs };
     if (fit.hanging !== undefined && (this.reg.paraPrInfo(paraPr)?.intent ?? 0) < 0) paraPr = this.reg.withHanging(paraPr, fit.hanging);
     if (fit.charSpacing) runs = runs.map((r) => (r.text !== undefined && !r.nodes?.length ? { ...r, charPr: this.reg.withCharSpacing(r.charPr, fit.charSpacing!) } : r));
+    if (fit.sizePct && fit.sizePct !== 100) runs = runs.map((r) => (r.text !== undefined && !r.nodes?.length ? { ...r, charPr: this.reg.withCharScale(r.charPr, fit.sizePct!) } : r));
     if (fit.breaks?.length) runs = insertBreaks(runs, fit.breaks);
     return { paraPr, runs };
   }

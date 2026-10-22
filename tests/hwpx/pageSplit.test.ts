@@ -19,6 +19,11 @@ describe("장·절이 애매하게 쪼개진 쪽(findPageSplits)", () => {
     expect(findPageSplits(["앞", "□ 주요 성과\n  ㅇ 4개사 지정"])).toEqual([]);
   });
 
+  it("단위 줄과 표가 함께 넘어온 쪽은 잡지 않는다 (정산보고서 4·5쪽, 2026-10-22)", () => {
+    expect(findPageSplits(["앞", "(단위: 원)\n\n□ 디자인 역량 강화 지원사업\n  ㅇ 사업내용: 포장재"])).toEqual([]);
+    expect(findPageSplits(["앞", "  ㅇ 추진현황: 3개사 신청\n(단위: 원)\n\n□ 맞춤형 지원사업"])).toEqual([]);
+  });
+
   it("네 문단 이상 넘어왔으면 쪼개진 것으로 보지 않는다", () => {
     expect(findPageSplits(["앞", "  - 가\n  - 나\n  - 다\n  - 라\n\n□ 다음"])).toEqual([]);
   });

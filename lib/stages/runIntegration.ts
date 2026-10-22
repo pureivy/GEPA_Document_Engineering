@@ -55,8 +55,10 @@ export interface StartStageRunOptions {
  * 에이전트가 고칠 수 있는 내보내기 경고 — 편람 표기·문장(참고 등급 제외), 장·절 쪽 나눔, 원장과 다른 금액.
  * 렌더 실패·미리보기 같은 시스템 경고는 에이전트가 고칠 수 없어 뺀다.
  */
+// 참고 등급 가운데 '항목 하나'는 담당자가 남은 경고로 손을 대야 했다 — ㅇ 아래 `-` 하나는 이어 쓸지·뺄지 판단이 필요해
+// 자동 정리(govNormalize 는 `-` 아래 `·` 하나만 잇는다)가 아니라 다듬기에 넘긴다(결과보고서 ⑥ 맞춤형, 2026-10-22)
 export function fixableWarnings(warnings: string[]): string[] {
-  return warnings.filter((w) => (w.startsWith("[편람·") && !w.startsWith("[편람·참고")) || w.startsWith("[쪽 나눔]") || w.startsWith("[정산·금액 대조]"));
+  return warnings.filter((w) => (w.startsWith("[편람·") && !w.startsWith("[편람·참고")) || w.startsWith("[편람·참고·항목 하나]") || w.startsWith("[쪽 나눔]") || w.startsWith("[정산·금액 대조]") || w.startsWith("[전년 문장]"));
 }
 
 /** 자동 다듬기 지시 — 경고 목록 + 대원칙(고치려고 필요한 내용을 빼지 않는다) */
@@ -340,8 +342,12 @@ export function startStageRun(opts: StartStageRunOptions): { runId: string; sess
       // published for it; the UI polls GET …/export or triggers POST …/export after run end).
       // 내보내기 경고(편람·쪽 나눔·금액 대조)는 에이전트가 볼 수 없어 담당자가 손으로 고쳐 왔다 — 고칠 것이 있으면
       // 같은 세션에서 **한 번** 다듬게 하고, 다듬기가 끝난 뒤에 연쇄를 잇는다(담당자 2026-10-21: 사람의 일을 덜어 주는 쪽으로).
+      // 내보내기는 한글 배치 확인으로 1~4분 걸리고 한 줄로 선다 — 다듬기 뒤 보고서가 늦게 바뀐 일(2026-10-22)을 가릴 수 있게 시작·끝을 남긴다
+      const exportStarted = Date.now();
+      console.log(`[runIntegration] ${docStage}: export start (autoFix=${!!opts.docAutoFix})`);
       void exportStage(opts.project.id, docStage)
         .then((report) => {
+          console.log(`[runIntegration] ${docStage}: export done in ${Math.round((Date.now() - exportStarted) / 1000)}s, warnings=${report?.warnings.length ?? "none"} (autoFix=${!!opts.docAutoFix})`);
           const fix = fixableWarnings(report?.warnings ?? []);
           if (fix.length && !opts.docAutoFix && opts.stage !== "review" && run.status === "succeeded" && run.sessionId) {
             startStageRun({ ...opts, resumeSessionId: run.sessionId, docAutoFix: true, instruction: docAutoFixInstruction(docStage, fix) });

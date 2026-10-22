@@ -10,7 +10,7 @@ import { unzipSync, zipSync } from "fflate";
 import { child, childrenNamed, findAll, findFirst, parseXml, serialize, textOf, XML_DECL, type XmlNode } from "./xml";
 import { asLaidOutByHangul, rhwp } from "./validate";
 import { hangulAvailable, hangulLayout } from "./hangul";
-import { buildHwpx, type BuildOptions, type BuildResult } from "./build";
+import { buildHwpx, type BuildOptions, type BuildResult, type LineFit } from "./build";
 import type { DocModel } from "../docmodel/schema";
 
 const MAX_FIXES = 12;
@@ -361,6 +361,12 @@ const CONDENSE_STEPS = [-1, -2, -3, -4, -5, -6, -8, -10];
 /** 미리보기에서 맞춘 자간에 한글용 여유를 더 줄 단계(%)와 그 바닥 */
 const CONDENSE_HEADROOM = 2;
 const CONDENSE_FLOOR = -12;
+/**
+ * 자간을 다 줄여도 끝줄에 두세 글자만 남으면 글자 크기를 이만큼(%)까지 줄여 본다 — 자간은 바닥(-10 %)에 둔 채.
+ * 요지 상자 ◇ 두 줄이 "육성"·"보존" 두 글자만 다음 줄로 넘어갔다(담당자 2026-10-22: "자간을 줄이거나 아예 글자크기를 조절해서
+ * 각각 한줄로"). 단어가 쪼개지기만 한 문단은 크기를 줄이지 않는다(아래 넓히기·줄 바꿀 자리가 맡는다).
+ */
+const SHRINK_STEPS = [97, 95, 93, 91];
 /** 줄여도 안 될 때 넓혀 볼 자간(%) */
 const EXPAND_STEPS = [1, 2, 3, 4, 5];
 /** 끝줄에 남은 글자가 이 이하(빈칸 빼고)면 윗줄로 붙인다 — "비용 / 지원", "멘토링 / 운영" */
@@ -466,8 +472,8 @@ async function measureLines(bytes: Uint8Array, sectionXml: string): Promise<Line
  * ② 자간 좁게(Alt+Shift+N): 줄 끝에서 단어가 쪼개졌거나("대 / 상") 끝줄에 몇 글자만 남은("비용 / 지원") 문단은
  *    자간을 한 단계씩 줄여 윗줄로 붙인다. 고쳐지면 멈추고, 한도(-10 %)까지 안 되면 원래대로 둔다.
  */
-async function fitLines(doc: DocModel, opts: BuildOptions): Promise<Record<string, { hanging?: number; charSpacing?: number; breaks?: number[] }>> {
-  const fit: Record<string, { hanging?: number; charSpacing?: number; breaks?: number[] }> = { ...opts.lineFit };
+async function fitLines(doc: DocModel, opts: BuildOptions): Promise<Record<string, LineFit>> {
+  const fit: Record<string, LineFit> = { ...opts.lineFit };
   const b0 = buildHwpx(doc, { ...opts, lineFit: fit });
   for (const r of await measureLines(b0.bytes, b0.sectionXml)) if (r.hanging !== undefined) fit[r.id] = { ...fit[r.id], hanging: r.hanging };
   const b1 = buildHwpx(doc, { ...opts, lineFit: fit });
@@ -490,7 +496,31 @@ async function fitLines(doc: DocModel, opts: BuildOptions): Promise<Record<strin
   };
   const bad = [...before.values()].filter((r) => r.bad).map((r) => r.id);
   // 1) 자간 좁게 — 쪼개진 단어·짧은 끝줄을 윗줄로
-  const left = await tryAll(bad, CONDENSE_STEPS, (r, r0) => !r.bad && r.lineCount <= r0.lineCount);
+  const condensedLeft = await tryAll(bad, CONDENSE_STEPS, (r, r0) => !r.bad && r.lineCount <= r0.lineCount);
+  // 1-2) 끝줄에 두세 글자만 남은 문단은 자간을 바닥에 두고 글자 크기를 조금씩 줄인다 — 고쳐지면 멈춘다
+  const shortTails = condensedLeft.filter((id) => {
+    const r = before.get(id);
+    return r && !r.splitWord && r.lineCount > 1;
+  });
+  let shrinkTodo = shortTails;
+  for (const pct of SHRINK_STEPS) {
+    if (!shrinkTodo.length) break;
+    for (const id of shrinkTodo) fit[id] = { ...fit[id], charSpacing: CONDENSE_STEPS[CONDENSE_STEPS.length - 1], sizePct: pct };
+    const b = buildHwpx(doc, { ...opts, lineFit: fit });
+    const now = new Map((await measureLines(b.bytes, b.sectionXml)).map((r) => [r.id, r]));
+    shrinkTodo = shrinkTodo.filter((id) => {
+      const r = now.get(id), r0 = before.get(id);
+      return !(r && r0 && !r.bad && r.lineCount < r0.lineCount);
+    });
+  }
+  for (const id of shrinkTodo) if (fit[id]) {
+    delete fit[id].charSpacing;
+    delete fit[id].sizePct;
+  }
+  const shrunk = new Set(shortTails.filter((id) => !shrinkTodo.includes(id)));
+  // 한글은 rhwp 보다 글자 폭을 넓게 잡는다 — 크기로 맞춘 문단도 한 단계(2 %) 여유를 더 준다(자간 여유는 아래에서)
+  for (const id of shrunk) fit[id].sizePct = Math.max(SHRINK_STEPS[SHRINK_STEPS.length - 1] - 2, fit[id].sizePct! - 2);
+  const left = condensedLeft.filter((id) => !shrunk.has(id));
   // 한글은 rhwp 보다 글자 폭을 조금 넓게 잡는다 — 미리보기에서 딱 맞춘 값이면 한글에서 끝 글자(")")가 넘쳤다
   // ("로컬상점온기(이수진 / )", 담당자 2026-10-12). 줄여서 고친 문단은 여유를 두 단계 더 준다
   for (const id of bad) if (!left.includes(id) && fit[id]?.charSpacing) fit[id].charSpacing = Math.max(CONDENSE_FLOOR, fit[id].charSpacing! - CONDENSE_HEADROOM);

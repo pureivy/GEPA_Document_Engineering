@@ -61,6 +61,13 @@ export interface MaterialDTO {
   note?: string;
 }
 
+/** 자료함 — 올해 사업 자료 / 전년도 참고자료(lib/closeout/materials.ts MaterialBox) */
+export type MaterialBoxDTO = "materials" | "prior";
+
+function boxQuery(box: MaterialBoxDTO, sep: "?" | "&"): string {
+  return box === "materials" ? "" : `${sep}box=${box}`;
+}
+
 export interface VersionDTO {
   seq: number;
   source: string;
@@ -104,7 +111,8 @@ export const api = {
    * 메모리에 올린 채 PDF 텍스트 추출을 몇 분씩 하다 요청 시간 제한에 걸린다(실사용 2026-10-02). 한 장씩이면
    * 중간에 끊겨도 앞의 파일은 남고, 진행률을 보여 줄 수 있다. 변환에 실패한 파일은 errors 로 돌아온다.
    */
-  uploadMaterials: async (id: string, files: File[], onProgress?: (done: number, total: number, name: string) => void) => {
+  /** box: 올해 자료(materials, 기본) / 전년도 참고자료(prior) */
+  uploadMaterials: async (id: string, files: File[], onProgress?: (done: number, total: number, name: string) => void, box: MaterialBoxDTO = "materials") => {
     let materials: MaterialDTO[] = [];
     const errors: { name: string; message: string }[] = [];
     for (let i = 0; i < files.length; i++) {
@@ -113,7 +121,7 @@ export const api = {
       const fd = new FormData();
       fd.append("files", f);
       try {
-        const res = await fetch(`/api/projects/${encodeURIComponent(id)}/materials`, { method: "POST", body: fd, headers: { Accept: "application/json" } });
+        const res = await fetch(`/api/projects/${encodeURIComponent(id)}/materials${boxQuery(box, "?")}`, { method: "POST", body: fd, headers: { Accept: "application/json" } });
         const body = (await res.json().catch(() => ({}))) as { error?: string; materials?: MaterialDTO[]; errors?: { name: string; message: string }[] };
         if (body.materials) materials = body.materials;
         if (body.errors?.length) errors.push(...body.errors);
@@ -128,8 +136,9 @@ export const api = {
     onProgress?.(files.length, files.length, "");
     return { materials, errors };
   },
-  listMaterials: (id: string) => request<{ materials: MaterialDTO[] }>(`/api/projects/${encodeURIComponent(id)}/materials`),
-  deleteMaterial: (id: string, name: string) => request<{ materials: MaterialDTO[] }>(`/api/projects/${encodeURIComponent(id)}/materials?name=${encodeURIComponent(name)}`, { method: "DELETE" }),
+  listMaterials: (id: string, box: MaterialBoxDTO = "materials") => request<{ materials: MaterialDTO[] }>(`/api/projects/${encodeURIComponent(id)}/materials${boxQuery(box, "?")}`),
+  deleteMaterial: (id: string, name: string, box: MaterialBoxDTO = "materials") =>
+    request<{ materials: MaterialDTO[] }>(`/api/projects/${encodeURIComponent(id)}/materials?name=${encodeURIComponent(name)}${boxQuery(box, "&")}`, { method: "DELETE" }),
   deleteProject: (id: string) => request<{ ok: true; id: string }>(`/api/projects/${encodeURIComponent(id)}`, { method: "DELETE" }),
 
   // runs

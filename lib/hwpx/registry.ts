@@ -244,6 +244,33 @@ export class StyleRegistry {
   }
 
   /** 같은 글자 모양에 자간(%)만 바꾼 charPr — 한글의 Alt+Shift+N(자간 좁게)처럼 넘친 글자를 윗줄로 붙인다 */
+  /** 같은 글자 모양에 크기만 pct% 로 — 줄 맞춤에서 끝 두세 글자를 윗줄로 붙일 때(0.1pt 단위로 반올림) */
+  withCharScale(id: number, pct: number): number {
+    const info = this.charPrInfo(id);
+    if (!info) return id;
+    const pt = Math.round(info.pt * pct) / 100;
+    if (pt === info.pt) return id;
+    const { id: _omit, fontRefs, ...rest } = info;
+    void _omit;
+    const want = { ...rest, pt };
+    const sig = charPrSignature(want) + "|" + Object.values(fontRefs).join(",");
+    const hit = this.charBySig.get(sig);
+    if (hit !== undefined) return hit;
+    const list = child(refList(this.header), "hh:charProperties");
+    const src = list ? childrenNamed(list, "hh:charPr").find((n) => Number(n.attrs.id) === id) : undefined;
+    if (!list || !src) return id;
+    const node = clone(src);
+    node.attrs.height = String(Math.round(pt * 100));
+    const nid = childrenNamed(list, "hh:charPr").length;
+    node.attrs.id = String(nid);
+    list.children.push(node);
+    list.attrs.itemCnt = String(nid + 1);
+    this.cat.charPr.push({ ...want, id: nid, fontRefs });
+    this.charBySig.set(sig, nid);
+    this.appended.push({ kind: "charPr", id: nid, sig });
+    return nid;
+  }
+
   withCharSpacing(id: number, spacing: number): number {
     const info = this.charPrInfo(id);
     if (!info || info.spacing === spacing) return id;

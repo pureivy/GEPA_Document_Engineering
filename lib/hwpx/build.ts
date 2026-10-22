@@ -39,6 +39,17 @@ export interface BuildResult {
   fillPageTables: { blockId: string; tblId: string }[];
 }
 
+/**
+ * 문단 하나의 줄 맞춤(keepPass.fitLines) — 내어쓰기·자간·줄 바꿀 자리, 그리고 그래도 끝 두세 글자가 넘어가면
+ * 글자 크기(%)를 조금 줄인다(담당자 2026-10-22: 요지 상자 "육성"·"보존"처럼 중요하지 않은 자리는 한 줄로).
+ */
+export interface LineFit {
+  hanging?: number;
+  charSpacing?: number;
+  breaks?: number[];
+  sizePct?: number;
+}
+
 export interface BuildOptions {
   now?: Date;
   /** 'omit' (default) leaves layout to the reader; 'approx' writes one placeholder lineseg per paragraph */
@@ -52,7 +63,7 @@ export interface BuildOptions {
   /** 문단 위 간격을 없앨 문단(hp:p id) — 쪽 맨 위에 온 문단, buildLaidOut 이 한글 배치로 정한다 */
   noPrev?: string[];
   /** 문단별 줄 맞춤(hp:p id → 내어쓰기·자간) — buildLaidOut 이 정한다 */
-  lineFit?: Record<string, { hanging?: number; charSpacing?: number; breaks?: number[] }>;
+  lineFit?: Record<string, LineFit>;
 }
 
 function sec0(paras: XmlNode[]): XmlNode {
