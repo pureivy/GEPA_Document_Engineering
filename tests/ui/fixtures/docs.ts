@@ -233,6 +233,8 @@ export function kitchenSinkFixture(): DocModel {
   const notice = noticeFixture();
   const press = pressFixture();
   const official = officialFixture();
-  const blocks = [...plan.blocks, ...notice.blocks, ...press.blocks, ...official.blocks].map((b, i) => ({ ...b, id: `k${String(i + 1).padStart(3, "0")}` }));
+  // 사진 대지는 결과보고서(closeout)에서만 쓰여 위 고정 문서들에 없다 — 블록 종류 전부를 덮도록 하나 붙인다
+  const photos = { id: "p", k: "photos" as const, cols: 2, items: [{ src: "materials/images/a.png", caption: "(체험) 공장 견학" }, { src: "materials/images/b.png", caption: "" }] };
+  const blocks = [...plan.blocks, ...notice.blocks, ...press.blocks, ...official.blocks, photos].map((b, i) => ({ ...b, id: `k${String(i + 1).padStart(3, "0")}` }));
   return { ...plan, blocks } as DocModel;
 }

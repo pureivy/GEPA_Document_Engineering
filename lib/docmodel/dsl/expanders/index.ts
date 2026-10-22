@@ -4,6 +4,7 @@ import { officialContext } from "./official";
 import { planContext } from "./plan";
 import { pressContext } from "./press";
 import { reportContext } from "./report";
+import { settlementContext } from "./settlement";
 import type { FamilyContext } from "./types";
 
 export type { BlockInput, FamilyContext } from "./types";
@@ -12,6 +13,7 @@ export * from "./plan";
 export * from "./press";
 export * from "./official";
 export * from "./report";
+export * from "./settlement";
 
 /** Family context (synthesized prelude + numbering/role defaults) for a validated meta. */
 export function familyContext(family: Family, meta: DocModel["meta"]): FamilyContext {
@@ -26,5 +28,7 @@ export function familyContext(family: Family, meta: DocModel["meta"]): FamilyCon
       return officialContext();
     case "report":
       return reportContext();
+    case "settlement":
+      return settlementContext(meta as Extract<DocModel, { family: "settlement" }>["meta"]);
   }
 }

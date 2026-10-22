@@ -21,7 +21,7 @@ import { referenceRoleFor } from "@/lib/contracts";
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
 
-const MAX_BYTES = 30 * 1024 * 1024;
+const MAX_BYTES = 100 * 1024 * 1024;
 
 export async function POST(req: Request, ctx: { params: Promise<{ id: string }> }) {
   const { id } = await ctx.params;
@@ -36,7 +36,7 @@ export async function POST(req: Request, ctx: { params: Promise<{ id: string }> 
   }
   const file = form.get("file");
   if (!(file instanceof File)) return jsonError(400, "file 필드(기존 사업계획서)가 없습니다");
-  if (file.size > MAX_BYTES) return jsonError(413, "파일이 너무 큽니다 (30MB 이하)");
+  if (file.size > MAX_BYTES) return jsonError(413, "파일이 너무 큽니다 (100MB 이하)");
   const safeName = basename(file.name).replace(/[\\/:*?"<>|]/g, "_");
   if (!referenceExtension(safeName)) return jsonError(400, `지원하지 않는 파일 형식입니다 (${REFERENCE_EXTENSIONS.join(", ")})`);
   const changes = String(form.get("changes") ?? "").trim().slice(0, 20_000);

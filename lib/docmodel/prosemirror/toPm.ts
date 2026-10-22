@@ -89,6 +89,9 @@ export function blockToPm(block: Block): PmNode {
         type: N.image,
         attrs: { ...id, asset: block.asset, widthMm: nn(block.widthMm), heightMm: nn(block.heightMm), align: nn(block.align) },
       };
+    case "photos":
+      // 사진 목록은 편집기에서 한 덩어리(atom)다 — 항목을 JSON 으로 그대로 싣는다
+      return { type: N.photos, attrs: { ...id, cols: nn(block.cols), items: block.items.map((it) => ({ src: it.src, caption: it.caption })) } };
     case "table":
       return {
         type: N.table,

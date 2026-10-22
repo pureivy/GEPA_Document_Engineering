@@ -78,6 +78,50 @@ export const GepaImage = Node.create({
   },
 });
 
+/**
+ * `photos` — 사진 대지. 편집기에서는 사진 썸네일과 설명을 보여 주기만 한다(atom). 사진 파일은 프로젝트 작업 폴더에 있어
+ * `/api/projects/<id>/asset?src=…` 로 읽는다 — 프로젝트 id 는 주소창(/projects/<id>/…)에서 얻는다.
+ */
+export const GepaPhotos = Node.create({
+  name: N.photos,
+  group: "block",
+  atom: true,
+  selectable: true,
+  addAttributes() {
+    return { ...idAttr, cols: { default: null, rendered: false }, items: { default: [], rendered: false } };
+  },
+  parseHTML() {
+    return [
+      {
+        tag: "div[data-gepa-photos]",
+        getAttrs: (el) => {
+          try {
+            return { items: JSON.parse((el as HTMLElement).getAttribute("data-items") || "[]"), cols: Number((el as HTMLElement).getAttribute("data-cols")) || null };
+          } catch {
+            return { items: [], cols: null };
+          }
+        },
+      },
+    ];
+  },
+  renderHTML({ node }) {
+    const items = (node.attrs.items ?? []) as { src: string; caption: string }[];
+    const cols = (node.attrs.cols as number | null) ?? 2;
+    const pid = typeof window !== "undefined" ? (/\/projects\/([^/]+)/.exec(window.location.pathname)?.[1] ?? "") : "";
+    const cells = items.map((it) => [
+      "figure",
+      { class: "hwp-photo" },
+      ["img", { src: pid ? `/api/projects/${pid}/asset?src=${encodeURIComponent(it.src)}` : "", alt: it.caption, loading: "lazy" }],
+      ["figcaption", {}, it.caption || it.src],
+    ]);
+    return [
+      "div",
+      { "data-gepa-photos": "", "data-items": JSON.stringify(items), "data-cols": String(cols), class: "hwp-photos", style: `display:grid;grid-template-columns:repeat(${cols},1fr);gap:6px` },
+      ...(cells.length ? cells : [["div", { class: "hwp-photos-empty" }, "사진 없음"]]),
+    ];
+  },
+});
+
 /** `approvalBlock` — plan 결재란, rendered from `meta.결재` (React node view attached in HwpEditor). */
 export const ApprovalBlock = Node.create({
   name: N.approvalBlock,

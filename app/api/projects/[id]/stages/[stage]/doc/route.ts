@@ -3,6 +3,7 @@ import { DocModelSchema } from "@/lib/docmodel/schema";
 import { readStageDoc, readStageDsl, readResearchNotes, saveStageDoc, saveStageDsl, listVersions } from "@/lib/stages/service";
 import { toDsl } from "@/lib/docmodel/serialize/toDsl";
 import type { Stage } from "@/lib/contracts";
+import { readLedgerSummary } from "@/lib/closeout/store";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
@@ -10,7 +11,8 @@ export const dynamic = "force-dynamic";
 export async function GET(req: NextRequest, ctx: { params: Promise<{ id: string; stage: string }> }) {
   const { id, stage } = await ctx.params;
   const s = stage as Stage;
-  if (s === "research") return Response.json({ markdown: readResearchNotes(id) });
+  if (s === "research" || s === "analysis") return Response.json({ markdown: readResearchNotes(id, s) });
+  if (s === "ledger") return Response.json({ markdown: readLedgerSummary(id) });
   const format = req.nextUrl.searchParams.get("format");
   const doc = readStageDoc(id, s);
   const version = listVersions(id, s)[0]?.seq ?? 0;

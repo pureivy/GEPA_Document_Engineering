@@ -5,13 +5,18 @@
  */
 import type { Stage } from "./contracts";
 
-export type ProjectKind = "program" | "official" | "report";
-export const PROJECT_KINDS: ProjectKind[] = ["program", "official", "report"];
-export const KIND_LABEL: Record<ProjectKind, string> = { program: "사업", official: "공문", report: "업무보고" };
+export type ProjectKind = "program" | "official" | "report" | "closeout";
+export const PROJECT_KINDS: ProjectKind[] = ["program", "official", "report", "closeout"];
+export const KIND_LABEL: Record<ProjectKind, string> = { program: "사업", official: "공문", report: "업무보고", closeout: "결과·정산" };
 export const KIND_STAGES: Record<ProjectKind, Stage[]> = {
   program: ["research", "plan", "notice", "press"],
   official: ["official"],
   report: ["report"],
+  // 사업이 끝난 뒤: 자료(엑셀)를 원장으로 옮기고 → 성과를 분석하고 → 내부 결과보고 → 위탁기관 서식 정산보고 → 둘을 붙여 보내는 공문.
+  // 실문서의 결재 순서와 같다(docs/design-system/closeout-result.md §1: 내부 보고 A형을 먼저 올리고 B형 공문에 붙인다).
+  // 성과 분석(analysis)은 문서가 아니라 메모다 — 결과보고서 한 번에 자료 읽기·성과 판단·서식 맞추기를 다 시키면
+  // 올해 한 일을 옮겨 적는 데서 그쳤다(담당자 2026-10-21). 판단(성과·우수사례·차년도 반영)을 먼저 따로 한다.
+  closeout: ["ledger", "analysis", "result", "settlement", "submit"],
 };
 export function stagesOf(kind: ProjectKind): Stage[] {
   return KIND_STAGES[kind];

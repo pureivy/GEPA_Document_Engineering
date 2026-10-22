@@ -6,6 +6,17 @@ const FM = `---\nfamily: plan\n제목: 테스트 계획(안)\n---\n`;
 const rules = (dsl: string) => lintGovStyle(parseDsl(FM + dsl).doc).map((i) => i.rule);
 
 describe("lintGovStyle — 행정업무운영 편람 작성 기준", () => {
+  it("화살표로 줄인 문장을 경고한다(담당자 2026-10-07)", () => {
+    expect(rules(`□ 가
+ㅇ 운영 시기 7월 → 11월로 변경
+ㅇ 나  끝.
+`)).toContain("화살표");
+    expect(rules(`□ 가
+ㅇ 운영 시기를 당초 7월에서 11월로 변경
+ㅇ 나  끝.
+`)).not.toContain("화살표");
+  });
+
   it("passes a compliant document", () => {
     const dsl = `# 사업개요\n□ 사업개요\nㅇ (사업기간) 2026. 7. 1.~12. 31.\nㅇ (사 업 비) 금60,000,000원(금육천만원)\nㅇ 접수 마감: 2026. 7. 15.(수) 18:00\n# 기대효과\nㅇ 수출 확대\nㅇ 일자리 창출  끝.\n`;
     expect(rules(dsl)).toEqual([]);
@@ -18,6 +29,12 @@ describe("lintGovStyle — 행정업무운영 편람 작성 기준", () => {
   it("flags colon / tilde spacing, Korean time, amount without 한글 병기", () => {
     const r = rules(`□ 가\nㅇ 원장 : 김갑동\nㅇ 4. 23. ~ 6. 15.\nㅇ 오후 3시 20분 개회\nㅇ 금113,560원 지급  끝.\n`);
     expect(r).toEqual(expect.arrayContaining(["쌍점", "물결표", "시간 표기", "금액 한글 병기"]));
+  });
+  it("does not read 지원금·보조금 as the 금 of an amount", () => {
+    expect(rules(`□ 가
+ㅇ 추가 지원금 3,677,110원 지급
+ㅇ 둘  끝.
+`)).not.toContain("금액 한글 병기");
   });
   it("flags a lone sub-item and a skipped level", () => {
     expect(rules(`□ 가\nㅇ 하나뿐인 항목\n□ 나\nㅇ 둘\nㅇ 셋  끝.\n`)).toContain("항목 하나");

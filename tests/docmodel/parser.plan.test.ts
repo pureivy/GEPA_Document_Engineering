@@ -125,7 +125,7 @@ describe("plan example (B.4)", () => {
     const toc = paras(d).filter((p) => p.role === "tocLine");
     expect(toc.map((p) => plain(p))).toEqual(["Ⅰ. 추진배경 1", "Ⅱ. 사업개요 3"]);
     const attach = d.blocks.find((b) => b.k === "attachmentList") as Extract<Block, { k: "attachmentList" }>;
-    expect(attach.items).toEqual(["붙임 1. 신청서", "동의서"]);
+    expect(attach.items).toEqual(["1. 신청서", "동의서"]); // 작성기가 "붙임" 을 붙이므로 적어 온 "붙임" 은 뗀다
     const imgs = d.blocks.filter((b): b is Extract<Block, { k: "image" }> => b.k === "image");
     expect(imgs[0]).toMatchObject({ asset: "logo", widthMm: 92.3, heightMm: 13.3 });
     expect(imgs[1]).toMatchObject({ asset: "chart1", widthMm: 120, heightMm: 60, align: "center" });

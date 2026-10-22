@@ -5,7 +5,8 @@
  *
  * Usage: pnpm tsx scripts/extract-geometry.ts <notice|plan>
  */
-import { mkdirSync, readFileSync, writeFileSync, rmSync } from "node:fs";
+import { mkdirSync, readFileSync, writeFileSync } from "node:fs";
+import { removeSync } from "../lib/fsSafe";
 import { join } from "node:path";
 import { parseXml, serialize } from "../lib/hwpx/xml";
 import { summarizeTables, topLevelParagraphs } from "../lib/hwpx/section";
@@ -15,7 +16,7 @@ if (!family) throw new Error("usage: extract-geometry.ts <family>");
 const dir = join(process.cwd(), "templates", family);
 const sec = parseXml(readFileSync(join(dir, "pkg/Contents/section0.xml"), "utf8"));
 const gdir = join(dir, "geometry");
-rmSync(gdir, { recursive: true, force: true });
+removeSync(gdir);
 mkdirSync(gdir, { recursive: true });
 const paras = topLevelParagraphs(sec);
 const tables = summarizeTables(sec);

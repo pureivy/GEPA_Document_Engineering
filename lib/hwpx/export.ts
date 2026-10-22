@@ -3,12 +3,16 @@
  * stage directory (data/projects/<id>/<stage>/).
  */
 import { createHash } from "node:crypto";
-import { existsSync, mkdirSync, readFileSync, readdirSync, writeFileSync, rmSync } from "node:fs";
+import { existsSync, mkdirSync, readFileSync, readdirSync, writeFileSync } from "node:fs";
+import { removeSync } from "../fsSafe";
 import { join } from "node:path";
 import { lintGovStyle } from "../docmodel/govLint";
 import { buildHwpx, type BuildOptions } from "./build";
 import { validateHwpx, renderPagesSvg } from "./validate";
 import { embedPreview } from "./preview";
+import { buildLaidOut } from "./keepPass";
+import { hangulLayout, pngPageSvg } from "./hangul";
+import { pageSplitWarnings } from "./pageSplit";
 import type { DocModel } from "../docmodel/schema";
 import type { ExportReportDTO } from "../contracts";
 
@@ -22,20 +26,34 @@ export function sha1(bytes: Uint8Array): string {
   return createHash("sha1").update(bytes).digest("hex").slice(0, 16);
 }
 
-export async function exportStageDoc(stageDir: string, doc: DocModel, opts: BuildOptions = {}): Promise<ExportResult> {
+export async function exportStageDoc(stageDir: string, doc: DocModel, opts: BuildOptions = {}, extraWarnings: string[] = []): Promise<ExportResult> {
   mkdirSync(stageDir, { recursive: true });
-  const built = buildHwpx(doc, opts);
+  // 배치 보정 — 표를 쪽 끝까지 채우고, 쪽 끝에 홀로 남은 제목을 다음 쪽으로(keepPass.ts)
+  let built;
+  let layoutError: string | undefined;
+  try {
+    built = await buildLaidOut(doc, opts);
+  } catch (e) {
+    // 배치 확인에 실패하면 빌드 결과를 그대로 쓴다 — 조용히 넘기지 않고 경고로 남긴다
+    layoutError = (e as Error).message;
+    built = buildHwpx(doc, opts);
+  }
   const v = await validateHwpx(built.bytes);
   // page SVGs are rendered once here: they seed the render cache and page 0 becomes the
   // Preview/PrvImage.png thumbnail (a repack that does not change the layout)
   let bytes = built.bytes;
   let svgs: string[] = [];
   const warnings = built.report.warnings.map((w) => (w.blockId ? `[${w.blockId}] ${w.message}` : w.message));
+  if (layoutError) warnings.push(`쪽·줄 맞춤을 건너뛰었습니다: ${layoutError}`);
+  warnings.push(...extraWarnings);
   // 행정업무운영 편람 작성 기준(docs/design-system/gov-manual.md) — deterministic checks, non-blocking
   for (const i of lintGovStyle(doc)) warnings.push(`[편람${i.severity === "info" ? "·참고" : ""}·${i.rule}]${i.blockId ? ` [${i.blockId}]` : ""} ${i.message}${i.fix ? ` → ${i.fix}` : ""}`);
   if (v.ok) {
     try {
-      svgs = await renderPagesSvg(built.bytes);
+      const r = await renderPages(built.bytes);
+      svgs = r.svgs;
+      // 한글이 나눈 쪽으로 장·절이 애매하게 쪼개졌는지(pageSplit.ts) — 한글이 없으면 쪽 글이 없어 건너뛴다
+      if (r.texts) warnings.push(...pageSplitWarnings(r.texts));
       const pv = await embedPreview(built.bytes, svgs[0]);
       bytes = pv.bytes;
       if (!pv.embedded && pv.error) warnings.push(`미리보기 이미지 생성 실패: ${pv.error}`);
@@ -50,7 +68,7 @@ export async function exportStageDoc(stageDir: string, doc: DocModel, opts: Buil
   if (svgs.length) writeRenderCache(stageDir, hash, svgs);
   const report: ExportReportDTO = {
     ok: v.ok,
-    pageCount: v.pageCount,
+    pageCount: svgs.length || v.pageCount,
     contentLossCount: v.contentLoss?.count ?? null,
     appendedStyles: built.report.appendedStyles.length,
     warnings,
@@ -62,6 +80,16 @@ export async function exportStageDoc(stageDir: string, doc: DocModel, opts: Buil
   return { report, hwpxPath, bytes };
 }
 
+/**
+ * 미리보기 쪽 그림 — 한글이 있으면 한글이 그린 그림(내려받는 파일과 똑같다), 없으면 rhwp.
+ * rhwp 는 한글과 배치가 달라 미리보기와 내려받은 파일의 쪽 넘김이 어긋났다(담당자 2026-10-13).
+ */
+async function renderPages(bytes: Uint8Array): Promise<{ svgs: string[]; texts?: string[] }> {
+  const hw = await hangulLayout(bytes, { images: true });
+  if (hw?.pngs.length) return { svgs: hw.pngs.map(pngPageSvg), texts: hw.texts };
+  return { svgs: await renderPagesSvg(bytes) };
+}
+
 function writeRenderCache(stageDir: string, hash: string, svgs: string[]): string {
   const dir = join(stageDir, "render", hash);
   mkdirSync(dir, { recursive: true });
@@ -70,7 +98,7 @@ function writeRenderCache(stageDir: string, hash: string, svgs: string[]): strin
   // prune older renders (keep the 3 newest)
   const renderRoot = join(stageDir, "render");
   const dirs = readdirSync(renderRoot, { withFileTypes: true }).filter((d) => d.isDirectory()).map((d) => ({ name: d.name, t: statMtime(join(renderRoot, d.name)) })).sort((a, b) => b.t - a.t);
-  for (const d of dirs.slice(3)) rmSync(join(renderRoot, d.name), { recursive: true, force: true });
+  for (const d of dirs.slice(3)) removeSync(join(renderRoot, d.name));
   return dir;
 }
 
@@ -91,7 +119,7 @@ export async function ensureRendered(stageDir: string): Promise<{ pages: number;
     const m = JSON.parse(readFileSync(join(dir, "manifest.json"), "utf8")) as { pages: number };
     return { pages: m.pages, hash, dir };
   }
-  const svgs = await renderPagesSvg(bytes);
+  const { svgs } = await renderPages(bytes);
   writeRenderCache(stageDir, hash, svgs);
   return { pages: svgs.length, hash, dir };
 }

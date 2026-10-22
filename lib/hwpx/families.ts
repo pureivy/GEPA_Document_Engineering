@@ -16,6 +16,7 @@ import { writeOfficial } from "./writers/official";
 import { writePlan } from "./writers/plan";
 import { writePress } from "./writers/press";
 import { writeReport } from "./writers/report";
+import { writeSettlement } from "./writers/settlement";
 
 /**
  * `write` 는 프로퍼티(화살표 함수) 타입으로 선언한다 — 메서드 표기(`write(ctx, doc): …`)는
@@ -34,4 +35,5 @@ export const HWPX_FAMILIES: HwpxFamilyTable = {
   press: { write: writePress },
   official: { write: writeOfficial },
   report: { write: writeReport },
+  settlement: { write: writeSettlement },
 };

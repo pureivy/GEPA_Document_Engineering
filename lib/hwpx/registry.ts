@@ -4,7 +4,7 @@
  * element, edits the differing attributes, appends it to header.xml (bumping itemCnt)
  * and records the addition in the build report. This is the only header mutation.
  */
-import { child, childrenNamed, clone, el, isNode, type XmlNode } from "./xml";
+import { child, childrenNamed, clone, el, findAll, isNode, type XmlNode } from "./xml";
 import {
   borderFillSignature,
   charPrSignature,
@@ -58,6 +58,8 @@ export interface ParaSpec {
   prev?: number; // space before, HWPUNIT
   next?: number;
   keepWithNext?: boolean;
+  /** 문단 보호 — 쪽 경계에서 나뉘지 않는다 */
+  keepLines?: boolean;
 }
 export type SideSpec = "none" | { type?: "SOLID" | "DASH" | "DOT" | "DOUBLE_SLIM" | "NONE"; widthMm?: number; color?: string };
 export interface BorderFillSpec {
@@ -108,6 +110,191 @@ export class StyleRegistry {
   }
   paraPrInfo(id: number): ParaPrSig | undefined {
     return this.cat.paraPr.find((p) => p.id === id);
+  }
+
+  /**
+   * 같은 문단 모양에 "다음 문단과 함께"만 켠 paraPr — 제목·(단위) 줄이 쪽 끝에 홀로 남고 표·본문이
+   * 다음 쪽으로 넘어가는 것을 막는다. 원본 노드를 그대로 복제하므로 테두리·간격 등 다른 속성은 유지된다.
+   */
+  keepWithNext(id: number): number {
+    const info = this.paraPrInfo(id);
+    if (!info || info.keepWithNext) return id;
+    const { id: _omit, ...rest } = info;
+    void _omit;
+    const want = { ...rest, keepWithNext: true };
+    const sig = paraPrSignature(want);
+    const hit = this.paraBySig.get(sig);
+    if (hit !== undefined) return hit;
+    const list = child(refList(this.header), "hh:paraProperties");
+    const src = list ? childrenNamed(list, "hh:paraPr").find((n) => Number(n.attrs.id) === id) : undefined;
+    if (!list || !src) return id;
+    const node = clone(src);
+    const nid = childrenNamed(list, "hh:paraPr").length;
+    node.attrs.id = String(nid);
+    const brk = child(node, "hh:breakSetting");
+    if (!brk) return id;
+    brk.attrs.keepWithNext = "1";
+    list.children.push(node);
+    list.attrs.itemCnt = String(nid + 1);
+    this.cat.paraPr.push({ ...want, id: nid });
+    this.paraBySig.set(sig, nid);
+    this.appended.push({ kind: "paraPr", id: nid, sig });
+    return nid;
+  }
+
+  /**
+   * 같은 문단 모양에 줄 간격(%)만 바꾼 paraPr — 쪽 아래가 크게 비는 쪽의 본문 줄 간격을 늘려 채운다(keepPass.buildLaidOut).
+   * 원본 노드를 복제하므로 다른 속성은 그대로다. 줄 간격이 PERCENT 가 아니면 그대로 둔다.
+   */
+  withLineSpacing(id: number, lineSpacing: number): number {
+    const info = this.paraPrInfo(id);
+    if (!info || info.lineSpacing === lineSpacing) return id;
+    const { id: _omit, ...rest } = info;
+    void _omit;
+    const want = { ...rest, lineSpacing };
+    const sig = paraPrSignature(want);
+    const hit = this.paraBySig.get(sig);
+    if (hit !== undefined) return hit;
+    const list = child(refList(this.header), "hh:paraProperties");
+    const src = list ? childrenNamed(list, "hh:paraPr").find((n) => Number(n.attrs.id) === id) : undefined;
+    if (!list || !src) return id;
+    const node = clone(src);
+    const sw = child(node, "hp:switch");
+    const holders = sw ? [child(sw, "hp:case"), child(sw, "hp:default")] : [node];
+    const spacings = holders.map((h) => (h ? child(h, "hh:lineSpacing") : undefined)).filter((n): n is XmlNode => !!n);
+    if (!spacings.length || spacings.some((n) => n.attrs.type !== "PERCENT")) return id;
+    for (const n of spacings) n.attrs.value = String(lineSpacing);
+    const nid = childrenNamed(list, "hh:paraPr").length;
+    node.attrs.id = String(nid);
+    list.children.push(node);
+    list.attrs.itemCnt = String(nid + 1);
+    this.cat.paraPr.push({ ...want, id: nid });
+    this.paraBySig.set(sig, nid);
+    this.appended.push({ kind: "paraPr", id: nid, sig });
+    return nid;
+  }
+
+  /**
+   * 같은 문단 모양에 문단 위 간격만 없앤 paraPr — 쪽 맨 위에 온 제목·문단은 위 여백 없이 본문 첫 줄에 붙인다
+   * (담당자 2026-10-13). 한글은 쪽 맨 위에서도 문단 위 간격을 그대로 두어 띠·제목이 내려앉았다.
+   */
+  withoutPrev(id: number): number {
+    const info = this.paraPrInfo(id);
+    if (!info || !info.prev) return id;
+    const { id: _omit, ...rest } = info;
+    void _omit;
+    const want = { ...rest, prev: 0 };
+    const sig = paraPrSignature(want);
+    const hit = this.paraBySig.get(sig);
+    if (hit !== undefined) return hit;
+    const list = child(refList(this.header), "hh:paraProperties");
+    const src = list ? childrenNamed(list, "hh:paraPr").find((n) => Number(n.attrs.id) === id) : undefined;
+    if (!list || !src) return id;
+    const node = clone(src);
+    for (const m of findAll(node, "hh:margin")) {
+      const p = child(m, "hc:prev");
+      if (p) p.attrs.value = "0";
+    }
+    const nid = childrenNamed(list, "hh:paraPr").length;
+    node.attrs.id = String(nid);
+    list.children.push(node);
+    list.attrs.itemCnt = String(nid + 1);
+    this.cat.paraPr.push({ ...want, id: nid });
+    this.paraBySig.set(sig, nid);
+    this.appended.push({ kind: "paraPr", id: nid, sig });
+    return nid;
+  }
+
+  /**
+   * 같은 문단 모양에 내어쓰기(HWPUNIT, 둘째 줄부터 들어가는 폭)만 바꾼 paraPr — 한글의 Shift+Tab 처럼 둘째 줄을
+   * 글머리 다음 첫 글자 아래에 맞춘다(keepPass.buildLaidOut 이 실제 배치로 잰 값).
+   */
+  withHanging(id: number, hanging: number): number {
+    const info = this.paraPrInfo(id);
+    const intent = -2 * Math.round(hanging);
+    if (!info || info.intent === intent) return id;
+    const { id: _omit, ...rest } = info;
+    void _omit;
+    const want = { ...rest, intent };
+    const sig = paraPrSignature(want);
+    const hit = this.paraBySig.get(sig);
+    if (hit !== undefined) return hit;
+    const list = child(refList(this.header), "hh:paraProperties");
+    const src = list ? childrenNamed(list, "hh:paraPr").find((n) => Number(n.attrs.id) === id) : undefined;
+    if (!list || !src) return id;
+    const node = clone(src);
+    const sw = child(node, "hp:switch");
+    const set = (holder: XmlNode | undefined, factor: number) => {
+      const m = holder ? child(holder, "hh:margin") : undefined;
+      const c = m ? child(m, "hc:intent") : undefined;
+      if (c) c.attrs.value = String(Math.round(intent * factor));
+    };
+    if (sw) {
+      set(child(sw, "hp:case"), 0.5);
+      set(child(sw, "hp:default"), 1);
+    } else set(node, 1);
+    const nid = childrenNamed(list, "hh:paraPr").length;
+    node.attrs.id = String(nid);
+    list.children.push(node);
+    list.attrs.itemCnt = String(nid + 1);
+    this.cat.paraPr.push({ ...want, id: nid });
+    this.paraBySig.set(sig, nid);
+    this.appended.push({ kind: "paraPr", id: nid, sig });
+    return nid;
+  }
+
+  /** 같은 글자 모양에 자간(%)만 바꾼 charPr — 한글의 Alt+Shift+N(자간 좁게)처럼 넘친 글자를 윗줄로 붙인다 */
+  /** 같은 글자 모양에 크기만 pct% 로 — 줄 맞춤에서 끝 두세 글자를 윗줄로 붙일 때(0.1pt 단위로 반올림) */
+  withCharScale(id: number, pct: number): number {
+    const info = this.charPrInfo(id);
+    if (!info) return id;
+    const pt = Math.round(info.pt * pct) / 100;
+    if (pt === info.pt) return id;
+    const { id: _omit, fontRefs, ...rest } = info;
+    void _omit;
+    const want = { ...rest, pt };
+    const sig = charPrSignature(want) + "|" + Object.values(fontRefs).join(",");
+    const hit = this.charBySig.get(sig);
+    if (hit !== undefined) return hit;
+    const list = child(refList(this.header), "hh:charProperties");
+    const src = list ? childrenNamed(list, "hh:charPr").find((n) => Number(n.attrs.id) === id) : undefined;
+    if (!list || !src) return id;
+    const node = clone(src);
+    node.attrs.height = String(Math.round(pt * 100));
+    const nid = childrenNamed(list, "hh:charPr").length;
+    node.attrs.id = String(nid);
+    list.children.push(node);
+    list.attrs.itemCnt = String(nid + 1);
+    this.cat.charPr.push({ ...want, id: nid, fontRefs });
+    this.charBySig.set(sig, nid);
+    this.appended.push({ kind: "charPr", id: nid, sig });
+    return nid;
+  }
+
+  withCharSpacing(id: number, spacing: number): number {
+    const info = this.charPrInfo(id);
+    if (!info || info.spacing === spacing) return id;
+    const { id: _omit, fontRefs, ...rest } = info;
+    void _omit;
+    const want = { ...rest, spacing };
+    const sig = charPrSignature(want) + "|" + Object.values(fontRefs).join(",");
+    const hit = this.charBySig.get(sig);
+    if (hit !== undefined) return hit;
+    const list = child(refList(this.header), "hh:charProperties");
+    const src = list ? childrenNamed(list, "hh:charPr").find((n) => Number(n.attrs.id) === id) : undefined;
+    if (!list || !src) return id;
+    const node = clone(src);
+    const n = child(node, "hh:spacing");
+    if (!n) return id;
+    for (const l of FONT_LANGS) n.attrs[l.toLowerCase()] = String(spacing);
+    const nid = childrenNamed(list, "hh:charPr").length;
+    node.attrs.id = String(nid);
+    list.children.push(node);
+    list.attrs.itemCnt = String(nid + 1);
+    this.cat.charPr.push({ ...want, id: nid, fontRefs });
+    this.charBySig.set(sig, nid);
+    this.appended.push({ kind: "charPr", id: nid, sig });
+    return nid;
   }
 
   private resolveFace(font: FontRole | string | undefined): string {
@@ -209,6 +396,7 @@ export class StyleRegistry {
       prev: 2 * Math.round(spec.prev ?? 0),
       next: 2 * Math.round(spec.next ?? 0),
       keepWithNext: !!spec.keepWithNext,
+      keepLines: !!spec.keepLines,
     };
     const sig = paraPrSignature(want);
     const hit = this.paraBySig.get(sig);
@@ -230,7 +418,10 @@ export class StyleRegistry {
     const align = child(node, "hh:align");
     if (align) align.attrs.horizontal = want.align;
     const brk = child(node, "hh:breakSetting");
-    if (brk) brk.attrs.keepWithNext = want.keepWithNext ? "1" : "0";
+    if (brk) {
+      brk.attrs.keepWithNext = want.keepWithNext ? "1" : "0";
+      brk.attrs.keepLines = want.keepLines ? "1" : "0";
+    }
     const apply = (container: XmlNode | undefined, factor: number) => {
       if (!container) return;
       const m = child(container, "hh:margin");

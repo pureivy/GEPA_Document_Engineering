@@ -60,6 +60,8 @@ export function blockToText(b: Block, doc: DocModel): string[] {
       return ["", "----------", ""];
     case "image":
       return [`[이미지: ${b.asset}]`];
+    case "photos":
+      return b.items.map((it) => `[사진: ${it.caption || it.src}]`);
     case "table":
       return [
         ...(b.caption ? [b.caption] : []),

@@ -8,21 +8,22 @@
 import { useMemo, useState } from "react";
 import { z } from "zod";
 import type { DocModel, Family } from "@/lib/docmodel/schema";
-import { NoticeMetaSchema, OfficialMetaSchema, PlanMetaSchema, PressMetaSchema, ReportMetaSchema } from "@/lib/docmodel/schema";
+import { NoticeMetaSchema, OfficialMetaSchema, PlanMetaSchema, PressMetaSchema, ReportMetaSchema, SettlementMetaSchema } from "@/lib/docmodel/schema";
 import { DEFAULT_DELEGATION } from "@/lib/org";
 import { Sheet } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { Field, Input, Textarea } from "@/components/ui/input";
 
-const SCHEMAS: Record<Family, z.ZodType> = { notice: NoticeMetaSchema, plan: PlanMetaSchema, press: PressMetaSchema, official: OfficialMetaSchema, report: ReportMetaSchema };
+const SCHEMAS: Record<Family, z.ZodType> = { notice: NoticeMetaSchema, plan: PlanMetaSchema, press: PressMetaSchema, official: OfficialMetaSchema, report: ReportMetaSchema, settlement: SettlementMetaSchema };
 
 /** field order + labels for fields the schema knows; unknown keys are appended */
 const ORDER: Record<Family, string[]> = {
   notice: ["공고번호", "사업명", "모집대상", "부제", "주관기관", "지역", "대상기업군", "공고연월", "기관장", "접수", "모집개요", "절차도", "로고", "lineSpacing", "paraSpacing"],
-  plan: ["제목", "부제", "연도", "부서", "등록번호", "결재", "요약", "numbering", "lineSpacing", "body1Font", "house"],
+  plan: ["제목", "부제", "연도", "부서", "등록번호", "결재", "요약", "numbering", "lineSpacing", "body1Font", "house", "표지", "본문제목"],
   press: ["기관", "배포일", "보도시점", "담당부서", "책임자", "담당자", "연락처", "이메일", "제목", "부제", "사진", "붙임"],
   official: ["수신유형", "수신", "수신자", "경유", "제목", "발신명의", "처리과", "시행일", "공개구분", "전결", "결재라인", "협조자", "연락처", "붙임"],
   report: ["제목", "보고일", "보고대상", "부서", "대상기간", "목차표시"],
+  settlement: ["제목", "부서"],
 };
 
 /** blank template so a document without meta still shows the right fields */
@@ -57,6 +58,8 @@ const TEMPLATE: Record<Family, Record<string, unknown>> = {
     lineSpacing: 160,
     body1Font: "humanMyeongjoBold",
     house: "gepa",
+    표지: "결재",
+    본문제목: false,
   },
   press: { 기관: "(재)경상북도경제진흥원", 배포일: "", 보도시점: "즉시", 담당부서: "", 책임자: "", 담당자: "", 연락처: "", 이메일: "", 제목: "", 부제: "", 사진: false, 붙임: [] },
   official: {
@@ -76,6 +79,7 @@ const TEMPLATE: Record<Family, Record<string, unknown>> = {
     붙임: [],
   },
   report: { 제목: "주요업무보고", 보고일: "", 보고대상: "", 부서: "", 대상기간: "", 목차표시: true },
+  settlement: { 제목: "지방위탁사업비 사업추진실적 및 정산보고서", 부서: "" },
 };
 
 type Draft = Record<string, unknown>;

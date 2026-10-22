@@ -4,6 +4,7 @@
  */
 import { DEFAULT_REFERENCE_ROLE, REFERENCE_CHANGES_LABEL, type Stage, type ProjectDTO, type ReferenceRole } from "../../contracts";
 import { orgSummary } from "../../org";
+import { closeoutStagePrompt } from "./closeout";
 
 export interface StagePromptInput {
   stage: Stage | "review";
@@ -30,7 +31,7 @@ export interface StagePrompt {
   jsonSchema?: Record<string, unknown>;
 }
 
-const COMMON = () => `당신은 (재)경상북도경제진흥원(GEPA)의 문서 작성 에이전트다. 모든 문서는 한국어 공문서 개조식으로 쓴다.
+export const COMMON = () => `당신은 (재)경상북도경제진흥원(GEPA)의 문서 작성 에이전트다. 모든 문서는 한국어 공문서 개조식으로 쓴다.
 기관 사실(2026년 9월 기준): ${orgSummary()} 보도자료의 "(원장 ○○○)"·인용문에는 원장 성명을 쓰고 ○○○ 자리표시자를 남기지 않는다. 프로젝트의 부서명이 팀명·약칭이면 위 표의 실·단 정식 명칭으로 쓰고, 보도자료 front-matter의 책임자에는 그 실·단의 책임자("직위 이름")를, 사업계획서 front-matter의 부서에는 프로젝트 부서명을 그대로 적는다(결재라인은 부서로 자동 결정).
 작업 규칙: Bash는 사용하지 않는다. 필요한 참고 자료는 .claude/skills/*/SKILL.md 와 reference/ 문서를 Read로 읽는다.
 프로젝트 작업 폴더(아래 경로)의 파일만 읽고 쓴다.`;
@@ -59,7 +60,8 @@ function projectBrief(p: ProjectDTO, workspaceDir?: string): string {
   // kind 로 막는다: 이 두 칸은 폼의 공용 연락처 구역에 있고 브라우저 기억으로 prefill 되므로,
   // 공문을 한 번 만든 뒤 세운 사업계획서 프로젝트가 값을 물려받아 얼어붙은 세 family 의
   // 프롬프트에 없던 두 줄을 흘려보낸다(검토자 지적, 재현 확인).
-  if (p.kind === "official") {
+  // 정산·결과보고의 제출 공문도 결문 연락처를 쓴다 — 공문과 같은 줄을 싣는다
+  if (p.kind === "official" || p.kind === "closeout") {
     if (p.contact.전송) lines.push(`전송: ${p.contact.전송}`);
     if (p.contact.우편번호) lines.push(`우편번호: ${p.contact.우편번호}`);
     // 홈페이지도 결문 연락처의 한 칸이다. 비면 줄 자체를 싣지 않고 결문의 그 칸도 빈다 —
@@ -68,6 +70,10 @@ function projectBrief(p: ProjectDTO, workspaceDir?: string): string {
     // 공개구분은 결문 오른쪽 끝 칸이다. 비공개 문서를 공개로 내보내면 되돌릴 수 없어서
     // 담당자가 화면에서 고른 값을 그대로 싣는다(적지 않으면 스키마 기본값 공개).
     if (p.contact.공개구분) lines.push(`공개구분: ${p.contact.공개구분}`);
+  }
+  if (p.kind === "closeout") {
+    lines.push(`올린 자료 목록: ${workspaceDir ?? "<작업폴더>"}/materials/index.md`);
+    lines.push(`정산 원장: ${workspaceDir ?? "<작업폴더>"}/ledger/ledger.json (계산 결과·검증: ledger/summary.md)`);
   }
   if (p.reference) {
     if (p.kind === "official") {
@@ -165,7 +171,7 @@ function sourcesGuide(input: Pick<StagePromptInput, "dataTools" | "wikiDir">): s
   return parts.join("\n");
 }
 
-const DOC_CONTRACT = (stage: Stage, family: string) => `
+export const DOC_CONTRACT = (stage: Stage, family: string) => `
 출력 계약(반드시 지킬 것):
 1. 먼저 .claude/skills/gepa-dsl/SKILL.md 와 .claude/skills/gepa-dsl/reference/grammar.md 를 읽는다.
 2. 문서 전체를 GEPA DSL(front-matter의 family: ${family})로 작성한다.
@@ -181,6 +187,11 @@ const REVIEW_SKILL: Record<Stage, string> = {
   press: "gepa-press-style",
   official: "gepa-official-design",
   report: "gepa-report-design",
+  ledger: "gepa-closeout-design",
+  analysis: "gepa-closeout-design",
+  result: "gepa-closeout-design",
+  settlement: "gepa-closeout-design",
+  submit: "gepa-closeout-design",
 };
 
 export function buildStagePrompt(input: StagePromptInput): StagePrompt {
@@ -291,6 +302,15 @@ front-matter: 기관 (재)경상북도경제진흥원, 배포일(공고일), 보
         allowedTools: ["Read", "Write", "Glob", "Grep"],
         maxTurns: 20,
       };
+    case "ledger":
+    case "analysis":
+    case "result":
+    case "settlement":
+    case "submit":
+      return closeoutStagePrompt(stage, { ...input, brief, resume: stage === "analysis" && instruction ? `
+
+[추가 지시] ${instruction}
+기존 analysis/notes.md 를 위 지시에 맞게 Edit 로 고친다(전체를 다시 쓰지 않는다).` : resume });
     default:
       throw new Error(`${stage} 단계의 프롬프트가 아직 구현되지 않았습니다`);
   }

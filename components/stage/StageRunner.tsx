@@ -9,7 +9,7 @@ import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { PREF_AUTO_CHAIN, PREF_PLAN_RESEARCH, useBoolPref, writePref } from "@/lib/client/prefs";
 import { Group, Panel, Separator } from "react-resizable-panels";
 import { ChevronLeft, Settings2 } from "lucide-react";
-import { STAGE_FAMILY, STAGE_LABEL, type ProjectDTO, type RunDTO, type RunStatus, type Stage } from "@/lib/contracts";
+import { NOTES_STAGE_FILE, STAGE_FAMILY, STAGE_LABEL, isNotesStage, type ProjectDTO, type RunDTO, type RunStatus, type Stage } from "@/lib/contracts";
 import { KIND_STAGES, type ProjectKind } from "@/lib/kinds";
 import type { DocModel } from "@/lib/docmodel/schema";
 import { api, errorMessage } from "@/lib/client/api";
@@ -24,6 +24,7 @@ import { AgentActivityLog } from "./AgentActivityLog";
 import { RunControls, type SaveState } from "./RunControls";
 import { DownloadBar } from "./DownloadBar";
 import { ResearchPane } from "./ResearchPane";
+import { MaterialsPanel } from "./MaterialsPanel";
 import { ReviewPanel } from "./ReviewPanel";
 import { buildFixInstruction, parseReviewResult, type ReviewResult } from "@/lib/client/review";
 
@@ -51,7 +52,8 @@ export function StageRunner({ projectId, stage, kind, defaultModel }: StageRunne
   const chained = stages.length > 1;
   // 편집기 콜백의 `next`(DocModel)와 겹치지 않게 이름을 달리 한다 — 가려지면 React Compiler 가 메모이제이션을 포기한다
   const nextStage: Stage | null = stages[stages.indexOf(stage) + 1] ?? null;
-  const isResearch = stage === "research";
+  // 노트 단계(research·ledger) — 문서가 아니라 마크다운을 보여 준다(lib/contracts.ts NOTES_STAGE_FILE)
+  const isResearch = isNotesStage(stage);
   // model for the next run of this stage (per-run override; the stage default otherwise)
   const [model, setModel] = useState(defaultModel);
   // 완료 후 다음 단계 자동 실행 (사업: 조사 → 사업계획서 → 공고문 → 보도자료); remembered per browser (default on)
@@ -170,7 +172,7 @@ export function StageRunner({ projectId, stage, kind, defaultModel }: StageRunne
     if (isResearch) {
       setMdLoading(true);
       try {
-        const r = await api.getResearch(projectId);
+        const r = await api.getNotes(projectId, stage);
         setMarkdown(r.markdown ?? null);
       } finally {
         setMdLoading(false);
@@ -482,7 +484,15 @@ export function StageRunner({ projectId, stage, kind, defaultModel }: StageRunne
         <Separator className="w-1 shrink-0 bg-slate-200 transition-colors hover:bg-sky-400 data-[separator=active]:bg-sky-500" />
         <Panel id="editor" minSize="30%" className="min-h-0">
           {isResearch ? (
-            <ResearchPane liveText={liveText} markdown={markdown} running={running} loading={mdLoading && !docLoaded} error={null} />
+            <div className="flex h-full min-h-0 flex-col">
+              {/* 정산자료 단계는 자료함을 함께 보여 준다 — 원장은 올린 자료에서만 나온다 */}
+              {stage === "ledger" ? <MaterialsPanel projectId={projectId} disabled={running} /> : null}
+              {/* 전년도 참고자료는 원장이 아니라 성과 분석이 읽는다 — 두 단계 모두에서 올리고 뺄 수 있게 */}
+              {stage === "ledger" || stage === "analysis" ? <MaterialsPanel projectId={projectId} disabled={running} box="prior" /> : null}
+              <div className="min-h-0 flex-1">
+                <ResearchPane liveText={liveText} markdown={markdown} running={running} loading={mdLoading && !docLoaded} error={null} fileLabel={NOTES_STAGE_FILE[stage]} emptyText={stage === "ledger" ? "아직 정산 원장이 없습니다. 자료(엑셀)를 올리고 ‘실행’을 누르세요." : stage === "analysis" ? "아직 성과 분석 메모가 없습니다. ‘실행’을 누르면 올린 자료와 홈페이지(gepa.kr) 보도자료·행사사진을 읽고 정리합니다." : undefined} />
+              </div>
+            </div>
           ) : (
             <div className="flex h-full min-h-0 flex-col bg-slate-200/70">
               <div className="flex items-center gap-2 border-b border-slate-200 bg-white px-3 py-1.5">
@@ -535,7 +545,7 @@ export function StageRunner({ projectId, stage, kind, defaultModel }: StageRunne
         <Separator className="w-1 shrink-0 bg-slate-200 transition-colors hover:bg-sky-400 data-[separator=active]:bg-sky-500" />
         <Panel id="render" defaultSize="32%" minSize={220} collapsible className="min-h-0">
           {isResearch ? (
-            <div className="flex h-full items-center justify-center bg-slate-100 p-6 text-center text-xs text-slate-500">조사 단계는 렌더가 없습니다. 노트는 다음 단계(사업계획서)의 입력으로 쓰입니다.</div>
+            <div className="flex h-full items-center justify-center bg-slate-100 p-6 text-center text-xs text-slate-500">{stage === "ledger" ? "정산자료 단계는 렌더가 없습니다. 원장의 숫자는 결과보고서·정산보고서·공문의 정산 표로 자동으로 들어갑니다." : stage === "analysis" ? "성과 분석 단계는 렌더가 없습니다. 메모를 검토하고 고칠 곳은 ‘이어서 수정 요청’으로 지시하세요 — 결과보고서는 이 메모로 씁니다. 차년도 반영사항은 내년 사업계획서 자료로 내려받아 쓸 수 있습니다." : "조사 단계는 렌더가 없습니다. 노트는 다음 단계(사업계획서)의 입력으로 쓰입니다."}</div>
           ) : (
             <RenderPane projectId={projectId} stage={stage} refreshKey={refreshKey} running={running} hasDoc={!!doc} />
           )}

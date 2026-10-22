@@ -2,17 +2,26 @@
  * Stage document service: persistence of DocModel/DSL per stage, export to HWPX, rendering,
  * version history. Used by the stage API routes and by the run manager's doc extractor.
  */
-import { existsSync, mkdirSync, readFileSync, writeFileSync, statSync } from "node:fs";
+import { existsSync, mkdirSync, readdirSync, readFileSync, writeFileSync, statSync } from "node:fs";
 import { isAbsolute, join } from "node:path";
 import { rhwpBin, spawnCommandSync as spawnSync } from "../platform";
 import { DocModelSchema, type DocModel } from "../docmodel/schema";
 import { parseDsl } from "../docmodel/dsl";
 import { normalizeDocMeta, normalizeDslText, type NormalizeChange } from "../docmodel/govNormalize";
+import { resolveAsset } from "../closeout/photos";
 import { toDsl } from "../docmodel/serialize/toDsl";
+import { expandLedgerMacros, hasLedgerMacro } from "../closeout/macros";
+import { readLedger } from "../closeout/store";
+import { computeLedger } from "../closeout/ledger";
+import { sourceAmounts, unledgeredWarnings } from "../closeout/amountCheck";
+import { materialsDir, type MaterialBox } from "../closeout/materials";
+import { priorCopyWarnings } from "../closeout/priorCopy";
 import { exportStageDoc, ensureRendered, readExportReport, readPageSvg } from "../hwpx/export";
 import type { ExportReportDTO, Stage } from "../contracts";
 import { db, schema } from "../db/client";
 import { desc, and, eq } from "drizzle-orm";
+
+const CLOSEOUT_DOC_STAGES = new Set<string>(["result", "settlement", "submit"]);
 
 export function dataDir(): string {
   return process.env.DATA_DIR ? (isAbsolute(process.env.DATA_DIR) ? process.env.DATA_DIR : join(process.cwd(), process.env.DATA_DIR)) : join(process.cwd(), "data");
@@ -38,8 +47,8 @@ export function readStageDsl(projectId: string, stage: Stage): string | null {
   const p = join(stageDir(projectId, stage), "draft.dsl.md");
   return existsSync(p) ? readFileSync(p, "utf8") : null;
 }
-export function readResearchNotes(projectId: string): string | null {
-  const p = join(stageDir(projectId, "research"), "notes.md");
+export function readResearchNotes(projectId: string, stage: "research" | "analysis" = "research"): string | null {
+  const p = join(stageDir(projectId, stage), "notes.md");
   return existsSync(p) ? readFileSync(p, "utf8") : null;
 }
 
@@ -56,14 +65,58 @@ export function saveStageDoc(projectId: string, stage: Stage, doc: DocModel, sou
   return seq;
 }
 
+/** 공문(official) 결문 연락처의 빈 칸을 project.json 의 담당 연락처로 채운다. 바꾼 칸이 있으면 변경 기록을 돌려준다. */
+function fillOfficialContact(projectId: string, doc: DocModel): NormalizeChange | null {
+  if (doc.family !== "official") return null;
+  const file = join(dataDir(), "projects", projectId, "project.json");
+  if (!existsSync(file)) return null;
+  let contact: Record<string, string | undefined>;
+  try {
+    contact = (JSON.parse(readFileSync(file, "utf8")) as { contact?: Record<string, string | undefined> }).contact ?? {};
+  } catch {
+    return null;
+  }
+  const c = doc.meta.연락처;
+  const pairs: [keyof typeof c, string | undefined][] = [
+    ["주소", contact.우편주소],
+    ["우편번호", contact.우편번호],
+    ["전화", contact.전화],
+    ["이메일", contact.이메일],
+    ["전송", contact.전송],
+    ["홈페이지", contact.홈페이지],
+  ];
+  let n = 0;
+  for (const [k, v] of pairs) {
+    if (v && v.trim() && !String(c[k] ?? "").trim()) {
+      (c as Record<string, string>)[k] = v.trim();
+      n++;
+    }
+  }
+  return n ? { rule: "결문 연락처 채움", count: n } : null;
+}
+
 /** Parse DSL text produced by an agent, save it, and return the doc + warnings. */
 export function saveStageDsl(projectId: string, stage: Stage, dslText: string, source: "agent" | "user" = "agent"): { doc: DocModel; warnings: { line: number; message: string }[]; version: number; normalized?: NormalizeChange[] } {
   // agent output is normalised to the 편람/house conventions before it becomes a version;
   // user edits are saved verbatim (the editor shows lint warnings instead)
   let text = dslText;
   const normalized: NormalizeChange[] = [];
+  const macroWarnings: { line: number; message: string }[] = [];
+  // 정산 표·값은 에이전트가 타이핑하지 않는다 — `{{정산:…}}` 를 원장 계산 결과로 펼친다(lib/closeout/macros.ts).
+  // 원장이 없으면 매크로를 그대로 남기고 경고한다(표가 조용히 빠진 문서를 만들지 않는다).
+  if (source === "agent" && hasLedgerMacro(text)) {
+    const l = readLedger(projectId);
+    if (l.ok) {
+      const x = expandLedgerMacros(text, l.ledger);
+      text = x.text;
+      macroWarnings.push(...x.warnings.map((message) => ({ line: 0, message })));
+      normalized.push({ rule: "정산매크로", count: 1 });
+    } else {
+      macroWarnings.push({ line: 0, message: `정산 매크로를 펼치지 못했습니다: ${l.error}` });
+    }
+  }
   if (source === "agent") {
-    const r = normalizeDslText(dslText);
+    const r = normalizeDslText(text);
     text = r.text;
     normalized.push(...r.changes);
   }
@@ -72,6 +125,10 @@ export function saveStageDsl(projectId: string, stage: Stage, dslText: string, s
   if (source === "agent") {
     const m = normalizeDocMeta(doc);
     doc = m.doc;
+    // 공문 결문의 연락처 칸은 프로젝트에 등록된 담당 연락처로 채운다 — 에이전트가 주소를 빠뜨려 결문 주소 칸이
+    // 비었다(고령군 제출 공문, 2026-10-07). 에이전트가 적은 값은 그대로 두고 빈 칸만 채운다.
+    const filled = fillOfficialContact(projectId, doc);
+    if (filled) m.changes.push(filled);
     normalized.push(...m.changes);
     if (normalized.length) {
       // meta fixes need re-serialisation; pure text fixes keep the agent's own layout
@@ -85,7 +142,7 @@ export function saveStageDsl(projectId: string, stage: Stage, dslText: string, s
     }
   }
   const version = saveStageDoc(projectId, stage, doc, source, text);
-  return { doc, warnings: parsed.warnings, version, normalized };
+  return { doc, warnings: [...macroWarnings, ...parsed.warnings], version, normalized };
 }
 
 export function listVersions(projectId: string, stage: Stage): { seq: number; source: string; createdAt: string }[] {
@@ -105,10 +162,35 @@ export function restoreVersion(projectId: string, stage: Stage, seq: number): Do
   return doc;
 }
 
+/**
+ * 세 문서(결과·정산·공문)의 금액은 모두 원장에서 나와야 한다 — 매크로 밖에서 적은 금액(기업별 표·본문)도
+ * 원장과 대조해 내보내기 보고서의 경고로 남긴다(화면의 「경고 N」). 에이전트 초안과 사람이 고친 판 모두.
+ */
+function ledgerAmountWarnings(projectId: string, stage: Stage, doc: DocModel): string[] {
+  if (!CLOSEOUT_DOC_STAGES.has(stage)) return [];
+  const l = readLedger(projectId);
+  if (!l.ok) return [];
+  return unledgeredWarnings(toDsl(doc), computeLedger(l.ledger), sourceAmounts(materialTexts(projectId))).map((w) => `[정산·금액 대조] ${w.message}`);
+}
+
+/** 결과보고서 Ⅳ 가 전년도 참고자료(prior/)의 문장을 그대로 옮겼는지(lib/closeout/priorCopy.ts) */
+function priorCopyStageWarnings(projectId: string, stage: Stage, doc: DocModel): string[] {
+  if (stage !== "result") return [];
+  return priorCopyWarnings(toDsl(doc), materialTexts(projectId, "prior"));
+}
+
+/** 올린 자료를 옮긴 글(materials/text/*.md) — 자료에 그대로 적힌 금액은 금액 대조에서 뺀다 */
+function materialTexts(projectId: string, box: MaterialBox = "materials"): string[] {
+  const dir = join(materialsDir(projectId, box), "text");
+  if (!existsSync(dir)) return [];
+  return readdirSync(dir).filter((n) => n.endsWith(".md")).map((n) => readFileSync(join(dir, n), "utf8"));
+}
+
 export async function exportStage(projectId: string, stage: Stage): Promise<ExportReportDTO | null> {
   const doc = readStageDoc(projectId, stage);
   if (!doc) return null;
-  const { report } = await exportStageDoc(stageDir(projectId, stage), doc);
+  // 사진 대지(```photos)의 그림은 프로젝트 작업 폴더에서 읽는다
+  const { report } = await exportStageDoc(stageDir(projectId, stage), doc, { assets: (src) => resolveAsset(projectId, src) }, [...ledgerAmountWarnings(projectId, stage, doc), ...priorCopyStageWarnings(projectId, stage, doc)]);
   await ensureRendered(stageDir(projectId, stage));
   return report;
 }

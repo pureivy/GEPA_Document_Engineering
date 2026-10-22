@@ -124,6 +124,12 @@ export function blockFromPm(n: PmNode, id: string): Block | null {
       put(out, "align", a.align);
       return out;
     }
+    case N.photos: {
+      const items = Array.isArray(a.items) ? (a.items as { src?: unknown; caption?: unknown }[]) : [];
+      const out: Extract<Block, { k: "photos" }> = { id, k: "photos", items: items.filter((it) => typeof it?.src === "string" && it.src).map((it) => ({ src: String(it.src), caption: String(it.caption ?? "") })) };
+      put(out, "cols", a.cols);
+      return out;
+    }
     case N.table: {
       const out: Extract<Block, { k: "table" }> = {
         id,
