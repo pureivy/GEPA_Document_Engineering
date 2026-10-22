@@ -67,6 +67,65 @@ function killHangul(out: string): void {
   }
 }
 
+/**
+ * tasklist /V /FO CSV 출력에서 Hwp.exe 의 pid 와 창 제목. 창이 없는 한글(자동화로 띄운 것)은 제목이 "N/A" 다.
+ */
+export function parseHwpTasklist(csv: string): { pid: number; title: string }[] {
+  const out: { pid: number; title: string }[] = [];
+  for (const line of csv.split(/\r?\n/)) {
+    const cols = [...line.matchAll(/"((?:[^"]|"")*)"/g)].map((m) => m[1].replace(/""/g, '"'));
+    if (cols.length < 2 || !/^hwp\.exe$/i.test(cols[0])) continue;
+    const pid = Number(cols[1]);
+    if (pid > 0) out.push({ pid, title: cols[cols.length - 1] ?? "" });
+  }
+  return out;
+}
+
+function hwpProcesses(): { pid: number; title: string }[] {
+  try {
+    return parseHwpTasklist(execFileSync("tasklist", ["/V", "/FO", "CSV", "/NH", "/FI", "IMAGENAME eq Hwp.exe"], { encoding: "utf8", windowsHide: true, timeout: 15_000 }));
+  } catch {
+    return [];
+  }
+}
+
+/**
+ * 스크립트가 한글을 띄우다(New-Object) 멈추면 pid.txt 를 쓰기 전에 시간 초과로 끊겨 killHangul 이 끌 것을 모른다 —
+ * 숨은 hwp.exe 가 12개 쌓이고 사용자의 한글 문서가 열리지 않았다(2026-10-22). 실행 전 목록에 없던 한글 가운데
+ * 창이 없는 것(자동화)을 끈다. 그사이 사람이 연 한글은 창 제목이 있어 건드리지 않는다.
+ */
+function killNewWindowlessHangul(before: Set<number>): void {
+  for (const p of hwpProcesses()) {
+    if (before.has(p.pid) || (p.title && p.title !== "N/A")) continue;
+    try {
+      process.kill(p.pid);
+    } catch {
+      /* 이미 끝남 */
+    }
+  }
+}
+
+/**
+ * 한글이 연달아 실패하면(시간 초과·열기 실패) 한동안 한글 없이 rhwp 로 간다 — 실패할 때마다 90초를 기다려
+ * 내보내기 한 번이 5~6분 걸렸다(2026-10-22). 성공하면 바로 풀린다.
+ */
+const FAIL_LIMIT = 2;
+const COOL_DOWN_MS = 15 * 60_000;
+let failStreak = 0;
+let pausedUntil = 0;
+function noteHangulResult(ok: boolean): void {
+  if (ok) {
+    failStreak = 0;
+    return;
+  }
+  failStreak++;
+  if (failStreak >= FAIL_LIMIT) {
+    pausedUntil = Date.now() + COOL_DOWN_MS;
+    failStreak = 0;
+    console.warn(`[hangul] 한글 자동화가 ${FAIL_LIMIT}번 연달아 실패 — ${COOL_DOWN_MS / 60_000}분 동안 한글 없이(rhwp) 내보낸다`);
+  }
+}
+
 let available: boolean | undefined;
 /** 한글 자동화 개체가 등록돼 있는지(HKCR\HWPFrame.HwpObject) — 한 번만 본다. GEPA_NO_HANGUL=1 이면 끈다 */
 export function hangulAvailable(): boolean {
@@ -93,7 +152,10 @@ function serial<T>(fn: () => Promise<T>): Promise<T> {
 export function hangulLayout(bytes: Uint8Array, opts: { images?: boolean; dpi?: number; timeoutMs?: number } = {}): Promise<HangulLayout | undefined> {
   if (!hangulAvailable()) return Promise.resolve(undefined);
   return serial(async () => {
+    if (Date.now() < pausedUntil) return undefined;
     const dir = mkdtempSync(join(tmpdir(), "gepa-hwp-"));
+    const before = new Set(hwpProcesses().map((p) => p.pid));
+    let ok = false;
     try {
       const src = join(dir, "doc.hwpx");
       const out = join(dir, "out");
@@ -119,11 +181,14 @@ export function hangulLayout(bytes: Uint8Array, opts: { images?: boolean; dpi?: 
         texts.push(readFileSync(join(out, `text-${i}.txt`), "utf8").replace(/^﻿/, ""));
         if (opts.images) pngs.push(new Uint8Array(readFileSync(join(out, `page-${i}.png`))));
       }
+      ok = true;
       return { pngs, texts };
     } catch {
       return undefined;
     } finally {
       killHangul(join(dir, "out"));
+      killNewWindowlessHangul(before);
+      noteHangulResult(ok);
       removeSync(dir);
     }
   });
