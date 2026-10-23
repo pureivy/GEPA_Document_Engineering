@@ -7,7 +7,7 @@
 import Link from "next/link";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { PREF_AUTO_CHAIN, PREF_PLAN_RESEARCH, useBoolPref, writePref } from "@/lib/client/prefs";
-import { Group, Panel, Separator } from "react-resizable-panels";
+import { Group, Panel, Separator, useDefaultLayout } from "react-resizable-panels";
 import { ChevronLeft, Settings2 } from "lucide-react";
 import { NOTES_STAGE_FILE, STAGE_FAMILY, STAGE_LABEL, isNotesStage, type ProjectDTO, type RunDTO, type RunStatus, type Stage } from "@/lib/contracts";
 import { KIND_STAGES, type ProjectKind } from "@/lib/kinds";
@@ -36,6 +36,14 @@ export interface StageRunnerProps {
   /** the stage's configured model (STAGE_MODELS / GEPA_MODEL env), preselected in the run controls */
   defaultModel: string;
 }
+
+// 자료함|원장 위아래 비율을 브라우저에 기억한다 — 서버 렌더 중에는 localStorage가 없으니 비워 둔다
+const LAYOUT_STORAGE = {
+  getItem: (key: string) => (typeof window === "undefined" ? null : window.localStorage.getItem(key)),
+  setItem: (key: string, value: string) => {
+    if (typeof window !== "undefined") window.localStorage.setItem(key, value);
+  },
+};
 
 const ZOOM_MIN = 50;
 const ZOOM_MAX = 150;
@@ -97,6 +105,7 @@ export function StageRunner({ projectId, stage, kind, defaultModel }: StageRunne
   const [refreshKey, setRefreshKey] = useState(0);
   const [historyKey, setHistoryKey] = useState(0);
   const [zoom, setZoom] = useState(100);
+  const materialsLayout = useDefaultLayout({ id: `materials-split-${stage}`, storage: LAYOUT_STORAGE, onlySaveAfterUserInteractions: true });
   const [typingBacklog, setTypingBacklog] = useState(0);
   const [rewriting, setRewriting] = useState(false);
   // "폭 맞춤": size the A4 page (210mm ≈ 794px) to the editor pane on first layout and on resize
@@ -484,15 +493,27 @@ export function StageRunner({ projectId, stage, kind, defaultModel }: StageRunne
         <Separator className="w-1 shrink-0 bg-slate-200 transition-colors hover:bg-sky-400 data-[separator=active]:bg-sky-500" />
         <Panel id="editor" minSize="30%" className="min-h-0">
           {isResearch ? (
-            <div className="flex h-full min-h-0 flex-col">
-              {/* 정산자료 단계는 자료함을 함께 보여 준다 — 원장은 올린 자료에서만 나온다 */}
-              {stage === "ledger" ? <MaterialsPanel projectId={projectId} disabled={running} /> : null}
-              {/* 전년도 참고자료는 원장이 아니라 성과 분석이 읽는다 — 두 단계 모두에서 올리고 뺄 수 있게 */}
-              {stage === "ledger" || stage === "analysis" ? <MaterialsPanel projectId={projectId} disabled={running} box="prior" /> : null}
-              <div className="min-h-0 flex-1">
+            <Group orientation="vertical" className="h-full min-h-0" defaultLayout={materialsLayout.defaultLayout} onLayoutChanged={materialsLayout.onLayoutChanged}>
+              {stage === "ledger" || stage === "analysis" ? (
+                <>
+                  <Panel id="materials" defaultSize="35%" minSize={56} maxSize="80%" className="min-h-0">
+                    <div className="flex h-full min-h-0 flex-col overflow-y-auto">
+                      {/* 정산자료 단계는 자료함을 함께 보여 준다 — 원장은 올린 자료에서만 나온다 */}
+                      {stage === "ledger" ? <MaterialsPanel projectId={projectId} disabled={running} fill /> : null}
+                      {/* 전년도 참고자료는 원장이 아니라 성과 분석이 읽는다 — 두 단계 모두에서 올리고 뺄 수 있게 */}
+                      <MaterialsPanel projectId={projectId} disabled={running} box="prior" fill={stage === "analysis"} />
+                    </div>
+                  </Panel>
+                  {/* 끌어서 자료함과 원장 비율을 바꾼다 · 두 번 누르면 처음 비율로 */}
+                  <Separator className="group flex h-2 shrink-0 items-center justify-center border-y border-slate-200 bg-slate-100 transition-colors hover:bg-sky-100 data-[separator=active]:bg-sky-200" title="끌어서 높이 조절 · 두 번 누르면 처음 크기">
+                    <span className="h-1 w-10 rounded-full bg-slate-300 group-hover:bg-sky-500" />
+                  </Separator>
+                </>
+              ) : null}
+              <Panel id="notes" minSize={120} className="min-h-0">
                 <ResearchPane liveText={liveText} markdown={markdown} running={running} loading={mdLoading && !docLoaded} error={null} fileLabel={NOTES_STAGE_FILE[stage]} emptyText={stage === "ledger" ? "아직 정산 원장이 없습니다. 자료(엑셀)를 올리고 ‘실행’을 누르세요." : stage === "analysis" ? "아직 성과 분석 메모가 없습니다. ‘실행’을 누르면 올린 자료와 홈페이지(gepa.kr) 보도자료·행사사진을 읽고 정리합니다." : undefined} />
-              </div>
-            </div>
+              </Panel>
+            </Group>
           ) : (
             <div className="flex h-full min-h-0 flex-col bg-slate-200/70">
               <div className="flex items-center gap-2 border-b border-slate-200 bg-white px-3 py-1.5">
