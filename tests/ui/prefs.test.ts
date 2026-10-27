@@ -7,7 +7,7 @@
  * 흉내 내는 저장소를 직접 끼운다.
  */
 import { afterEach, describe, expect, it } from "vitest";
-import { EMPTY_CONTACT, PREF_CONTACT, readContactPref, readJsonPref, saveContactPref, subscribePref, writeJsonPref } from "../../lib/client/prefs";
+import { contactDefaults, EMPTY_CONTACT, PREF_CONTACT, readContactPref, readJsonPref, saveContactPref, subscribePref, writeJsonPref } from "../../lib/client/prefs";
 
 type Store = { getItem(k: string): string | null; setItem(k: string, v: string): void };
 
@@ -109,6 +109,28 @@ describe("연락처 pref 왕복", () => {
   it("window 자체가 없어도(서버 렌더) 기본값을 돌려준다", () => {
     useStore(null);
     expect(readContactPref()).toEqual(EMPTY_CONTACT);
+  });
+});
+
+/**
+ * user 2026-10-27: 프로그램은 직원 PC마다 설치된다. 처음 쓰는 사람은 빈 칸에서 시작하고, 한 번
+ * 프로젝트를 만들면 그다음부터는 그 PC의 마지막 프로젝트 연락처가 채워져야 한다 — 브라우저나
+ * 접속 주소가 바뀌어도(localStorage 는 주소마다 따로다).
+ */
+describe("contactDefaults — 새 프로젝트 폼의 연락처 기본값", () => {
+  it("이 PC의 마지막 프로젝트 연락처가 브라우저에 담긴 값보다 먼저다", () => {
+    const latest = { 부서명: "전략기획팀", 담당자: "권하경 과장", 전화: "054-470-8527", 이메일: "nancy.kwon@gepa.kr", 우편번호: "39393", 홈페이지: "https://gepa.kr" };
+    expect(contactDefaults(latest, CONTACT)).toEqual({ ...latest, 전송: "", 우편주소: "" });
+  });
+
+  it("공문 전용 값(수신·전결 등)은 옮기지 않는다", () => {
+    const latest = { ...CONTACT, 수신: "경상북도지사", 전결: "팀장" } as Parameters<typeof contactDefaults>[0];
+    expect(contactDefaults(latest, EMPTY_CONTACT)).toEqual({ ...CONTACT, 홈페이지: "" });
+  });
+
+  it("프로젝트가 없으면 브라우저에 담긴 값, 그것도 없으면 빈 칸이다", () => {
+    expect(contactDefaults(undefined, CONTACT)).toEqual({ ...CONTACT, 홈페이지: "" });
+    expect(contactDefaults(undefined, EMPTY_CONTACT)).toEqual({ ...EMPTY_CONTACT, 홈페이지: "" });
   });
 });
 

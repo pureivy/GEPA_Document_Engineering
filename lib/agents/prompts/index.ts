@@ -225,7 +225,7 @@ ${sourcesGuide(input)}${DOC_CONTRACT("plan", "plan")}${resume}`,
       return {
         systemPromptAppend: `${COMMON()}\n역할: 모집 공고문 작성자. .claude/skills/gepa-notice-design/SKILL.md 의 front-matter 필드·섹션 순서·고정문구 매크로를 그대로 따른다.`,
         prompt: `${brief}\n작업 폴더: ${workspaceDir}\n\n${workspaceDir}/plan/draft.dsl.md (사업계획서)를 읽고 그 사업의 참여기업 모집 공고문을 작성하라.
-- front-matter의 접수 정보는 담당 연락처를 쓴다: 이메일 ${project.contact.이메일}, 전화 ${project.contact.전화}, 부서명 ${project.contact.부서명}, 우편주소 ${project.contact.우편주소 ?? "경상북도 안동시 북순환로 387, 2층 경상북도경제진흥원"}.
+- front-matter의 접수 정보는 담당 연락처를 쓴다: 이메일 ${project.contact.이메일}, 전화 ${project.contact.전화}, 부서명 ${project.contact.부서명}, 우편주소 ${project.contact.우편주소 || "(등록된 주소 없음 — 빈 문자열로 두고 주소를 지어내지 않는다)"}.
 - 공고번호는 "2026MM0001" 꼴(연도+공고월+일련번호, 예: 2026070001)로 쓰고, 공고연월은 사업계획서의 공고 시기.
 - 본문 섹션: 사업목적 / 사업기간 / 신청자격(참여제한대상 매크로) / 신청방법(제출서류 표) / 선정절차 / 지원내용(지원내용 표, 지원한도, 지급방법 매크로) / 기타 유의사항(매크로) / <pagebreak> [별첨1]정량평가 기준 표.
 - 사업계획서의 지원대상·지원내용·금액·일정·모집규모와 반드시 일치시킨다.

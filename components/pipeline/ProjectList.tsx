@@ -13,7 +13,7 @@ import { Dialog } from "@/components/ui/dialog";
 import { Field, Input, Select, Textarea } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
 import { KIND_LABEL, PROJECT_KINDS, type ProjectKind } from "@/lib/kinds";
-import { PREF_PLAN_RESEARCH, saveContactPref, useBoolPref, useContactPref, writePref } from "@/lib/client/prefs";
+import { contactDefaults, PREF_PLAN_RESEARCH, saveContactPref, useBoolPref, useContactPref, writePref } from "@/lib/client/prefs";
 
 /** 종류별 한 줄 설명 — 라디오 옆에 그대로 보인다 */
 const KIND_HINT: Record<ProjectKind, string> = {
@@ -65,11 +65,12 @@ const EMPTY: NewProjectInput = {
 };
 
 /** mounted only while open, so every opening starts from a blank form (연락처만 지난번 값에서 이어 쓴다) */
-function NewProjectDialog({ onClose, onCreated }: { onClose: () => void; onCreated: (p: ProjectDTO) => void }) {
-  // 연락처는 이 브라우저에 담아 둔 지난번 값으로 시작한다 — 프로젝트마다 다시 치지 않게 한다
-  // (user 2026-09-22). 폼이 열릴 때 한 번만 읽는다: 그 뒤의 편집은 이 프로젝트만의 것이다.
+function NewProjectDialog({ latest, onClose, onCreated }: { latest: ProjectDTO | undefined; onClose: () => void; onCreated: (p: ProjectDTO) => void }) {
+  // 연락처는 이 PC에서 가장 최근에 만든 프로젝트의 값으로 시작한다(없으면 이 브라우저에 담아 둔 값,
+  // 그것도 없으면 빈 칸) — 프로젝트마다 다시 치지 않게 한다(user 2026-09-22, 2026-10-27).
+  // 폼이 열릴 때 한 번만 읽는다: 그 뒤의 편집은 이 프로젝트만의 것이다.
   const saved = useContactPref();
-  const [form, setForm] = useState<NewProjectInput>(() => ({ ...EMPTY, contact: { ...EMPTY.contact, ...saved } }));
+  const [form, setForm] = useState<NewProjectInput>(() => ({ ...EMPTY, contact: { ...EMPTY.contact, ...contactDefaults(latest?.contact, saved) } }));
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
   // 기존 사업계획서 업로드 (선택): 파일 + 바뀌는 내용 → 업로드 후 전체 자동 실행
@@ -445,29 +446,29 @@ function NewProjectDialog({ onClose, onCreated }: { onClose: () => void; onCreat
           {isOfficial ? <p className="mb-2 text-[11px] text-slate-500">부서명은 공문의 처리과가 되고(결재라인·발신명의가 여기서 정해집니다), 전화·전송(팩스)·이메일·우편번호·우편주소·홈페이지는 결문 연락처에 그대로 찍힙니다. 비우면 그 칸도 빕니다.</p> : null}
           <div className="grid grid-cols-2 gap-3">
             <Field label="부서명" id="organization" required>
-              <Input id="organization" name="organization" placeholder="북부지소" value={form.contact.부서명} onChange={(e) => setContact("부서명", e.target.value)} autoComplete="organization" />
+              <Input id="organization" name="organization" value={form.contact.부서명} onChange={(e) => setContact("부서명", e.target.value)} autoComplete="organization" />
             </Field>
             <Field label="담당자" id="name">
-              <Input id="name" name="name" placeholder="홍길동 팀장" value={form.contact.담당자 ?? ""} onChange={(e) => setContact("담당자", e.target.value)} autoComplete="name" />
+              <Input id="name" name="name" value={form.contact.담당자 ?? ""} onChange={(e) => setContact("담당자", e.target.value)} autoComplete="name" />
             </Field>
             <Field label="전화" id="tel" required>
-              <Input id="tel" name="tel" type="tel" placeholder="054-900-3801" value={form.contact.전화} onChange={(e) => setContact("전화", e.target.value)} autoComplete="tel" />
+              <Input id="tel" name="tel" type="tel" value={form.contact.전화} onChange={(e) => setContact("전화", e.target.value)} autoComplete="tel" />
             </Field>
             <Field label={isOfficial ? "전송(팩스)" : "전송"} id="fax">
-              <Input id="fax" name="fax" type="tel" placeholder="054-472-2989" value={form.contact.전송 ?? ""} onChange={(e) => setContact("전송", e.target.value)} autoComplete="fax" />
+              <Input id="fax" name="fax" type="tel" value={form.contact.전송 ?? ""} onChange={(e) => setContact("전송", e.target.value)} autoComplete="fax" />
             </Field>
             <Field label="이메일" id="email" required>
-              <Input id="email" name="email" type="email" placeholder="gepa_north@naver.com" value={form.contact.이메일} onChange={(e) => setContact("이메일", e.target.value)} autoComplete="email" />
+              <Input id="email" name="email" type="email" value={form.contact.이메일} onChange={(e) => setContact("이메일", e.target.value)} autoComplete="email" />
             </Field>
             <Field label="우편번호" id="postal-code">
-              <Input id="postal-code" name="postal-code" placeholder="39393" value={form.contact.우편번호 ?? ""} onChange={(e) => setContact("우편번호", e.target.value)} autoComplete="postal-code" />
+              <Input id="postal-code" name="postal-code" value={form.contact.우편번호 ?? ""} onChange={(e) => setContact("우편번호", e.target.value)} autoComplete="postal-code" />
             </Field>
             <Field label="주소" id="street-address" className="col-span-2">
-              <Input id="street-address" name="street-address" placeholder="경상북도 안동시 북순환로 387, 2층 경상북도경제진흥원" value={form.contact.우편주소 ?? ""} onChange={(e) => setContact("우편주소", e.target.value)} autoComplete="street-address" />
+              <Input id="street-address" name="street-address" value={form.contact.우편주소 ?? ""} onChange={(e) => setContact("우편주소", e.target.value)} autoComplete="street-address" />
             </Field>
             {isOfficial ? (
               <Field label="홈페이지" id="url" className="col-span-2" hint="비우면 결문의 그 칸도 빕니다 — 참고 공문도 비워 둡니다">
-                <Input id="url" name="url" type="url" placeholder="https://gepa.kr" value={form.contact.홈페이지 ?? ""} onChange={(e) => setContact("홈페이지", e.target.value)} autoComplete="url" />
+                <Input id="url" name="url" type="url" value={form.contact.홈페이지 ?? ""} onChange={(e) => setContact("홈페이지", e.target.value)} autoComplete="url" />
               </Field>
             ) : null}
           </div>
@@ -766,6 +767,7 @@ export function ProjectList() {
 
       {open ? (
         <NewProjectDialog
+          latest={projects?.[0]}
           onClose={() => setOpen(false)}
           onCreated={(p) => {
             setOpen(false);
