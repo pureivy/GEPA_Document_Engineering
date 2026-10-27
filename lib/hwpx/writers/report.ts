@@ -301,10 +301,67 @@ function coverTitlePara(ctx: WriterContext, inlines: Inline[]): XmlNode {
   box.attrs.instid = shapeId;
   box.attrs.zOrder = String(ctx.ids.nextZOrder());
   for (const rect of findAll(box, "hp:rect")) rect.attrs.instid = String(ctx.ids.nextShapeId());
-  if (!setShapeText(box, inlineText(inlines))) ctx.warnings.push({ message: "report cover shape has no drawText; 표지 제목 글자를 넣지 못했습니다" });
+  const text = inlineText(inlines);
+  if (!setShapeText(box, text)) ctx.warnings.push({ message: "report cover shape has no drawText; 표지 제목 글자를 넣지 못했습니다" });
+  else fitCoverTitle(ctx, box, text);
   const anchor = roleSpec(ctx, "coverBox");
   const h = Number(child(box, "hp:sz")?.attrs.height ?? 0) || COVER_BOX_HEIGHT;
   return ctx.para({ paraPr: anchor.paraPr, runs: [{ charPr: anchor.charPr, nodes: [box] }], vertsize: h, lineSpacing: 100 });
+}
+
+/**
+ * 표지 제목 상자의 글 폭(pt). 글 상자 46560 − 안 여백 284×2 ≈ 460pt 에서 HY견고딕의 넓은 자폭
+ * 여유를 뺐다(결과보고서 표지 `boxPt` 와 같은 셈법).
+ */
+const COVER_TITLE_WIDTH_PT = 430;
+/**
+ * 두 줄로 나눈 제목의 최대 글자 크기. 상자 높이(글 상자 6728)는 참고본의 한 줄짜리 제목에 맞춰져
+ * 있어 45pt 두 줄은 아랫줄이 잘린다 — 담당자가 한글에서 25pt 로 줄여 두 줄이 다 보이는 것을
+ * 확인했다(user 2026-10-27, 「포도 수출 1억 달러 시대 연다...GRAPE 전방위 지원」).
+ */
+const COVER_TITLE_TWO_LINE_PT = 25;
+const COVER_TITLE_MIN_PT = 14;
+
+/**
+ * 긴 표지 제목을 상자 안에 들인다. 한 줄에 들어가면 참고본 크기 그대로 두고, 아니면 띄어쓰기
+ * 자리에서 두 줄로 나눠(두 줄 중 긴 쪽이 가장 짧아지는 자리) 긴 줄이 상자 폭에 들도록 글자를
+ * 줄인다 — 위로는 {@link COVER_TITLE_TWO_LINE_PT}. 줄은 한글의 자동 줄바꿈에 맡기지 않고
+ * `hp:lineBreak` 로 직접 나눈다: 나뉘는 자리가 정해져야 폭 계산이 맞는다.
+ */
+function fitCoverTitle(ctx: WriterContext, box: XmlNode, text: string): void {
+  const run = findAll(box, "hp:run").find((r) => findAll(r, "hp:t").length > 0);
+  if (!run) return;
+  const info = ctx.reg.charPrInfo(Number(run.attrs.charPrIDRef));
+  const basePt = info?.pt ?? 45;
+  const w = (s: string) => ctx.textWidth(s, 1) / 100; // 1pt 일 때의 폭(pt)
+  if (w(text) * basePt <= COVER_TITLE_WIDTH_PT) return;
+
+  const lines = splitReportCoverTitle(text, w);
+  const widest = Math.max(...lines.map(w));
+  const pt = Math.max(COVER_TITLE_MIN_PT, Math.min(COVER_TITLE_TWO_LINE_PT, basePt, Math.floor((COVER_TITLE_WIDTH_PT / Math.max(widest, 1)) * 2) / 2));
+  if (info) run.attrs.charPrIDRef = String(ctx.reg.charPr({ font: info.hangul, pt, bold: info.bold, color: info.color, ratio: info.ratio, spacing: info.spacing }));
+  const kids: (XmlNode | string)[] = [];
+  lines.forEach((l, i) => {
+    if (i) kids.push(el("hp:lineBreak"));
+    kids.push(l);
+  });
+  run.children = [el("hp:t", {}, kids)];
+}
+
+/** 띄어쓰기 자리 가운데 두 줄의 긴 쪽 폭이 가장 짧아지는 곳에서 나눈다. 띄어쓰기가 없으면 한 줄 그대로. */
+export function splitReportCoverTitle(text: string, width: (s: string) => number): string[] {
+  const t = text.trim();
+  let best: string[] = [t];
+  let bestW = Infinity;
+  for (let i = t.indexOf(" "); i > 0; i = t.indexOf(" ", i + 1)) {
+    const pair = [t.slice(0, i).trim(), t.slice(i + 1).trim()];
+    const m = Math.max(...pair.map(width));
+    if (pair.every(Boolean) && m < bestW) {
+      best = pair;
+      bestW = m;
+    }
+  }
+  return best;
 }
 
 /**

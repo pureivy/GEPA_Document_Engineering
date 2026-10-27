@@ -276,6 +276,39 @@ describe("buildHwpx — report 표지 제목 상자", () => {
 
 });
 
+describe("buildHwpx — report 긴 표지 제목", () => {
+  const charPt = (header: string, id: string) => Number(new RegExp(`<hh:charPr id="${id}" height="(\\d+)"`).exec(header)?.[1]) / 100;
+  const coverRun = (sectionXml: string) => {
+    const sec = parseXml(sectionXml);
+    const cover = findAll(sec, "hp:container").find((c) => findAll(c, "hp:drawText").length > 0)!;
+    return findAll(cover, "hp:run").find((r) => findAll(r, "hp:t").length > 0)!;
+  };
+
+  /**
+   * user 2026-10-27: 「포도 수출 1억 달러 시대 연다...GRAPE 전방위 지원」이 45pt 그대로 두 줄로
+   * 넘쳐 아랫줄이 상자 밖으로 잘렸다. 담당자가 한글에서 25pt 로 줄이자 두 줄이 다 보였다.
+   */
+  it("한 줄에 안 들어가는 제목은 띄어쓰기에서 두 줄로 나누고 25pt 이하로 줄인다", () => {
+    const title = "포도 수출 1억 달러 시대 연다...GRAPE 전방위 지원";
+    const { sectionXml, headerXml } = buildHwpx(parseDsl(DSL.replace("2026년 주요업무보고", title)).doc, { now: NOW });
+    const run = coverRun(sectionXml);
+    const t = findAll(run, "hp:t")[0];
+    expect(findAll(t, "hp:lineBreak").length).toBe(1);
+    const lines = t.children.filter((c): c is string => typeof c === "string");
+    expect(lines.join(" ")).toBe(title);
+    const pt = charPt(headerXml, run.attrs.charPrIDRef);
+    expect(pt).toBeGreaterThanOrEqual(14);
+    expect(pt).toBeLessThanOrEqual(25);
+  });
+
+  it("한 줄에 들어가는 제목은 참고본 글자 모양(charPr 47) 그대로 둔다", () => {
+    const { sectionXml } = buildHwpx(parseDsl(DSL).doc, { now: NOW });
+    const run = coverRun(sectionXml);
+    expect(run.attrs.charPrIDRef).toBe("47");
+    expect(findAll(run, "hp:lineBreak").length).toBe(0);
+  });
+});
+
 describe("buildHwpx — report 요약박스", () => {
   // 요약문 상자는 ```box 로 받는다(문법 규칙은 dsl/grammar.md). 표본 DSL 의 맨 요약문 줄은
   // 상자 없이 `summary` 서식으로만 나가므로 여기서 따로 세운 문서로 시험한다.
