@@ -62,6 +62,7 @@ const FALLBACK: Record<string, { para: ParaSpec; char: CharSpec }> = {
   chapterBand: { para: { align: "CENTER", lineSpacing: 90, prev: 1000 }, char: { font: "HY견고딕", pt: 30, bold: true, ratio: 95 } },
   chipTitle: { para: { align: "JUSTIFY", lineSpacing: 130, hanging: 3632, prev: 500 }, char: { font: "heading", pt: 17 } },
   chipLabel: { para: { align: "CENTER", lineSpacing: 130, hanging: 3632, prev: 500 }, char: { font: "heading", pt: 15, color: "#FFFFFF" } },
+  tocHeading: { para: { align: "CENTER", lineSpacing: 160 }, char: { font: "heading", pt: 30 } },
   tocLine: { para: { align: "JUSTIFY", lineSpacing: 200, left: 2000, right: 2500, prev: 500 }, char: { font: "body", pt: 14, ratio: 95 } },
   summary: { para: { align: "JUSTIFY", lineSpacing: 160 }, char: { font: "table", pt: 15, spacing: -2, ratio: 95 } },
   subHeading: { para: { align: "JUSTIFY", lineSpacing: 160, hanging: 4040, next: 150 }, char: { font: "HY견고딕", pt: 15 } },
@@ -477,28 +478,42 @@ function tocBox(ctx: WriterContext, lines: ParaBlock[]): XmlNode[] {
   // 참고본 칸을 그대로 둔 상자는 2025년 목차를 실어 나른다(setCellParagraphs 주석).
   if (!paras.length) return [];
 
+  // 상자 위의 제목 — 제목 문단이 대기 중인 쪽 나눔을 먹어 목차 쪽의 첫 줄이 된다.
+  const head = tocHeading(ctx);
   const ref = loadGeometry(ctx.tpl.dir, "t02");
   if (!ref) {
     ctx.warnings.push({ message: "report template geometry t02 missing; 목차를 맨 문단으로 냈습니다" });
-    // 상자가 없으면 줄만이라도 낸다. `cellPara` 로 뜬 문단을 본문에 그대로 두면 쪽 나눔
-    // 플래그를 아무도 먹지 않으므로 첫 줄에서 손수 옮긴다.
-    if (paras.length && ctx.pendingPageBreak) paras[0].attrs.pageBreak = "1";
-    ctx.pendingPageBreak = false;
-    return paras;
+    return [...head, ...paras];
   }
   const frag = cloneFragment(ref, ctx.ids);
   if (!setCellParagraphs(frag, paras)) {
     ctx.warnings.push({ message: "report template geometry t02 칸을 찾지 못했습니다; 목차를 맨 문단으로 냈습니다" });
-    if (paras.length && ctx.pendingPageBreak) paras[0].attrs.pageBreak = "1";
-    ctx.pendingPageBreak = false;
-    return paras;
+    return [...head, ...paras];
   }
-  if (ctx.pendingPageBreak) frag.attrs.pageBreak = "1";
-  ctx.pendingPageBreak = false;
   // 목차 쪽에도 쪽번호를 찍지 않고(담당자 지시) 뒷면을 빈 쪽으로 둔다 — 참고본 쪽 3·4 가 그렇다.
   const hide = hidePageNumRun(ctx);
   frag.children.unshift(el("hp:run", { charPrIDRef: String(hide.charPr) }, hide.nodes));
-  return [frag, hiddenBackPage(ctx)];
+  return [...head, frag, hiddenBackPage(ctx)];
+}
+
+/**
+ * 목차 상자 위의 제목 줄 `목   차` 와 그 밑의 회색 밑줄표 — 참고본 보고순서 쪽의 짜임(p38
+ * `보 고 순 서`: paraPr 15·charPr 48 → p44 밑줄표 `t01` → p45 상자 `t02`)을 그대로 따르고
+ * 글만 `목차` 로 바꾼다. 담당자가 실제로 올린 2026년 업무보고가 목차 상자에 `목 차` 제목을 단다
+ * (user 2026-10-27: 제목 없이 상자만 나가 무엇의 쪽인지 알 수 없었다).
+ *
+ * 제목 문단이 대기 중인 쪽 나눔을 먹는다 — 밑줄표·상자는 복제 조각이라 플래그를 먹지 않으므로
+ * 제목이 그 쪽의 첫 줄이 되어야 셋이 한 쪽에 함께 선다. 밑줄표 조각이 없으면 제목만 낸다.
+ */
+const TOC_HEADING = "목   차";
+
+function tocHeading(ctx: WriterContext): XmlNode[] {
+  const s = roleSpec(ctx, "tocHeading");
+  const out = [ctx.para({ paraPr: s.paraPr, runs: [{ charPr: s.charPr, text: TOC_HEADING }], vertsize: Math.round(s.base.pt * 100), lineSpacing: s.lineSpacing })];
+  const rule = loadGeometry(ctx.tpl.dir, "t01");
+  if (rule) out.push(cloneFragment(rule, ctx.ids));
+  else ctx.warnings.push({ message: "report template geometry t01 missing; 목차 제목의 밑줄을 생략했습니다" });
+  return out;
 }
 
 /**

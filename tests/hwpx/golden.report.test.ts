@@ -42,12 +42,12 @@ describe("golden: 참고본 주요업무보고 앞부분을 DSL 로 다시 만�
   const { bytes, report } = buildHwpx(doc, { now: new Date("2026-06-10T00:00:00Z") });
 
   /**
-   * 표 12 개 = 표지 로고(t00) 1 · 보고순서 상자(t02) 1 · 간지(t03) 2 · 조직도(t09, 바깥 표와
-   * 속 표) 2 · 절 번호 칩 4 · 요약박스 2. 조직도가 그림이 아니라 표라는 것(실측)이 여기 숫자로 남는다.
+   * 표 13 개 = 표지 로고(t00) 1 · 목차 제목 밑줄표(t01) 1 · 보고순서 상자(t02) 1 · 간지(t03) 2 ·
+   * 조직도(t09, 바깥 표와 속 표) 2 · 절 번호 칩 4 · 요약박스 2. 조직도가 그림이 아니라 표라는 것(실측)이 여기 숫자로 남는다.
    */
-  it("빌드 경고 없이 표 12 개를 만든다", () => {
+  it("빌드 경고 없이 표 13 개를 만든다", () => {
     expect(report.warnings).toEqual([]);
-    expect(report.tables).toBe(12);
+    expect(report.tables).toBe(13);
   });
 
   it("@rhwp/core 검증을 contentLoss 0, 오류 없음으로 통과한다", async () => {
@@ -76,10 +76,10 @@ describe("golden: 참고본 주요업무보고 앞부분을 DSL 로 다시 만�
   it("표지에는 제목 말고 글자가 없다 — 보고일·부서를 찍지 않는다", async () => {
     const text = await extractText(bytes);
     참고본에있다("주 요 업 무 보 고");
-    // 보고순서 첫 줄 앞은 표지와 그 뒷면 빈 쪽뿐이다 — 거기 글자는 제목 하나여야 한다.
-    // (front-matter 의 부서·보고일은 문서의 기록으로만 남고 표지에 찍히지 않는다.)
+    // 보고순서 첫 줄 앞은 표지와 그 뒷면 빈 쪽, 그리고 목차 쪽의 제목뿐이다 — 표지의 글자는
+    // 제목 하나여야 한다. (front-matter 의 부서·보고일은 문서의 기록으로만 남고 표지에 찍히지 않는다.)
     const 표지 = text.slice(0, text.indexOf("Ⅰ. 일반현황"));
-    expect(norm(표지)).toBe(norm("주 요 업 무 보 고"));
+    expect(norm(표지)).toBe(norm("주 요 업 무 보 고") + norm("목   차"));
   }, 60_000);
 
   /**
