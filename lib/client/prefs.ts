@@ -153,3 +153,23 @@ export function saveContactPref(c: Partial<ContactPref>): void {
   for (const k of CONTACT_KEYS) next[k] = c[k] ?? "";
   writeJsonPref(PREF_CONTACT, next);
 }
+
+/** 새 프로젝트 폼이 미리 채우는 연락처 — 공용 일곱 칸에 공문 결문의 홈페이지를 더한다 */
+export type ContactDefaults = ContactPref & { 홈페이지: string };
+
+/**
+ * 새 프로젝트 폼의 연락처 기본값. **이 PC에서 가장 최근에 만든 프로젝트의 연락처가 먼저다** —
+ * 프로그램은 직원 PC마다 따로 설치되므로(12월 전 직원 배포) DB 의 마지막 프로젝트가 곧 "그 PC
+ * 사용자의 지난번 입력"이고, 접속 주소(localhost·Tailscale)나 브라우저가 바뀌어도, 캐시를 지워도
+ * 남는다(user 2026-10-27). 프로젝트가 하나도 없으면 이 브라우저에 담아 둔 값, 그것도 없으면
+ * 빈 칸이다 — 처음 쓰는 사람에게 남의 연락처를 예시로 보여 주지 않는다.
+ *
+ * `latest` 는 GET /api/projects 의 첫 항목(createdAt 내림차순)이다. 공문 전용 값(수신·전결 등)은
+ * 프로젝트마다 다르므로 옮기지 않는다.
+ */
+export function contactDefaults(latest: Partial<Record<keyof ContactDefaults, string>> | undefined, saved: ContactPref): ContactDefaults {
+  if (!latest) return { ...saved, 홈페이지: "" };
+  const out: ContactDefaults = { ...EMPTY_CONTACT, 홈페이지: "" };
+  for (const k of [...CONTACT_KEYS, "홈페이지"] as const) out[k] = latest[k] ?? "";
+  return out;
+}
