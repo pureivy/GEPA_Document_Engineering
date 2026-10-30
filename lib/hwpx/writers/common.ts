@@ -557,7 +557,8 @@ export function emitTable(ctx: WriterContext, fs: FamilyStyle, b: TableBlock): X
   const minH = Math.round(d.fontPt * 100 * (d.lineSpacing / 100)) + margin.t + margin.b + 300;
   b.rows.forEach((row, ri) => rowSpecs.push({ height: Math.max(rowHeights[ri], row.heightPt ? row.heightPt * 100 : minH), cells: cellSpecs[ri] }));
 
-  const splittable = b.rows.length >= 15 && b.role !== "support";
+  // 긴 표는 늘 나누고, 짧은 표는 통째로 넘어가 앞 쪽을 크게 비웠을 때만 나눈다(buildLaidOut.splitTablePass 가 고른다)
+  const splittable = (b.rows.length >= 15 || ctx.splitTables.has(b.id)) && b.role !== "support";
   const frameBf = d.frame === "grid" ? ctx.reg.borderFill({ l: side(0.12), r: side(0.12), t: side(0.12), b: side(0.12) }) : ctx.reg.borderFill({ l: "none", r: "none", t: "none", b: "none" });
   const tblNode = table({
     id: ctx.ids.nextShapeId(),
@@ -577,6 +578,7 @@ export function emitTable(ctx: WriterContext, fs: FamilyStyle, b: TableBlock): X
     // 나뉘는 표는 행 단위로만 나눈다(TABLE) — CELL 은 칸 속 글까지 두 쪽으로 쪼갰다("향토뿌리기업 및 산업유산 / 체험 프로그램 운영")
     pageBreak: b.role === "support" || splittable ? "TABLE" : "CELL",
   });
+  ctx.tableBlocks.push({ blockId: b.id, tblId: String(tblNode.attrs.id) });
   if (b.caption) {
     const r = ctx.roleOr("unitCaption", { para: { align: "RIGHT", lineSpacing: 150 }, char: { font: fs.tableFont ?? "table", pt: 10 } });
     const cap = ctx.para({ paraPr: r.paraPr, runs: [{ charPr: r.charPr, text: b.caption }], vertsize: 1000, lineSpacing: 150 });

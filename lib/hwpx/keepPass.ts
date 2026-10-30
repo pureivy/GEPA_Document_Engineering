@@ -109,11 +109,15 @@ export async function buildLaidOut(doc: DocModel, opts0: BuildOptions = {}): Pro
       }
     }
   }
-  const filled = await fillTextPages(doc, { ...opts, fillSpacing: spacing }, built);
+  // ①' 통째로 다음 쪽에 간 표 때문에 앞 쪽이 크게 비면 그 표를 쪽 경계에서 나눈다(담당자 2026-10-27)
+  const split = await splitTablePass(doc, { ...opts, fillSpacing: spacing }, built);
+  built = split.built;
+  const opts2: BuildOptions = { ...opts, fillSpacing: spacing, splitTables: split.tables };
+  const filled = await fillTextPages(doc, opts2, built);
   built = filled.built;
   // 한글이 있으면 한글 배치로 마무리한다(쪽 맨 위 여백·넘침) — 한글은 다음 문단과 함께를 스스로 지키므로 rhwp 로 잰 쪽 나눔은 넣지 않는다
   if (hangulAvailable()) {
-    const hw = await hangulPass(doc, { ...opts, fillSpacing: spacing, spacingBoost: filled.boost }, built);
+    const hw = await hangulPass(doc, { ...opts2, spacingBoost: filled.boost }, built);
     if (hw) return hw;
   }
   const kept = await applyKeepWithNext(built.bytes);
@@ -215,6 +219,69 @@ async function hangulPass(doc: DocModel, opts: BuildOptions, built: BuildResult)
   return cur;
 }
 
+const SPLIT_MIN_ROOM = 6000; // 약 21 mm — 표가 통째로 넘어가 이보다 크게 비면 그 표를 쪽 경계에서 나눈다
+const SPLIT_GAIN = 1500; // 나눠서 이만큼(약 5 mm) 더 차지 않으면 되돌린다
+const SPLIT_MAX = 4; // 한 문서에서 나눌 표 수
+
+/** 쪽마다 아래에 남은 빈 높이의 합(마지막 쪽은 비어도 되니 뺀다) */
+function emptiness(lay: NonNullable<Awaited<ReturnType<typeof layoutOf>>>): { sum: number; pages: number } {
+  const pages = Math.max(...lay.pos.map((q) => q.page)) + 1;
+  let sum = 0;
+  for (let page = 0; page < pages - 1; page++) {
+    const ks = lay.pos.map((q, k) => (q.page === page ? k : -1)).filter((k) => k >= 0);
+    const last = ks[ks.length - 1];
+    if (last === undefined || !Number.isFinite(lay.pos[last].bottom)) continue;
+    sum += Math.max(0, lay.body.bottom - lay.pos[last].bottom);
+  }
+  return { sum, pages };
+}
+
+/** 앞 쪽을 크게 비우고 통째로 다음 쪽에 간 표의 블록 id — 아직 나누지 않은 것 하나 */
+function tableHole(lay: NonNullable<Awaited<ReturnType<typeof layoutOf>>>, built: BuildResult, done: Set<string>): string | undefined {
+  const fills = new Set(built.fillPageTables.map((f) => f.blockId));
+  const pages = Math.max(...lay.pos.map((q) => q.page)) + 1;
+  for (let page = 0; page < pages - 1; page++) {
+    const ks = lay.pos.map((q, k) => (q.page === page ? k : -1)).filter((k) => k >= 0);
+    const last = ks[ks.length - 1];
+    if (last === undefined) continue;
+    const q = lay.pos[last];
+    if (!Number.isFinite(q.bottom) || lay.body.bottom - q.bottom < SPLIT_MIN_ROOM) continue;
+    const next = last + 1;
+    if (next >= lay.top.length || !lay.pos[next].hasTable) continue;
+    const ids = new Set(findAll(lay.top[next], "hp:tbl").map((t) => String(t.attrs.id)));
+    const hit = built.tableBlocks.find((t) => ids.has(t.tblId) && !done.has(t.blockId) && !fills.has(t.blockId));
+    if (hit) return hit.blockId;
+  }
+  return undefined;
+}
+
+/**
+ * 쪽 경계에서 표 나누기 — 표는 통째로만 넘어가서 앞 쪽 아래가 70 mm 씩 비었다(GEPA 포럼 결과보고서 2·3쪽, 2026-10-27).
+ * 짧은 표는 글자처럼 취급해 나눌 수 없으므로(emitTable.splittable), 구멍을 만든 표만 골라 나뉘게 하고 다시 빌드한다.
+ * 줄 간격을 늘려 메우는 것보다 담당자가 한글에서 하는 방식에 가깝다. 더 비어지거나 쪽이 늘면 되돌린다.
+ */
+async function splitTablePass(doc: DocModel, opts: BuildOptions, built: BuildResult): Promise<{ built: BuildResult; tables: string[] }> {
+  const chosen = new Set(opts.splitTables ?? []);
+  const tried = new Set(chosen);
+  let cur = built;
+  let lay = await layoutOf(cur.bytes);
+  if (!lay) return { built: cur, tables: [...chosen] };
+  for (let round = 0; round < SPLIT_MAX; round++) {
+    const blockId = tableHole(lay, cur, tried);
+    if (!blockId) break;
+    tried.add(blockId);
+    const trial = buildHwpx(doc, { ...opts, splitTables: [...chosen, blockId] });
+    const next = await layoutOf(trial.bytes);
+    if (!next) break;
+    const before = emptiness(lay), after = emptiness(next);
+    if (after.pages > before.pages || after.sum > before.sum - SPLIT_GAIN) continue; // 더 나아지지 않으면 되돌린다
+    chosen.add(blockId);
+    cur = trial;
+    lay = next;
+  }
+  return { built: cur, tables: [...chosen] };
+}
+
 const TEXT_FILL_MIN_ROOM = 3000; // 이보다 덜 비면(약 2줄) 그대로 둔다
 const TEXT_FILL_MAX = 1.8; // 줄 간격 배율 상한
 const TEXT_PULL_MIN = 0.8; // 당길 때 줄 간격 배율 하한
@@ -235,7 +302,7 @@ interface ParaPos {
 }
 
 /** 최상위 문단마다 놓인 쪽·위·아래(홀로 남은 제목 넘김을 한 배치) */
-async function layoutOf(bytes: Uint8Array): Promise<{ kept: Fixed; pos: ParaPos[]; top: XmlNode[]; body: { top: number; bottom: number } } | undefined> {
+export async function layoutOf(bytes: Uint8Array): Promise<{ kept: Fixed; pos: ParaPos[]; top: XmlNode[]; body: { top: number; bottom: number } } | undefined> {
   const kept = await applyKeepWithNext(bytes);
   const root = parseXml(kept.sectionXml);
   const top = childrenNamed(root, "hp:p");

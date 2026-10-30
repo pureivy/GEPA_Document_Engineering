@@ -37,6 +37,8 @@ export interface BuildResult {
   headerXml: string;
   /** 쪽 아래 끝까지 채울 표 — buildLaidOut 이 쓴다 */
   fillPageTables: { blockId: string; tblId: string }[];
+  /** 문서에 놓인 모든 표(블록 id·hp:tbl id) — 어느 표가 쪽을 넘겼는지 찾는다 */
+  tableBlocks: { blockId: string; tblId: string }[];
 }
 
 /**
@@ -64,6 +66,8 @@ export interface BuildOptions {
   noPrev?: string[];
   /** 문단별 줄 맞춤(hp:p id → 내어쓰기·자간) — buildLaidOut 이 정한다 */
   lineFit?: Record<string, LineFit>;
+  /** 쪽 경계에서 나눠도 되는 표(블록 id) — buildLaidOut 이 정한다 */
+  splitTables?: string[];
 }
 
 function sec0(paras: XmlNode[]): XmlNode {
@@ -78,6 +82,7 @@ export function buildHwpx(doc: DocModel, opts: BuildOptions = {}): BuildResult {
   ctx.spacingBoost = opts.spacingBoost ?? {};
   ctx.noPrev = new Set(opts.noPrev ?? []);
   ctx.lineFit = opts.lineFit ?? {};
+  ctx.splitTables = new Set(opts.splitTables ?? []);
   let paras: XmlNode[] = writeForFamily(ctx, doc);
   if (paras.length === 0) paras = [ctx.para({ paraPr: 0, runs: [{ charPr: 0, text: "" }] })];
   // section properties live in the first run of the first paragraph
@@ -150,7 +155,7 @@ export function buildHwpx(doc: DocModel, opts: BuildOptions = {}): BuildResult {
     warnings: [...ctx.warnings, ...ctx.reg.warnings.map((w) => ({ message: w }))],
     title,
   };
-  return { bytes, report, sectionXml, headerXml, fillPageTables: ctx.fillPageTables };
+  return { bytes, report, sectionXml, headerXml, fillPageTables: ctx.fillPageTables, tableBlocks: ctx.tableBlocks };
 }
 
 function escapeXml(s: string): string {
