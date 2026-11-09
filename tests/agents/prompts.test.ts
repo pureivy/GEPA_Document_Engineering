@@ -255,8 +255,40 @@ describe("report 단계 프롬프트", () => {
   });
 
   it("근거 없는 수치를 막고 날짜를 지어내지 못하게 한다", () => {
-    expect(p.prompt).toContain("추진 중");
     expect(p.prompt).toContain("날짜나 받는 사람을 지어내지 않는다");
+    // 빠진 사실은 [확인필요] 로 드러낸다 — "추진 중"·"계약 시 확정"으로 메우면 담당자가 모른다(2026-11-09)
+    expect(p.prompt).toContain("[확인필요:");
+    expect(p.prompt).toMatch(/"추진 중"·"추후 확정"·"계약 시 확정" 같은 말로 빈칸을 메우지 않는다/);
+    expect(p.prompt).not.toContain('그 줄을 빼거나 "추진 중"으로 적는다');
+  });
+
+  /** 2026-11-09: 1.5쪽 내용의 계획 보고가 표지·목차·간지·빈 뒷면으로 12쪽이 됐다 */
+  it("보고형태가 없으면 쓰기 전에 간략·책자를 고르게 하고, 애매하면 간략이다", () => {
+    expect(p.prompt).toContain("간략인가, 책자인가");
+    expect(p.prompt).toContain("애매하면 **간략**");
+    expect(p.prompt).toContain("형태: 간략");
+    expect(p.prompt).toContain("형태: 간략, 1쪽");
+  });
+
+  it("새 프로젝트 화면에서 고른 보고형태를 싣고 그대로 따르게 한다", () => {
+    const 간략 = buildStagePrompt({ stage: "report", project: { ...업무보고, kind: "report", contact: { ...업무보고.contact, 보고형태: "간략" } }, workspaceDir: ws });
+    expect(간략.prompt).toMatch(/^보고형태: 간략$/m);
+    expect(간략.prompt).toContain("형태: 간략 보고로 정해져 있다");
+    expect(간략.prompt).not.toContain("간략인가, 책자인가");
+    const 책자 = buildStagePrompt({ stage: "report", project: { ...업무보고, kind: "report", contact: { ...업무보고.contact, 보고형태: "책자" } }, workspaceDir: ws });
+    expect(책자.prompt).toContain("형태: 책자형으로 정해져 있다");
+    const 자동 = buildStagePrompt({ stage: "report", project: { ...업무보고, kind: "report", contact: { ...업무보고.contact, 보고형태: "자동" } }, workspaceDir: ws });
+    expect(자동.prompt).toContain("간략인가, 책자인가");
+  });
+
+  it("보고형태 줄은 업무보고에만 실린다", () => {
+    const q = buildStagePrompt({ stage: "official", project: { ...업무보고, kind: "official", contact: { ...업무보고.contact, 보고형태: "간략" } }, workspaceDir: ws });
+    expect(q.prompt).not.toMatch(/^보고형태: /m);
+  });
+
+  it("지시의 번호 항목·분량을 틀보다 앞세우고 근거 없는 배경 절을 막는다", () => {
+    expect(p.prompt).toContain("지시의 짜임과 분량을 틀보다 앞세운다");
+    expect(p.prompt).toContain("배경·목적 절은 근거가 있을 때만 둔다");
   });
 
   it("출력 계약은 report/draft.dsl.md 와 family: report 다", () => {

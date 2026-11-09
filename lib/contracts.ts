@@ -135,6 +135,12 @@ export interface ProjectDTO {
     전결?: OfficialMeta["전결"];
     /** 공문(official) 전용 — 붙인 참고 문서의 용도. 값이 있으면 reference 도 있다 */
     참고문서용도?: ReferenceRole;
+    /**
+     * 업무보고(report) 전용 — 새 프로젝트 화면에서 고른 문서 형태. `간략` = 한두 쪽 내부 보고,
+     * `책자` = 표지·보고순서·간지를 갖춘 주요업무보고, `자동` = 지시를 보고 에이전트가 고른다.
+     * ReportMetaSchema.형태(책자|간략)와 짝이다 — `자동`은 화면에만 있는 값이다.
+     */
+    보고형태?: ReportForm;
   };
   /** uploaded 기존 사업계획서 (projects/<id>/reference/<fileName>, text in reference/base-plan.md) and what changes */
   reference?: { fileName: string; changes: string };
@@ -201,3 +207,7 @@ export interface ExportReportDTO {
   builtAt: string;
   hash: string;
 }
+
+/** 업무보고 형태 선택지(새 프로젝트 화면). 첫 값이 기본값이다 — 한 장짜리 보고가 가장 많이 쓰인다(담당자 2026-11-09). */
+export const REPORT_FORMS = ["간략", "책자", "자동"] as const;
+export type ReportForm = (typeof REPORT_FORMS)[number];

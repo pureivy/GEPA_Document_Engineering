@@ -183,9 +183,24 @@ export function writeReport(ctx: WriterContext, doc: ReportDoc): XmlNode[] {
   // 그 글이 앞선다 — 본문 자리에 따로 내면 표지와 2쪽에 제목이 두 번 나온다
   // (공문서의 firstBodyBlock 과 같은 손질이다).
   const titleBlock = doc.blocks.find((b) => b.k === "coverTitle") as Extract<Block, { k: "coverTitle" }> | undefined;
-  const out: XmlNode[] = [...cover(ctx, doc.meta, titleBlock?.inlines)];
-  // 표지 다음 블록은 새 쪽에서 시작한다 — 참고본도 표지 뒤가 쪽 나눔이다(para 19).
-  ctx.pendingPageBreak = true;
+  // 앞장 스위치 셋(표지·목차표시·빈뒷면) — 기본값은 모두 켜짐이라 참고본(도지사 업무보고) 모양이 그대로 나온다.
+  // 간이 보고는 끈다: 끄지 않으면 한두 쪽 내용이 표지·목차·간지와 그 뒷면 빈 쪽으로 열 쪽을 넘긴다.
+  // `형태: 간략` 은 세 스위치를 모두 끈 것으로 본다(스위치를 따로 적지 않아도 된다).
+  const brief = doc.meta.형태 === "간략";
+  const showCover = !brief && doc.meta.표지 !== false;
+  const showToc = !brief && doc.meta.목차표시 !== false;
+  const backPages = !brief && doc.meta.빈뒷면 !== false;
+  const title = titleBlock?.inlines ?? [{ t: "text" as const, text: doc.meta.제목 }];
+  const out: XmlNode[] = [];
+  if (brief) {
+    out.push(...briefTitle(ctx, doc.meta, title));
+  } else if (showCover) {
+    out.push(...cover(ctx, doc.meta, titleBlock?.inlines, backPages));
+    // 표지 다음 블록은 새 쪽에서 시작한다 — 참고본도 표지 뒤가 쪽 나눔이다(para 19).
+    ctx.pendingPageBreak = true;
+  } else {
+    out.push(plainTitlePara(ctx, title));
+  }
 
   for (let i = 0; i < doc.blocks.length; i++) {
     const b = doc.blocks[i];
@@ -201,7 +216,9 @@ export function writeReport(ctx: WriterContext, doc: ReportDoc): XmlNode[] {
         i++;
       }
       i--;
-      out.push(...tocBox(ctx, run));
+      // `목차표시: false` 면 목차를 쓰지 않는다. 예전에는 이 스위치가 스키마·편집기에만 있고 여기서 읽지 않아 꺼도 목차가 나갔다.
+      if (showToc) out.push(...tocBox(ctx, run, backPages));
+      else ctx.warnings.push({ blockId: run[0].id, message: "목차표시가 꺼져 있어 목차를 내지 않았습니다" });
       continue;
     }
     switch (b.k) {
@@ -209,18 +226,22 @@ export function writeReport(ctx: WriterContext, doc: ReportDoc): XmlNode[] {
         ctx.warnings.push({ blockId: b.id, message: "표지 제목이 둘 이상입니다 — 첫 번째만 씁니다" });
         break;
       case "chapterBand":
+        if (brief) {
+          out.push(briefHeading(ctx, `${b.numeral}. ${b.title}`, 16));
+          break;
+        }
         // 간지는 언제나 새 쪽에서 시작한다 — 문서 첫 블록일 때만 빼고(빈 첫 쪽이 생긴다).
         out.push(chapterBand(ctx, b.numeral, b.title, out.length === 0));
-        out.push(hiddenBackPage(ctx)); // 참고본은 간지마다 뒷면이 빈 쪽이다
+        out.push(...afterFrontPage(ctx, backPages)); // 참고본은 간지마다 뒷면이 빈 쪽이다
         break;
       case "sectionChip":
-        out.push(sectionChip(ctx, b.label, b.title));
+        out.push(brief ? briefHeading(ctx, `□ ${b.title}`) : sectionChip(ctx, b.label, b.title));
         break;
       case "summaryBox":
         out.push(...summaryBox(ctx, b));
         break;
       case "para":
-        out.push(ladderPara(ctx, b));
+        out.push(brief ? briefPara(ctx, b) : ladderPara(ctx, b));
         break;
       case "blank":
         out.push(emitBlank(ctx, REPORT_TABLE_STYLE, b.role === "blankSmall"));
@@ -251,7 +272,7 @@ export function writeReport(ctx: WriterContext, doc: ReportDoc): XmlNode[] {
  *
  * 표지 문단이 문서의 첫 문단이므로 build.ts 가 여기에 secPr 와 쪽번호 컨트롤을 꽂는다.
  */
-function cover(ctx: WriterContext, m: ReportMeta, title?: Inline[]): XmlNode[] {
+function cover(ctx: WriterContext, m: ReportMeta, title?: Inline[], backPages = true): XmlNode[] {
   const out: XmlNode[] = [];
   out.push(hidePageNumPara(ctx)); // 표지에는 쪽번호를 찍지 않는다(세기는 한다)
   const logo = loadGeometry(ctx.tpl.dir, "t00");
@@ -274,8 +295,119 @@ function cover(ctx: WriterContext, m: ReportMeta, title?: Inline[]): XmlNode[] {
     const pic = pictureFrom(ref, { id: ctx.ids.nextShapeId(), instid: ctx.ids.nextShapeId(), zOrder: ctx.ids.nextZOrder() });
     out.push(ctx.para({ paraPr: s.paraPr, runs: [{ charPr: s.charPr, nodes: [pic] }], vertsize: pictureSize(pic).height, lineSpacing: 160 }));
   }
-  out.push(hiddenBackPage(ctx)); // 참고본 쪽 2 — 표지 뒷면도 빈 쪽이다
+  out.push(...afterFrontPage(ctx, backPages)); // 참고본 쪽 2 — 표지 뒷면도 빈 쪽이다
   return out;
+}
+
+/**
+ * 표지를 끈 문서(`표지: false`)의 맨 위 제목 한 줄. 표지 도형(45pt) 대신 같은 글꼴·색을 줄여
+ * 가운데에 낸다 — 한두 쪽짜리 간이 보고는 첫 쪽 맨 위에 제목이 있어야 한다.
+ */
+const PLAIN_TITLE_PT = 22;
+function plainTitlePara(ctx: WriterContext, inlines: Inline[]): XmlNode {
+  const s = roleSpec(ctx, "coverTitle");
+  const charPr = ctx.reg.charPr({ font: "heading", pt: PLAIN_TITLE_PT, color: "#000094" });
+  return ctx.para({ paraPr: s.paraPr, runs: ctx.runsFor(inlines, { ...s.base, pt: PLAIN_TITLE_PT }, charPr), vertsize: PLAIN_TITLE_PT * 100, lineSpacing: s.lineSpacing });
+}
+
+// ---- 간략 보고(`형태: 간략`) -----------------------------------------------------------------
+//
+// 한두 쪽짜리 내부 보고. 참고본(도지사 업무보고)의 표지·간지·초록 칩을 쓰지 않고, 기안문처럼
+// 제목 띠 → 보고일·부서 → □ 소제목 → ㅇ·- 항목 → ※ 으로 낸다. 기준 모양은 담당자가 "이 정도면
+// 충분하다"고 한 1쪽 보고(2027년 주요사업 안내책자 제작 추진 보고, 2026-11-09)다.
+
+const BRIEF_TITLE_PT = 20;
+const BRIEF_HEAD_PT = 15;
+const BRIEF_BODY_PT = 14;
+const BRIEF_NOTE_PT = 12;
+const BRIEF_RULE = { type: "SOLID" as const, widthMm: 0.5, color: "#1F3864" };
+
+/** 제목 띠(위·아래 굵은 선 사이 가운데 제목) + 오른쪽 정렬 보고일·부서 줄 */
+function briefTitle(ctx: WriterContext, m: ReportMeta, inlines: Inline[]): XmlNode[] {
+  const margin = { l: 510, r: 510, t: 400, b: 400 };
+  const titleChar: CharSpec = { font: "heading", pt: BRIEF_TITLE_PT };
+  const cellPara = ctx.cellPara({
+    paraPr: ctx.reg.paraPr({ align: "CENTER", lineSpacing: 130 }),
+    runs: ctx.runsFor(inlines, titleChar, ctx.reg.charPr(titleChar)),
+    vertsize: BRIEF_TITLE_PT * 100,
+    lineSpacing: 130,
+    horzsize: cellInteriorWidth(BOX_WIDTH, margin),
+  });
+  const height = margin.t + margin.b + BRIEF_TITLE_PT * 130;
+  const tbl = table({
+    id: ctx.ids.nextShapeId(),
+    zOrder: ctx.ids.nextZOrder(),
+    cols: [BOX_WIDTH],
+    rows: [{ height, cells: [{ col: 0, borderFill: ctx.reg.borderFill({ l: "none", r: "none", t: BRIEF_RULE, b: BRIEF_RULE }), margin, paragraphs: [cellPara] }] }],
+    borderFill: ctx.reg.gridBorderFill(),
+    inMargin: margin,
+    outMargin: { l: 141, r: 141, t: 141, b: 141 },
+    horzRelTo: "COLUMN",
+  });
+  const out: XmlNode[] = [
+    ctx.para({ paraPr: ctx.reg.paraPr({ align: "CENTER", lineSpacing: 100 }), runs: [{ charPr: ctx.reg.charPr({ font: "body", pt: 10 }), nodes: [tbl] }], vertsize: height, lineSpacing: 100 }),
+  ];
+  const sub = [m.보고일, m.부서].map((s) => s.trim()).filter(Boolean).join(" ");
+  if (sub) {
+    const c: CharSpec = { font: "body", pt: 12 };
+    out.push(ctx.para({ paraPr: ctx.reg.paraPr({ align: "RIGHT", lineSpacing: 130, prev: 200 }), runs: ctx.runsFor([{ t: "text", text: sub }], c, ctx.reg.charPr(c)), vertsize: 1200, lineSpacing: 130 }));
+  }
+  return out;
+}
+
+/** `□ 소제목`(절) — 굵은 한 줄, 다음 줄과 같은 쪽에 붙인다 */
+function briefHeading(ctx: WriterContext, text: string, pt = BRIEF_HEAD_PT): XmlNode {
+  const c: CharSpec = { font: "body", pt, bold: true };
+  return ctx.para({
+    paraPr: ctx.reg.paraPr({ align: "JUSTIFY", lineSpacing: 150, prev: 800, keepWithNext: true }),
+    runs: ctx.runsFor([{ t: "text", text }], c, ctx.reg.charPr(c)),
+    vertsize: pt * 100,
+    lineSpacing: 150,
+  });
+}
+
+/**
+ * 간략 보고의 사다리 한 줄. 기호는 글자로 낸다(도형 칩 없음). `●` 는 기안문 관행대로 `ㅇ` 으로 바꾼다.
+ * 내어쓰기는 앞머리(공백+기호+공백) 폭을 재서 둘째 줄이 기호 다음 글자에 맞게 한다.
+ */
+function briefPara(ctx: WriterContext, b: ParaBlock): XmlNode {
+  const g = b.glyph && b.glyph !== "none" ? b.glyph : undefined;
+  if (g === "□") return briefHeading(ctx, `□ ${inlineText(b.inlines)}`);
+  let prefix = "";
+  let pt = BRIEF_BODY_PT;
+  let prev = 300;
+  if (g === "●" || g === "ㅇ" || g === "○" || g === "◦" || g === "❍") {
+    prefix = " ㅇ ";
+    prev = 400;
+  } else if (g === "-" || g === "·" || g === "∙" || g === "▪") {
+    prefix = `   ${g} `;
+    prev = 150;
+  } else if (g === "※" || g === "*") {
+    prefix = `   ${g} `;
+    pt = BRIEF_NOTE_PT;
+    prev = 100;
+  } else if (g) {
+    prefix = `${g} `;
+  }
+  const c: CharSpec = { font: "body", pt };
+  const hanging = prefix ? Math.round(ctx.textWidth(prefix, pt)) : 0;
+  return ctx.para({
+    paraPr: ctx.reg.paraPr({ align: "JUSTIFY", lineSpacing: 160, prev, ...(hanging ? { hanging } : {}) }),
+    runs: ctx.runsFor(prefixed(prefix, b.inlines), c, ctx.reg.charPr(c)),
+    vertsize: pt * 100,
+    lineSpacing: 160,
+    forcePageBreak: b.pageBreakBefore,
+  });
+}
+
+/**
+ * 앞장(표지·목차·간지) 다음 처리. `빈뒷면` 이 켜져 있으면 참고본처럼 빈 뒷면 쪽을 두고,
+ * 꺼져 있으면 빈 쪽 없이 **다음 글만 새 쪽에서** 시작하게 한다.
+ */
+function afterFrontPage(ctx: WriterContext, backPages: boolean): XmlNode[] {
+  if (backPages) return [hiddenBackPage(ctx)];
+  ctx.pendingPageBreak = true;
+  return [];
 }
 
 /**
@@ -301,10 +433,31 @@ function coverTitlePara(ctx: WriterContext, inlines: Inline[]): XmlNode {
   box.attrs.instid = shapeId;
   box.attrs.zOrder = String(ctx.ids.nextZOrder());
   for (const rect of findAll(box, "hp:rect")) rect.attrs.instid = String(ctx.ids.nextShapeId());
-  if (!setShapeText(box, inlineText(inlines))) ctx.warnings.push({ message: "report cover shape has no drawText; 표지 제목 글자를 넣지 못했습니다" });
+  const titleText = inlineText(inlines);
+  if (!setShapeText(box, titleText)) ctx.warnings.push({ message: "report cover shape has no drawText; 표지 제목 글자를 넣지 못했습니다" });
+  shrinkCoverTitleToBox(ctx, box, titleText);
   const anchor = roleSpec(ctx, "coverBox");
   const h = Number(child(box, "hp:sz")?.attrs.height ?? 0) || COVER_BOX_HEIGHT;
   return ctx.para({ paraPr: anchor.paraPr, runs: [{ charPr: anchor.charPr, nodes: [box] }], vertsize: h, lineSpacing: 100 });
+}
+
+/**
+ * 두 줄 제목은 글자를 줄여 상자 안에 넣는다(담당자 2026-11-06: "2026년 / 경영평가(2025년 실적)" 둘째 줄이 반쯤 잘림).
+ *
+ * 참고본 묶음 개체의 제목 글상자는 45pt 한 줄(글자 4500 + 줄 간격 1352)만 들어가는 높이다. 상자를 키우는 길은
+ * 미리보기 엔진(rhwp)이 묶음 개체의 크기 변경을 따르지 않아 쓰지 못했다 — 대신 한 줄에 안 들어가는 제목은
+ * 30pt 로 줄인다(두 줄 × 130 % = 7800 < 글상자 안쪽 8090). 색·글꼴은 그대로(HY헤드라인M #000094).
+ */
+function shrinkCoverTitleToBox(ctx: WriterContext, box: XmlNode, text: string): void {
+  const rect = findAll(box, "hp:rect").find((r) => child(r, "hp:drawText"));
+  const dt = rect ? child(rect, "hp:drawText") : undefined;
+  if (!dt) return;
+  const usableW = Number(dt.attrs.lastWidth ?? 45819) - 284 * 2;
+  if (ctx.textWidth(text, 45) <= usableW) return;
+  const pt = 30;
+  if (ctx.textWidth(text, pt) > usableW * 2) ctx.warnings.push({ message: `표지 제목이 ${[...text].length}자라 30pt 두 줄에도 넘칩니다 — 제목을 줄이세요` });
+  const charPr = ctx.reg.charPr({ font: "heading", pt, color: "#000094" });
+  for (const run of findAll(dt, "hp:run")) run.attrs.charPrIDRef = String(charPr);
 }
 
 /**
@@ -454,7 +607,7 @@ function tocIndent(text: string): string {
   return /^\s*\d+\s*\./.test(text) ? "  " : "";
 }
 
-function tocBox(ctx: WriterContext, lines: ParaBlock[]): XmlNode[] {
+function tocBox(ctx: WriterContext, lines: ParaBlock[], backPages = true): XmlNode[] {
   const s = roleSpec(ctx, "tocLine");
   const interior = cellInteriorWidth(TOC_BOX_WIDTH, TOC_BOX_MARGIN);
   const paras = lines.map((b) => {
@@ -498,7 +651,7 @@ function tocBox(ctx: WriterContext, lines: ParaBlock[]): XmlNode[] {
   // 목차 쪽에도 쪽번호를 찍지 않고(담당자 지시) 뒷면을 빈 쪽으로 둔다 — 참고본 쪽 3·4 가 그렇다.
   const hide = hidePageNumRun(ctx);
   frag.children.unshift(el("hp:run", { charPrIDRef: String(hide.charPr) }, hide.nodes));
-  return [frag, hiddenBackPage(ctx)];
+  return [frag, ...afterFrontPage(ctx, backPages)];
 }
 
 /**
@@ -585,6 +738,26 @@ const BOX_MIN_HEIGHT = 5217;
  * 요약박스 — 절 제목 바로 밑의 1×1 회색 점선 상자(참고본 `geometry/t32` 계열).
  * 칸 색은 borderFill 9(점선 네 변 + `#F2F2F2`), 표 테두리는 4 다.
  */
+/**
+ * 요약문 줄 이어 붙이기. 에이전트는 요약문을 DSL 에서 "두 줄 안팎"으로 **손으로 끊어** 쓰는데,
+ * 줄마다 문단을 내면 칸 너비에서 한 번 자동으로 꺾이고 그 끊은 자리에서 또 꺾여
+ * "…이해도 / 를 높이고 / 기관 사업을 홍보" 처럼 들쭉날쭉해진다(담당자 2026-11-09 지적).
+ * 요약문은 한 문장이므로 이어지는 줄은 한 문단으로 합치고, 줄바꿈은 한글에 맡긴다.
+ * 글머리(`-`·`·`·`※`·`●`·`○`·`□`)로 시작하는 줄만 새 문단으로 둔다.
+ */
+function joinWrappedLines(lines: Inline[][]): Inline[][] {
+  const out: Inline[][] = [];
+  for (const line of lines) {
+    const head = inlineText(line).trimStart();
+    if (out.length && head && !/^[-·※●○□◦❖◇]/.test(head)) {
+      out[out.length - 1] = [...out[out.length - 1], { t: "text", text: " " }, ...line];
+    } else {
+      out.push(line);
+    }
+  }
+  return out;
+}
+
 function summaryBox(ctx: WriterContext, b: Extract<Block, { k: "summaryBox" }>): XmlNode[] {
   const s = roleSpec(ctx, "summary");
   const interior = cellInteriorWidth(BOX_WIDTH, BOX_MARGIN);
@@ -593,7 +766,7 @@ function summaryBox(ctx: WriterContext, b: Extract<Block, { k: "summaryBox" }>):
   const glyph = b.glyph && b.glyph !== "none" ? `${b.glyph} ` : "";
   const paras: XmlNode[] = [];
   let lineCount = 0;
-  for (const line of b.lines) {
+  for (const line of joinWrappedLines(b.lines)) {
     const groups = splitInlinesByNewline(line);
     for (const g of groups.length ? groups : [[]]) {
       const inl = glyph ? prefixed(glyph, g) : g;

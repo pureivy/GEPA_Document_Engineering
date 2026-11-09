@@ -3,7 +3,7 @@ import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
 import { FolderOpen, Plus, RefreshCw, Trash2, Upload } from "lucide-react";
-import { DEFAULT_REFERENCE_ROLE, REFERENCE_CHANGES_LABEL, REFERENCE_DOC_TITLE, REFERENCE_ROLES, type ProjectDTO, type ReferenceRole } from "@/lib/contracts";
+import { DEFAULT_REFERENCE_ROLE, REFERENCE_CHANGES_LABEL, REFERENCE_DOC_TITLE, REFERENCE_ROLES, REPORT_FORMS, type ProjectDTO, type ReferenceRole, type ReportForm } from "@/lib/contracts";
 import { OfficialMetaSchema } from "@/lib/docmodel/schema";
 import { approvalLineFor, approvalLineUpTo, DEFAULT_DELEGATION, DELEGATION_LEVELS, findUnit, senderTitleFor, type DelegationLevel } from "@/lib/org";
 import { api, errorMessage, type NewProjectInput } from "@/lib/client/api";
@@ -16,10 +16,18 @@ import { KIND_LABEL, PROJECT_KINDS, type ProjectKind } from "@/lib/kinds";
 import { PREF_PLAN_RESEARCH, saveContactPref, useBoolPref, useContactPref, writePref } from "@/lib/client/prefs";
 
 /** 종류별 한 줄 설명 — 라디오 옆에 그대로 보인다 */
+/** 업무보고 형태 선택지의 이름과 설명 */
+const REPORT_FORM_LABEL: Record<ReportForm, string> = { 간략: "간략 보고(1~2쪽)", 책자: "책자형(표지·보고순서·간지)", 자동: "자동" };
+const REPORT_FORM_HINT: Record<ReportForm, string> = {
+  간략: "제목 띠와 □·ㅇ·- 개조식으로 한두 쪽에 정리합니다. 내부 보고·계획 보고에 씁니다.",
+  책자: "도지사·도의회 업무보고 양식입니다. 표지·보고순서·간지와 절 칩이 들어갑니다.",
+  자동: "지시 내용을 보고 에이전트가 간략·책자형 중에서 고릅니다.",
+};
+
 const KIND_HINT: Record<ProjectKind, string> = {
   program: "조사 → 사업계획서 → 공고문 → 보도자료를 차례로 만듭니다.",
   official: "별지 제1호 기안문 한 건을 만듭니다.",
-  report: "주요업무보고 한 건을 만듭니다(표지·보고순서·간지 포함).",
+  report: "업무보고를 만듭니다 — 한두 쪽 간략 보고 또는 표지·보고순서·간지를 갖춘 책자형.",
   closeout: "사업을 마친 뒤 정산자료 → 결과보고서 → 정산보고서 → 제출 공문을 차례로 만듭니다.",
 };
 
@@ -84,6 +92,8 @@ function NewProjectDialog({ onClose, onCreated }: { onClose: () => void; onCreat
   const [delegation, setDelegation] = useState<DelegationLevel>(DEFAULT_DELEGATION);
   // 공개구분은 되돌리기 어려운 선택이다 — 비공개 문서를 공개로 내보내면 주워 담을 수 없다.
   const [disclosure, setDisclosure] = useState<DisclosureKind>(DISCLOSURE_KINDS[0]);
+  // 업무보고 형태 — 기본은 간략 보고(한 장짜리가 가장 많이 쓰인다, 담당자 2026-11-09)
+  const [reportForm, setReportForm] = useState<ReportForm>(REPORT_FORMS[0]);
   const planResearch = useBoolPref(PREF_PLAN_RESEARCH, false);
   const [phase, setPhase] = useState<"" | "create" | "upload">("");
   // 정산·결과보고 자료(여러 개) — 사업계획서·집행 집계표·통장거래내역·실적 메모
@@ -178,6 +188,8 @@ function NewProjectDialog({ onClose, onCreated }: { onClose: () => void; onCreat
         // 파일이 없으면 키 자체를 넣지 않는다 — 용도는 붙인 문서가 있을 때만 뜻이 있다
         if (refFile) contact.참고문서용도 = refRole;
       }
+      // 업무보고 형태는 contact 에 얹는다(공문의 수신유형과 같은 길) — 프롬프트가 읽어 에이전트에 넘긴다
+      if (kind === "report") contact.보고형태 = reportForm;
       // 정산·결과보고: 제출 공문은 늘 위탁기관 한 곳에 보낸다(실문서 457건 중 수신자참조 0건 — closeout-cover.md §A)
       if (isCloseout) {
         contact.수신유형 = "수신자";
@@ -302,6 +314,23 @@ function NewProjectDialog({ onClose, onCreated }: { onClose: () => void; onCreat
             autoFocus
           />
         </Field>
+        {kind === "report" && (
+          <Field label="보고 형태" id="reportForm" required hint={REPORT_FORM_HINT[reportForm]}>
+            <div className="flex gap-2">
+              {REPORT_FORMS.map((f) => (
+                <label
+                  key={f}
+                  className={`flex cursor-pointer items-center gap-1.5 rounded border px-3 py-1.5 text-xs ${
+                    reportForm === f ? "border-sky-500 bg-sky-50 text-sky-900" : "border-slate-300 text-slate-700 hover:bg-slate-50"
+                  }`}
+                >
+                  <input type="radio" name="reportForm" className="h-3.5 w-3.5" checked={reportForm === f} onChange={() => setReportForm(f)} />
+                  <span className="font-semibold">{REPORT_FORM_LABEL[f]}</span>
+                </label>
+              ))}
+            </div>
+          </Field>
+        )}
         {isOfficial ? (
           <>
             <div className="grid grid-cols-[10rem_9rem_1fr] gap-4">
