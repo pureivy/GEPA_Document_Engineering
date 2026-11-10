@@ -63,6 +63,8 @@ export class WriterContext {
   readonly fillPageTables: { blockId: string; tblId: string }[] = [];
   /** 문서에 놓인 모든 표(블록 id·hp:tbl id) — 어느 표가 쪽을 넘겼는지 찾는 데 쓴다(keepPass.splitTablePass) */
   readonly tableBlocks: { blockId: string; tblId: string }[] = [];
+  /** 문서를 만드는 시각(build 의 opts.now) — 보고일이 비었을 때 간략 보고 날짜 줄에 쓴다 */
+  now: Date = new Date();
   /** 쪽 경계에서 나눠도 되는 표(블록 id) — 통째로 넘어가 앞 쪽을 비운 표만 buildLaidOut 이 골라 넣는다 */
   splitTables = new Set<string>();
   /** 채울 표의 줄 간격(블록 id → %) — buildLaidOut 이 배치를 재 보고 정한다 */

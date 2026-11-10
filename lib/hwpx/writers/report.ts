@@ -330,6 +330,25 @@ const BRIEF_BODY_PT = 14;
 const BRIEF_NOTE_PT = 12;
 const BRIEF_RULE = { type: "SOLID" as const, widthMm: 0.5, color: "#1F3864" };
 
+/**
+ * 간략 보고 제목 아래 날짜 — 본보기(2027년 주요사업 안내책자 제작 추진 보고)처럼 「2026. 11. 9.(월)」.
+ * 보고일이 비었으면 문서를 만든 날(한국 시각)을 쓴다 — 부서만 덩그러니 나갔다(담당자 2026-11-10).
+ * 날짜로 읽히는 값은 같은 꼴로 고치고, 읽히지 않는 값("11월 중")은 그대로 둔다.
+ */
+export function briefDate(given: string, now: Date): string {
+  const DAYS = "일월화수목금토";
+  const fmt = (y: number, mo: number, d: number) => `${y}. ${mo}. ${d}.(${DAYS[new Date(Date.UTC(y, mo - 1, d)).getUTCDay()]})`;
+  const t = (given ?? "").trim();
+  if (t) {
+    const m = /^(\d{2,4})\s*[.년\-/]\s*(\d{1,2})\s*[.월\-/]\s*(\d{1,2})\s*[.일]?\s*(\([월화수목금토일]\))?\s*$/.exec(t);
+    if (!m) return t;
+    const y = m[1].length === 2 ? 2000 + Number(m[1]) : Number(m[1]);
+    return fmt(y, Number(m[2]), Number(m[3]));
+  }
+  const kst = new Date(now.getTime() + 9 * 3600 * 1000);
+  return fmt(kst.getUTCFullYear(), kst.getUTCMonth() + 1, kst.getUTCDate());
+}
+
 /** 제목 띠(위·아래 굵은 선 사이 가운데 제목) + 오른쪽 정렬 보고일·부서 줄 */
 function briefTitle(ctx: WriterContext, m: ReportMeta, inlines: Inline[]): XmlNode[] {
   const margin = { l: 510, r: 510, t: 400, b: 400 };
@@ -355,7 +374,7 @@ function briefTitle(ctx: WriterContext, m: ReportMeta, inlines: Inline[]): XmlNo
   const out: XmlNode[] = [
     ctx.para({ paraPr: ctx.reg.paraPr({ align: "CENTER", lineSpacing: 100 }), runs: [{ charPr: ctx.reg.charPr({ font: "body", pt: 10 }), nodes: [tbl] }], vertsize: height, lineSpacing: 100 }),
   ];
-  const sub = [m.보고일, m.부서].map((s) => s.trim()).filter(Boolean).join(" ");
+  const sub = [briefDate(m.보고일, ctx.now), m.부서].map((s) => s.trim()).filter(Boolean).join(" ");
   if (sub) {
     const c: CharSpec = { font: "body", pt: 12 };
     out.push(ctx.para({ paraPr: ctx.reg.paraPr({ align: "RIGHT", lineSpacing: 130, prev: 200 }), runs: ctx.runsFor([{ t: "text", text: sub }], c, ctx.reg.charPr(c)), vertsize: 1200, lineSpacing: 130 }));

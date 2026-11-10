@@ -83,6 +83,7 @@ export function buildHwpx(doc: DocModel, opts: BuildOptions = {}): BuildResult {
   ctx.noPrev = new Set(opts.noPrev ?? []);
   ctx.lineFit = opts.lineFit ?? {};
   ctx.splitTables = new Set(opts.splitTables ?? []);
+  if (opts.now) ctx.now = opts.now;
   let paras: XmlNode[] = writeForFamily(ctx, doc);
   if (paras.length === 0) paras = [ctx.para({ paraPr: 0, runs: [{ charPr: 0, text: "" }] })];
   // section properties live in the first run of the first paragraph

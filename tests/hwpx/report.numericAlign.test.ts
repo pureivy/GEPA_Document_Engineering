@@ -54,3 +54,21 @@ for (const 형태 of ["형태: 간략", ""]) {
     });
   });
 }
+
+describe("간략 보고 날짜·부서 줄 (본보기: 「2026. 11. 9.(월) 전략기획팀」)", async () => {
+  const { briefDate } = await import("../../lib/hwpx/writers/report");
+  it("보고일이 비면 만든 날(한국 시각)을 요일과 함께", () => {
+    expect(briefDate("", new Date("2026-11-09T16:00:00Z"))).toBe("2026. 11. 10.(화)");
+    expect(briefDate("", new Date("2026-11-09T03:00:00Z"))).toBe("2026. 11. 9.(월)");
+  });
+  it("적힌 날짜는 같은 꼴로, 날짜가 아니면 그대로", () => {
+    expect(briefDate("2026-11-09", new Date())).toBe("2026. 11. 9.(월)");
+    expect(briefDate("26. 11. 9.", new Date())).toBe("2026. 11. 9.(월)");
+    expect(briefDate("2026년 11월 9일", new Date())).toBe("2026. 11. 9.(월)");
+    expect(briefDate("11월 중", new Date())).toBe("11월 중");
+  });
+  it("문서 제목 아래에 날짜 + 부서가 한 줄로 나간다", () => {
+    const out = buildHwpx(parseDsl(dsl("형태: 간략")).doc, { now: new Date("2026-11-09T03:00:00Z") });
+    expect(out.sectionXml).toContain("2026. 11. 9.(월) 전략기획팀");
+  });
+});
