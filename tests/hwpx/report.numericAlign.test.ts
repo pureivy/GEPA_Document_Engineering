@@ -72,3 +72,20 @@ describe("간략 보고 날짜·부서 줄 (본보기: 「2026. 11. 9.(월) 전�
     expect(out.sectionXml).toContain("2026. 11. 9.(월) 전략기획팀");
   });
 });
+
+describe("(단위) 줄 글자 크기 — 표 글자보다 작게", () => {
+  for (const 형태 of ["형태: 간략", ""]) {
+    it(형태 || "전체 보고", () => {
+      const out = buildHwpx(parseDsl(dsl(형태)).doc, { now: new Date("2026-11-10T00:00:00Z") });
+      const root = parseXml(out.sectionXml);
+      const p = findAll(root, "hp:p").find((n) => findAll(n, "hp:tbl").length === 0 && textOf(n) === "(단위: 개, %)")!;
+      const cp = findAll(p, "hp:run")[0].attrs.charPrIDRef;
+      const cell = findAll(root, "hp:p").find((n) => findAll(n, "hp:tbl").length === 0 && textOf(n) === "7,713,895")!;
+      const cp2 = findAll(cell, "hp:run")[0].attrs.charPrIDRef;
+      const h = parseXml((out.headerXml ?? "").replace(/^<\?xml[^>]*\?>/, ""));
+      const height = (id: unknown) => Number(findAll(h, "hh:charPr").find((n) => n.attrs.id === id)!.attrs.height);
+      expect(height(cp)).toBeLessThan(height(cp2));
+      expect(height(cp)).toBeLessThanOrEqual(1000);
+    });
+  }
+});

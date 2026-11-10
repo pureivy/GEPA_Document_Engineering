@@ -165,7 +165,83 @@ export function hangulParaPages(top: XmlNode[], texts: string[]): { start: numbe
   return k === top.length ? { start, end } : undefined;
 }
 
-const HANGUL_PASSES = 4;
+const HANGUL_PASSES = 8;
+/** 한글에서 쪼개졌던 단어를 윗줄로 끌어올릴 때 자간을 줄이는 한도(%) — 이보다 많이 줄여야 하면 단어를 통째 아랫줄로 */
+const HANGUL_PULL_MAX = 6;
+
+/** 같은 순서로 문단을 늘어놓는다 — 최상위 문단과, 표 하나만 든 문단의 칸 문단(measureLines 와 같은 범위) */
+function linedParas(sectionXml: string): XmlNode[] {
+  const out: XmlNode[] = [];
+  const top = childrenNamed(parseXml(sectionXml.replace(/^<\?xml[^>]*\?>/, "")), "hp:p");
+  top.forEach((p) => {
+    const tables = childrenNamed(p, "hp:run").flatMap((r) => childrenNamed(r, "hp:tbl"));
+    if (!tables.length) {
+      out.push(p);
+      return;
+    }
+    if (tables.length !== 1) return;
+    for (const tr of childrenNamed(tables[0], "hp:tr"))
+      for (const tc of childrenNamed(tr, "hp:tc")) {
+        const sub = child(tc, "hp:subList");
+        for (const cp of sub ? childrenNamed(sub, "hp:p") : []) if (!findAll(cp, "hp:tbl").length) out.push(cp);
+      }
+  });
+  return out;
+}
+
+/** 순수 글만 든 문단의 글 — hp:t 안에 탭·고정폭 빈칸 같은 요소가 있으면 한글의 글자 위치와 어긋나므로 undefined */
+function plainText(p: XmlNode): string | undefined {
+  let s = "";
+  for (const r of childrenNamed(p, "hp:run")) {
+    if (childrenNamed(r, "hp:pic").length || childrenNamed(r, "hp:tbl").length) return undefined;
+    for (const t of childrenNamed(r, "hp:t"))
+      for (const c of t.children) {
+        if (typeof c !== "string") return undefined;
+        s += c;
+      }
+  }
+  return s.replace(/&lt;/g, "<").replace(/&gt;/g, ">").replace(/&quot;/g, '"').replace(/&apos;/g, "'").replace(/&amp;/g, "&");
+}
+
+/**
+ * 한글이 줄 끝에서 단어를 쪼갠 문단(hp:p id) — 한글로 다시 저장한 파일의 줄 시작 위치(lineseg textpos)로 잰다.
+ * rhwp 는 한글과 글자 폭·줄 나눔이 달라, 미리보기로 맞춘 문단도 한글에서는 요지 상자 「기업의 채 / 용 경쟁력을」처럼
+ * 쪼개졌다(담당자 2026-11-10: "어절 단위로 이렇게 쪼개지면 자간을 줄여서 한줄로"). 문단 순서·글이 같은 것만 짝짓는다.
+ */
+export function hangulSplitWords(builtSectionXml: string, savedSectionXml: string): { id: string; need: number }[] {
+  const mine = linedParas(builtSectionXml);
+  const theirs = linedParas(savedSectionXml);
+  if (mine.length !== theirs.length) return [];
+  const out: { id: string; need: number }[] = [];
+  mine.forEach((p, i) => {
+    const text = plainText(p);
+    const q = theirs[i];
+    if (!text || text.length < 2 || plainText(q) !== text) return;
+    const arr = child(q, "hp:linesegarray");
+    const starts = arr ? childrenNamed(arr, "hp:lineseg").map((l) => Number(l.attrs.textpos)) : [];
+    let need = 0;
+    starts.forEach((e, k) => {
+      if (!(k > 0 && e > 0 && e < text.length && /\S/.test(text[e - 1]) && /\S/.test(text[e]))) return;
+      // 윗줄로 끌어올릴 글자 수 ÷ 윗줄 글자 수 = 줄여야 할 자간(%) 어림
+      let r = e;
+      while (r < text.length && /\S/.test(text[r])) r++;
+      const lineLen = Math.max(1, e - starts[k - 1]);
+      need = Math.max(need, Math.ceil(((r - e) / lineLen) * 100));
+    });
+    if (need > 0) out.push({ id: String(p.attrs.id), need });
+  });
+  return out;
+}
+
+/** 문단 첫 글 run 의 자간(%) — 줄 맞춤을 아직 안 받은 문단의 출발점 */
+function baseSpacing(built: BuildResult, id: string): number {
+  const p = findAll(parseXml(built.sectionXml.replace(/^<\?xml[^>]*\?>/, "")), "hp:p").find((n) => String(n.attrs.id) === id);
+  const run = p ? childrenNamed(p, "hp:run").find((r) => childrenNamed(r, "hp:t").length) : undefined;
+  const cp = run?.attrs.charPrIDRef;
+  if (cp === undefined) return 0;
+  const m = new RegExp(`<hh:charPr id="${cp}"[\\s\\S]*?<hh:spacing hangul="(-?\\d+)"`).exec(built.headerXml);
+  return m ? Number(m[1]) : 0;
+}
 
 /**
  * 한글 배치로 마무리 — ① 쪽 맨 위에 온 문단(제목·띠 등)은 문단 위 여백을 없앤다(담당자 2026-10-13). ② 줄 간격을
@@ -174,14 +250,40 @@ const HANGUL_PASSES = 4;
 async function hangulPass(doc: DocModel, opts: BuildOptions, built: BuildResult): Promise<BuildResult | undefined> {
   const boost: Record<string, number> = { ...opts.spacingBoost };
   const noPrev = new Set<string>(opts.noPrev ?? []);
+  const lineFit: Record<string, LineFit> = { ...opts.lineFit };
   let cur = built;
   for (let pass = 0; pass < HANGUL_PASSES; pass++) {
-    const hw = await hangulLayout(cur.bytes);
+    const hw = await hangulLayout(cur.bytes, { save: true });
     if (!hw) return pass ? cur : undefined;
+    let changed = false;
+    // ⓪ 한글에서 줄 끝 단어가 쪼개진 문단 — 어절 단위 줄 나눔 + 조금만 줄이면 되는 단어는 자간으로 윗줄에
+    if (hw.saved) {
+      let saved: string | undefined;
+      try {
+        saved = new TextDecoder().decode(unzipSync(hw.saved)["Contents/section0.xml"]);
+      } catch {
+        saved = undefined;
+      }
+      for (const { id, need } of saved ? hangulSplitWords(cur.sectionXml, saved) : []) {
+        if (lineFit[id]?.wordWrap) continue;
+        const now = lineFit[id]?.charSpacing ?? baseSpacing(cur, id);
+        // 문단 전체 자간만 줄이면 아래 줄도 함께 당겨져 쪼개진 자리가 옮겨 다니기만 했다("채 / 용" → "경쟁 / 력", 2026-11-10).
+        // 그래서 이 문단은 어절 단위 줄 나눔으로 바꿔 어떤 줄에서도 단어가 쪼개지지 않게 하고, 쪼개졌던 단어가 조금만
+        // 줄이면(HANGUL_PULL_MAX % 이내) 윗줄에 들어가면 그만큼 자간을 줄여 끌어올린다 — 「…기업의 채용 / 경쟁력을 … 점검하여」
+        const pull = need <= HANGUL_PULL_MAX ? Math.max(CONDENSE_FLOOR, Math.min(now, 0) - need - 1) : undefined;
+        const { charSpacing: _drop, ...rest } = lineFit[id] ?? {};
+        void _drop;
+        lineFit[id] = { ...rest, wordWrap: true, ...(pull !== undefined ? { charSpacing: pull } : now !== baseSpacing(cur, id) ? { charSpacing: now } : {}) };
+        changed = true;
+      }
+    }
     const top = childrenNamed(parseXml(cur.sectionXml), "hp:p");
     const pages = hangulParaPages(top, hw.texts);
-    if (!pages) return pass ? cur : undefined;
-    let changed = false;
+    if (!pages) {
+      if (!changed) return pass ? cur : undefined;
+      cur = buildHwpx(doc, { ...opts, lineFit, spacingBoost: boost, noPrev: [...noPrev] });
+      continue;
+    }
     // ① 쪽 맨 위 문단 — 앞 문단이 앞 쪽에서 끝나고 이 문단이 새 쪽에서 시작
     for (let k = 1; k < top.length; k++) {
       const id = String(top[k].attrs.id);
@@ -214,7 +316,7 @@ async function hangulPass(doc: DocModel, opts: BuildOptions, built: BuildResult)
       changed = true;
     }
     if (!changed) return cur;
-    cur = buildHwpx(doc, { ...opts, spacingBoost: boost, noPrev: [...noPrev] });
+    cur = buildHwpx(doc, { ...opts, lineFit, spacingBoost: boost, noPrev: [...noPrev] });
   }
   return cur;
 }
@@ -591,7 +693,7 @@ async function fitLines(doc: DocModel, opts: BuildOptions): Promise<Record<strin
   // 한글은 rhwp 보다 글자 폭을 조금 넓게 잡는다 — 미리보기에서 딱 맞춘 값이면 한글에서 끝 글자(")")가 넘쳤다
   // ("로컬상점온기(이수진 / )", 담당자 2026-10-12). 줄여서 고친 문단은 여유를 두 단계 더 준다
   for (const id of bad) if (!left.includes(id) && fit[id]?.charSpacing) fit[id].charSpacing = Math.max(CONDENSE_FLOOR, fit[id].charSpacing! - CONDENSE_HEADROOM);
-  // 2) 그래도 안 되면 자간을 조금 넓혀 단어를 통째로 다음 줄로 — 한글은 어절 단위 줄 나눔(KEEP_WORD)으로 단어를 통째
+  // 2) 그래도 안 되면 자간을 조금 넓혀 단어를 통째로 다음 줄로 — 한글이 어절 단위 줄 나눔이면(breakNonLatinWord="BREAK_WORD" — KEEP_WORD 는 글자 단위다) 단어를 통째
   //    넘기지만 rhwp 미리보기는 한글 낱말을 글자 단위로 끊는다. 이렇게 하면 미리보기와 한글이 같은 줄 나눔이 된다
   const stuck = await tryAll(left, EXPAND_STEPS, (r, r0) => !r.splitWord && r.lineCount <= r0.lineCount);
   // 3) 그래도 쪼개지는 긴 덩어리(기관명 등)는 뜻이 갈리는 자리에서 줄을 바꾼다 — "(재)경상북도경제 / 진흥원"(담당자 2026-10-12)

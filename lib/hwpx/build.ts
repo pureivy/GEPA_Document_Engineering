@@ -50,6 +50,8 @@ export interface LineFit {
   charSpacing?: number;
   breaks?: number[];
   sizePct?: number;
+  /** 한글 줄 나눔을 어절 단위로(자간을 바닥까지 줄여도 단어가 쪼개지는 문단) */
+  wordWrap?: boolean;
 }
 
 export interface BuildOptions {

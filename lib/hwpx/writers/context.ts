@@ -118,7 +118,7 @@ export class WriterContext {
   }
 
   /**
-   * 어절 단위 줄 바꿈으로 센 줄 수 — 한글은 어절을 쪼개지 않고(breakNonLatinWord KEEP_WORD) 다음 줄로 넘긴다.
+   * 어절 단위 줄 바꿈으로 센 줄 수 — 한글이 어절 단위 줄 나눔(breakNonLatinWord="BREAK_WORD")일 때 어절을 쪼개지 않고 다음 줄로 넘긴다(KEEP_WORD 는 글자 단위, 2026-11-10 실측).
    * 글자 폭 합만으로 세면(lineCount) 줄 끝 빈자리를 놓쳐 표 칸 높이가 모자랐다("비용 지원"이 잘림, 2026-10-12).
    */
   wrapLines(s: string, pt: number, width: number): number {
@@ -208,6 +208,7 @@ export class WriterContext {
     if (fit.charSpacing) runs = runs.map((r) => (r.text !== undefined && !r.nodes?.length ? { ...r, charPr: this.reg.withCharSpacing(r.charPr, fit.charSpacing!) } : r));
     if (fit.sizePct && fit.sizePct !== 100) runs = runs.map((r) => (r.text !== undefined && !r.nodes?.length ? { ...r, charPr: this.reg.withCharScale(r.charPr, fit.sizePct!) } : r));
     if (fit.breaks?.length) runs = insertBreaks(runs, fit.breaks);
+    if (fit.wordWrap) paraPr = this.reg.withWordWrap(paraPr);
     return { paraPr, runs };
   }
 

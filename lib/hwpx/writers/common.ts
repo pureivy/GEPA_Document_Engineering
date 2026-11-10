@@ -122,7 +122,8 @@ export function bodyStyle(ctx: WriterContext, fs: FamilyStyle, b: ParaBlock): { 
       base = fs.noteFont ? { font: fs.noteFont, pt: fs.notePt } : ctx.reg.hasFace("굴림") ? { font: "gulim", pt: 11, spacing: -4 } : { font: "note", pt: 11 };
       break;
     case "unitCaption":
-      base = { font: "table", pt: 10 };
+      // (단위) 줄은 본문은 물론 표 안 글자보다도 작다(담당자 2026-11-10) — 표 글자보다 1pt 작게, 10pt 를 넘지 않게
+      base = { font: "table", pt: unitCaptionPt(fs) };
       break;
     case "attachmentHeading":
       base = { font: "body", pt: fs.bodyPt, bold: true };
@@ -158,6 +159,11 @@ export function bodyStyle(ctx: WriterContext, fs: FamilyStyle, b: ParaBlock): { 
   const info = baseCharPr !== undefined ? ctx.reg.charPrInfo(baseCharPr) : undefined;
   const ok = info && info.pt === base.pt && info.bold === !!base.bold && info.hangul === ctx.reg.faceOf(base.font);
   return { paraPr, base, baseCharPr: ok ? baseCharPr : undefined, prefix };
+}
+
+/** (단위: …) 줄 글자 크기 — 표 글자보다 1pt 작게, 10pt 를 넘지 않게(담당자 2026-11-10: "본문 글자보다 당연히 작아야 하고 표 안에 있는 글자보다도 작아야") */
+export function unitCaptionPt(fs: Pick<FamilyStyle, "tableFontPt">): number {
+  return Math.min(10, fs.tableFontPt - 1);
 }
 
 export function emitPara(ctx: WriterContext, fs: FamilyStyle, b: ParaBlock): XmlNode {
@@ -678,7 +684,7 @@ export function emitTable(ctx: WriterContext, fs: FamilyStyle, b: TableBlock): X
   });
   ctx.tableBlocks.push({ blockId: b.id, tblId: String(tblNode.attrs.id) });
   if (b.caption) {
-    const r = ctx.roleOr("unitCaption", { para: { align: "RIGHT", lineSpacing: 150 }, char: { font: fs.tableFont ?? "table", pt: 10 } });
+    const r = ctx.roleOr("unitCaption", { para: { align: "RIGHT", lineSpacing: 150 }, char: { font: fs.tableFont ?? "table", pt: unitCaptionPt(fs) } });
     const cap = ctx.para({ paraPr: r.paraPr, runs: [{ charPr: r.charPr, text: b.caption }], vertsize: 1000, lineSpacing: 150 });
     ctx.captionParas.add(cap);
     out.push(cap);

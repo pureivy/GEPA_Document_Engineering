@@ -84,3 +84,12 @@ describe("참고 띠 — 한글 파일", () => {
     expect(out.headerXml ?? "").toMatch(/1F3864/i);
   });
 });
+
+describe("목차 있는 업무보고 — 참고 아래 소제목은 본문 번호를 잇지 않는다", () => {
+  const full = DSL.replace("형태: 간략\n", "").replace("## 중소기업의 정의", "# 사업 개요\n## 중소기업의 정의");
+  const out = buildHwpx(parseDsl(full).doc, { now: new Date("2026-11-10T00:00:00Z") });
+  it("「참고 1」 아래 ## 는 □ 소제목 줄로 나간다", async () => {
+    const text = await extractText(out.bytes);
+    expect(text).toContain("□ 평균매출액등 기준");
+  });
+});

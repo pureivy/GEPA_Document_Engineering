@@ -17,7 +17,7 @@ import { child, childrenNamed, clone, el, findAll, isNode, type XmlNode } from "
 import { cellAt, cloneFragment, loadGeometry, setCellText, setShapeText } from "../geometry";
 import { pictureFrom, pictureSize } from "../emit/picture";
 import { table, cellInteriorWidth, type CellSpec } from "../emit/table";
-import { emitBlank, emitTable, splitInlinesByNewline, type FamilyStyle } from "./common";
+import { emitBlank, emitTable, splitInlinesByNewline, unitCaptionPt, type FamilyStyle } from "./common";
 import { leadingSpaces } from "../../docmodel/indent";
 import { inlineText, type Block, type Glyph, type Inline, type ParaRole, type ReportDoc, type ReportMeta } from "../../docmodel/schema";
 import type { CharSpec, ParaSpec } from "../registry";
@@ -205,9 +205,13 @@ export function writeReport(ctx: WriterContext, doc: ReportDoc): XmlNode[] {
     out.push(plainTitlePara(ctx, title));
   }
 
+  // 뒷장 「참고 N」 아래는 본문 번호를 이어 받지 않는다 — 참고는 참고 1·2·3 으로 따로 가고, 그 안 소제목은 □ 줄이다
+  // (담당자 2026-11-10: 19쪽 「참고 1」 아래 소제목이 본문 장 번호를 이어 "4 지자체별 지원 대상과 내용" 으로 나갔다)
+  let inRef = false;
   for (let i = 0; i < doc.blocks.length; i++) {
     const b = doc.blocks[i];
     if (b === titleBlock) continue;
+    if (b.k === "table" && b.role === "refHead") inRef = true;
     // 목차는 한 줄씩이 아니라 **묶음**으로 나간다 — 참고본이 잇닿은 목차 줄 전부를 테두리 상자
     // 한 칸에 담기 때문이다(tocBox 주석). 잇닿은 `tocLine` 을 여기서 먼저 걷어 간다.
     if (b.k === "para" && b.role === "tocLine") {
@@ -238,7 +242,7 @@ export function writeReport(ctx: WriterContext, doc: ReportDoc): XmlNode[] {
         out.push(...afterFrontPage(ctx, backPages)); // 참고본은 간지마다 뒷면이 빈 쪽이다
         break;
       case "sectionChip":
-        out.push(brief ? briefHeading(ctx, `□ ${b.title}`) : sectionChip(ctx, b.label, b.title));
+        out.push(brief || inRef ? briefHeading(ctx, `□ ${b.title}`) : sectionChip(ctx, b.label, b.title));
         break;
       case "summaryBox":
         out.push(...summaryBox(ctx, b));
@@ -470,11 +474,13 @@ function leadsIntoTable(blocks: Block[], i: number): boolean {
  * (담당자 2026-11-10). 간략·전체 보고 모두.
  */
 function unitCaptionPara(ctx: WriterContext, b: ParaBlock): XmlNode {
-  const c: CharSpec = { font: "body", pt: BRIEF_NOTE_PT };
+  // 표 글자(11pt)보다 작게 — ※ 줄(12pt)보다도 작다
+  const pt = unitCaptionPt(REPORT_TABLE_STYLE);
+  const c: CharSpec = { font: "body", pt };
   return ctx.para({
     paraPr: ctx.reg.paraPr({ align: "RIGHT", lineSpacing: 130, prev: 200, keepWithNext: true }),
     runs: ctx.runsFor(b.inlines, c, ctx.reg.charPr(c)),
-    vertsize: BRIEF_NOTE_PT * 100,
+    vertsize: pt * 100,
     lineSpacing: 130,
   });
 }
