@@ -80,8 +80,12 @@ function NewProjectDialog({ onClose, onCreated }: { onClose: () => void; onCreat
   const [form, setForm] = useState<NewProjectInput>(() => ({ ...EMPTY, contact: { ...EMPTY.contact, ...saved } }));
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  // 기존 사업계획서 업로드 (선택): 파일 + 바뀌는 내용 → 업로드 후 전체 자동 실행
-  const [refFile, setRefFile] = useState<File | null>(null);
+  // 관련 문서 업로드 (선택, 여러 개): 고른 순서대로 쌓인다 — 사업계획서 갱신에서는 첫 파일이 기존 사업계획서다.
+  // 바뀌는 내용(changes)·용도는 올린 문서 전부에 한 번 적용된다. 업로드 뒤 전체 자동 실행(사업만).
+  const [refFiles, setRefFiles] = useState<File[]>([]);
+  const refFile = refFiles[0] ?? null;
+  /** 주제 기본 문구에 넣는 파일 이름 — 여럿이면 "첫 파일 외 N건" */
+  const refLabel = refFiles.length > 1 ? `${refFiles[0].name} 외 ${refFiles.length - 1}건` : (refFile?.name ?? "");
   const [changes, setChanges] = useState("");
   const [autoRun, setAutoRun] = useState(true);
   // 공문에 붙인 문서의 용도 — 프로젝트마다 다르므로 브라우저에 기억하지 않는다
@@ -205,15 +209,15 @@ function NewProjectDialog({ onClose, onCreated }: { onClose: () => void; onCreat
       // 공문에서 내용 칸을 비우고 파일로 대신했을 때는 그 사실을 한 줄로 적어 준다 — 용도별 지시와
       // 파일 경로는 프롬프트의 "참고 문서(용도: …)" 줄이 따로 싣는다.
       const topic = isOfficial
-        ? form.topic.trim() || (refFile ? `첨부한 ${REFERENCE_DOC_TITLE[refRole]}(${refFile.name})의 내용으로 공문을 작성` : "")
+        ? form.topic.trim() || (refFile ? `첨부한 ${REFERENCE_DOC_TITLE[refRole]}(${refLabel})의 내용으로 공문을 작성` : "")
         : isCloseout
           ? form.topic.trim() || `「${title}」 결과 및 정산보고 — 내용은 올린 자료로 작성`
           : isProgram
-          ? form.topic.trim() || (refFile ? `기존 사업계획서(${refFile.name})를 기준으로 갱신${changes.trim() ? ` — 바뀌는 내용: ${changes.trim()}` : ""}` : "")
+          ? form.topic.trim() || (refFile ? `기존 사업계획서(${refLabel})를 기준으로 갱신${changes.trim() ? ` — 바뀌는 내용: ${changes.trim()}` : ""}` : "")
           : // 업무보고는 주제를 묻지 않으므로 비어 있을 수 있다. 서버는 한 글자 이상을 요구하므로
             // 제목에서 만든다 — "기존 사업계획서를 갱신" 은 업무보고에 쓰면 안 되는 말이다.
             form.topic.trim() ||
-            (refFile ? `첨부한 ${REFERENCE_DOC_TITLE[DEFAULT_REFERENCE_ROLE]}(${refFile.name})의 내용으로 「${title}」 주요업무보고를 작성` : `「${title}」 주요업무보고 작성`);
+            (refFile ? `첨부한 ${REFERENCE_DOC_TITLE[DEFAULT_REFERENCE_ROLE]}(${refLabel})의 내용으로 「${title}」 주요업무보고를 작성` : `「${title}」 주요업무보고 작성`);
       const p = await api.createProject({ ...form, title, topic, contact });
       // 실제로 쓰인 연락처가 다음 프로젝트의 기본값이 된다(브라우저에만 담는다)
       saveContactPref(form.contact);
@@ -240,7 +244,9 @@ function NewProjectDialog({ onClose, onCreated }: { onClose: () => void; onCreat
         setPhase("upload");
         // 공문·업무보고에는 research 단계가 없다 — 자동 실행을 걸 곳이 없으므로 늘 false 로 보낸다
         // (라우트도 같은 게이트를 둔다: app/api/projects/[id]/reference/route.ts:48).
-        await api.uploadReference(p.id, refFile, changes, isProgram ? autoRun : false, planResearch);
+        await api.uploadReference(p.id, refFiles, changes, isProgram ? autoRun : false, planResearch, (done, total, name) =>
+          setProgress(done < total ? `${done + 1}/${total} ${name}` : ""),
+        );
       }
       onCreated(p);
     } catch (e) {
@@ -554,21 +560,51 @@ function NewProjectDialog({ onClose, onCreated }: { onClose: () => void; onCreat
           <legend className="px-1 text-xs font-semibold text-slate-600">{isProgram ? "기존 사업계획서로 시작 (선택)" : "관련 문서 첨부 (선택)"}</legend>
           <p className="mb-2 text-[11px] text-slate-500">
             {isOfficial
-              ? "관련 문서를 올리면 그 내용을 읽고 공문을 씁니다. 주제 칸을 길게 적는 대신 파일로 대신할 수 있습니다."
+              ? "관련 문서를 올리면 그 내용을 읽고 공문을 씁니다. 주제 칸을 길게 적는 대신 파일로 대신할 수 있고, 여러 개를 올리면 모두 읽습니다."
               : isProgram
-                ? "지난해 사업계획서(hwp·hwpx·pdf·docx)를 올리고 바뀌는 내용을 적으면, 그 계획서를 기준으로 조사 → 사업계획서 → 공고문 → 보도자료를 자동으로 만듭니다."
-                : "지난 보고서나 실적 자료를 올리면 그 내용을 읽고 업무보고를 씁니다. 지난 연도 표기는 이번 보고 기준으로 고쳐 씁니다."}
+                ? "지난해 사업계획서(hwp·hwpx·pdf·docx)를 올리고 바뀌는 내용을 적으면, 그 계획서를 기준으로 조사 → 사업계획서 → 공고문 → 보도자료를 자동으로 만듭니다. 여러 개를 올리면 첫 파일을 기존 사업계획서로 보고 나머지는 참고 문서로 함께 읽습니다."
+                : "지난 보고서나 실적 자료를 올리면 그 내용을 읽고 업무보고를 씁니다(여러 개 가능). 지난 연도 표기는 이번 보고 기준으로 고쳐 씁니다."}
           </p>
           <div className="grid gap-3">
             <label className="flex cursor-pointer items-center gap-2 rounded border border-dashed border-slate-300 px-3 py-2 text-xs text-slate-700 hover:bg-slate-50">
               <Upload className="h-4 w-4 text-slate-400" />
-              <span className="flex-1 truncate">{refFile ? `${refFile.name} (${Math.round(refFile.size / 1024)} KB)` : "파일 선택 — .hwp .hwpx .pdf .docx .md .txt"}</span>
-              <input id="referenceFile" name="referenceFile" type="file" className="hidden" accept=".hwp,.hwpx,.pdf,.docx,.md,.txt" onChange={(e) => setRefFile(e.target.files?.[0] ?? null)} />
+              <span className="flex-1 truncate">{refFiles.length ? `파일 더 올리기 (${refFiles.length}개 골랐음)` : "파일 선택(여러 개 가능) — .hwp .hwpx .pdf .docx .md .txt"}</span>
+              <input
+                id="referenceFile"
+                name="referenceFile"
+                type="file"
+                multiple
+                className="hidden"
+                accept=".hwp,.hwpx,.pdf,.docx,.md,.txt"
+                onChange={(e) => {
+                  const picked = Array.from(e.target.files ?? []);
+                  // 같은 이름은 새로 고른 것으로 바꾸고, 나머지는 고른 순서대로 뒤에 쌓는다 — 다시 골라도 앞의 것이 사라지지 않는다
+                  setRefFiles((cur) => [...cur.filter((c) => !picked.some((n) => n.name === c.name)), ...picked]);
+                  e.target.value = "";
+                }}
+              />
             </label>
+            {refFiles.length ? (
+              <ul className="grid gap-1 text-xs text-slate-700">
+                {refFiles.map((f, i) => (
+                  <li key={f.name} className="flex items-center gap-2 rounded bg-slate-50 px-2 py-1">
+                    {isProgram ? (
+                      <span className={cn("shrink-0 rounded px-1 text-[10px] font-semibold", i === 0 ? "bg-sky-100 text-sky-800" : "bg-slate-200 text-slate-600")}>{i === 0 ? "기존 계획서" : "참고"}</span>
+                    ) : null}
+                    <span className="flex-1 truncate">{f.name}</span>
+                    <span className="text-slate-400">{Math.max(1, Math.round(f.size / 1024))} KB</span>
+                    <button type="button" aria-label={`${f.name} 빼기`} className="rounded p-0.5 text-slate-400 hover:text-red-600" onClick={() => setRefFiles((cur) => cur.filter((c) => c !== f))}>
+                      <Trash2 className="h-3.5 w-3.5" />
+                    </button>
+                  </li>
+                ))}
+              </ul>
+            ) : null}
+            {progress ? <p className="text-[11px] text-sky-700">올리는 중 {progress} — hwp·pdf는 글자를 읽느라 파일마다 몇 초씩 걸립니다</p> : null}
             {refFile ? (
               <>
                 {isOfficial ? (
-                  <Field label="이 문서의 용도">
+                  <Field label={refFiles.length > 1 ? "이 문서들의 용도 (모두 같은 용도로 읽습니다)" : "이 문서의 용도"}>
                     <div className="flex flex-wrap gap-2">
                       {REFERENCE_ROLES.map((r) => (
                         <div

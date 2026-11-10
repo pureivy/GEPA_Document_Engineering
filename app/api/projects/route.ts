@@ -91,6 +91,7 @@ export async function POST(req: Request) {
     contact: JSON.stringify(body.data.contact),
     referenceName: null,
     referenceChanges: null,
+    referenceNames: null,
     createdAt: now,
     updatedAt: now,
   };

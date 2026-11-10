@@ -103,21 +103,32 @@ function projectBrief(p: ProjectDTO, workspaceDir?: string): string {
       // 아래 referenceGuide 의 지시와 담당자가 적은 줄이 같은 것을 가리키게 한다.
       // 사업계획서 쪽 두 줄은 손대지 않는다: 얼어붙은 세 family 의 프롬프트가 바뀌면 안 된다.
       const 용도 = referenceRole(p);
-      lines.push(`참고 문서(용도: ${용도}): ${workspaceDir ?? "<작업폴더>"}/reference/base-plan.md (원본 파일 ${p.reference.fileName})`);
+      lines.push(`참고 문서(용도: ${용도}): ${workspaceDir ?? "<작업폴더>"}/reference/base-plan.md (원본 파일 ${referenceFiles(p)})`);
       // 비면 줄 자체를 싣지 않는다 — "(미기재 — 연도·일정·담당만 갱신)" 은 사업계획서 갱신을 전제한 문구라 공문에 맞지 않는다
       if (p.reference.changes) lines.push(`${REFERENCE_CHANGES_LABEL[용도]}: ${p.reference.changes}`);
     } else if (p.kind === "report") {
       // 업무보고에는 용도가 없다(화면에도 라디오가 없다) — 붙인 문서는 언제나 내용 근거자료다.
       // 여기서 갈라 두지 않으면 사업계획서 쪽 두 줄이 그대로 실려 에이전트가 업무보고를
       // "기존 계획서를 갱신하는 것"으로 읽는다. 아무 오류도 나지 않고 틀린 문서가 나온다.
-      lines.push(`참고 문서: ${workspaceDir ?? "<작업폴더>"}/reference/base-plan.md (원본 파일 ${p.reference.fileName})`);
+      lines.push(`참고 문서: ${workspaceDir ?? "<작업폴더>"}/reference/base-plan.md (원본 파일 ${referenceFiles(p)})`);
       if (p.reference.changes) lines.push(`${REFERENCE_CHANGES_LABEL[DEFAULT_REFERENCE_ROLE]}: ${p.reference.changes}`);
     } else {
-      lines.push(`기존 사업계획서: ${workspaceDir ?? "<작업폴더>"}/reference/base-plan.md (원본 파일 ${p.reference.fileName}) — 이번 프로젝트는 이 계획서를 갱신하는 것이다.`);
+      // 파일이 하나면 예전 문자열 그대로다(얼어붙은 세 family). 여럿일 때만 첫 파일이 계획서임을 덧붙인다.
+      const multi = (p.reference.fileNames?.length ?? 1) > 1;
+      lines.push(
+        `기존 사업계획서: ${workspaceDir ?? "<작업폴더>"}/reference/base-plan.md (원본 파일 ${referenceFiles(p)}) — 이번 프로젝트는 이 계획서를 갱신하는 것이다.${multi ? " 첫 파일이 기존 사업계획서이고 나머지는 함께 올린 참고 문서다(base-plan.md 안에 절로 나뉘어 있다)." : ""}`,
+      );
       lines.push(`이번에 바뀌는 내용: ${p.reference.changes || "(미기재 — 연도·일정·담당만 갱신)"}`);
     }
   }
   return lines.join("\n");
+}
+
+/** "(원본 파일 …)" 에 싣는 이름 — 하나면 예전 그대로 그 이름, 여럿이면 전부 나열하고 건수를 단다 */
+function referenceFiles(p: ProjectDTO): string {
+  if (!p.reference) return "";
+  const names = p.reference.fileNames?.length ? p.reference.fileNames : [p.reference.fileName];
+  return names.length > 1 ? `${names.join(", ")} — ${names.length}건` : names[0];
 }
 
 /** 공문에 붙인 참고 문서의 용도. 파일만 있고 용도가 비었으면 근거자료로 본다(가장 해가 적은 쪽). */

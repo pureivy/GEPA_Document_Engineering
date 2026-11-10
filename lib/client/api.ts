@@ -95,16 +95,36 @@ export const api = {
   },
   getProject: (id: string) => request<ProjectDetail>(`/api/projects/${encodeURIComponent(id)}`),
   /** upload a 기존 사업계획서 (+ 변경 사항); autoRun starts 조사 → … automatically */
-  uploadReference: async (id: string, file: File, changes: string, autoRun: boolean, supplementalResearch = false) => {
-    const fd = new FormData();
-    fd.append("file", file);
-    fd.append("changes", changes);
-    fd.append("autoRun", autoRun ? "1" : "0");
-    fd.append("supplementalResearch", supplementalResearch ? "1" : "0");
-    const res = await fetch(`/api/projects/${encodeURIComponent(id)}/reference`, { method: "POST", body: fd, headers: { Accept: "application/json" } });
-    const body = (await res.json().catch(() => ({}))) as { error?: string; project?: ProjectDTO; chars?: number; truncated?: boolean };
-    if (!res.ok) throw new ApiError(res.status, body.error ?? `${res.status} ${res.statusText}`, body);
-    return body as { project: ProjectDTO; chars: number; truncated: boolean };
+  /**
+   * 참고 문서 — 여러 파일이면 **한 파일씩** 올린다(자료함과 같은 이유: 한 요청에 다 담으면 hwp·pdf 변환이
+   * 길어져 시간 제한에 걸린다). 서버는 부를 때마다 누적하므로(같은 이름은 바뀐다) autoRun 은 마지막 파일에만 건다.
+   */
+  uploadReference: async (
+    id: string,
+    files: File | File[],
+    changes: string,
+    autoRun: boolean,
+    supplementalResearch = false,
+    onProgress?: (done: number, total: number, name: string) => void,
+  ) => {
+    const list = Array.isArray(files) ? files : [files];
+    if (!list.length) throw new ApiError(400, "올릴 파일이 없습니다");
+    let last: { project: ProjectDTO; chars: number; truncated: boolean } | null = null;
+    for (let i = 0; i < list.length; i++) {
+      const f = list[i];
+      onProgress?.(i, list.length, f.name);
+      const fd = new FormData();
+      fd.append("file", f);
+      fd.append("changes", changes);
+      fd.append("autoRun", autoRun && i === list.length - 1 ? "1" : "0");
+      fd.append("supplementalResearch", supplementalResearch ? "1" : "0");
+      const res = await fetch(`/api/projects/${encodeURIComponent(id)}/reference`, { method: "POST", body: fd, headers: { Accept: "application/json" } });
+      const body = (await res.json().catch(() => ({}))) as { error?: string; project?: ProjectDTO; chars?: number; truncated?: boolean };
+      if (!res.ok) throw new ApiError(res.status, body.error ?? `${res.status} ${res.statusText}`, body);
+      last = body as { project: ProjectDTO; chars: number; truncated: boolean };
+    }
+    onProgress?.(list.length, list.length, "");
+    return last!;
   },
   /**
    * 정산·결과보고 자료(여러 파일) — **한 파일씩** 올린다. 30개·180MB 를 한 요청에 담으면 서버가 전부를

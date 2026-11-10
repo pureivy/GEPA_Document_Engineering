@@ -49,6 +49,7 @@ describe("serializeProject 의 kind", () => {
     contact: "{}",
     referenceName: null,
     referenceChanges: null,
+    referenceNames: null,
     createdAt: "",
     updatedAt: "",
   });

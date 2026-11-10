@@ -142,8 +142,12 @@ export interface ProjectDTO {
      */
     보고형태?: ReportForm;
   };
-  /** uploaded 기존 사업계획서 (projects/<id>/reference/<fileName>, text in reference/base-plan.md) and what changes */
-  reference?: { fileName: string; changes: string };
+  /**
+   * uploaded reference documents (projects/<id>/reference/<fileName>, text of all of them in reference/base-plan.md)
+   * and what changes. `fileName` is the first file (the frozen prompts read it); `fileNames` lists every file in
+   * upload order (absent on DTOs built by hand — treat as [fileName]).
+   */
+  reference?: { fileName: string; fileNames?: string[]; changes: string };
   createdAt: string;
   updatedAt: string;
 }
