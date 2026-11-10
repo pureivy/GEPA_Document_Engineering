@@ -1,6 +1,7 @@
 /**
  * 보도자료 expander (grammar rule 13): pressHeader → pressTitle → pressSubtitle → body.
- * Body lines without a glyph become `pressBody`; `#` headings are not part of the press grammar.
+ * Body lines without a glyph become `pressBody`; `#` 소제목은 sectionBar 로 받아 작성기가 `■  소제목` 줄로 낸다
+ * (2026년 서식 — docs/design-system/press.md). `##` 은 굵은 `□` 줄.
  */
 import type { PressMeta } from "../../schema";
 import { parseInlines } from "../inline";
@@ -13,6 +14,6 @@ export function pressPrelude(meta: PressMeta): BlockInput[] {
 }
 
 export function pressContext(meta: PressMeta): FamilyContext {
-  // allowHeadings:false 라 `#` 은 parser.ts:510 에서 끊긴다 — numeralStyle 에 닿지 않는다.
-  return { prelude: pressPrelude(meta), firstSectionNumber: 1, plainRole: "pressBody", allowHeadings: false, numeralStyle: "roman" };
+  // headingStyle "sectionBar" 와 짝: `#` → sectionBar(번호는 작성기가 쓰지 않는다). numeralStyle 은 chapterChip 가족만 읽는다.
+  return { prelude: pressPrelude(meta), firstSectionNumber: 1, plainRole: "pressBody", allowHeadings: true, numeralStyle: "roman" };
 }

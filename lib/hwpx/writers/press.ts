@@ -1,106 +1,113 @@
 /**
- * 보도자료 writer — reproduces the 2023.02.17 GEPA press-release layout
- * (docs/design-system/press.md) on top of templates/press (the reference HWPX itself):
- *   머리표 5-column table (GEPA 로고 · 보도자료 로고타입 + 【배포일】 · 담당부서/작성자/연락처)
- *   → blue-ruled title box (제목 18pt B 자간 −20 / 부제 18pt B 장평 98 자간 −6)
- *   → 함초롬바탕 15pt 180% body paragraphs
- *   → consecutive □/ㅇ/- items become one grey (#F2F2F2) box: "□ 소제목"(bold) / "  • 항목" / "    - 세부" 14pt lines.
+ * 보도자료 writer — 2026년 GEPA 보도자료 서식 (docs/design-system/press.md, 2026-02-26 참고본 실측)
+ * on top of templates/press (글꼴 표·쪽 설정은 2023 참고본 패키지를 그대로 쓰고, 로고 그림만 CI 매뉴얼의 GEPA 마크로 바꿨다):
+ *   머리표(4행 표): [GEPA 로고 ‖ 보도자료【26. 2. 26.】] ‖ [제공일자 / 제공부서 / 주책임자 / 담 당 자]
+ *   → 전화 · FAX · 전자우편 한 줄(아래 0.4 mm 괘선)
+ *   → 제목(HY헤드라인M 20pt, 최대 2줄) → 회색 괘선 → 부제(맑은 고딕 12pt 회색)
+ *   → 본문 맑은 고딕 13pt 185 %: `□` 리드·인용 문단(내어쓰기) · `#` 소제목 → `■  소제목` · 일반 문단(한 칸 들여쓰기) · `ㅇ/-/·` 항목
+ *   문단 사이 빈 줄은 쓰지 않는다 — 간격은 문단 위·아래 여백으로 낸다.
  */
 import type { XmlNode } from "../xml";
-import type { PressDoc, Block, Inline } from "../../docmodel/schema";
+import type { PressDoc, Block } from "../../docmodel/schema";
 import { inlineText } from "../../docmodel/schema";
 import { WriterContext } from "./context";
-import { emitBlank, emitImage, emitPara, emitTable, type FamilyStyle } from "./common";
+import { emitImage, emitPara, emitTable, type FamilyStyle } from "./common";
 import { table, cellInteriorWidth, type CellSpec, type RowSpec } from "../emit/table";
-import { pictureFrom, pictureSize } from "../emit/picture";
+import { pictureOf } from "../emit/picture";
 import { procedureFlow } from "./notice";
 import type { CharSpec, SideSpec } from "../registry";
 
 type ParaBlock = Extract<Block, { k: "para" }>;
 
 export const PRESS_STYLE: FamilyStyle = {
-  bodyPt: 15,
-  bodyLineSpacing: 180,
+  bodyPt: 13,
+  bodyLineSpacing: 185,
   body1Bold: false,
-  body1Font: "batang",
-  notePt: 13,
-  noteFont: "batang",
+  body1Font: "table",
+  notePt: 12,
+  noteFont: "table",
   tableHeaderFill: "#F2F2F2",
   tableFontPt: 11,
-  hangingIndent: false,
+  hangingIndent: true,
 };
 
-// ---- reference geometry (HWPUNIT) --------------------------------------------------------
-const HEADER_COLS = [8496, 11922, 6018, 4849, 16452]; // Σ 47737
-const HEADER_ROW_FIRST = 1880;
-const HEADER_ROW = 1680;
-const TITLE_WIDTH = 47909;
-const TITLE_MIN_HEIGHT = 3200; // one 18pt line at 160 % + cell margins
-const BOX_WIDTH = 47905;
+// ---- 참고본 실측 geometry (HWPUNIT; 1 pt = 100) ----------------------------------------
+const WIDTH = 47900; // 본문 폭 48190 안에 들어가는 표 폭 (참고본 481 pt)
+const HEADER_COLS = [24270, 1070, 7170, 15390]; // 로고·보도자료 블록 | 빈 칸 | 라벨 | 값  (Σ 47900)
+const HEADER_ROW = 2000; // 4행 × 20 pt
+const CONTACT_ROW = 2030;
 const CELL_MARGIN = { l: 141, r: 141, t: 141, b: 141 };
-const BOX_MARGIN = { l: 510, r: 510, t: 141, b: 141 };
+/** templates/press/pkg/BinData/image1.png — CI 매뉴얼 기본로고에서 뽑은 GEPA 마크(흰 바탕). 27 mm 폭으로 놓는다. */
+const LOGO = { id: "image1", px: { width: 1127, height: 366 }, widthHwp: 7650 };
+/** 기관 대표 FAX — front-matter 에 `팩스` 가 없을 때 참고본(2026-02-26)의 값을 쓴다 */
+const DEFAULT_FAX = "054.472.2989";
 
-// 제목/부제 default 장평 100 % · 자간 0 %; fitTitle() squeezes within [ratio ≥ 90, spacing ≥ −20] to keep one line
-const TITLE_CHAR: CharSpec = { font: "batang", pt: 18, bold: true, spacing: 0, ratio: 100 };
-const SUBTITLE_CHAR: CharSpec = { font: "batang", pt: 16, bold: true, spacing: 0, ratio: 100 }; // user: 부제 16pt (2026-09-16)
-const FIT_MIN_RATIO = 90;
-const FIT_MIN_SPACING = -20;
-/** character budgets (공백 포함) that fit one line: 제목 18pt ≤ 26자 at 100/0, ≤ 36자 squeezed; 부제 16pt ≤ 30자 / ≤ 42자 */
-export const TITLE_LIMITS = { title: { plain: 26, max: 36 }, subtitle: { plain: 30, max: 42 } } as const;
-const BODY_CHAR: CharSpec = { font: "batang", pt: 15 };
-const BOX_CHAR: CharSpec = { font: "batang", pt: 14, spacing: -5, ratio: 98 };
-const LABEL_CHAR: CharSpec = { font: "body", pt: 14, spacing: -5, ratio: 95 };
-const VALUE_CHAR: CharSpec = { font: "body", pt: 14, ratio: 95 };
-const DATE_CHAR: CharSpec = { font: "moum", pt: 15, spacing: -4 };
+const MALGUN = "맑은 고딕";
+const HEADLINE = "HY헤드라인M";
+const GOTHIC_B = "HY견고딕";
+const MOUM = "휴먼모음T";
 
-const solid = (widthMm: number): SideSpec => ({ type: "SOLID", widthMm, color: "#000000" });
-const DOUBLE: SideSpec = { type: "DOUBLE_SLIM", widthMm: 0.5, color: "#000000" };
+const BODY_CHAR: CharSpec = { font: MALGUN, pt: 13 };
+const LABEL_CHAR: CharSpec = { font: MALGUN, pt: 12 };
+const LOGOTYPE_CHAR: CharSpec = { font: HEADLINE, pt: 35 };
+const DATE_CHAR: CharSpec = { font: MOUM, pt: 15 };
+const CONTACT_CHAR: CharSpec = { font: GOTHIC_B, pt: 12, spacing: -4 }; // 참고본 13pt 지만 한 줄에 들어가도록 살짝 조임
+const TITLE_CHAR: CharSpec = { font: HEADLINE, pt: 20 };
+const SUBTITLE_CHAR: CharSpec = { font: MALGUN, pt: 12, color: "#808080" };
+const TITLE_LINE = 3300; // 20 pt × 165 %
+/** 글자 수 안내(공백 포함): 제목 20pt 는 한 줄 약 24자, 두 줄까지 허용. 부제 12pt 는 한 줄 */
+export const TITLE_LIMITS = { title: { plain: 24, max: 48 }, subtitle: { plain: 40, max: 48 } } as const;
 
-const BULLET_ROLES = new Set(["body1", "body2", "body3", "body4"]);
-function isBulletItem(b: Block): boolean {
-  return b.k === "para" && BULLET_ROLES.has(b.role) && !!b.glyph && b.glyph !== "none";
-}
+const solid = (widthMm: number, color = "#000000"): SideSpec => ({ type: "SOLID", widthMm, color });
+const NONE: SideSpec = "none";
+const THICK = solid(0.4);
+const THIN = solid(0.12);
+
+const GLYPH_ROLES = new Set(["body1", "body2", "body3", "body4"]);
+const PREFIX: Record<string, { text: string; hanging: number }> = {
+  body1: { text: "□ ", hanging: 1950 },
+  body2: { text: "  • ", hanging: 2600 },
+  body3: { text: "    - ", hanging: 3900 },
+  body4: { text: "      · ", hanging: 5200 },
+};
 
 export function writePress(ctx: WriterContext, doc: PressDoc): XmlNode[] {
   const out: XmlNode[] = [];
   const fs = PRESS_STYLE;
   const blocks = doc.blocks;
-  let firstBody = true;
-  let i = 0;
-  while (i < blocks.length) {
+  let lead = true; // 부제 다음 첫 본문 문단 — 위 여백을 더 둔다
+  for (let i = 0; i < blocks.length; i++) {
     const b = blocks[i];
-    // consecutive glyph items → one grey bullet box
-    if (isBulletItem(b)) {
-      const group: ParaBlock[] = [];
-      while (i < blocks.length && isBulletItem(blocks[i])) group.push(blocks[i++] as ParaBlock);
-      out.push(bulletBox(ctx, group));
-      continue;
-    }
-    i++;
     switch (b.k) {
       case "pressHeader":
-        out.push(pressHeader(ctx, doc));
+        out.push(pressHeader(ctx, doc), contactLine(ctx, doc));
+        break;
+      case "sectionBar":
+        out.push(sectionHeading(ctx, b.title));
         break;
       case "para":
         if (b.role === "pressTitle") {
-          const next = blocks[i];
+          const next = blocks[i + 1];
           const sub = next && next.k === "para" && next.role === "pressSubtitle" ? next : undefined;
           if (sub) i++;
-          out.push(titleBox(ctx, b, sub));
+          out.push(...titleBlock(ctx, b, sub));
         } else if (b.role === "pressSubtitle") {
-          out.push(titleBox(ctx, undefined, b));
-        } else if (b.role === "pressBody" || b.role === "pressLead" || b.role === "plain") {
-          out.push(bodyPara(ctx, b, firstBody));
-          firstBody = false;
+          out.push(...titleBlock(ctx, undefined, b));
         } else if (b.role === "pressContact") {
-          const paraPr = ctx.reg.paraPr({ align: "RIGHT", lineSpacing: 150 });
-          out.push(ctx.para({ paraPr, runs: ctx.runsFor(b.inlines, { font: "batang", pt: 13 }), vertsize: 1300, lineSpacing: 150, forcePageBreak: b.pageBreakBefore }));
+          const paraPr = ctx.reg.paraPr({ align: "RIGHT", lineSpacing: 150, prev: 1000 });
+          out.push(ctx.para({ paraPr, runs: ctx.runsFor(b.inlines, { font: MALGUN, pt: 12 }), vertsize: 1200, lineSpacing: 150, forcePageBreak: b.pageBreakBefore }));
+        } else if (b.role === "pressBody" || b.role === "pressLead" || b.role === "plain") {
+          out.push(bodyPara(ctx, b, lead));
+          lead = false;
+        } else if (GLYPH_ROLES.has(b.role) && b.glyph && b.glyph !== "none") {
+          out.push(glyphPara(ctx, b, lead));
+          lead = false;
         } else {
           out.push(emitPara(ctx, fs, b));
         }
         break;
       case "blank":
-        out.push(emitBlank(ctx, fs, b.role === "blankSmall"));
+        // 새 서식은 문단 사이 빈 줄이 없다 — 작성자가 넣은 빈 줄은 무시한다(간격은 문단 여백)
         break;
       case "pageBreak":
         ctx.pendingPageBreak = true;
@@ -117,10 +124,10 @@ export function writePress(ctx: WriterContext, doc: PressDoc): XmlNode[] {
         out.push(...procedureFlow(ctx, b));
         break;
       case "attachmentList": {
-        const r = ctx.roleOr("pressBody", { para: { align: "JUSTIFY", lineSpacing: 180 }, char: BODY_CHAR });
+        const paraPr = ctx.reg.paraPr({ align: "JUSTIFY", lineSpacing: 185, prev: 1000 });
         b.items.forEach((it, k) => {
           const text = (k === 0 ? `붙임  ${it}` : `      ${it}`) + (k === b.items.length - 1 ? "  끝." : "");
-          out.push(ctx.para({ paraPr: r.paraPr, runs: [{ charPr: r.charPr, text }], vertsize: 1500, lineSpacing: 180 }));
+          out.push(ctx.para({ paraPr: k === 0 ? paraPr : ctx.reg.paraPr({ align: "JUSTIFY", lineSpacing: 185 }), runs: ctx.runsFor([{ t: "text", text }], BODY_CHAR), vertsize: 1300, lineSpacing: 185 }));
         });
         break;
       }
@@ -131,17 +138,36 @@ export function writePress(ctx: WriterContext, doc: PressDoc): XmlNode[] {
   return out;
 }
 
-/** 함초롬바탕 15pt, justify, 180 %; the first body paragraph carries the reference's 1000 HWPUNIT space-before. */
-function bodyPara(ctx: WriterContext, b: ParaBlock, first: boolean): XmlNode {
-  const role = ctx.roleOr(first ? "pressLead" : "pressBody", { para: { align: "JUSTIFY", lineSpacing: 180, prev: first ? 1000 : 0 }, char: BODY_CHAR });
-  const paraPr = b.align && b.align !== "both" ? ctx.reg.paraPr({ align: b.align.toUpperCase() as "LEFT" | "CENTER" | "RIGHT", lineSpacing: 180 }) : role.paraPr;
-  const runs = ctx.runsFor(b.inlines, BODY_CHAR, role.charPr);
-  return ctx.para({ paraPr, runs, vertsize: 1500, lineSpacing: 180, forcePageBreak: b.pageBreakBefore });
+// ---- 본문 문단 ----------------------------------------------------------------------------
+
+/** 일반 문단 — 맑은 고딕 13pt 양쪽 정렬 185 %, 첫 줄은 한 칸(반각 공백) 들여 쓰고 둘째 줄부터 6.3 pt 내어쓰기 */
+function bodyPara(ctx: WriterContext, b: ParaBlock, lead: boolean): XmlNode {
+  const align = b.align && b.align !== "both" ? (b.align.toUpperCase() as "LEFT" | "CENTER" | "RIGHT") : "JUSTIFY";
+  const paraPr = ctx.reg.paraPr({ align, lineSpacing: 185, hanging: align === "JUSTIFY" ? 630 : undefined, prev: lead ? 1800 : 0 });
+  const inlines = align === "JUSTIFY" ? [{ t: "text" as const, text: " " }, ...b.inlines] : b.inlines;
+  return ctx.para({ paraPr, runs: ctx.runsFor(inlines, BODY_CHAR), vertsize: 1300, lineSpacing: 185, forcePageBreak: b.pageBreakBefore });
 }
 
-const TITLES = new Set(["담당", "책임", "실장", "팀장", "과장", "부장", "원장", "소장", "차장", "국장", "처장", "대리", "주임", "사원", "선임", "주무관", "사무관", "담당관", "연구원", "본부장", "센터장", "지소장", "전문위원", "선임연구원", "책임연구원"]);
+/** `□` 리드·인용 문단과 `ㅇ/-/·` 항목 — 글자 표지 뒤에 줄을 맞추는 내어쓰기 */
+function glyphPara(ctx: WriterContext, b: ParaBlock, lead: boolean): XmlNode {
+  const p = PREFIX[b.role] ?? PREFIX.body2;
+  const prev = b.role === "body1" ? (lead ? 1800 : 1000) : 0;
+  const paraPr = ctx.reg.paraPr({ align: "JUSTIFY", lineSpacing: 185, hanging: p.hanging, prev });
+  const runs = ctx.runsFor([{ t: "text", text: p.text }, ...b.inlines], BODY_CHAR);
+  return ctx.para({ paraPr, runs, vertsize: 1300, lineSpacing: 185, forcePageBreak: b.pageBreakBefore });
+}
 
-/** Split "실장 남상범" / "김OO 팀장" / "박용식" into a 작성자 row label and a name (3-char names ending in 원/장 stay names). */
+/** `#` 소제목 → `■  소제목` (본문과 같은 13pt, 위 10 pt · 아래 5 pt) */
+function sectionHeading(ctx: WriterContext, title: string, pageBreak?: boolean): XmlNode {
+  const paraPr = ctx.reg.paraPr({ align: "JUSTIFY", lineSpacing: 185, hanging: 2600, prev: 1000, next: 500, keepWithNext: true });
+  return ctx.para({ paraPr, runs: ctx.runsFor([{ t: "text", text: `■  ${title}` }], BODY_CHAR), vertsize: 1300, lineSpacing: 185, forcePageBreak: pageBreak });
+}
+
+// ---- 머리표 -------------------------------------------------------------------------------
+
+const TITLES = new Set(["담당", "책임", "실장", "팀장", "과장", "부장", "원장", "소장", "차장", "국장", "처장", "대리", "주임", "사원", "선임", "주무관", "사무관", "담당관", "연구원", "본부장", "센터장", "지소장", "단장", "전문위원", "선임연구원", "책임연구원"]);
+
+/** Split "실장 남상범" / "김OO 팀장" / "박용식" into a title label and a name (3-char names ending in 원/장 stay names). */
 export function splitPerson(s: string, fallbackLabel: string): { label: string; name: string } {
   const tokens = s.trim().split(/\s+/);
   const isTitle = (t: string) => TITLES.has(t) || (t.length === 2 && /(장|관|원|리|임|사)$/.test(t));
@@ -150,70 +176,73 @@ export function splitPerson(s: string, fallbackLabel: string): { label: string; 
   return { label: fallbackLabel, name: s.trim() };
 }
 
-/** "2027. 3. 15.(월)" → "27. 3. 15(월)" — the reference writes a 2-digit year and no period before the weekday, so the date stays on one line. */
-export function headerDate(배포일: string): string {
-  return 배포일
-    .trim()
-    .replace(/^(19|20)(\d{2})\s*[.년]/, "$2.")
-    .replace(/\.\s*\(/, "(")
-    .replace(/\s+/g, " ")
-    .replace(/\.$/, "");
+/** 머리표 사람 칸 — 새 서식은 "이름 직위"(장은영 팀장) 순서. "실장 남상범" 도 "남상범 실장" 으로 뒤집는다. */
+export function personName(s: string | undefined): string {
+  if (!s || !s.trim()) return "";
+  const { label, name } = splitPerson(s, "");
+  return label ? `${name} ${label}` : name;
 }
 
-/** 머리표: 로고 | 보도자료 로고타입 + 【배포일】 ‖ 담당부서 / 작 성 자 (실장·담당·이메일) / 연 락 처 */
+/** 제공일자 — "2026. 7. 1.(수)" / "26. 7. 1" → "2026. 7. 1." (연도 네 자리, 요일 없이, 마침표로 끝) */
+export function provideDate(배포일: string): string {
+  const m = 배포일.trim().match(/(\d{2,4})\s*[.년]\s*(\d{1,2})\s*[.월]\s*(\d{1,2})/);
+  if (!m) return 배포일.trim();
+  const y = m[1].length === 2 ? `20${m[1]}` : m[1];
+  return `${y}. ${Number(m[2])}. ${Number(m[3])}.`;
+}
+
+/** 보도자료 로고타입 옆 【26. 2. 26.】 — 연도 두 자리 */
+export function headerDate(배포일: string): string {
+  return provideDate(배포일).replace(/^(19|20)(\d{2})\./, "$2.");
+}
+
+/** 전화번호 표기 — 참고본은 "054.470.8527" (붙임표 대신 마침표) */
+export function dottedPhone(s: string): string {
+  return s.trim().replace(/-/g, ".");
+}
+
 function pressHeader(ctx: WriterContext, doc: PressDoc): XmlNode {
   const m = doc.meta;
   const cols = HEADER_COLS;
-  const label = ctx.roleOr("headerLabel", { para: { align: "CENTER", lineSpacing: 160 }, char: LABEL_CHAR });
-  const value = ctx.roleOr("headerValue", { para: { align: "CENTER", lineSpacing: 160 }, char: VALUE_CHAR });
   const bf = (l: SideSpec, r: SideSpec, t: SideSpec, b: SideSpec) => ctx.reg.borderFill({ l, r, t, b });
+  const interior = (col: number, span = 1) => cellInteriorWidth(cols.slice(col, col + span).reduce((a, b) => a + b, 0), CELL_MARGIN);
 
-  const textCell = (col: number, colSpan: number, rowSpan: number, borderFill: number, role: { paraPr: number; charPr: number }, base: CharSpec, text: string): CellSpec => {
-    const w = cols.slice(col, col + colSpan).reduce((a, b) => a + b, 0);
+  const textCell = (col: number, borderFill: number, text: string): CellSpec => {
+    const paraPr = ctx.reg.paraPr({ align: "CENTER", lineSpacing: 160 });
     return {
       col,
-      colSpan,
-      rowSpan,
       borderFill,
       margin: CELL_MARGIN,
-      paragraphs: [ctx.cellPara({ paraPr: role.paraPr, runs: ctx.runsFor([{ t: "text", text }], base, role.charPr), vertsize: 1400, lineSpacing: 160, horzsize: cellInteriorWidth(w, CELL_MARGIN) })],
+      vertAlign: "CENTER",
+      paragraphs: [ctx.cellPara({ paraPr, runs: ctx.runsFor([{ t: "text", text }], LABEL_CHAR), vertsize: 1200, lineSpacing: 160, horzsize: interior(col) })],
     };
   };
 
-  // rows after the 담당부서 row: 실장 (책임자, blank when unknown) / 담당 이름 (이메일), then 연락처
-  const chief = m.책임자 ? splitPerson(m.책임자, "실장") : { label: "실장", name: "" };
-  const staff = splitPerson(m.담당자, "담당");
-  const authors = [chief, { label: staff.label, name: m.이메일 ? `${staff.name} (${m.이메일})` : staff.name }];
-  const authorRows = authors.length;
-  const rowCount = 1 + authorRows + 1;
-  const heights = [HEADER_ROW_FIRST, ...Array.from({ length: rowCount - 1 }, () => HEADER_ROW)];
-
-  const rows: RowSpec[] = [];
-  // row 0: 담당부서
-  rows.push({
-    height: heights[0],
-    cells: [
-      logoCell(ctx, cols[0], rowCount, bf(solid(0.4), solid(0.2), solid(0.4), solid(0.4))),
-      logotypeCell(ctx, cols[1], rowCount, bf(solid(0.2), DOUBLE, solid(0.4), solid(0.4)), m.배포일),
-      textCell(2, 1, 1, bf(DOUBLE, solid(0.2), solid(0.4), solid(0.12)), label, LABEL_CHAR, "담당부서"),
-      textCell(3, 2, 1, bf(solid(0.2), solid(0.4), solid(0.4), solid(0.12)), value, VALUE_CHAR, m.담당부서),
-    ],
-  });
-  // 작성자 rows
-  authors.forEach((a, k) => {
+  // 좌측 블록: 로고(1~2행) / 보도자료【배포일】(3~4행)
+  const logoCell: CellSpec = { col: 0, rowSpan: 2, borderFill: bf(THICK, THICK, THICK, THICK), margin: CELL_MARGIN, vertAlign: "CENTER", paragraphs: [logoPara(ctx, interior(0))] };
+  const logotypeCell: CellSpec = { col: 0, rowSpan: 2, borderFill: bf(THICK, THICK, THICK, THICK), margin: CELL_MARGIN, vertAlign: "CENTER", paragraphs: [logotypePara(ctx, interior(0), m.배포일)] };
+  const gapCell: CellSpec = {
+    col: 1,
+    rowSpan: 4,
+    borderFill: bf(NONE, NONE, NONE, NONE),
+    margin: CELL_MARGIN,
+    paragraphs: [ctx.cellPara({ paraPr: ctx.reg.paraPr({ align: "CENTER", lineSpacing: 100 }), runs: [{ charPr: ctx.reg.charPr(LABEL_CHAR), text: "" }], vertsize: 1000, lineSpacing: 100, horzsize: interior(1) })],
+  };
+  const rowsSpec: [string, string][] = [
+    ["제공일자", provideDate(m.배포일)],
+    ["제공부서", m.담당부서],
+    ["주책임자", personName(m.책임자)],
+    ["담 당 자", personName(m.담당자)],
+  ];
+  const rows: RowSpec[] = rowsSpec.map(([label, value], r) => {
+    const t = r === 0 ? THICK : THIN;
+    const b = r === rowsSpec.length - 1 ? THICK : THIN;
     const cells: CellSpec[] = [];
-    if (k === 0) cells.push(textCell(2, 1, authorRows, bf(DOUBLE, solid(0.2), solid(0.12), solid(0.12)), label, LABEL_CHAR, "작 성 자"));
-    cells.push(textCell(3, 1, 1, bf(solid(0.2), solid(0.12), solid(0.12), solid(0.12)), value, VALUE_CHAR, a.label));
-    cells.push(textCell(4, 1, 1, bf(solid(0.12), solid(0.4), solid(0.12), solid(0.12)), value, VALUE_CHAR, a.name));
-    rows.push({ height: heights[rows.length], cells });
-  });
-  // last row: 연락처
-  rows.push({
-    height: heights[rows.length],
-    cells: [
-      textCell(2, 1, 1, bf(DOUBLE, solid(0.2), solid(0.12), solid(0.4)), label, LABEL_CHAR, "연 락 처"),
-      textCell(3, 2, 1, bf(solid(0.2), solid(0.4), solid(0.12), solid(0.4)), value, VALUE_CHAR, m.연락처),
-    ],
+    if (r === 0) cells.push(logoCell, gapCell);
+    if (r === 2) cells.push(logotypeCell);
+    cells.push(textCell(2, bf(THICK, THIN, t, b), label));
+    cells.push(textCell(3, bf(THIN, THICK, t, b), value));
+    return { height: HEADER_ROW, cells };
   });
 
   const tbl = table({
@@ -226,150 +255,110 @@ function pressHeader(ctx: WriterContext, doc: PressDoc): XmlNode {
     outMargin: { l: 141, r: 141, t: 141, b: 141 },
     pageBreak: "NONE",
   });
-  const anchor = ctx.roleOr("headerAnchor", { para: { align: "JUSTIFY", lineSpacing: 150 }, char: { font: "batang", pt: 14 } });
-  const height = heights.reduce((a, b) => a + b, 0);
-  return ctx.para({ paraPr: anchor.paraPr, runs: [{ charPr: anchor.charPr, nodes: [tbl] }], vertsize: height, lineSpacing: 100 });
+  const height = HEADER_ROW * rows.length;
+  const anchor = ctx.reg.paraPr({ align: "JUSTIFY", lineSpacing: 100 });
+  return ctx.para({ paraPr: anchor, runs: [{ charPr: ctx.reg.charPr(LABEL_CHAR), nodes: [tbl] }], vertsize: height, lineSpacing: 100 });
 }
 
-function logoCell(ctx: WriterContext, width: number, rowSpan: number, borderFill: number): CellSpec {
-  const role = ctx.roleOr("logoCell", { para: { align: "CENTER", lineSpacing: 70 }, char: { font: "body", pt: 16, bold: true } });
-  const ref = ctx.tpl.pics["image1"];
-  const paragraphs: XmlNode[] = [];
-  if (ref) {
-    const pic = pictureFrom(ref, { id: ctx.ids.nextShapeId(), instid: ctx.ids.nextShapeId(), zOrder: ctx.ids.nextZOrder() });
-    paragraphs.push(ctx.cellPara({ paraPr: role.paraPr, runs: [{ charPr: role.charPr, nodes: [pic] }], vertsize: pictureSize(pic).height, lineSpacing: 70, horzsize: cellInteriorWidth(width, CELL_MARGIN) }));
-  } else {
-    ctx.warnings.push({ message: "press template: GEPA logo (image1) missing; 기관명 text used instead" });
-    paragraphs.push(ctx.cellPara({ paraPr: role.paraPr, runs: [{ charPr: role.charPr, text: "경북경제진흥원" }], vertsize: 1600, lineSpacing: 70, horzsize: cellInteriorWidth(width, CELL_MARGIN) }));
+function logoPara(ctx: WriterContext, horz: number): XmlNode {
+  const h = Math.round((LOGO.widthHwp * LOGO.px.height) / LOGO.px.width);
+  const hasBin = Object.keys(ctx.tpl.files).some((f) => f.startsWith(`BinData/${LOGO.id}.`));
+  const paraPr = ctx.reg.paraPr({ align: "CENTER", lineSpacing: 100 });
+  if (!hasBin) {
+    ctx.warnings.push({ message: "press template: GEPA 로고(image1) 가 없어 기관명 글자로 대신합니다" });
+    return ctx.cellPara({ paraPr, runs: ctx.runsFor([{ t: "text", text: "경상북도경제진흥원" }], { font: HEADLINE, pt: 16 }), vertsize: 1600, lineSpacing: 100, horzsize: horz });
   }
-  return { col: 0, rowSpan, borderFill, margin: CELL_MARGIN, paragraphs };
+  const pic = pictureOf(LOGO.id, LOGO.px, { width: LOGO.widthHwp, height: h }, { id: ctx.ids.nextShapeId(), instid: ctx.ids.nextShapeId(), zOrder: ctx.ids.nextZOrder() });
+  return ctx.cellPara({ paraPr, runs: [{ charPr: ctx.reg.charPr(LABEL_CHAR), nodes: [pic] }], vertsize: h, lineSpacing: 100, horzsize: horz });
 }
 
-function logotypeCell(ctx: WriterContext, width: number, rowSpan: number, borderFill: number, 배포일: string): CellSpec {
-  const logo = ctx.roleOr("logotypeCell", { para: { align: "CENTER", lineSpacing: 50 }, char: { font: "body", pt: 20, bold: true } });
-  const date = ctx.roleOr("headerDate", { para: { align: "CENTER", lineSpacing: 50, prev: 1500 }, char: DATE_CHAR });
-  const horz = cellInteriorWidth(width, CELL_MARGIN);
-  const ref = ctx.tpl.pics["image2"];
-  const paragraphs: XmlNode[] = [];
-  if (ref) {
-    const pic = pictureFrom(ref, { id: ctx.ids.nextShapeId(), instid: ctx.ids.nextShapeId(), zOrder: ctx.ids.nextZOrder() });
-    paragraphs.push(ctx.cellPara({ paraPr: logo.paraPr, runs: [{ charPr: logo.charPr, nodes: [pic] }], vertsize: pictureSize(pic).height, lineSpacing: 50, horzsize: horz }));
-  } else {
-    ctx.warnings.push({ message: "press template: 보도자료 logotype (image2) missing; text used instead" });
-    paragraphs.push(ctx.cellPara({ paraPr: logo.paraPr, runs: [{ charPr: logo.charPr, text: "보 도 자 료" }], vertsize: 2000, lineSpacing: 100, horzsize: horz }));
-  }
-  paragraphs.push(ctx.cellPara({ paraPr: date.paraPr, runs: ctx.runsFor([{ t: "text", text: `【${headerDate(배포일)}】` }], DATE_CHAR, date.charPr), vertsize: 1500, lineSpacing: 50, horzsize: horz }));
-  return { col: 1, rowSpan, borderFill, margin: CELL_MARGIN, paragraphs };
+/** "보도자료" (HY헤드라인M 35pt) 와 【26. 2. 26.】(휴먼모음T 15pt) 를 한 줄에, 왼쪽 맞춤 */
+function logotypePara(ctx: WriterContext, horz: number, 배포일: string): XmlNode {
+  const paraPr = ctx.reg.paraPr({ align: "LEFT", lineSpacing: 100 });
+  const runs = [
+    { charPr: ctx.reg.charPr(LOGOTYPE_CHAR), text: "보도자료" },
+    { charPr: ctx.reg.charPr(DATE_CHAR), text: `【${headerDate(배포일)}】` },
+  ];
+  return ctx.cellPara({ paraPr, runs, vertsize: 3500, lineSpacing: 100, horzsize: horz });
 }
 
-/** Approximate advance width (HWPUNIT) of a title line with 장평 `ratio` % and 자간 `spacing` % (per-character). */
-export function titleWidth(ctx: WriterContext, text: string, pt: number, ratio: number, spacing: number): number {
-  // 함초롬바탕 bold digits/Latin/punctuation run ≈ 0.6 em, wider than the 0.5 em ctx.textWidth() assumes
+/** 머리표 아래 "전화: … / FAX: … / 전자우편: …" — HY견고딕 13pt 가운데, 아래 0.4 mm 괘선 */
+function contactLine(ctx: WriterContext, doc: PressDoc): XmlNode {
+  const m = doc.meta;
+  const parts = [`전화: ${dottedPhone(m.연락처)}`, `FAX: ${dottedPhone(m.팩스 || DEFAULT_FAX)}`];
+  if (m.이메일) parts.push(`전자우편: ${m.이메일}`);
+  const horz = cellInteriorWidth(WIDTH, CELL_MARGIN);
+  const paraPr = ctx.reg.paraPr({ align: "CENTER", lineSpacing: 130 });
+  const cell: CellSpec = {
+    col: 0,
+    borderFill: ctx.reg.borderFill({ l: NONE, r: NONE, t: NONE, b: THICK }),
+    margin: CELL_MARGIN,
+    vertAlign: "CENTER",
+    paragraphs: [ctx.cellPara({ paraPr, runs: ctx.runsFor([{ t: "text", text: parts.join(" / ") }], CONTACT_CHAR), vertsize: 1300, lineSpacing: 130, horzsize: horz })],
+  };
+  const tbl = table({
+    id: ctx.ids.nextShapeId(),
+    zOrder: ctx.ids.nextZOrder(),
+    cols: [WIDTH],
+    rows: [{ height: CONTACT_ROW, cells: [cell] }],
+    borderFill: ctx.reg.gridBorderFill(),
+    inMargin: CELL_MARGIN,
+    outMargin: { l: 141, r: 141, t: 141, b: 141 },
+    pageBreak: "NONE",
+  });
+  const anchor = ctx.reg.paraPr({ align: "JUSTIFY", lineSpacing: 100 });
+  return ctx.para({ paraPr: anchor, runs: [{ charPr: ctx.reg.charPr(CONTACT_CHAR), nodes: [tbl] }], vertsize: CONTACT_ROW, lineSpacing: 100 });
+}
+
+// ---- 제목 ---------------------------------------------------------------------------------
+
+/** Approximate advance width (HWPUNIT) of a title line: 한글 1 em, 숫자·영문·문장부호 0.6 em (HY헤드라인M) */
+export function titleWidth(ctx: WriterContext, text: string, pt: number, ratio = 100, spacing = 0): number {
   let w = 0;
   for (const ch of text) w += ctx.textWidth(ch, pt) === pt * 100 ? pt * 100 : pt * 60;
   const n = [...text].length;
   return Math.round((w * ratio) / 100 + (n * pt * 100 * spacing) / 100);
 }
 
-/**
- * User rule (2026-09-16): a title starts at 장평 100 % / 자간 0 %; when it would wrap, tighten
- * 자간 and 장평 — never below 90 % / −20 % — until it fits one line. The cheapest combination
- * wins (1 % of 장평 counts like 2 % of 자간, so letter spacing gives first). A title that cannot
- * fit even at the limits keeps the defaults and wraps.
- */
-export function fitTitle(ctx: WriterContext, text: string, pt: number, cellWidth: number): { ratio: number; spacing: number } {
-  // widths are estimates; keep 1.5 em of slack so a borderline line falls back to two lines instead of wrapping squeezed
-  const width = cellWidth - pt * 150;
-  if (titleWidth(ctx, text, pt, 100, 0) <= width) return { ratio: 100, spacing: 0 };
-  let best: { ratio: number; spacing: number; cost: number } | undefined;
-  for (let ratio = 100; ratio >= FIT_MIN_RATIO; ratio--) {
-    for (let spacing = 0; spacing >= FIT_MIN_SPACING; spacing--) {
-      const cost = (100 - ratio) * 2 - spacing;
-      if (best && cost >= best.cost) continue;
-      if (titleWidth(ctx, text, pt, ratio, spacing) <= width) best = { ratio, spacing, cost };
-    }
-  }
-  return best ? { ratio: best.ratio, spacing: best.spacing } : { ratio: 100, spacing: 0 };
+/** 새 서식은 제목을 줄이지 않고 두 줄까지 그대로 보낸다 — 호환용으로 남겨 둔 함수(항상 기본값) */
+export function fitTitle(_ctx: WriterContext, _text: string, _pt: number, _cellWidth: number): { ratio: number; spacing: number } {
+  return { ratio: 100, spacing: 0 };
 }
 
-/** Title box: 1×1 table, thin blue rule above / thick light-blue rule below, centred 18pt bold lines. */
-function titleBox(ctx: WriterContext, title: ParaBlock | undefined, subtitle: ParaBlock | undefined): XmlNode {
-  const t = ctx.roleOr("pressTitle", { para: { align: "CENTER", lineSpacing: 160 }, char: TITLE_CHAR });
-  const s = ctx.roleOr("pressSubtitle", { para: { align: "CENTER", lineSpacing: 160 }, char: SUBTITLE_CHAR });
-  // user decision 2026-09-16: no space-before on the title paragraph (문단 위 0)
-  const firstParaPr = t.paraPr;
-  const horz = cellInteriorWidth(TITLE_WIDTH, CELL_MARGIN);
+/** 제목 상자(1×1 표, 아래 회색 0.4 mm 괘선) + 부제 문단 */
+function titleBlock(ctx: WriterContext, title: ParaBlock | undefined, subtitle: ParaBlock | undefined): XmlNode[] {
+  const out: XmlNode[] = [];
+  const horz = cellInteriorWidth(WIDTH, CELL_MARGIN);
   const paragraphs: XmlNode[] = [];
-  let lines = 0;
-  let subLines = 0;
+  let lines = 1;
   if (title) {
     const text = inlineText(title.inlines);
-    const fit = fitTitle(ctx, text, 18, horz);
-    const spec = { ...TITLE_CHAR, ...fit };
-    paragraphs.push(ctx.cellPara({ paraPr: firstParaPr, runs: ctx.runsFor(title.inlines, spec), vertsize: 1800, lineSpacing: 160, horzsize: horz }));
-    const one = titleWidth(ctx, text, 18, fit.ratio, fit.spacing) <= horz - 2700;
-    lines += one ? 1 : ctx.lineCount(text, 18, horz);
-    if (!one) ctx.warnings.push({ blockId: title.id, message: `제목이 ${[...text].length}자라 한 줄(최대 ${TITLE_LIMITS.title.max}자, 권장 ${TITLE_LIMITS.title.plain}자 이하)에 들어가지 않아 두 줄로 출력됩니다` });
+    const paraPr = ctx.reg.paraPr({ align: "CENTER", lineSpacing: 165 });
+    paragraphs.push(ctx.cellPara({ paraPr, runs: ctx.runsFor(title.inlines, TITLE_CHAR), vertsize: 2000, lineSpacing: 165, horzsize: horz }));
+    lines = Math.max(1, Math.ceil(titleWidth(ctx, text, TITLE_CHAR.pt) / (horz - TITLE_CHAR.pt * 100)));
+    if (lines > 2) ctx.warnings.push({ blockId: title.id, message: `제목이 ${[...text].length}자라 두 줄(최대 ${TITLE_LIMITS.title.max}자, 권장 한 줄 ${TITLE_LIMITS.title.plain}자 이하)을 넘깁니다` });
+  } else {
+    paragraphs.push(ctx.cellPara({ paraPr: ctx.reg.paraPr({ align: "CENTER", lineSpacing: 165 }), runs: [{ charPr: ctx.reg.charPr(TITLE_CHAR), text: "" }], vertsize: 2000, lineSpacing: 165, horzsize: horz }));
   }
-  if (subtitle) {
-    const inl = dashed(subtitle.inlines);
-    const text = inlineText(inl);
-    const pt = SUBTITLE_CHAR.pt;
-    const fit = fitTitle(ctx, text, pt, horz);
-    const spec = { ...SUBTITLE_CHAR, ...fit };
-    paragraphs.push(ctx.cellPara({ paraPr: title ? s.paraPr : firstParaPr, runs: ctx.runsFor(inl, spec), vertsize: pt * 100, lineSpacing: 160, horzsize: horz }));
-    const one = titleWidth(ctx, text, pt, fit.ratio, fit.spacing) <= horz - pt * 150;
-    subLines += one ? 1 : ctx.lineCount(text, pt, horz);
-    if (!one) ctx.warnings.push({ blockId: subtitle.id, message: `부제가 ${[...text].length - 4}자라 한 줄(최대 ${TITLE_LIMITS.subtitle.max}자, 권장 ${TITLE_LIMITS.subtitle.plain}자 이하)에 들어가지 않아 두 줄로 출력됩니다` });
-  }
-  const height = Math.max(TITLE_MIN_HEIGHT, lines * 2880 + subLines * SUBTITLE_CHAR.pt * 160 + 282);
-  const cellBf = ctx.reg.roleBorderFill("titleBox") ?? ctx.reg.borderFill({ l: "none", r: "none", t: { type: "SOLID", widthMm: 0.5, color: "#0000FF" }, b: { type: "SOLID", widthMm: 1.5, color: "#3366FF" } });
+  const height = lines * TITLE_LINE + 282 + 600;
+  const cellBf = ctx.reg.borderFill({ l: NONE, r: NONE, t: NONE, b: solid(0.4, "#A6A6A6") });
   const tbl = table({
     id: ctx.ids.nextShapeId(),
     zOrder: ctx.ids.nextZOrder(),
-    cols: [TITLE_WIDTH],
-    rows: [{ height, cells: [{ col: 0, borderFill: cellBf, margin: CELL_MARGIN, paragraphs }] }],
+    cols: [WIDTH],
+    rows: [{ height, cells: [{ col: 0, borderFill: cellBf, margin: { ...CELL_MARGIN, b: 441 }, vertAlign: "CENTER", paragraphs }] }],
     borderFill: ctx.reg.gridBorderFill(),
     inMargin: CELL_MARGIN,
     outMargin: { l: 140, r: 140, t: 140, b: 140 },
+    pageBreak: "NONE",
   });
-  const anchor = ctx.roleOr("titleAnchor", { para: { align: "JUSTIFY", lineSpacing: 180 }, char: { font: "body", pt: 20, bold: true } });
-  return ctx.para({ paraPr: anchor.paraPr, runs: [{ charPr: anchor.charPr, nodes: [tbl] }], vertsize: height, lineSpacing: 100, forcePageBreak: title?.pageBreakBefore });
-}
-
-/** The reference writes the subtitle as `- … -`; add the dashes when the author did not. */
-function dashed(inlines: Inline[]): Inline[] {
-  const text = inlineText(inlines).trim();
-  if (!text || (text.startsWith("-") && text.endsWith("-"))) return inlines;
-  return [{ t: "text", text: "- " }, ...inlines, { t: "text", text: " -" }];
-}
-
-/** Grey bullet box: "  • item" lines, 함초롬바탕 14pt 자간 −5 장평 98, 130 %, hanging indent. */
-function bulletBox(ctx: WriterContext, items: ParaBlock[]): XmlNode {
-  const first = ctx.roleOr("bulletBoxFirst", { para: { align: "JUSTIFY", lineSpacing: 130, hanging: 2711, right: 500 }, char: BOX_CHAR });
-  const rest = ctx.roleOr("bulletBoxItem", { para: { align: "JUSTIFY", lineSpacing: 130, hanging: 2711, right: 500, prev: 500 }, char: BOX_CHAR });
-  const horz = cellInteriorWidth(BOX_WIDTH, BOX_MARGIN);
-  let lines = 0;
-  const paragraphs = items.map((b, k) => {
-    const role = k === 0 ? first : rest;
-    // levels inside the box (user, 2026-09-16): □ heading (bold, no bullet indent) → • item → - sub-item → · sub-sub-item
-    const prefix = b.role === "body1" ? "□ " : b.role === "body3" ? "    - " : b.role === "body4" ? "      · " : "  • ";
-    const base: CharSpec = b.role === "body1" ? { ...BOX_CHAR, bold: true } : BOX_CHAR;
-    const runs = ctx.runsFor([{ t: "text", text: prefix }, ...b.inlines], base, base === BOX_CHAR ? role.charPr : undefined);
-    lines += ctx.lineCount(prefix + inlineText(b.inlines), 14, horz);
-    return ctx.cellPara({ paraPr: role.paraPr, runs, vertsize: 1400, lineSpacing: 130, horzsize: horz });
-  });
-  const height = lines * 1820 + (items.length - 1) * 500 + 1150;
-  const cellBf = ctx.reg.roleBorderFill("bulletBoxCell") ?? ctx.reg.borderFill({ l: "none", r: "none", t: "none", b: "none", fill: "#F2F2F2" });
-  const tbl = table({
-    id: ctx.ids.nextShapeId(),
-    zOrder: ctx.ids.nextZOrder(),
-    cols: [BOX_WIDTH],
-    rows: [{ height, cells: [{ col: 0, borderFill: cellBf, margin: BOX_MARGIN, paragraphs }] }],
-    borderFill: ctx.reg.roleBorderFill("bulletBoxFrame") ?? ctx.reg.gridBorderFill(),
-    inMargin: BOX_MARGIN,
-    outMargin: { l: 141, r: 141, t: 141, b: 141 },
-  });
-  const anchor = ctx.roleOr("tableAnchor", { para: { align: "JUSTIFY", lineSpacing: 180 }, char: BODY_CHAR });
-  return ctx.para({ paraPr: anchor.paraPr, runs: [{ charPr: anchor.charPr, nodes: [tbl] }], vertsize: height, lineSpacing: 100, forcePageBreak: items[0].pageBreakBefore });
+  const anchor = ctx.reg.paraPr({ align: "JUSTIFY", lineSpacing: 100, prev: 800 });
+  out.push(ctx.para({ paraPr: anchor, runs: [{ charPr: ctx.reg.charPr(TITLE_CHAR), nodes: [tbl] }], vertsize: height, lineSpacing: 100, forcePageBreak: title?.pageBreakBefore }));
+  if (subtitle) {
+    const text = inlineText(subtitle.inlines);
+    if ([...text].length > TITLE_LIMITS.subtitle.max) ctx.warnings.push({ blockId: subtitle.id, message: `부제가 ${[...text].length}자라 한 줄(최대 ${TITLE_LIMITS.subtitle.max}자)을 넘길 수 있습니다` });
+    const paraPr = ctx.reg.paraPr({ align: "CENTER", lineSpacing: 160, prev: 500 });
+    out.push(ctx.para({ paraPr, runs: ctx.runsFor(subtitle.inlines, SUBTITLE_CHAR), vertsize: 1200, lineSpacing: 160 }));
+  }
+  return out;
 }

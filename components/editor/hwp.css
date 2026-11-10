@@ -141,37 +141,66 @@
   font-weight: 700;
   margin-top: 0.5em;
 }
-/* press */
-/* reference 2023.02.17: 제목 함초롬바탕 18pt B 자간 −20 / 부제 18pt B 장평 98 자간 −6, blue rules above/below */
+/* press — 2026년 서식 (docs/design-system/press.md): 제목 HY헤드라인M 20pt 두 줄까지 · 회색 괘선 · 부제 맑은 고딕 12pt 회색 · 본문 맑은 고딕 13pt 185 % */
 .hwp-role-pressTitle {
-  font-family: "함초롬바탕", var(--font-body);
-  font-size: 18pt;
-  font-weight: 700;
-  letter-spacing: -0.2em;
-  line-height: 1.6;
+  font-family: "HY헤드라인M", var(--font-heading);
+  font-size: 20pt;
+  font-weight: 400;
+  letter-spacing: 0;
+  line-height: 1.65;
   text-align: center;
-  border-top: 0.5mm solid #0000ff;
-  padding-top: 1.5mm;
-  margin: 0;
+  border-bottom: 0.4mm solid #a6a6a6;
+  padding: 2mm 0 1.5mm;
+  margin: 2mm 0 0;
 }
 .hwp-role-pressSubtitle {
-  font-family: "함초롬바탕", var(--font-body);
-  font-size: 18pt;
-  font-weight: 700;
-  letter-spacing: -0.06em;
+  font-family: "맑은 고딕", "Malgun Gothic", var(--font-table);
+  font-size: 12pt;
+  font-weight: 400;
+  color: #808080;
+  letter-spacing: 0;
   line-height: 1.6;
   text-align: center;
-  border-bottom: 1.5mm solid #3366ff;
-  padding-bottom: 1.5mm;
-  margin: 0 0 1.5mm;
+  padding: 1mm 0 0;
+  margin: 0 0 4mm;
 }
 .hwp-role-pressLead,
 .hwp-role-pressBody {
-  font-family: "함초롬바탕", var(--font-body);
-  font-size: 15pt;
-  line-height: 1.8;
-  text-indent: 0;
+  font-family: "맑은 고딕", "Malgun Gothic", var(--font-table);
+  font-size: 13pt;
+  line-height: 1.85;
+  padding-left: 2.2mm;
+  text-indent: -2.2mm;
   margin: 0;
+}
+.hwp-family-press .hwp-role-body1,
+.hwp-family-press .hwp-role-body2,
+.hwp-family-press .hwp-role-body3,
+.hwp-family-press .hwp-role-body4 {
+  font-family: "맑은 고딕", "Malgun Gothic", var(--font-table);
+  font-size: 13pt;
+  line-height: 1.85;
+}
+/* `#` 소제목 → ■ 줄 (번호·띠 없음) */
+.hwp-family-press .hwp-bar {
+  margin: 2.5mm 0 1mm;
+}
+.hwp-family-press .hwp-bar-row {
+  height: auto;
+  font-family: "맑은 고딕", "Malgun Gothic", var(--font-table);
+  font-size: 13pt;
+  font-weight: 400;
+  line-height: 1.85;
+}
+.hwp-family-press .hwp-bar-num {
+  display: none;
+}
+.hwp-family-press .hwp-bar-title::before {
+  content: "■  ";
+  white-space: pre;
+}
+.hwp-family-press .hwp-bar-strip {
+  display: none;
 }
 .hwp-role-pressContact {
   font-family: "함초롬바탕", var(--font-body);
@@ -647,58 +676,65 @@
   font-size: 9pt;
 }
 .hwp-press-header {
-  font-family: var(--font-body);
-  font-size: 14pt;
+  font-family: "맑은 고딕", "Malgun Gothic", var(--font-table);
+  font-size: 12pt;
   margin-bottom: 1.5mm;
+}
+.hwp-ph-grid {
+  display: grid;
+  grid-template-columns: 86mm 1fr;
+  column-gap: 3.8mm;
 }
 .hwp-ph-table {
   width: 100%;
   border-collapse: collapse;
   border: 0.4mm solid #000;
   text-align: center;
-  letter-spacing: -0.05em;
+  letter-spacing: 0;
 }
 .hwp-ph-table td {
   border: 0.12mm solid #000;
   padding: 0.5mm 1mm;
   line-height: 1.6;
+  height: 7mm;
 }
-.hwp-ph-table .hwp-ph-k {
-  border-left: 0.5mm double #000;
-  border-right: 0.2mm solid #000;
+.hwp-ph-left td {
+  border: 0.4mm solid #000;
+  height: 14mm;
 }
-.hwp-ph-logo {
-  width: 30mm;
-  border-right: 0.2mm solid #000 !important;
+.hwp-ph-right .hwp-ph-k {
+  width: 25mm;
 }
 .hwp-ph-gepa {
-  display: block;
-  font-family: var(--font-heading);
-  font-size: 22pt;
-  color: #1e3a8a;
-  letter-spacing: 0;
-}
-.hwp-ph-org {
-  display: block;
-  font-size: 8pt;
-  letter-spacing: 0;
-  color: #0f172a;
+  display: inline-block;
+  font-family: "Arial Black", Arial, sans-serif;
+  font-size: 20pt;
+  font-weight: 900;
+  color: #2b2d7a;
+  letter-spacing: -0.02em;
 }
 .hwp-ph-logotype {
-  width: 42mm;
+  text-align: left !important;
+  padding-left: 1.5mm !important;
 }
 .hwp-ph-title {
-  display: block;
-  font-family: var(--font-heading);
-  font-size: 24pt;
-  letter-spacing: 0.15em;
-  line-height: 1.1;
+  font-family: "HY헤드라인M", var(--font-heading);
+  font-size: 30pt;
+  line-height: 1;
+  letter-spacing: 0;
 }
 .hwp-ph-date {
-  display: block;
-  font-size: 15pt;
-  letter-spacing: -0.04em;
-  margin-top: 1.5mm;
+  font-family: "휴먼모음T", var(--font-body);
+  font-size: 14pt;
+  margin-left: 1mm;
+}
+.hwp-ph-contact {
+  font-family: "HY견고딕", var(--font-heading);
+  font-size: 12pt;
+  text-align: center;
+  letter-spacing: -0.03em;
+  border-bottom: 0.4mm solid #000;
+  padding: 1mm 0 1.2mm;
 }
 .hwp-ph-extra {
   font-family: var(--font-table);

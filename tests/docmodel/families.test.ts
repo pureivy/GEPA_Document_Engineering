@@ -80,7 +80,7 @@ describe("DOC_FAMILIES.headingStyle", () => {
   it("사업계획서는 장 띠, 공고문은 섹션바, 보도자료는 제목을 쓰지 않는다", () => {
     expect(DOC_FAMILIES.plan.headingStyle).toBe("chapterChip");
     expect(DOC_FAMILIES.notice.headingStyle).toBe("sectionBar");
-    expect(DOC_FAMILIES.press.headingStyle).toBe("none");
+    expect(DOC_FAMILIES.press.headingStyle).toBe("sectionBar");
   });
   it("업무보고서는 사업계획서와 같은 장 띠·절 칩을 쓴다", () => {
     // 간지 Ⅰ·Ⅱ·Ⅲ 은 본문 중간에 되풀이되므로 `#` 으로 위치를 받아야 한다.

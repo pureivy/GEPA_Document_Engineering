@@ -275,6 +275,8 @@ export const PressMetaSchema = z.object({
   담당자: z.string(),
   연락처: z.string(),
   이메일: z.string().optional(),
+  /** 머리표 아래 "FAX: …" — 없으면 기관 대표 FAX(writers/press.ts DEFAULT_FAX) */
+  팩스: z.string().optional(),
   제목: z.string(),
   부제: z.string().optional(),
   사진: z.boolean().default(false),

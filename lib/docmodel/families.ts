@@ -69,7 +69,8 @@ export const DOC_FAMILIES: Record<Family, DocFamilyDef> = {
     noteIndentUnderItem: 4,
     docTitle: (doc) => (doc.meta as Extract<DocModel, { family: "press" }>["meta"]).제목,
     exportBaseName: (doc) => (doc.meta as Extract<DocModel, { family: "press" }>["meta"]).제목 + "_보도자료",
-    headingStyle: "none",
+    // 2026년 서식: `#` 소제목 → `■  소제목` (writers/press.ts). sectionBar 블록을 빌려 쓰므로 편집기 round-trip 도 그대로 된다.
+    headingStyle: "sectionBar",
     requiresClosingMark: false,
   },
   official: {

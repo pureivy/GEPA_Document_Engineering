@@ -287,7 +287,7 @@ ${sourcesGuide(input)}${DOC_CONTRACT("plan", "plan")}${resume}`,
         systemPromptAppend: `${COMMON()}\n역할: 보도자료 작성자. .claude/skills/gepa-press-style/SKILL.md 를 따른다.`,
         prompt: `${brief}\n작업 폴더: ${workspaceDir}\n\n${workspaceDir}/notice/draft.dsl.md (공고문)과 ${workspaceDir}/plan/draft.dsl.md (사업계획서)를 읽고 언론 배포용 보도자료를 작성하라.
 front-matter: 기관 (재)경상북도경제진흥원, 배포일(공고일), 보도시점 즉시, 담당부서 ${project.contact.부서명}(부서 정식 명칭 그대로), 책임자(실장 성명을 알면 "실장 ○○○", 모르면 키 생략), 담당자 ${project.contact.담당자 ?? "담당자"}, 연락처 ${project.contact.전화}, 이메일 ${project.contact.이메일}, 제목, 부제, 사진 false, 붙임 [사업 공고문 1부].
-제목은 공백 포함 26자 이하(최대 36자), 부제는 30자 이하(최대 42자)로 쓴다 — 한 줄에 들어가야 한다. 본문 1,200~1,800자. 공고문에 없는 숫자는 쓰지 않는다. 날짜는 공고문의 확정 날짜를 그대로 쓰고 "00일" 같은 자리표시자는 쓰지 않는다.${DOC_CONTRACT("press", "press")}${resume}`,
+제목은 공백 포함 24자 내외(두 줄까지, 최대 48자), 부제는 40자 이하로 한 줄에 쓴다. 본문은 □ 리드 문단 → # 소제목 2~3개(각 1~3문단) → □ 인용문 구조로 1,200~1,800자. 공고문에 없는 숫자는 쓰지 않는다. 날짜는 공고문의 확정 날짜를 그대로 쓰고 "00일" 같은 자리표시자는 쓰지 않는다.${DOC_CONTRACT("press", "press")}${resume}`,
         allowedTools: input.supplementalResearch ? ["Read", "Write", "Glob", "Grep", "Task", "WebSearch", "WebFetch"] : ["Read", "Write", "Glob", "Grep"],
         maxTurns: 20,
       };
