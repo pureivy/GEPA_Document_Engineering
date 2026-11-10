@@ -106,6 +106,8 @@ const FENCE_CLOSE_RE = /^```\s*$/;
 const PAGEBREAK_RE = /^<pagebreak\s*\/?>\s*$/i;
 /** 조직도 자리표 — 내용은 참고본 조각에 굳어 있어 DSL 은 자리만 찍는다(schema.ts:TableRoleSchema). */
 const ORGCHART_RE = /^<(?:orgchart|조직도)\s*\/?>\s*$/i;
+/** 뒷장 참고 띠 — `<참고 1 업종별 중소기업 규모 기준>` (번호 뒤 `:`·`|` 는 있어도 된다) */
+const REFHEAD_RE = /^<참고\s*(\d+)\s*[:：|]?\s*(.*?)\s*>\s*$/;
 const UNIT_CAPTION_RE = /^\(\s*단위\s*[:：]\s*[^)]+\)$/;
 const ATTACH_HEADING_RE = /^\[\s*별\s*첨\s*\d*\s*\]/;
 const HEADING_RE = /^(#{1,6})[ \t\u3000]+(.*?)\s*$/;
@@ -161,7 +163,7 @@ export function classifyPrefix(partial: string): "para" | "other" | "unknown" {
   }
   if (c === "<") {
     const l = t.toLowerCase();
-    const macros = ["<pagebreak", "<orgchart", "<조직도"];
+    const macros = ["<pagebreak", "<orgchart", "<조직도", "<참고"];
     if (macros.some((m) => l.startsWith(m))) return "other";
     return macros.some((m) => m.startsWith(l)) ? "unknown" : "para";
   }
@@ -438,6 +440,19 @@ export class LineParser {
         return ev;
       }
       ev.push(this.commitNew({ k: "table", role: "orgChart", rows: [] }));
+      return ev;
+    }
+
+    // 5c. 뒷장 참고 띠 — 작성기가 새 쪽에서 연다
+    const ref = REFHEAD_RE.exec(trimmed);
+    if (ref) {
+      ev.push(...this.closeTable(), ...this.dropPendingAttrs(line));
+      if (this.family !== "report") {
+        this.warn(line, `<참고 N 제목> 은 주요업무보고(report) 전용입니다 (${this.family} 에서는 건너뜁니다)`);
+        return ev;
+      }
+      const cell = (text: string) => ({ inlines: [{ t: "text" as const, text }] });
+      ev.push(this.commitNew({ k: "table", role: "refHead", rows: [{ cells: [cell(`참고 ${ref[1]}`), cell(ref[2])] }] }));
       return ev;
     }
 

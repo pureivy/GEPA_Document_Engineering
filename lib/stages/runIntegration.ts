@@ -120,6 +120,12 @@ function availableDataTools(env: Record<string, string | undefined> = process.en
     law_search: st.law,
     law_text: st.law,
     bizinfo_search: st.bizinfo,
+    dart_company: st.dart,
+    dart_finance: st.dart,
+    ecos_search: st.ecos,
+    ecos_items: st.ecos,
+    ecos_series: st.ecos,
+    kipris_search: st.kipris,
   };
   return RESEARCH_MCP_TOOL_IDS.filter((full) => byTool[full.replace(/^mcp__[^_]+(?:-[^_]+)*__/, "")]);
 }
@@ -129,17 +135,17 @@ export function startStageRun(opts: StartStageRunOptions): { runId: string; sess
   const workspaceDir = dirname(stageDir(opts.project.id, "research"));
   const researchCapable = opts.stage === "research" || opts.stage === "plan";
   /**
-   * 업무보고는 **밖을 조사하지 않고 안을 읽는다.** 실적·전년 대비는 웹이 아니라 진흥원
-   * 내부자료에 있으므로 공공데이터 MCP 는 주지 않고 위키만 붙인다(도구도 Read·Grep 뿐이라
-   * 웹으로 나갈 길이 없다). 이것이 없으면 에이전트는 위키가 있다는 사실조차 모르고,
-   * "비교 기준이 있으면 쓴다"는 규칙이 영원히 발동하지 않는다(user 2026-09-22).
+   * 업무보고는 실적·전년 대비(안의 사실)를 진흥원 위키에서 읽는다. 이것이 없으면 에이전트는
+   * 위키가 있다는 사실조차 모르고, "비교 기준이 있으면 쓴다"는 규칙이 영원히 발동하지 않는다
+   * (user 2026-09-22). 2026-11-10부터는 법령·공식 통계(바깥 사실)를 찾도록 공공데이터 MCP 도
+   * 붙인다 — 없을 때 「중소기업·소상공인 현황」 보고가 온통 [확인필요] 로 나왔다.
    */
   // 성과 분석도 위키를 읽는다 — 같은 사업의 전년도 실적이 있어야 전년 대비와 차년도 반영사항을 근거 있게 쓴다
   const wikiCapable = researchCapable || opts.stage === "report" || opts.stage === "analysis";
   // public-data MCP server + read-only wiki snapshot for the stages that research
   let mcpConfigPath: string | undefined;
   let wikiDir: string | undefined;
-  if (researchCapable) {
+  if (researchCapable || opts.stage === "report") {
     mcpConfigPath = writeResearchMcpConfig({ dir: join(dataDir(), "mcp") }) ?? undefined;
   }
   if (wikiCapable) {

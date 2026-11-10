@@ -42,6 +42,9 @@ const REPORT_TABLE_STYLE: FamilyStyle = {
   tableHeaderFill: "#E5E5E5",
   tableFontPt: 11,
   hangingIndent: true,
+  // 표 안 수치(건수·비율·금액)는 오른쪽 정렬 — 자릿수가 세로로 맞아야 비교가 된다(담당자 2026-11-10)
+  numericRight: true,
+  numericAll: true,
 };
 
 /**
@@ -241,7 +244,8 @@ export function writeReport(ctx: WriterContext, doc: ReportDoc): XmlNode[] {
         out.push(...summaryBox(ctx, b));
         break;
       case "para":
-        out.push(brief ? briefPara(ctx, b) : ladderPara(ctx, b));
+        if (b.role === "unitCaption") out.push(unitCaptionPara(ctx, b));
+        else out.push(brief ? briefPara(ctx, b, leadsIntoTable(doc.blocks, i)) : ladderPara(ctx, b));
         break;
       case "blank":
         out.push(emitBlank(ctx, REPORT_TABLE_STYLE, b.role === "blankSmall"));
@@ -251,7 +255,11 @@ export function writeReport(ctx: WriterContext, doc: ReportDoc): XmlNode[] {
         break;
       case "table":
         if (b.role === "orgChart") out.push(...orgChart(ctx, b.id));
-        else out.push(...emitTable(ctx, REPORT_TABLE_STYLE, b));
+        else if (b.role === "refHead") {
+          // 참고는 언제나 새 쪽에서 연다 — 본문 끝에 이어 붙으면 무엇이 본문이고 무엇이 붙임인지 흐려진다
+          if (out.length) ctx.pendingPageBreak = true;
+          out.push(...refHead(ctx, b));
+        } else out.push(...emitTable(ctx, REPORT_TABLE_STYLE, b));
         break;
       default:
         ctx.warnings.push({ blockId: b.id, message: `block kind "${b.k}" is not supported in 주요업무보고; skipped` });
@@ -355,6 +363,60 @@ function briefTitle(ctx: WriterContext, m: ReportMeta, inlines: Inline[]): XmlNo
   return out;
 }
 
+/**
+ * 뒷장 「참고 N | 제목」 띠 — 행감 예상질의답변(경영기획실 취합본)의 참고 쪽 머리 모양.
+ * 왼쪽 좁은 칸에 남색 바탕 흰 글 「참고 N」, 오른쪽에 굵은 제목. 다음 줄과 같은 쪽에 붙인다.
+ */
+const REF_NO_WIDTH = 7600;
+function refHead(ctx: WriterContext, b: Extract<Block, { k: "table" }>): XmlNode[] {
+  const [noCell, titleCell] = b.rows[0]?.cells ?? [];
+  const margin = { l: 400, r: 400, t: 300, b: 300 };
+  const pt = BRIEF_HEAD_PT + 1;
+  const line = { type: "SOLID" as const, widthMm: 0.4, color: "#1F3864" };
+  const cellOf = (inlines: Inline[], col: number, width: number, c: CharSpec, align: "CENTER" | "LEFT", fill?: string): CellSpec => ({
+    col,
+    borderFill: ctx.reg.borderFill({ l: line, r: line, t: line, b: line, ...(fill ? { fill } : {}) }),
+    margin,
+    paragraphs: [
+      ctx.cellPara({
+        paraPr: ctx.reg.paraPr({ align, lineSpacing: 130 }),
+        runs: ctx.runsFor(inlines, c, ctx.reg.charPr(c)),
+        vertsize: pt * 100,
+        lineSpacing: 130,
+        horzsize: cellInteriorWidth(width, margin),
+      }),
+    ],
+  });
+  const height = margin.t + margin.b + pt * 130;
+  const titleWidth = BOX_WIDTH - REF_NO_WIDTH;
+  const tbl = table({
+    id: ctx.ids.nextShapeId(),
+    zOrder: ctx.ids.nextZOrder(),
+    cols: [REF_NO_WIDTH, titleWidth],
+    rows: [
+      {
+        height,
+        cells: [
+          cellOf(noCell?.inlines ?? [{ t: "text", text: "참고" }], 0, REF_NO_WIDTH, { font: "heading", pt, color: "#FFFFFF" }, "CENTER", "#1F3864"),
+          cellOf(titleCell?.inlines ?? [], 1, titleWidth, { font: "heading", pt }, "LEFT"),
+        ],
+      },
+    ],
+    borderFill: ctx.reg.gridBorderFill(),
+    inMargin: margin,
+    outMargin: { l: 141, r: 141, t: 141, b: 141 },
+    horzRelTo: "COLUMN",
+  });
+  return [
+    ctx.para({
+      paraPr: ctx.reg.paraPr({ align: "LEFT", lineSpacing: 100, keepWithNext: true }),
+      runs: [{ charPr: ctx.reg.charPr({ font: "body", pt: 10 }), nodes: [tbl] }],
+      vertsize: height,
+      lineSpacing: 100,
+    }),
+  ];
+}
+
 /** `□ 소제목`(절) — 굵은 한 줄, 다음 줄과 같은 쪽에 붙인다 */
 function briefHeading(ctx: WriterContext, text: string, pt = BRIEF_HEAD_PT): XmlNode {
   const c: CharSpec = { font: "body", pt, bold: true };
@@ -370,7 +432,35 @@ function briefHeading(ctx: WriterContext, text: string, pt = BRIEF_HEAD_PT): Xml
  * 간략 보고의 사다리 한 줄. 기호는 글자로 낸다(도형 칩 없음). `●` 는 기안문 관행대로 `ㅇ` 으로 바꾼다.
  * 내어쓰기는 앞머리(공백+기호+공백) 폭을 재서 둘째 줄이 기호 다음 글자에 맞게 한다.
  */
-function briefPara(ctx: WriterContext, b: ParaBlock): XmlNode {
+/**
+ * 표 바로 앞의 요지 줄·(단위) 줄은 표와 같은 쪽에 붙어야 한다. 2026-11-10 한글 실측: 「ㅇ 경북 중소기업·소상공인
+ * 수는 매년 증가」 줄만 1쪽 끝에 남고 그 표는 2쪽으로 넘어갔다. 다음 블록이 표이거나, (단위) 줄을 거쳐 표면 참.
+ */
+function leadsIntoTable(blocks: Block[], i: number): boolean {
+  for (let j = i + 1; j < blocks.length && j <= i + 2; j++) {
+    const n = blocks[j];
+    if (n.k === "table") return n.role !== "refHead";
+    if (n.k === "para" && n.role === "unitCaption") continue;
+    return false;
+  }
+  return false;
+}
+
+/**
+ * (단위: 개, %) 줄 — 표 오른쪽 끝에 맞추고 표와 같은 쪽에 붙인다. 사다리 줄(양쪽 정렬)로 내면 왼쪽에 붙었다
+ * (담당자 2026-11-10). 간략·전체 보고 모두.
+ */
+function unitCaptionPara(ctx: WriterContext, b: ParaBlock): XmlNode {
+  const c: CharSpec = { font: "body", pt: BRIEF_NOTE_PT };
+  return ctx.para({
+    paraPr: ctx.reg.paraPr({ align: "RIGHT", lineSpacing: 130, prev: 200, keepWithNext: true }),
+    runs: ctx.runsFor(b.inlines, c, ctx.reg.charPr(c)),
+    vertsize: BRIEF_NOTE_PT * 100,
+    lineSpacing: 130,
+  });
+}
+
+function briefPara(ctx: WriterContext, b: ParaBlock, keepWithNext = false): XmlNode {
   const g = b.glyph && b.glyph !== "none" ? b.glyph : undefined;
   if (g === "□") return briefHeading(ctx, `□ ${inlineText(b.inlines)}`);
   let prefix = "";
@@ -392,7 +482,7 @@ function briefPara(ctx: WriterContext, b: ParaBlock): XmlNode {
   const c: CharSpec = { font: "body", pt };
   const hanging = prefix ? Math.round(ctx.textWidth(prefix, pt)) : 0;
   return ctx.para({
-    paraPr: ctx.reg.paraPr({ align: "JUSTIFY", lineSpacing: 160, prev, ...(hanging ? { hanging } : {}) }),
+    paraPr: ctx.reg.paraPr({ align: "JUSTIFY", lineSpacing: 160, prev, ...(hanging ? { hanging } : {}), ...(keepWithNext ? { keepWithNext: true } : {}) }),
     runs: ctx.runsFor(prefixed(prefix, b.inlines), c, ctx.reg.charPr(c)),
     vertsize: pt * 100,
     lineSpacing: 160,

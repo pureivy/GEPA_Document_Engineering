@@ -284,7 +284,10 @@ function bodyLines(doc: DocModel): string[] {
       case "table":
         // 조직도는 칸이 없다 — 표 문법으로 되뇌면 빈 표가 되어 왕복이 깨진다
         if (b.role === "orgChart") lines.push("<조직도>");
-        else lines.push(...tableLines(b));
+        else if (b.role === "refHead") {
+          const [n, title] = (b.rows[0]?.cells ?? []).map((c) => c.inlines.map((i) => ("text" in i ? i.text : "")).join(""));
+          lines.push(`<참고 ${(n ?? "").replace(/\D/g, "") || "1"} ${title ?? ""}>`.replace(/ >$/, ">"));
+        } else lines.push(...tableLines(b));
         break;
       case "chapterBand": {
         const n = splitLeadingNumeral(`${b.numeral} x`)?.n;

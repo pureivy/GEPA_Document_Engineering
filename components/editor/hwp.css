@@ -751,3 +751,8 @@
   color: #1d4ed8;
   text-decoration: underline;
 }
+
+/* 업무보고 뒷장 「참고 N | 제목」 띠 (report writer refHead 와 같은 모양) */
+.hwp-table-refHead { margin-top: 0; }
+.hwp-table-refHead td { border: 1.5px solid #1f3864 !important; font-weight: 700; font-size: 16pt; padding: 4pt 8pt; }
+.hwp-table-refHead td:first-child { background: #1f3864; color: #fff; text-align: center; width: 16%; white-space: nowrap; }

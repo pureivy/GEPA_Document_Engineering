@@ -64,8 +64,11 @@ export type ParaRole = z.infer<typeof ParaRoleSchema>;
  * `orgChart` 는 칸이 없는 역할이다 — 조직도는 참고본 `templates/report/geometry/t09.xml` 에
  * 굳어 있고(계획 판정 2) DSL 은 **자리만** 정한다. 그래서 `rows: []` 로 온다.
  * 새 블록 종류를 더하지 않겠다는 전역 제약 때문에 `table` 에 얹었다.
+ *
+ * `refHead` 는 업무보고 뒷장 「참고 N | 제목」 띠다(1행 2칸: 번호, 제목). 본문에 다 못 담는 기준표·세부
+ * 현황을 뒷장으로 빼는 기관 관행(행감 예상질의답변 `☞ 참고 1` → 새 쪽 「참고 1」)을 따른다. 2026-11-10.
  */
-export const TableRoleSchema = z.enum(["generic", "budget", "schedule", "roles", "docs", "support", "evalCriteria", "yearly", "flowDiagram", "orgChart"]);
+export const TableRoleSchema = z.enum(["generic", "budget", "schedule", "roles", "docs", "support", "evalCriteria", "yearly", "flowDiagram", "orgChart", "refHead"]);
 export type TableRole = z.infer<typeof TableRoleSchema>;
 
 export const BorderSpecSchema = z.object({

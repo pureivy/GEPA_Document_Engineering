@@ -43,6 +43,11 @@ export interface FamilyStyle {
   /** 금액·숫자만 든 본문 칸을 오른쪽 정렬(정산보고서 참고본). 기본은 기존 규칙(짧으면 가운데) */
   numericRight?: boolean;
   /**
+   * `numericRight` 의 범위를 금액에서 모든 수치로 넓힌다 — 비율·소수·작은 수(88.0, 3.2%, 12개, △1.5%p)도 오른쪽.
+   * 주요업무보고 간략 표(통계 비교·추이)는 칸 대부분이 비율·건수다(담당자 2026-11-10 "표 안에 숫자가 있는 경우도 오른쪽 정렬").
+   */
+  numericAll?: boolean;
+  /**
    * 표의 본문 칸 정렬을 열 단위로 맞춘다 — 글자는 가운데, 금액은 오른쪽, 세 줄 이상 꺾이는 긴 글이 있는
    * 열만 열 전체를 왼쪽. 머리행 없는 서식형 표는 첫 열 가운데·합친 값 칸 왼쪽. 기본 규칙(8자 이하만 가운데)은 같은 열에서
    * 가운데·왼쪽이 섞였다(정산 집행현황·사업개요 요약, 담당자 2026-10-12)
@@ -447,7 +452,12 @@ export function emitTable(ctx: WriterContext, fs: FamilyStyle, b: TableBlock): X
   const longCol: boolean[] = Array(colCount).fill(false);
   // 금액 칸: 자릿점이 있거나 네 자리 이상인 수. 쉼표 없는 1900~2099 네 자리(설립연도 1982 등)는 연도 —
   // 금액처럼 오른쪽에 붙이지 않고 가운데(담당자 2026-10-21)
-  const isAmount = (text: string) => !/^\s*(19|20)\d{2}\s*$/.test(text) && /^[\s\-△+]*[\d,]+(\.\d+)?\s*$/.test(text) && /\d{1,3}(,\d{3})+|\d{4,}/.test(text);
+  const isMoney = (text: string) => !/^\s*(19|20)\d{2}\s*$/.test(text) && /^[\s\-△+]*[\d,]+(\.\d+)?\s*$/.test(text) && /\d{1,3}(,\d{3})+|\d{4,}/.test(text);
+  // numericAll: 단위 꼬리(%·%p·개·명·건·원·배 등)가 붙은 수, 소수, 한두 자리 수도 수치다. 연도(2024, 2024년)는 빼고
+  const isFigure = (text: string) =>
+    !/^\s*(19|20)\d{2}\s*년?\s*$/.test(text) &&
+    /^\s*[-–△▲▼▽+]?\s*\d[\d,]*(\.\d+)?\s*(%p?|％|배|개|명|건|곳|회|원|천원|만원|억원|조원|천개|만개|천명|만명)?\s*[↑↓▲▼]?\s*$/.test(text);
+  const isAmount = (text: string) => isMoney(text) || (!!fs.numericAll && isFigure(text));
   // 금액 칸이 있는 열 — 그 열의 0 표시 `-` 도 숫자처럼 오른쪽에 둔다(엑셀처럼, 담당자 2026-10-21 정산 잔액 열)
   const amountCol: boolean[] = Array(colCount).fill(false);
   {

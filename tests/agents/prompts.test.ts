@@ -232,8 +232,9 @@ describe("report 단계 프롬프트", () => {
   it("업무보고 작성자를 부르고 전용 규격 스킬을 가리킨다", () => {
     expect(p.systemPromptAppend).toContain("주요업무보고 작성자");
     expect(p.systemPromptAppend).toContain("gepa-report-design");
-    // 공고가 아니라 실적·계획이라는 것이 역할 문장에 있어야 한다
-    expect(p.systemPromptAppend).toContain("실적과 계획");
+    // 안의 사실(실적·예산)과 바깥 사실(법령·통계)을 가르는 것이 역할 문장에 있어야 한다
+    expect(p.systemPromptAppend).toContain("우리 기관 안의 사실");
+    expect(p.systemPromptAppend).toContain("바깥 사실");
   });
 
   it("사다리 세 칸을 가르치고 ㅇ 를 막는다", () => {
@@ -295,12 +296,23 @@ describe("report 단계 프롬프트", () => {
     expect(p.prompt).toContain(`${ws}`);
     expect(p.prompt).toContain("<작업폴더>/report/draft.dsl.md");
     expect(p.prompt).toContain("family: report");
-    expect(p.allowedTools).toEqual(["Read", "Write", "Glob", "Grep"]);
+    expect(p.allowedTools).toEqual(["Read", "Write", "Glob", "Grep", "WebSearch", "WebFetch"]);
   });
 
-  /** 조사 단계가 없는 문서다 — 웹·하위 에이전트 도구가 새면 안 된다 */
-  it("조사 도구를 주지 않는다", () => {
-    for (const tool of ["WebSearch", "WebFetch", "Task"]) expect(p.allowedTools).not.toContain(tool);
+  /**
+   * 2026-11-10: 「도내 중소기업 및 소상공인 현황」 보고가 법령 조항·사업체 수까지 전부 [확인필요] 로 나왔다
+   * (user: "백엔드에서 비워뒀다가 외부 자료를 찾고 검증해서 문제 없으면 보고서에는 적어줘야지").
+   * 바깥 사실은 작업 파일(facts.json)에서 찾고 검증한 뒤 초안을 쓴다. 하위 에이전트(Task)는 여전히 주지 않는다.
+   */
+  it("바깥 사실은 찾고 검증해서 채우고, 하위 에이전트는 주지 않는다", () => {
+    expect(p.allowedTools).toContain("WebSearch");
+    expect(p.allowedTools).toContain("WebFetch");
+    expect(p.allowedTools).not.toContain("Task");
+    expect(p.prompt).toContain("report/facts.json");
+    expect(p.prompt).toContain("검증");
+    expect(p.prompt).toContain("※ 출처:");
+    expect(p.prompt).toMatch(/law_search/);
+    expect(p.prompt).toMatch(/kosis_search/);
   });
 
   /**
