@@ -162,7 +162,8 @@ export const api = {
   deleteProject: (id: string) => request<{ ok: true; id: string }>(`/api/projects/${encodeURIComponent(id)}`, { method: "DELETE" }),
 
   // runs
-  runStage: (projectId: string, stage: Stage, opts: { resume?: boolean; instruction?: string; model?: string; autoChain?: boolean; supplementalResearch?: boolean } = {}) =>
+  runStage: (projectId: string, stage: Stage, opts: { resume?: boolean; instruction?: string; model?: string; autoChain?: boolean; supplementalResearch?: boolean; afterScan?: boolean } = {}) =>
+    // afterScan 로 글자 인식을 기다리게 되면 runId 없이 { queued: true } 가 온다 — 그 응답을 쓰는 곳은 새 프로젝트 화면뿐이고 결과를 읽지 않는다
     request<{ runId: string; sessionId: string }>(
       `${stageBase(projectId, stage)}/run`,
       json(opts),

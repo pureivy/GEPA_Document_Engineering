@@ -33,6 +33,8 @@ export interface StageRunnerProps {
   stage: Stage;
   /** 프로젝트 종류 (서버에서 내려받아 넘긴다) — 단계 목록·번호·다음 단계 안내가 여기서 나온다 */
   kind: ProjectKind;
+  /** 이 프로젝트의 단계 목록(lib/kinds.ts stagesOf — 사업 구분 반영). 없으면 종류의 기본 목록 */
+  stages?: Stage[];
   /** the stage's configured model (STAGE_MODELS / GEPA_MODEL env), preselected in the run controls */
   defaultModel: string;
 }
@@ -49,14 +51,15 @@ const ZOOM_MIN = 50;
 const ZOOM_MAX = 150;
 
 
-export function StageRunner({ projectId, stage, kind, defaultModel }: StageRunnerProps) {
+export function StageRunner({ projectId, stage, kind, stages: stagesProp, defaultModel }: StageRunnerProps) {
   const family = STAGE_FAMILY[stage];
   // 이 종류의 단계 목록. 단일 단계(공문)면 이어질 단계가 없으므로 연쇄 관련 UI 를 전부 감춘다.
   // stagesOf(kind) 대신 레코드를 직접 읽는다: 이 한 줄만 stagesOf(kind) 호출로 바꾸면
   // react-hooks/preserve-manual-memoization 이 아래 finishRun·onChange 에서 오류 3건을 내고
   // (React Compiler 가 이 컴포넌트 최적화를 포기한다), 되돌리면 사라진다 — 토글로 재현했다.
   // 컴파일러가 이유를 밝히지 않으므로 원인은 단정하지 않는다. 바꾸려면 먼저 lint 를 돌려 볼 것.
-  const stages = KIND_STAGES[kind];
+  // 결과·정산 자체사업은 단계가 짧다 — 서버(page.tsx)가 사업 구분까지 보고 정한 목록이 있으면 그것을 쓴다
+  const stages = stagesProp ?? KIND_STAGES[kind];
   const chained = stages.length > 1;
   // 편집기 콜백의 `next`(DocModel)와 겹치지 않게 이름을 달리 한다 — 가려지면 React Compiler 가 메모이제이션을 포기한다
   const nextStage: Stage | null = stages[stages.indexOf(stage) + 1] ?? null;

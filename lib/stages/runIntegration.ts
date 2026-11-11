@@ -20,7 +20,7 @@ import { writeResearchMcpConfig } from "../research/mcpConfig";
 import { RESEARCH_MCP_TOOL_IDS } from "../research/tools/register";
 import { syncWikiSnapshot, wikiSnapshotDir } from "../research/wikiSnapshot";
 import { dataDir, exportStage, saveStageDsl, stageDir } from "./service";
-import { isDocStage, type ProjectDTO, type Stage } from "../contracts";
+import { isDocStage, type FundingType, type ProjectDTO, type Stage } from "../contracts";
 import { writeLedgerSummary } from "../closeout/store";
 import { collectWebMaterials } from "../closeout/webMaterials";
 import { awaitScans } from "../closeout/scanPdf";
@@ -76,8 +76,8 @@ export function docAutoFixInstruction(stage: string, warnings: string[]): string
  * 자동연쇄의 다음 단계. 연쇄는 **프로젝트 종류의 단계 목록**을 따른다(진실의 출처는 lib/kinds.ts 하나뿐).
  * 단일 단계 kind(공문)에서는 언제나 null 이므로 연쇄가 아예 돌지 않는다. `review` 도 목록에 없어 null 이다.
  */
-export function nextStage(stage: Stage | "review", kind: ProjectKind): Stage | null {
-  const chain = stagesOf(kind);
+export function nextStage(stage: Stage | "review", kind: ProjectKind, 사업구분?: FundingType): Stage | null {
+  const chain = stagesOf(kind, 사업구분);
   const i = chain.indexOf(stage as Stage);
   return i >= 0 && i + 1 < chain.length ? chain[i + 1] : null;
 }
@@ -278,7 +278,7 @@ export function startStageRun(opts: StartStageRunOptions): { runId: string; sess
   /** 단계 자동 연결: 성공한 뒤 다음 단계를 같은 옵션으로 시작한다(다음 단계 모델은 그 단계 기본값). */
   const chainNext = (status: string) => {
     if (!opts.autoChain || status !== "succeeded") return;
-    const next = nextStage(opts.stage, opts.project.kind);
+    const next = nextStage(opts.stage, opts.project.kind, opts.project.contact.사업구분);
     if (!next) return;
     // the current run is being finalized in the run manager; start the next one on the next tick
     setTimeout(async () => {

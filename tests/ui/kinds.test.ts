@@ -41,3 +41,12 @@ describe("자동연쇄의 다음 단계", () => {
     expect(nextStage("review", "official")).toBeNull();
   });
 });
+
+describe("자체사업 결과·정산 연쇄", () => {
+  it("결과보고서 다음 단계가 없다(정산보고서로 이어지지 않는다)", () => {
+    expect(nextStage("analysis", "closeout", "자체")).toBe("result");
+    expect(nextStage("result", "closeout", "자체")).toBeNull();
+    expect(nextStage("result", "closeout", "수탁")).toBe("settlement");
+    expect(nextStage("result", "closeout")).toBe("settlement");
+  });
+});

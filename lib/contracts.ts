@@ -141,6 +141,11 @@ export interface ProjectDTO {
      * ReportMetaSchema.형태(책자|간략)와 짝이다 — `자동`은 화면에만 있는 값이다.
      */
     보고형태?: ReportForm;
+    /**
+     * 결과·정산(closeout) 전용 — 수탁사업(위탁기관 돈으로 하는 사업: 정산보고서·제출 공문까지)인지
+     * 자체사업(자부담 100%: 결과보고서 하나로 끝)인지. 없으면 수탁(예전 프로젝트). lib/kinds.ts stagesOf 가 단계 목록을 가른다.
+     */
+    사업구분?: FundingType;
   };
   /**
    * uploaded reference documents (projects/<id>/reference/<fileName>, text of all of them in reference/base-plan.md)
@@ -213,5 +218,9 @@ export interface ExportReportDTO {
 }
 
 /** 업무보고 형태 선택지(새 프로젝트 화면). 첫 값이 기본값이다 — 한 장짜리 보고가 가장 많이 쓰인다(담당자 2026-11-09). */
+/** 결과·정산 프로젝트의 사업 구분 — 자체사업은 위탁기관이 없어 정산보고서·제출 공문이 없다(담당자 2026-10-26) */
+export const FUNDING_TYPES = ["수탁", "자체"] as const;
+export type FundingType = (typeof FUNDING_TYPES)[number];
+
 export const REPORT_FORMS = ["간략", "책자", "자동"] as const;
 export type ReportForm = (typeof REPORT_FORMS)[number];

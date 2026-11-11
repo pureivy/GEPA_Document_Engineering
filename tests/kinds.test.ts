@@ -62,3 +62,16 @@ describe("serializeProject 의 kind", () => {
     expect(serializeProject(row("")).kind).toBe("program");
   });
 });
+
+describe("결과·정산 사업 구분 (수탁|자체)", () => {
+  it("자체사업은 결과보고서에서 끝난다 — 정산보고서·제출 공문 없음", () => {
+    expect(stagesOf("closeout", "자체")).toEqual(["ledger", "analysis", "result"]);
+  });
+  it("수탁사업과 구분이 없는 예전 프로젝트는 다섯 단계 그대로", () => {
+    expect(stagesOf("closeout", "수탁")).toEqual(["ledger", "analysis", "result", "settlement", "submit"]);
+    expect(stagesOf("closeout")).toEqual(["ledger", "analysis", "result", "settlement", "submit"]);
+  });
+  it("다른 종류에는 영향이 없다", () => {
+    expect(stagesOf("program", "자체")).toEqual(stagesOf("program"));
+  });
+});
