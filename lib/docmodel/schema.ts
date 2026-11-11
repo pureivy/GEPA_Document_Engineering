@@ -64,8 +64,11 @@ export type ParaRole = z.infer<typeof ParaRoleSchema>;
  * `orgChart` 는 칸이 없는 역할이다 — 조직도는 참고본 `templates/report/geometry/t09.xml` 에
  * 굳어 있고(계획 판정 2) DSL 은 **자리만** 정한다. 그래서 `rows: []` 로 온다.
  * 새 블록 종류를 더하지 않겠다는 전역 제약 때문에 `table` 에 얹었다.
+ *
+ * `refHead` 는 업무보고 뒷장 「참고 N | 제목」 띠다(1행 2칸: 번호, 제목). 본문에 다 못 담는 기준표·세부
+ * 현황을 뒷장으로 빼는 기관 관행(행감 예상질의답변 `☞ 참고 1` → 새 쪽 「참고 1」)을 따른다. 2026-11-10.
  */
-export const TableRoleSchema = z.enum(["generic", "budget", "schedule", "roles", "docs", "support", "evalCriteria", "yearly", "flowDiagram", "orgChart"]);
+export const TableRoleSchema = z.enum(["generic", "budget", "schedule", "roles", "docs", "support", "evalCriteria", "yearly", "flowDiagram", "orgChart", "refHead"]);
 export type TableRole = z.infer<typeof TableRoleSchema>;
 
 export const BorderSpecSchema = z.object({
@@ -259,6 +262,12 @@ export const PlanMetaSchema = z.object({
    * 실문서: 본문 첫 쪽 제목 → ◇ 요지 박스). 사업계획서 출력을 바꾸지 않으려고 기본은 끈다.
    */
   본문제목: z.boolean().default(false),
+  /**
+   * `##` 절 제목 모양. "칩" = 하늘색 띠 + 번호(사업계획서: 장 → 절 칩 → □). "번호" = 띠 없이 `① 제목` 굵은 글씨(□ 보다 작게) —
+   * 결과보고서는 Ⅱ → □ 계획 대비 실적 → 세부사업 순이라 띠가 □ 보다 무거워 하위로 안 보였다(담당자 2026-11-11).
+   * 비우면 본문제목(결과보고서)일 때 "번호", 아니면 "칩".
+   */
+  절제목: z.enum(["칩", "번호"]).optional(),
 });
 export type PlanMeta = z.infer<typeof PlanMetaSchema>;
 
@@ -272,6 +281,8 @@ export const PressMetaSchema = z.object({
   담당자: z.string(),
   연락처: z.string(),
   이메일: z.string().optional(),
+  /** 머리표 아래 "FAX: …" — 없으면 기관 대표 FAX(writers/press.ts DEFAULT_FAX) */
+  팩스: z.string().optional(),
   제목: z.string(),
   부제: z.string().optional(),
   사진: z.boolean().default(false),
@@ -376,6 +387,19 @@ export const ReportMetaSchema = z.object({
   부서: z.string().default(""),
   대상기간: z.string().default(""),
   목차표시: z.boolean().default(true),
+  /**
+   * 표지를 낼지. 기본값은 참고본(도지사 업무보고) 그대로 켜짐이다. 한두 쪽짜리 간이 보고는
+   * 끈다 — 끄면 문서가 본문 첫 블록부터 시작한다(2026-11-09: 1.5쪽 내용이 표지·목차·간지로 12쪽이 됨).
+   */
+  표지: z.boolean().default(true),
+  /** 표지·목차·간지 뒤에 빈 쪽(뒷면)을 둘지. 양면 인쇄 책자용이라 기본값은 켜짐. 끄면 앞장 다음 글은 바로 다음 쪽에서 시작한다. */
+  빈뒷면: z.boolean().default(true),
+  /**
+   * 문서 형태. `책자` = 참고본(도지사 업무보고) 그대로 — 표지·보고순서·간지·초록 칩.
+   * `간략` = 한두 쪽짜리 내부 보고 — 표지·목차·빈 뒷면을 끄고(위 스위치보다 앞선다) 초록 칩 대신
+   * 일반 개조식(□ 소제목, ㅇ·- 항목, ※)으로 낸다. 담당자 2026-11-09: "이런 한 장짜리 보고가 진짜 많이 쓰인다".
+   */
+  형태: z.enum(["책자", "간략"]).default("책자"),
 });
 export type ReportMeta = z.infer<typeof ReportMetaSchema>;
 

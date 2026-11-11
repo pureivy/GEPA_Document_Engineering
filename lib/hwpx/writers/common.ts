@@ -43,6 +43,11 @@ export interface FamilyStyle {
   /** 금액·숫자만 든 본문 칸을 오른쪽 정렬(정산보고서 참고본). 기본은 기존 규칙(짧으면 가운데) */
   numericRight?: boolean;
   /**
+   * `numericRight` 의 범위를 금액에서 모든 수치로 넓힌다 — 비율·소수·작은 수(88.0, 3.2%, 12개, △1.5%p)도 오른쪽.
+   * 주요업무보고 간략 표(통계 비교·추이)는 칸 대부분이 비율·건수다(담당자 2026-11-10 "표 안에 숫자가 있는 경우도 오른쪽 정렬").
+   */
+  numericAll?: boolean;
+  /**
    * 표의 본문 칸 정렬을 열 단위로 맞춘다 — 글자는 가운데, 금액은 오른쪽, 세 줄 이상 꺾이는 긴 글이 있는
    * 열만 열 전체를 왼쪽. 머리행 없는 서식형 표는 첫 열 가운데·합친 값 칸 왼쪽. 기본 규칙(8자 이하만 가운데)은 같은 열에서
    * 가운데·왼쪽이 섞였다(정산 집행현황·사업개요 요약, 담당자 2026-10-12)
@@ -117,7 +122,8 @@ export function bodyStyle(ctx: WriterContext, fs: FamilyStyle, b: ParaBlock): { 
       base = fs.noteFont ? { font: fs.noteFont, pt: fs.notePt } : ctx.reg.hasFace("굴림") ? { font: "gulim", pt: 11, spacing: -4 } : { font: "note", pt: 11 };
       break;
     case "unitCaption":
-      base = { font: "table", pt: 10 };
+      // (단위) 줄은 본문은 물론 표 안 글자보다도 작다(담당자 2026-11-10) — 표 글자보다 1pt 작게, 10pt 를 넘지 않게
+      base = { font: "table", pt: unitCaptionPt(fs) };
       break;
     case "attachmentHeading":
       base = { font: "body", pt: fs.bodyPt, bold: true };
@@ -153,6 +159,11 @@ export function bodyStyle(ctx: WriterContext, fs: FamilyStyle, b: ParaBlock): { 
   const info = baseCharPr !== undefined ? ctx.reg.charPrInfo(baseCharPr) : undefined;
   const ok = info && info.pt === base.pt && info.bold === !!base.bold && info.hangul === ctx.reg.faceOf(base.font);
   return { paraPr, base, baseCharPr: ok ? baseCharPr : undefined, prefix };
+}
+
+/** (단위: …) 줄 글자 크기 — 표 글자보다 1pt 작게, 10pt 를 넘지 않게(담당자 2026-11-10: "본문 글자보다 당연히 작아야 하고 표 안에 있는 글자보다도 작아야") */
+export function unitCaptionPt(fs: Pick<FamilyStyle, "tableFontPt">): number {
+  return Math.min(10, fs.tableFontPt - 1);
 }
 
 export function emitPara(ctx: WriterContext, fs: FamilyStyle, b: ParaBlock): XmlNode {
@@ -401,12 +412,101 @@ function roleTableDefaults(ctx: WriterContext, fs: FamilyStyle, b: TableBlock): 
   }
 }
 
+/**
+ * 너비를 주지 않은 표의 칸 너비 — 글 길이에 맞춘다. 예전에는 칸을 똑같이 나눠서, 짧은 칸(「1,800 이하」)은
+ * 텅 비고 긴 칸(해당 업종 나열)은 빽빽했다(담당자 2026-11-10, 「참고 1」 업종별 기준표: "칸의 너비를 같게 할
+ * 필요 없어 … 왼쪽 너무 여백 많고 오른쪽 촘촘").
+ *
+ * 칸마다 두 값을 잰다. 최소 = 꺾이면 안 되는 폭(머리글 전체, 짧은 본문 칸 전체, 긴 칸은 가장 긴 어절),
+ * 최대 = 한 줄로 다 쓸 때의 폭. 최대 합이 본문 폭 안이면 최대에 비례해 넓히고, 넘치면 최소를 먼저 준 뒤
+ * 남는 폭을 (최대 − 최소)에 비례해 나눈다 — 짧은 칸은 딱 맞고 남는 폭은 긴 글 칸이 다 가진다.
+ */
+function autoColumnWidths(
+  ctx: WriterContext,
+  b: TableBlock,
+  grid: (ResolvedCell | null)[][],
+  colCount: number,
+  target: number,
+  margin: { l: number; r: number },
+  d: { fontPt: number; headerFontPt: number },
+): number[] {
+  const even = Array(colCount).fill(Math.floor(target / colCount));
+  if (colCount < 2) return even;
+  const headerRows = b.headerRows ?? (b.rows[0]?.isHeader ? 1 : 0);
+  const pad = margin.l + margin.r + 200;
+  const minW: number[] = Array(colCount).fill(0);
+  const maxW: number[] = Array(colCount).fill(0);
+  grid.forEach((row, ri) => {
+    const isHeader = ri < headerRows || !!b.rows[ri]?.isHeader;
+    const pt = isHeader ? d.headerFontPt : d.fontPt;
+    row.forEach((c, ci) => {
+      if (!c || (c.colSpan ?? 1) !== 1) return;
+      for (const g of splitInlinesByNewline(c.inlines)) {
+        const t = inlineText(g).trim();
+        if (!t) continue;
+        const full = ctx.textWidth(t, pt) * 1.08;
+        const word = Math.max(...t.split(/\s+/).map((w) => ctx.textWidth(w, pt) * 1.08));
+        // 머리글과 짧은 칸(12자 이하: 「1,800 이하」·「8,511,712」)은 꺾지 않는다
+        const keep = isHeader || t.length <= 12 ? full : word;
+        minW[ci] = Math.max(minW[ci], keep);
+        maxW[ci] = Math.max(maxW[ci], full);
+      }
+    });
+  });
+  const lo = minW.map((w) => Math.ceil(w) + pad);
+  const hi = maxW.map((w, i) => Math.max(Math.ceil(w) + pad, lo[i]));
+  const sumLo = lo.reduce((a, x) => a + x, 0);
+  const sumHi = hi.reduce((a, x) => a + x, 0);
+  if (sumLo <= pad * colCount) return even; // 글이 없는 표
+  let cols: number[];
+  if (sumHi <= target) {
+    // 다 한 줄에 들어간다 — 남는 폭은 칸 크기에 비례해 나눈다(너무 좁은 칸이 생기지 않게 바닥은 평균의 절반)
+    const floor = target / colCount / 2;
+    const base = hi.map((w) => Math.max(w, floor));
+    const sum = base.reduce((a, x) => a + x, 0);
+    cols = base.map((w) => (w * target) / sum);
+  } else if (sumLo >= target) {
+    cols = lo.map((w) => (w * target) / sumLo);
+  } else {
+    const spare = target - sumLo;
+    const want = hi.map((w, i) => w - lo[i]);
+    const sumWant = want.reduce((a, x) => a + x, 0) || 1;
+    cols = lo.map((w, i) => w + (spare * want[i]) / sumWant);
+  }
+  // 같게 해야 할 때: 숫자만 든 칸이 둘 이상 나란히 있으면('22·'23·'24년, 전국·경북) 그 칸들은 너비를 맞춘다 —
+  // 비교하는 수의 자릿수가 세로로 같은 자리에 와야 읽힌다
+  const FIG = /^\s*[-–△▲▼▽+]?\s*\d[\d,]*(\.\d+)?\s*(%p?|％|배|개|명|건|곳|회|원|천원|만원|억원|조원)?\s*[↑↓▲▼]?\s*$|^\s*[-–—]\s*$/;
+  const numCols: number[] = [];
+  for (let ci = 1; ci < colCount; ci++) {
+    let seen = 0;
+    let ok = true;
+    grid.forEach((row, ri) => {
+      if (ri < headerRows || b.rows[ri]?.isHeader) return;
+      const c = row[ci];
+      if (!c || (c.colSpan ?? 1) !== 1) return;
+      const t = inlineText(c.inlines).trim();
+      if (!t) return;
+      if (FIG.test(t)) seen++;
+      else ok = false;
+    });
+    if (ok && seen > 0) numCols.push(ci);
+  }
+  if (numCols.length >= 2) {
+    const avg = numCols.reduce((a, ci) => a + cols[ci], 0) / numCols.length;
+    const need = Math.max(...numCols.map((ci) => lo[ci]));
+    if (avg >= need) for (const ci of numCols) cols[ci] = avg;
+  }
+  const out = cols.map((w) => Math.floor(w));
+  out[out.length - 1] += target - out.reduce((a, x) => a + x, 0);
+  return out;
+}
+
 export function emitTable(ctx: WriterContext, fs: FamilyStyle, b: TableBlock): XmlNode[] {
   const out: XmlNode[] = [];
   const d = tableDefaults(ctx, fs, b);
   const { grid, colCount } = layoutGrid(b.rows);
-  // column widths
-  let cols: number[];
+  // column widths — 너비를 주지 않은 표는 글 길이에 맞춘다(autoColumnWidths)
+  let cols: number[] = [];
   const target = TEXT_WIDTH;
   if (b.widthsPt && b.widthsPt.length === colCount) {
     const raw = b.widthsPt.map((w) => w * 100);
@@ -414,10 +514,9 @@ export function emitTable(ctx: WriterContext, fs: FamilyStyle, b: TableBlock): X
     // 표는 본문 폭을 꽉 채운다 — 좁게 남으면 (단위) 줄(오른쪽 끝)과 표 오른쪽 끝이 어긋나 보인다(담당자 2026-10-06)
     const scale = target / sum;
     cols = raw.map((w) => Math.round(w * scale));
-  } else {
-    cols = Array(colCount).fill(Math.floor(target / colCount));
   }
   const margin = d.padding === "tight" ? { l: 141, r: 141, t: 141, b: 141 } : { l: 510, r: 510, t: 141, b: 141 };
+  if (!(b.widthsPt && b.widthsPt.length === colCount)) cols = autoColumnWidths(ctx, b, grid, colCount, target, margin, d);
   // 짧은 머리글(빈칸 없는 6자 이하, 예: "연번")이 칸보다 넓으면 "연/번"으로 꺾인다 — 그 칸을 넓히고
   // 늘어난 만큼 가장 넓은 칸에서 덜어 표 전체 폭은 그대로 둔다(담당자 2026-10-06)
   const headRow = b.rows[0]?.isHeader || (b.headerRows ?? 0) > 0 ? grid[0] : undefined;
@@ -447,7 +546,12 @@ export function emitTable(ctx: WriterContext, fs: FamilyStyle, b: TableBlock): X
   const longCol: boolean[] = Array(colCount).fill(false);
   // 금액 칸: 자릿점이 있거나 네 자리 이상인 수. 쉼표 없는 1900~2099 네 자리(설립연도 1982 등)는 연도 —
   // 금액처럼 오른쪽에 붙이지 않고 가운데(담당자 2026-10-21)
-  const isAmount = (text: string) => !/^\s*(19|20)\d{2}\s*$/.test(text) && /^[\s\-△+]*[\d,]+(\.\d+)?\s*$/.test(text) && /\d{1,3}(,\d{3})+|\d{4,}/.test(text);
+  const isMoney = (text: string) => !/^\s*(19|20)\d{2}\s*$/.test(text) && /^[\s\-△+]*[\d,]+(\.\d+)?\s*$/.test(text) && /\d{1,3}(,\d{3})+|\d{4,}/.test(text);
+  // numericAll: 단위 꼬리(%·%p·개·명·건·원·배 등)가 붙은 수, 소수, 한두 자리 수도 수치다. 연도(2024, 2024년)는 빼고
+  const isFigure = (text: string) =>
+    !/^\s*(19|20)\d{2}\s*년?\s*$/.test(text) &&
+    /^\s*[-–△▲▼▽+]?\s*\d[\d,]*(\.\d+)?\s*(%p?|％|배|개|명|건|곳|회|원|천원|만원|억원|조원|천개|만개|천명|만명)?\s*[↑↓▲▼]?\s*$/.test(text);
+  const isAmount = (text: string) => isMoney(text) || (!!fs.numericAll && isFigure(text));
   // 금액 칸이 있는 열 — 그 열의 0 표시 `-` 도 숫자처럼 오른쪽에 둔다(엑셀처럼, 담당자 2026-10-21 정산 잔액 열)
   const amountCol: boolean[] = Array(colCount).fill(false);
   {
@@ -557,7 +661,8 @@ export function emitTable(ctx: WriterContext, fs: FamilyStyle, b: TableBlock): X
   const minH = Math.round(d.fontPt * 100 * (d.lineSpacing / 100)) + margin.t + margin.b + 300;
   b.rows.forEach((row, ri) => rowSpecs.push({ height: Math.max(rowHeights[ri], row.heightPt ? row.heightPt * 100 : minH), cells: cellSpecs[ri] }));
 
-  const splittable = b.rows.length >= 15 && b.role !== "support";
+  // 긴 표는 늘 나누고, 짧은 표는 통째로 넘어가 앞 쪽을 크게 비웠을 때만 나눈다(buildLaidOut.splitTablePass 가 고른다)
+  const splittable = (b.rows.length >= 15 || ctx.splitTables.has(b.id)) && b.role !== "support";
   const frameBf = d.frame === "grid" ? ctx.reg.borderFill({ l: side(0.12), r: side(0.12), t: side(0.12), b: side(0.12) }) : ctx.reg.borderFill({ l: "none", r: "none", t: "none", b: "none" });
   const tblNode = table({
     id: ctx.ids.nextShapeId(),
@@ -577,8 +682,9 @@ export function emitTable(ctx: WriterContext, fs: FamilyStyle, b: TableBlock): X
     // 나뉘는 표는 행 단위로만 나눈다(TABLE) — CELL 은 칸 속 글까지 두 쪽으로 쪼갰다("향토뿌리기업 및 산업유산 / 체험 프로그램 운영")
     pageBreak: b.role === "support" || splittable ? "TABLE" : "CELL",
   });
+  ctx.tableBlocks.push({ blockId: b.id, tblId: String(tblNode.attrs.id) });
   if (b.caption) {
-    const r = ctx.roleOr("unitCaption", { para: { align: "RIGHT", lineSpacing: 150 }, char: { font: fs.tableFont ?? "table", pt: 10 } });
+    const r = ctx.roleOr("unitCaption", { para: { align: "RIGHT", lineSpacing: 150 }, char: { font: fs.tableFont ?? "table", pt: unitCaptionPt(fs) } });
     const cap = ctx.para({ paraPr: r.paraPr, runs: [{ charPr: r.charPr, text: b.caption }], vertsize: 1000, lineSpacing: 150 });
     ctx.captionParas.add(cap);
     out.push(cap);

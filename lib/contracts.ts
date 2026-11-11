@@ -135,9 +135,24 @@ export interface ProjectDTO {
     전결?: OfficialMeta["전결"];
     /** 공문(official) 전용 — 붙인 참고 문서의 용도. 값이 있으면 reference 도 있다 */
     참고문서용도?: ReferenceRole;
+    /**
+     * 업무보고(report) 전용 — 새 프로젝트 화면에서 고른 문서 형태. `간략` = 한두 쪽 내부 보고,
+     * `책자` = 표지·보고순서·간지를 갖춘 주요업무보고, `자동` = 지시를 보고 에이전트가 고른다.
+     * ReportMetaSchema.형태(책자|간략)와 짝이다 — `자동`은 화면에만 있는 값이다.
+     */
+    보고형태?: ReportForm;
+    /**
+     * 결과·정산(closeout) 전용 — 수탁사업(위탁기관 돈으로 하는 사업: 정산보고서·제출 공문까지)인지
+     * 자체사업(자부담 100%: 결과보고서 하나로 끝)인지. 없으면 수탁(예전 프로젝트). lib/kinds.ts stagesOf 가 단계 목록을 가른다.
+     */
+    사업구분?: FundingType;
   };
-  /** uploaded 기존 사업계획서 (projects/<id>/reference/<fileName>, text in reference/base-plan.md) and what changes */
-  reference?: { fileName: string; changes: string };
+  /**
+   * uploaded reference documents (projects/<id>/reference/<fileName>, text of all of them in reference/base-plan.md)
+   * and what changes. `fileName` is the first file (the frozen prompts read it); `fileNames` lists every file in
+   * upload order (absent on DTOs built by hand — treat as [fileName]).
+   */
+  reference?: { fileName: string; fileNames?: string[]; changes: string };
   createdAt: string;
   updatedAt: string;
 }
@@ -201,3 +216,11 @@ export interface ExportReportDTO {
   builtAt: string;
   hash: string;
 }
+
+/** 업무보고 형태 선택지(새 프로젝트 화면). 첫 값이 기본값이다 — 한 장짜리 보고가 가장 많이 쓰인다(담당자 2026-11-09). */
+/** 결과·정산 프로젝트의 사업 구분 — 자체사업은 위탁기관이 없어 정산보고서·제출 공문이 없다(담당자 2026-10-26) */
+export const FUNDING_TYPES = ["수탁", "자체"] as const;
+export type FundingType = (typeof FUNDING_TYPES)[number];
+
+export const REPORT_FORMS = ["간략", "책자", "자동"] as const;
+export type ReportForm = (typeof REPORT_FORMS)[number];

@@ -227,7 +227,7 @@ describe("buildHwpx — report", () => {
     const edited: DocModel = {
       version: 1,
       family: "report",
-      meta: { 제목: "메타 제목", 보고일: "", 보고대상: "", 부서: "", 대상기간: "", 목차표시: true },
+      meta: { 제목: "메타 제목", 보고일: "", 보고대상: "", 부서: "", 대상기간: "", 목차표시: true, 표지: true, 빈뒷면: true, 형태: "책자" },
       blocks: [{ id: "t1", k: "coverTitle", inlines: [{ t: "text", text: "편집기 제목" }] }],
     };
     const built = buildHwpx(edited, { now: NOW });

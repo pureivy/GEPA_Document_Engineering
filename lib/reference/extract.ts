@@ -19,6 +19,13 @@ import { sectionText } from "../hwpx/validate";
 export const REFERENCE_EXTENSIONS = [".hwpx", ".hwp", ".pdf", ".docx", ".md", ".txt"] as const;
 /** keep the prompt input bounded (a 30-page plan is ~40k chars) */
 export const REFERENCE_MAX_CHARS = 80_000;
+/** several files share one base-plan.md — keep the whole file readable in one sitting */
+export const REFERENCE_TOTAL_MAX_CHARS = 200_000;
+
+export interface ReferenceDoc {
+  fileName: string;
+  text: string;
+}
 
 export function referenceExtension(fileName: string): (typeof REFERENCE_EXTENSIONS)[number] | null {
   const m = /\.([A-Za-z0-9]+)$/.exec(fileName);
@@ -130,5 +137,49 @@ export function referenceMarkdown(fileName: string, changes: string, text: strin
     "",
     text,
     "",
+  ].join("\n");
+}
+
+/**
+ * base-plan.md for one or more files. One file → exactly `referenceMarkdown` (the frozen families and the
+ * single-file tests read that string). Several files → one header naming them all, the change notes once,
+ * then each file's body as its own section. Without a role (사업계획서 갱신) the first file is the
+ * 기존 사업계획서 and the rest are 함께 올린 참고 문서; with a role every file is that role.
+ */
+export function referenceMarkdownMulti(docs: ReferenceDoc[], changes: string, role?: ReferenceRole): string {
+  if (!docs.length) throw new Error("참고 문서가 없습니다");
+  if (docs.length === 1) return referenceMarkdown(docs[0].fileName, changes, docs[0].text, role);
+  // 파일마다 REFERENCE_MAX_CHARS 안이어도 합치면 한 번에 읽기 버겁다 — 전체 분량을 묶어 제한한다
+  let budget = REFERENCE_TOTAL_MAX_CHARS;
+  const bodies = docs.map((d) => {
+    if (budget <= 0) return "[… 전체 분량 제한으로 생략 …]";
+    const body = d.text.length > budget ? `${d.text.slice(0, budget)}\n\n[… 이하 생략 …]` : d.text;
+    budget -= d.text.length;
+    return body;
+  });
+  const names = docs.map((d) => d.fileName);
+  const n = docs.length;
+  if (!role) {
+    return [
+      `# 기존 사업계획서 — ${names[0]} (함께 올린 참고 문서 ${n - 1}건: ${names.slice(1).join(", ")})`,
+      "",
+      "## 이번 프로젝트에서 바뀌는 내용",
+      "",
+      changes.trim() || "(변경 사항 미기재 — 연도·일정·담당만 갱신)",
+      "",
+      `## 기존 사업계획서 원문 — ${names[0]}`,
+      "",
+      bodies[0],
+      "",
+      ...docs.slice(1).flatMap((d, i) => [`## 함께 올린 참고 문서 ${i + 2}/${n} 원문 — ${d.fileName}`, "", bodies[i + 1], ""]),
+    ].join("\n");
+  }
+  const title = REFERENCE_DOC_TITLE[role];
+  const note = changes.trim();
+  return [
+    `# ${title} ${n}건 — ${names.join(", ")}`,
+    "",
+    ...(note ? [`## ${REFERENCE_CHANGES_LABEL[role]}`, "", note, ""] : []),
+    ...docs.flatMap((d, i) => [`## ${title} ${i + 1}/${n} 원문 — ${d.fileName}`, "", bodies[i], ""]),
   ].join("\n");
 }

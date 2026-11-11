@@ -104,39 +104,74 @@ function ApprovalBlockView() {
   );
 }
 
+/** 머리표 보조 — 작성기(lib/hwpx/writers/press.ts)와 같은 규칙의 브라우저용 복제(작성기는 node 전용 모듈을 끌어온다) */
+function pressProvideDate(s?: string): string {
+  const m = (s ?? "").trim().match(/(\d{2,4})\s*[.년]\s*(\d{1,2})\s*[.월]\s*(\d{1,2})/);
+  if (!m) return (s ?? "").trim() || "-";
+  const y = m[1].length === 2 ? `20${m[1]}` : m[1];
+  return `${y}. ${Number(m[2])}. ${Number(m[3])}.`;
+}
+function pressHeaderDate(s?: string): string {
+  return pressProvideDate(s).replace(/^(19|20)(\d{2})\./, "$2.");
+}
+const PRESS_TITLES = new Set(["담당", "책임", "실장", "팀장", "과장", "부장", "원장", "소장", "차장", "국장", "처장", "대리", "주임", "사원", "선임", "주무관", "사무관", "담당관", "연구원", "본부장", "센터장", "지소장", "단장", "전문위원", "선임연구원", "책임연구원"]);
+/** "실장 남상범" → "남상범 실장" (새 서식은 이름 직위 순서) */
+function pressPerson(s?: string): string {
+  const tokens = (s ?? "").trim().split(/\s+/).filter(Boolean);
+  if (!tokens.length) return "";
+  const isTitle = (t: string) => PRESS_TITLES.has(t) || (t.length === 2 && /(장|관|원|리|임|사)$/.test(t));
+  if (tokens.length >= 2 && isTitle(tokens[0])) return `${tokens.slice(1).join(" ")} ${tokens[0]}`;
+  return tokens.join(" ");
+}
+const pressDotted = (s?: string) => (s ?? "").trim().replace(/-/g, ".");
+
+/** 2026년 보도자료 머리표(docs/design-system/press.md §3.1~3.2): [GEPA 마크 / 보도자료【날짜】] ‖ [제공일자 / 제공부서 / 주책임자 / 담 당 자] + 전화·FAX·전자우편 줄 */
 function PressHeaderView() {
   const { meta, onEdit } = useDocMeta();
   const m = (meta ?? {}) as Partial<PressMeta>;
+  const contact = [`전화: ${pressDotted(m.연락처) || "-"}`, `FAX: ${pressDotted(m.팩스) || "054.472.2989"}`];
+  if (m.이메일) contact.push(`전자우편: ${m.이메일}`);
   return (
     <NodeViewWrapper className="hwp-press-header hwp-meta-block" data-gepa-press-header="" contentEditable={false}>
       <EditButton onEdit={onEdit} />
-      <table className="hwp-ph-table">
-        <tbody>
-          <tr>
-            <td className="hwp-ph-logo" rowSpan={4}>
-              <span className="hwp-ph-gepa">GEPA</span>
-              <span className="hwp-ph-org">{ph(m.기관, "(재)경상북도경제진흥원")}</span>
-            </td>
-            <td className="hwp-ph-logotype" rowSpan={4}>
-              <span className="hwp-ph-title">보도자료</span>
-              <span className="hwp-ph-date">【{ph(m.배포일, "-")}】</span>
-            </td>
-            <td className="hwp-ph-k">담당부서</td>
-            <td colSpan={2}>{ph(m.담당부서, "-")}</td>
-          </tr>
-          <tr>
-            <td className="hwp-ph-k" rowSpan={2}>작 성 자</td>
-            <td colSpan={2}>{m.책임자 ? `${m.책임자} · ${ph(m.담당자, "-")}` : ph(m.담당자, "-")}</td>
-          </tr>
-          <tr>
-            <td colSpan={2}>{ph(m.이메일, "-")}</td>
-          </tr>
-          <tr>
-            <td className="hwp-ph-k">연 락 처</td>
-            <td colSpan={2}>{ph(m.연락처, "-")}</td>
-          </tr>
-        </tbody>
-      </table>
+      <div className="hwp-ph-grid">
+        <table className="hwp-ph-table hwp-ph-left">
+          <tbody>
+            <tr>
+              <td className="hwp-ph-logo">
+                <span className="hwp-ph-gepa">GEPA</span>
+              </td>
+            </tr>
+            <tr>
+              <td className="hwp-ph-logotype">
+                <span className="hwp-ph-title">보도자료</span>
+                <span className="hwp-ph-date">【{pressHeaderDate(m.배포일)}】</span>
+              </td>
+            </tr>
+          </tbody>
+        </table>
+        <table className="hwp-ph-table hwp-ph-right">
+          <tbody>
+            <tr>
+              <td className="hwp-ph-k">제공일자</td>
+              <td>{pressProvideDate(m.배포일)}</td>
+            </tr>
+            <tr>
+              <td className="hwp-ph-k">제공부서</td>
+              <td>{ph(m.담당부서, "-")}</td>
+            </tr>
+            <tr>
+              <td className="hwp-ph-k">주책임자</td>
+              <td>{pressPerson(m.책임자) || "-"}</td>
+            </tr>
+            <tr>
+              <td className="hwp-ph-k">담 당 자</td>
+              <td>{pressPerson(m.담당자) || "-"}</td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+      <div className="hwp-ph-contact">{contact.join(" / ")}</div>
       <div className="hwp-ph-extra">
         보도시점 {ph(m.보도시점, "즉시")} · 사진 {m.사진 ? "있음" : "없음"} · 붙임 {m.붙임?.length ? m.붙임.join(", ") : "-"}
       </div>

@@ -1,0 +1,1 @@
+ALTER TABLE `projects` ADD `reference_names` text;

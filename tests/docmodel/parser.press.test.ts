@@ -30,10 +30,10 @@ describe("press example (B.5)", () => {
     expect(plain(ps[4])).toBe('○○○ 원장은 "…"라고 말했다.');
   });
 
-  it("degrades # headings to bold paragraphs with a warning", () => {
+  it("turns # headings into sectionBar blocks (2026 서식: 작성기가 ■ 소제목 줄로 낸다)", () => {
     const r = parseDsl(PRESS_FM + "# 지원내용\n본문\n");
-    expect(r.warnings).toHaveLength(1);
-    expect(r.warnings[0].line).toBe(9);
-    expect(paras(r.doc).at(-2)).toMatchObject({ role: "pressBody", inlines: [{ t: "text", text: "지원내용", bold: true }] });
+    expect(r.warnings).toEqual([]);
+    expect(r.doc.blocks.find((b) => b.k === "sectionBar")).toMatchObject({ k: "sectionBar", title: "지원내용" });
+    expect(paras(r.doc).at(-1)).toMatchObject({ role: "pressBody", inlines: [{ t: "text", text: "본문" }] });
   });
 });

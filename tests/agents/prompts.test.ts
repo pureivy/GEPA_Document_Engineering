@@ -232,8 +232,9 @@ describe("report 단계 프롬프트", () => {
   it("업무보고 작성자를 부르고 전용 규격 스킬을 가리킨다", () => {
     expect(p.systemPromptAppend).toContain("주요업무보고 작성자");
     expect(p.systemPromptAppend).toContain("gepa-report-design");
-    // 공고가 아니라 실적·계획이라는 것이 역할 문장에 있어야 한다
-    expect(p.systemPromptAppend).toContain("실적과 계획");
+    // 안의 사실(실적·예산)과 바깥 사실(법령·통계)을 가르는 것이 역할 문장에 있어야 한다
+    expect(p.systemPromptAppend).toContain("우리 기관 안의 사실");
+    expect(p.systemPromptAppend).toContain("바깥 사실");
   });
 
   it("사다리 세 칸을 가르치고 ㅇ 를 막는다", () => {
@@ -255,20 +256,63 @@ describe("report 단계 프롬프트", () => {
   });
 
   it("근거 없는 수치를 막고 날짜를 지어내지 못하게 한다", () => {
-    expect(p.prompt).toContain("추진 중");
     expect(p.prompt).toContain("날짜나 받는 사람을 지어내지 않는다");
+    // 빠진 사실은 [확인필요] 로 드러낸다 — "추진 중"·"계약 시 확정"으로 메우면 담당자가 모른다(2026-11-09)
+    expect(p.prompt).toContain("[확인필요:");
+    expect(p.prompt).toMatch(/"추진 중"·"추후 확정"·"계약 시 확정" 같은 말로 빈칸을 메우지 않는다/);
+    expect(p.prompt).not.toContain('그 줄을 빼거나 "추진 중"으로 적는다');
+  });
+
+  /** 2026-11-09: 1.5쪽 내용의 계획 보고가 표지·목차·간지·빈 뒷면으로 12쪽이 됐다 */
+  it("보고형태가 없으면 쓰기 전에 간략·책자를 고르게 하고, 애매하면 간략이다", () => {
+    expect(p.prompt).toContain("간략인가, 책자인가");
+    expect(p.prompt).toContain("애매하면 **간략**");
+    expect(p.prompt).toContain("형태: 간략");
+    expect(p.prompt).toContain("형태: 간략, 1쪽");
+  });
+
+  it("새 프로젝트 화면에서 고른 보고형태를 싣고 그대로 따르게 한다", () => {
+    const 간략 = buildStagePrompt({ stage: "report", project: { ...업무보고, kind: "report", contact: { ...업무보고.contact, 보고형태: "간략" } }, workspaceDir: ws });
+    expect(간략.prompt).toMatch(/^보고형태: 간략$/m);
+    expect(간략.prompt).toContain("형태: 간략 보고로 정해져 있다");
+    expect(간략.prompt).not.toContain("간략인가, 책자인가");
+    const 책자 = buildStagePrompt({ stage: "report", project: { ...업무보고, kind: "report", contact: { ...업무보고.contact, 보고형태: "책자" } }, workspaceDir: ws });
+    expect(책자.prompt).toContain("형태: 책자형으로 정해져 있다");
+    const 자동 = buildStagePrompt({ stage: "report", project: { ...업무보고, kind: "report", contact: { ...업무보고.contact, 보고형태: "자동" } }, workspaceDir: ws });
+    expect(자동.prompt).toContain("간략인가, 책자인가");
+  });
+
+  it("보고형태 줄은 업무보고에만 실린다", () => {
+    const q = buildStagePrompt({ stage: "official", project: { ...업무보고, kind: "official", contact: { ...업무보고.contact, 보고형태: "간략" } }, workspaceDir: ws });
+    expect(q.prompt).not.toMatch(/^보고형태: /m);
+  });
+
+  it("지시의 번호 항목·분량을 틀보다 앞세우고 근거 없는 배경 절을 막는다", () => {
+    expect(p.prompt).toContain("지시의 짜임과 분량을 틀보다 앞세운다");
+    expect(p.prompt).toContain("배경·목적 절은 근거가 있을 때만 둔다");
   });
 
   it("출력 계약은 report/draft.dsl.md 와 family: report 다", () => {
     expect(p.prompt).toContain(`${ws}`);
     expect(p.prompt).toContain("<작업폴더>/report/draft.dsl.md");
     expect(p.prompt).toContain("family: report");
-    expect(p.allowedTools).toEqual(["Read", "Write", "Glob", "Grep"]);
+    expect(p.allowedTools).toEqual(["Read", "Write", "Glob", "Grep", "WebSearch", "WebFetch"]);
   });
 
-  /** 조사 단계가 없는 문서다 — 웹·하위 에이전트 도구가 새면 안 된다 */
-  it("조사 도구를 주지 않는다", () => {
-    for (const tool of ["WebSearch", "WebFetch", "Task"]) expect(p.allowedTools).not.toContain(tool);
+  /**
+   * 2026-11-10: 「도내 중소기업 및 소상공인 현황」 보고가 법령 조항·사업체 수까지 전부 [확인필요] 로 나왔다
+   * (user: "백엔드에서 비워뒀다가 외부 자료를 찾고 검증해서 문제 없으면 보고서에는 적어줘야지").
+   * 바깥 사실은 작업 파일(facts.json)에서 찾고 검증한 뒤 초안을 쓴다. 하위 에이전트(Task)는 여전히 주지 않는다.
+   */
+  it("바깥 사실은 찾고 검증해서 채우고, 하위 에이전트는 주지 않는다", () => {
+    expect(p.allowedTools).toContain("WebSearch");
+    expect(p.allowedTools).toContain("WebFetch");
+    expect(p.allowedTools).not.toContain("Task");
+    expect(p.prompt).toContain("report/facts.json");
+    expect(p.prompt).toContain("검증");
+    expect(p.prompt).toContain("※ 출처:");
+    expect(p.prompt).toMatch(/law_search/);
+    expect(p.prompt).toMatch(/kosis_search/);
   });
 
   /**

@@ -9,7 +9,7 @@ import { ensureProjectDir } from "@/lib/storage/paths";
 import { isProjectKind } from "@/lib/kinds";
 import { OfficialMetaSchema } from "@/lib/docmodel/schema";
 import { DELEGATION_LEVELS } from "@/lib/org";
-import { REFERENCE_ROLES } from "@/lib/contracts";
+import { FUNDING_TYPES, REFERENCE_ROLES, REPORT_FORMS } from "@/lib/contracts";
 import { writeFileSync } from "node:fs";
 import path from "node:path";
 
@@ -47,6 +47,10 @@ const contactSchema = z
     전결: z.enum(DELEGATION_LEVELS).optional(),
     /** 붙인 참고 문서의 용도(공문 전용) — lib/contracts.ts 의 REFERENCE_ROLES 가 단일 출처 */
     참고문서용도: z.enum(REFERENCE_ROLES).optional(),
+    /** 업무보고 형태(업무보고 전용) — lib/contracts.ts 의 REPORT_FORMS 가 단일 출처 */
+    보고형태: z.enum(REPORT_FORMS).optional(),
+    /** 결과·정산 사업 구분(수탁|자체) — 자체면 정산보고서·제출 공문 단계가 없다(lib/kinds.ts stagesOf) */
+    사업구분: z.enum(FUNDING_TYPES).optional(),
     /** 결문 연락처의 홈페이지(공문 전용) — OfficialMetaSchema.연락처.홈페이지 와 같은 값. 비면 결문의 그 칸도 빈다 */
     홈페이지: z.string().trim().max(200).optional(),
     /**
@@ -89,6 +93,7 @@ export async function POST(req: Request) {
     contact: JSON.stringify(body.data.contact),
     referenceName: null,
     referenceChanges: null,
+    referenceNames: null,
     createdAt: now,
     updatedAt: now,
   };

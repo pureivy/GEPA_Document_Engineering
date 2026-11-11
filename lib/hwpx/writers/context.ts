@@ -61,6 +61,12 @@ export class WriterContext {
   readonly splitTableAnchors = new WeakSet<object>();
   /** 쪽 아래 끝까지 채울 표(블록 id·hp:tbl id) — buildLaidOut 이 줄 간격을 키워 다시 빌드한다(keepPass.ts) */
   readonly fillPageTables: { blockId: string; tblId: string }[] = [];
+  /** 문서에 놓인 모든 표(블록 id·hp:tbl id) — 어느 표가 쪽을 넘겼는지 찾는 데 쓴다(keepPass.splitTablePass) */
+  readonly tableBlocks: { blockId: string; tblId: string }[] = [];
+  /** 문서를 만드는 시각(build 의 opts.now) — 보고일이 비었을 때 간략 보고 날짜 줄에 쓴다 */
+  now: Date = new Date();
+  /** 쪽 경계에서 나눠도 되는 표(블록 id) — 통째로 넘어가 앞 쪽을 비운 표만 buildLaidOut 이 골라 넣는다 */
+  splitTables = new Set<string>();
   /** 채울 표의 줄 간격(블록 id → %) — buildLaidOut 이 배치를 재 보고 정한다 */
   fillSpacing: Record<string, number> = {};
   /** 본문 줄 간격 배율(hp:p id → 배율) — 쪽 아래가 크게 비는 쪽을 채운다(keepPass.buildLaidOut) */
@@ -112,7 +118,7 @@ export class WriterContext {
   }
 
   /**
-   * 어절 단위 줄 바꿈으로 센 줄 수 — 한글은 어절을 쪼개지 않고(breakNonLatinWord KEEP_WORD) 다음 줄로 넘긴다.
+   * 어절 단위 줄 바꿈으로 센 줄 수 — 한글이 어절 단위 줄 나눔(breakNonLatinWord="BREAK_WORD")일 때 어절을 쪼개지 않고 다음 줄로 넘긴다(KEEP_WORD 는 글자 단위, 2026-11-10 실측).
    * 글자 폭 합만으로 세면(lineCount) 줄 끝 빈자리를 놓쳐 표 칸 높이가 모자랐다("비용 지원"이 잘림, 2026-10-12).
    */
   wrapLines(s: string, pt: number, width: number): number {
@@ -202,6 +208,7 @@ export class WriterContext {
     if (fit.charSpacing) runs = runs.map((r) => (r.text !== undefined && !r.nodes?.length ? { ...r, charPr: this.reg.withCharSpacing(r.charPr, fit.charSpacing!) } : r));
     if (fit.sizePct && fit.sizePct !== 100) runs = runs.map((r) => (r.text !== undefined && !r.nodes?.length ? { ...r, charPr: this.reg.withCharScale(r.charPr, fit.sizePct!) } : r));
     if (fit.breaks?.length) runs = insertBreaks(runs, fit.breaks);
+    if (fit.wordWrap) paraPr = this.reg.withWordWrap(paraPr);
     return { paraPr, runs };
   }
 

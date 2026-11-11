@@ -24,6 +24,8 @@ export const projects = sqliteTable("projects", {
   referenceName: text("reference_name"),
   /** what changed versus the uploaded plan (free text) */
   referenceChanges: text("reference_changes"),
+  /** JSON array of every uploaded reference file name in upload order (reference_name is the first); null on rows older than migration 0003 */
+  referenceNames: text("reference_names"),
   createdAt: text("created_at").notNull(),
   updatedAt: text("updated_at").notNull(),
 });
