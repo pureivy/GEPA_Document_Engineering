@@ -147,7 +147,37 @@ export async function kosisTable(p: KosisTableParams, env: Env, fetchImpl: Fetch
   return {
     ok: true,
     source,
-    data: { 통계표: str(all[0]?.TBL_NM), rows, returned: rows.length, total: filtered.length, 최종갱신: str(all[0]?.LST_CHN_DE) || undefined },
-    note: filtered.length > rows.length ? `행이 ${filtered.length}개라 ${rows.length}개만 반환. nameFilter 를 더 좁히세요.` : undefined,
+    data: {
+      통계표: str(all[0]?.TBL_NM),
+      rows,
+      returned: rows.length,
+      total: filtered.length,
+      최종갱신: str(all[0]?.LST_CHN_DE) || undefined,
+      // 잘렸을 때 무엇으로 좁힐지 알려 준다 — 전에는 "더 좁히세요"만 있어 에이전트가 같은 호출을 되풀이하다
+      // 조사 횟수를 다 써 버렸다(2026-11-10 경북 중소기업 수가 100행 제한에 잘려 [확인필요] 로 남음)
+      ...(filtered.length > rows.length ? { 분류값: distinctLevels(filtered) } : {}),
+    },
+    note:
+      filtered.length > rows.length
+        ? `행이 ${filtered.length}개라 ${rows.length}개만 반환. 분류값에서 필요한 값을 골라 nameFilter 에 낱말 여럿(공백으로, 모두 들어간 행만)을 주거나 objL2·objL3 에 그 코드를 넣어 다시 조회하세요.`
+        : undefined,
   };
+}
+
+/** 분류 단계별로 나오는 값(이름·코드)과 항목 이름 — 행이 잘렸을 때 좁힐 단서 */
+function distinctLevels(rows: Record<string, unknown>[]): Record<string, string[]> {
+  const out: Record<string, string[]> = {};
+  const add = (k: string, v: string) => {
+    if (!v) return;
+    const list = (out[k] ??= []);
+    if (!list.includes(v) && list.length < 40) list.push(v);
+  };
+  for (const r of rows) {
+    for (const n of [1, 2, 3, 4]) {
+      const nm = str(r[`C${n}_NM`]);
+      if (nm) add(`분류${n}`, `${nm}(${str(r[`C${n}`])})`);
+    }
+    add("항목", `${str(r.ITM_NM)}(${str(r.ITM_ID)})`);
+  }
+  return out;
 }

@@ -5,9 +5,48 @@
  */
 import { thousands } from "../docmodel/format";
 import { LEDGER_VALUE_NAMES, ledgerValues, type LedgerResult } from "./ledger";
-import { LEDGER_TABLES, LEDGER_TABLE_NAMES } from "./macros";
+import { LEDGER_TABLES, LEDGER_TABLE_NAMES, type LedgerOpts } from "./macros";
 
-export function ledgerSummaryMarkdown(r: LedgerResult): string {
+/**
+ * 매크로가 펼치는 것은 DSL 표다 — `<br>`(칸 안 줄바꿈)·`<`(왼쪽과 병합)·`^`(위와 병합)·`{table …}` 속성 줄은
+ * 한글 문서에서만 뜻이 있고, 화면의 마크다운 미리보기에는 글자 그대로 찍힌다(2026-11-11 지적: "지출<br>번호").
+ * 미리보기용으로 줄바꿈은 띄어쓰기로, 병합 표시는 빈칸으로 바꾸고 첫 행 아래 구분선을 넣는다.
+ */
+export function dslTableToMarkdown(lines: string[]): string[] {
+  const out: string[] = [];
+  const split = (line: string) =>
+    line
+      .trim()
+      .slice(1, -1)
+      .split(/(?<!\\)\|/)
+      .map((c) => c.trim().replace(/<br\s*\/?>/gi, " "));
+  const blank = (cells: string[]) => cells.map((c) => (c === "<" || c === "^" ? "" : c));
+  const isRow = (line?: string) => !!line && /^\s*\|.*\|\s*$/.test(line);
+  const src = lines.filter((l) => !l.startsWith("{table"));
+  for (let i = 0; i < src.length; i++) {
+    const line = src[i];
+    if (!isRow(line)) {
+      out.push(line.replace(/<br\s*\/?>/gi, " "));
+      continue;
+    }
+    // 표 첫 행 — 다음 행이 `^` 를 담으면 두 줄 머리(예: 지 출 액 → 금액·비율)라 한 줄로 합친다
+    let head = split(line);
+    const next = isRow(src[i + 1]) ? split(src[i + 1]) : null;
+    if (next && next.includes("^") && next.length === head.length) {
+      head = head.map((c, j) => {
+        const top = c === "<" ? head.slice(0, j).reverse().find((x) => x !== "<") ?? "" : c;
+        return next[j] === "^" ? top : `${top} ${next[j]}`.trim();
+      });
+      i++;
+    }
+    if (out.length && out[out.length - 1] !== "") out.push("");
+    out.push(`| ${blank(head).join(" | ")} |`, `|${head.map(() => "---").join("|")}|`);
+    while (isRow(src[i + 1])) out.push(`| ${blank(split(src[++i])).join(" | ")} |`);
+  }
+  return out;
+}
+
+export function ledgerSummaryMarkdown(r: LedgerResult, opts: LedgerOpts = {}): string {
   const v = ledgerValues(r);
   const errors = r.checks.filter((c) => c.level === "error");
   const warns = r.checks.filter((c) => c.level === "warn");
@@ -44,7 +83,8 @@ export function ledgerSummaryMarkdown(r: LedgerResult): string {
     "",
     "## 표 미리보기(펼친 결과)",
     "",
-    ...LEDGER_TABLE_NAMES.flatMap((n) => [`### ${n}`, "", ...LEDGER_TABLES[n](r).filter((l) => !l.startsWith("{table")), ""]),
+    // 자체사업에는 제출 공문이 없다 — 공문표는 미리보기에서도 뺀다
+    ...LEDGER_TABLE_NAMES.filter((n) => !(opts.자체 && n === "공문표")).flatMap((n) => [`### ${n}`, "", ...dslTableToMarkdown(LEDGER_TABLES[n](r, {}, opts)), ""]),
   ];
   if (r.ledger.메모.length) lines.push("## 원자료 메모", "", ...r.ledger.메모.map((m) => `- ${m}`), "");
   return lines.join("\n");

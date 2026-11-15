@@ -27,7 +27,8 @@ const COPY: Record<MaterialBoxDTO, { title: string; add: string; empty: string; 
   },
 };
 
-export function MaterialsPanel({ projectId, disabled, box = "materials" }: { projectId: string; disabled?: boolean; box?: MaterialBoxDTO }) {
+/** fill: 위아래 크기 조절 칸 안에서 남는 높이를 모두 쓰고 목록만 스크롤한다(아니면 목록을 9줄 남짓에서 자른다) */
+export function MaterialsPanel({ projectId, disabled, box = "materials", fill }: { projectId: string; disabled?: boolean; box?: MaterialBoxDTO; fill?: boolean }) {
   const copy = COPY[box];
   const [items, setItems] = useState<MaterialDTO[] | null>(null);
   const [busy, setBusy] = useState(false);
@@ -80,7 +81,7 @@ export function MaterialsPanel({ projectId, disabled, box = "materials" }: { pro
   };
 
   return (
-    <div className={`border-b border-slate-200 px-4 py-3 ${box === "prior" ? "bg-amber-50/60" : "bg-white"}`}>
+    <div className={`border-b border-slate-200 px-4 py-3 ${box === "prior" ? "bg-amber-50/60" : "bg-white"} ${fill ? "flex min-h-24 flex-1 flex-col" : "shrink-0"}`}>
       <div className="mb-2 flex items-center gap-2">
         {box === "prior" ? <History className="h-4 w-4 text-amber-600" /> : <FileSpreadsheet className="h-4 w-4 text-slate-500" />}
         <span className="text-xs font-semibold text-slate-700">
@@ -103,7 +104,7 @@ export function MaterialsPanel({ projectId, disabled, box = "materials" }: { pro
       </div>
       {items && items.length === 0 ? <p className="text-[11px] text-slate-500">{copy.empty}</p> : null}
       {items && items.length ? (
-        <ul className="grid max-h-36 gap-1 overflow-y-auto text-[11px] text-slate-700">
+        <ul className={`grid content-start gap-1 overflow-y-auto text-[11px] text-slate-700 ${fill ? "min-h-0 flex-1" : "max-h-36"}`}>
           {items.map((m) => (
             <li key={m.name} className={`flex items-center gap-2 rounded px-2 py-1 ${box === "prior" ? "bg-white" : "bg-slate-50"}`}>
               <span className="flex-1 truncate" title={m.note ?? m.readPath}>

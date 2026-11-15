@@ -9,6 +9,21 @@ import { join } from "node:path";
 import { ensureDir, projectDir } from "../storage/paths";
 import { computeLedger, LedgerSchema, type Ledger, type LedgerResult } from "./ledger";
 import { ledgerSummaryMarkdown } from "./summary";
+import type { LedgerOpts } from "./macros";
+import { eq } from "drizzle-orm";
+import { getDb } from "../db/client";
+import { projects } from "../db/schema";
+
+/** 원장 표가 쓸 프로젝트 값 — 사업구분은 DB 의 contact 가 진짜다(project.json 이 아니라) */
+export function ledgerOptsOf(projectId: string): LedgerOpts {
+  try {
+    const row = getDb().select({ contact: projects.contact }).from(projects).where(eq(projects.id, projectId)).get();
+    const contact = row ? (JSON.parse(row.contact) as { 사업구분?: string }) : {};
+    return { 자체: contact.사업구분 === "자체" };
+  } catch {
+    return {};
+  }
+}
 
 export const LEDGER_STAGE_DIR = "ledger";
 
@@ -46,7 +61,7 @@ export function writeLedgerSummary(projectId: string): { ok: boolean; result?: L
     return { ok: false, error: r.error };
   }
   const result = computeLedger(r.ledger);
-  writeFileSync(summary, ledgerSummaryMarkdown(result), "utf8");
+  writeFileSync(summary, ledgerSummaryMarkdown(result, ledgerOptsOf(projectId)), "utf8");
   return { ok: true, result };
 }
 

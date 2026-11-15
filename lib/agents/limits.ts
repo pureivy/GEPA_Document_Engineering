@@ -28,7 +28,8 @@ export const STAGE_LIMITS: Record<RunStage, StageLimits> = {
   press: { maxTurns: 20, wallTimeoutMs: 15 * MIN, idleTimeoutMs: DEFAULT_IDLE_TIMEOUT_MS },
   official: { maxTurns: 20, wallTimeoutMs: 15 * MIN, idleTimeoutMs: DEFAULT_IDLE_TIMEOUT_MS },
   // 업무보고는 참고본 골격을 채우는 일이라 공문서와 같은 크기로 둔다(실측 전 잠정값)
-  report: { maxTurns: 20, wallTimeoutMs: 15 * MIN, idleTimeoutMs: DEFAULT_IDLE_TIMEOUT_MS },
+  // 2026-11-10: 법령·통계 같은 바깥 사실을 조사해 채우게 되어 턴·시간을 늘렸다
+  report: { maxTurns: 40, wallTimeoutMs: 25 * MIN, idleTimeoutMs: DEFAULT_IDLE_TIMEOUT_MS },
   // 정산자료는 엑셀 여러 장을 읽어 건별로 옮긴다 — 통장내역이 길면 턴이 많이 든다(실측 전 잠정값)
   // 집계표 없이 지급 공문 PDF 30여 건만 올리는 경우가 실제로 있다(2026-10-02) — 건마다 Read 가 필요하다
   ledger: { maxTurns: 80, wallTimeoutMs: 45 * MIN, idleTimeoutMs: DEFAULT_IDLE_TIMEOUT_MS },
@@ -48,8 +49,8 @@ export const STAGE_ALLOWED_TOOLS: Record<RunStage, string[]> = {
   press: ["Read", "Write"],
   // 공문서는 사람이 사실을 이미 아는 사무 문서다. 조사 도구를 주지 않는다
   official: ["Read", "Write"],
-  // 업무보고도 사람이 실적·계획을 이미 아는 문서다 — 조사 도구를 주지 않는다
-  report: ["Read", "Write"],
+  // 업무보고: 실적·계획(안의 사실)은 자료에서, 법령·통계(바깥 사실)는 조사해서 채운다(2026-11-10)
+  report: ["Read", "Write", "Glob", "Grep", "WebSearch", "WebFetch"],
   // 정산·결과보고는 올린 자료만 근거로 쓴다 — 조사 도구를 주지 않는다. 자료가 여러 개라 Glob·Grep 은 준다
   ledger: ["Read", "Write", "Edit", "Glob", "Grep"],
   // 성과 분석은 메모를 Edit 로 고친다. 홈페이지 자료는 플랫폼이 미리 내려받아 두므로 웹 도구는 주지 않는다

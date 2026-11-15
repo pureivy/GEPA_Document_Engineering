@@ -339,3 +339,20 @@ describe("문서 단계 자동 다듬기(내보내기 경고 → 한 번 고치�
     expect(text).toContain("그 밖에 3건");
   });
 });
+
+describe("사업 구분(수탁|자체) — 담당자 2026-10-26", () => {
+  const ws = "/ws";
+  const self: ProjectDTO = { ...project(""), contact: { 부서명: "전략기획팀", 전화: "054-470-8500", 이메일: "a@gepa.kr", 사업구분: "자체" } };
+  it("자체사업은 결과보고서에서 끝난다", () => {
+    expect(stagesOf("closeout", "자체")).toEqual(["ledger", "analysis", "result"]);
+  });
+  it("결과보고서 지시에 자체사업임을 싣는다 — 정산보고서·제출 공문을 전제하지 않게", () => {
+    const p = buildStagePrompt({ stage: "result", project: self, workspaceDir: ws }).prompt;
+    expect(p).toContain("사업구분: 자체사업");
+    expect(p).toContain("결과보고서 하나");
+  });
+  it("수탁사업은 정산보고서·제출 공문이 이어진다고 싣는다", () => {
+    const p = buildStagePrompt({ stage: "result", project: { ...project("고령군수(투자유치과장)"), contact: { ...project("").contact, 사업구분: "수탁" } }, workspaceDir: ws }).prompt;
+    expect(p).toContain("사업구분: 수탁사업");
+  });
+});

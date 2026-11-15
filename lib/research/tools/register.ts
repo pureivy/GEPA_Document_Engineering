@@ -8,8 +8,11 @@ import type { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
 import { researchDataSourcesStatus } from "../dataSources";
 import { bizinfoSearch, BIZINFO_FIELDS } from "./bizinfo";
 import { customsTrade, SIDO_CODES } from "./customs";
+import { DART_REPORTS, dartCompany, dartFinance } from "./dart";
+import { ECOS_CYCLES, ecosItems, ecosSearch, ecosSeries } from "./ecos";
 import { factorySearch } from "./factory";
 import type { Env, Fetcher, ToolResult } from "./http";
+import { kiprisSearch } from "./kipris";
 import { kosisSearch, kosisTable } from "./kosis";
 import { KOTRA_SECTIONS, kotraCountryInfo, kotraPrices } from "./kotra";
 import { lawSearch, lawText } from "./law";
@@ -17,7 +20,7 @@ import { policyNewsSearch } from "./policyNews";
 import { regionPopulation } from "./population";
 import { storeStats, storeUpjongCodes } from "./stores";
 
-export const RESEARCH_TOOL_NAMES = ["data_sources_status", "customs_trade", "store_stats", "store_upjong_codes", "policy_news_search", "kosis_search", "kosis_table", "law_search", "law_text", "bizinfo_search", "kotra_country_info", "kotra_prices", "factory_search", "region_population"] as const;
+export const RESEARCH_TOOL_NAMES = ["data_sources_status", "customs_trade", "store_stats", "store_upjong_codes", "policy_news_search", "kosis_search", "kosis_table", "law_search", "law_text", "bizinfo_search", "kotra_country_info", "kotra_prices", "factory_search", "region_population", "dart_company", "dart_finance", "ecos_search", "ecos_items", "ecos_series", "kipris_search"] as const;
 export const MCP_SERVER_NAME = "gepa-data";
 /** fully qualified names as the CLI exposes them (for allow-lists and agent frontmatter) */
 export const RESEARCH_MCP_TOOL_IDS = RESEARCH_TOOL_NAMES.map((n) => `mcp__${MCP_SERVER_NAME}__${n}`);
@@ -51,6 +54,9 @@ export function registerResearchTools(server: McpServer, env: Env, fetchImpl: Fe
             kosis: st.kosis,
             법제처: st.law,
             기업마당: st.bizinfo,
+            DART: st.dart,
+            한국은행ECOS: st.ecos,
+            KIPRIS: st.kipris,
             도구: RESEARCH_TOOL_NAMES,
           };
         })(),
@@ -147,8 +153,8 @@ export function registerResearchTools(server: McpServer, env: Env, fetchImpl: Fe
   server.registerTool(
     "law_text",
     {
-      description: "법령·자치법규 본문(조문). article 로 특정 조(예: '3' 또는 '제3조')만 볼 수 있다. 인용은 '「법령명」 제N조(제목)' 형식.",
-      inputSchema: { target: z.enum(["law", "ordin"]), MST: z.string().min(1), article: z.string().optional(), limit: z.number().int().min(1).max(200).optional() },
+      description: "법령·자치법규 본문(조문, 항·호·목까지). article 로 특정 조(예: '3' 또는 '제3조')만 볼 수 있다. 응답의 별표목록에 있는 표(업종별 기준·금액표 등)는 appendix('1')로 본문을 받는다. 인용은 '「법령명」 제N조(제목)' 또는 '「법령명」 [별표 N]' 형식.",
+      inputSchema: { target: z.enum(["law", "ordin"]), MST: z.string().min(1), article: z.string().optional(), appendix: z.string().optional().describe("별표 번호 (예: '1', '2의3')"), limit: z.number().int().min(1).max(200).optional() },
     },
     async (p) => guarded(() => lawText(p, env, fetchImpl)),
   );
@@ -205,5 +211,77 @@ export function registerResearchTools(server: McpServer, env: Env, fetchImpl: Fe
       inputSchema: { region: z.string().optional(), fromYear: z.number().int().optional(), toYear: z.number().int().optional() },
     },
     async (p) => guarded(() => regionPopulation(p, env, fetchImpl)),
+  );
+
+  server.registerTool(
+    "dart_company",
+    {
+      description: "금융감독원 전자공시(DART) 기업 찾기·기업개황. name(회사명 일부, '(주)' 등은 무시)으로 고유번호 후보를 찾고, 하나로 좁혀지면 대표자·주소·업종코드·설립일·상장구분까지 돌려준다. corp_code 를 주면 그 회사 개황. DART 에는 상장사·외부감사 대상 등 공시 의무가 있는 회사만 있다(소규모 기업은 없다).",
+      inputSchema: { name: z.string().optional(), corp_code: z.string().optional().describe("고유번호 8자리"), limit: z.number().int().min(1).max(30).optional() },
+    },
+    async (p) => guarded(() => dartCompany(p, env, fetchImpl)),
+  );
+
+  server.registerTool(
+    "dart_finance",
+    {
+      description: `DART 단일회사 주요 재무계정(매출액·영업이익·당기순이익·자산·부채·자본) — 당기·전기·전전기 3개년을 한 번에(원 단위). corp_code 는 dart_company 로 찾는다. report: ${Object.keys(DART_REPORTS).join("/")}(기본 annual 사업보고서). fs: CFS 연결/OFS 별도(기본: 연결이 있으면 연결).`,
+      inputSchema: { corp_code: z.string(), year: z.string().regex(/^\d{4}$/), report: z.enum(Object.keys(DART_REPORTS) as [keyof typeof DART_REPORTS, ...(keyof typeof DART_REPORTS)[]]).optional(), fs: z.enum(["CFS", "OFS"]).optional() },
+    },
+    async (p) => guarded(() => dartFinance(p, env, fetchImpl)),
+  );
+
+  server.registerTool(
+    "ecos_search",
+    {
+      description: "한국은행 ECOS 통계표 찾기 — 금리·물가·환율·GDP·지역내총생산·가계부채·산업생산·경기지수 등. keyword 의 낱말이 모두 들어간 통계표(통계표코드·주기)와, 100대 핵심지표(최신값)를 함께 돌려준다. 시계열은 ecos_items → ecos_series.",
+      inputSchema: { keyword: z.string().min(1), limit: z.number().int().min(1).max(100).optional() },
+    },
+    async (p) => guarded(() => ecosSearch(p, env, fetchImpl)),
+  );
+
+  server.registerTool(
+    "ecos_items",
+    {
+      description: "ECOS 통계표 하나의 항목 코드·주기(A/Q/M/D)·수록 기간·단위. nameFilter 로 항목명 일부(예: '경북', '기준금리')만 거른다. 여기서 본 항목코드·주기를 ecos_series 에 넣는다.",
+      inputSchema: { statCode: z.string().min(1), nameFilter: z.string().optional(), limit: z.number().int().min(1).max(500).optional() },
+    },
+    async (p) => guarded(() => ecosItems(p, env, fetchImpl)),
+  );
+
+  server.registerTool(
+    "ecos_series",
+    {
+      description: "ECOS 시계열 값. cycle: A 연(YYYY)/S 반년(YYYYS1)/Q 분기(YYYYQ1)/M 월(YYYYMM)/SM 반월/D 일(YYYYMMDD) — start·end 를 그 형식으로. item1~4 는 ecos_items 의 항목코드(그룹 순서대로).",
+      inputSchema: {
+        statCode: z.string().min(1),
+        cycle: z.enum(ECOS_CYCLES),
+        start: z.string().min(4),
+        end: z.string().min(4),
+        item1: z.string().optional(),
+        item2: z.string().optional(),
+        item3: z.string().optional(),
+        item4: z.string().optional(),
+        limit: z.number().int().min(1).max(2000).optional(),
+      },
+    },
+    async (p) => guarded(() => ecosSeries(p, env, fetchImpl)),
+  );
+
+  server.registerTool(
+    "kipris_search",
+    {
+      description: "특허청 KIPRIS 특허·실용신안 검색과 건수 세기. word(낱말 전체 검색) 또는 applicant(출원인 이름 일부)·title(발명 명칭)·from/to(출원일 YYYYMMDD)로 찾는다. 총건수로 '○○사 최근 3년 출원 N건'·'이차전지 양극재 출원 추이' 같은 근거를 만든다. patentOnly 면 실용신안 제외.",
+      inputSchema: {
+        word: z.string().optional(),
+        applicant: z.string().optional(),
+        title: z.string().optional(),
+        from: z.string().regex(/^\d{8}$/).optional(),
+        to: z.string().regex(/^\d{8}$/).optional(),
+        patentOnly: z.boolean().optional(),
+        limit: z.number().int().min(1).max(50).optional(),
+      },
+    },
+    async (p) => guarded(() => kiprisSearch(p, env, fetchImpl)),
   );
 }

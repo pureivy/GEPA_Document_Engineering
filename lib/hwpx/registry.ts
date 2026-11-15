@@ -142,6 +142,36 @@ export class StyleRegistry {
     return nid;
   }
 
+  private readonly wordWrapOf = new Map<number, number>();
+  /**
+   * 같은 문단 모양에 한글 줄 나눔만 어절 단위로 바꾼 paraPr. 한글에서 breakNonLatinWord="KEEP_WORD" 는 **글자 단위**,
+   * "BREAK_WORD" 가 어절 단위다(2026-11-10 한글로 실측 — 이름과 거꾸로다). 기관 문서는 글자 단위가 기본이고, 단어가
+   * 쪼개지면 자간을 줄여 붙인다. 자간을 바닥까지 줄여도 쪼개지는 문단만 이것으로 단어를 통째 넘긴다(keepPass.hangulPass).
+   */
+  withWordWrap(id: number): number {
+    const hit = this.wordWrapOf.get(id);
+    if (hit !== undefined) return hit;
+    const list = child(refList(this.header), "hh:paraProperties");
+    const src = list ? childrenNamed(list, "hh:paraPr").find((n) => Number(n.attrs.id) === id) : undefined;
+    if (!list || !src) return id;
+    const node = clone(src);
+    const brks = findAll(node, "hh:breakSetting");
+    if (!brks.length || brks.every((b) => b.attrs.breakNonLatinWord === "BREAK_WORD")) {
+      this.wordWrapOf.set(id, id);
+      return id;
+    }
+    for (const b of brks) b.attrs.breakNonLatinWord = "BREAK_WORD";
+    const nid = childrenNamed(list, "hh:paraPr").length;
+    node.attrs.id = String(nid);
+    list.children.push(node);
+    list.attrs.itemCnt = String(nid + 1);
+    const info = this.paraPrInfo(id);
+    if (info) this.cat.paraPr.push({ ...info, id: nid });
+    this.appended.push({ kind: "paraPr", id: nid, sig: `wordwrap:${id}` });
+    this.wordWrapOf.set(id, nid);
+    return nid;
+  }
+
   /**
    * 같은 문단 모양에 줄 간격(%)만 바꾼 paraPr — 쪽 아래가 크게 비는 쪽의 본문 줄 간격을 늘려 채운다(keepPass.buildLaidOut).
    * 원본 노드를 복제하므로 다른 속성은 그대로다. 줄 간격이 PERCENT 가 아니면 그대로 둔다.

@@ -68,6 +68,7 @@ export function writePlan(ctx: WriterContext, doc: PlanDoc): XmlNode[] {
   const fs = planStyle(doc);
   const bumpis = doc.meta.house === "bumpis";
   let chipNo = 0;
+  let subHeading_n = 0;
   let lastWasCover = false;
   for (const b of doc.blocks) {
     if (b.k === "sectionChip" && bumpis && !/^\d+$/.test(b.label)) chipNo++;
@@ -87,6 +88,11 @@ export function writePlan(ctx: WriterContext, doc: PlanDoc): XmlNode[] {
         out.push(chapterBand(ctx, b.numeral, b.title, ctx.pendingPageBreak || out.length === 0 || lastWasCover ? 0 : CHAPTER_SPACE_BEFORE));
         break;
       case "sectionChip":
+        if (!bumpis && (doc.meta.절제목 ?? (doc.meta.본문제목 ? "번호" : "칩")) === "번호") {
+          subHeading_n++;
+          out.push(numberedSubHeading(ctx, /^\d+$/.test(b.label) ? Number(b.label) : subHeading_n, b.title));
+          break;
+        }
         out.push(bumpis ? numberedChip(ctx, /^\d+$/.test(b.label) ? b.label : String(chipNo), b.title) : sectionChip(ctx, b.label, b.title));
         break;
       case "summaryBox":
@@ -249,6 +255,21 @@ function bodyTitle(ctx: WriterContext, text: string): XmlNode {
   // 표지는 쪽을 끝까지 채워 다음 블록이 넘쳐서 새 쪽에 오는 구조다 — 짧은 제목 한 줄은 표지 맨 아래에 붙어 버리므로 쪽을 나눈다
   // 줄 나눔은 splitCoverTitle 그대로 — 한 줄로 이으면 폭을 넘겨 "결과 / 보고" 처럼 낱말 중간에서 꺾였다
   return ctx.para({ paraPr, runs: [{ charPr, text: lines.join("\n") }], vertsize: pt * 100, lineSpacing: 140, forcePageBreak: true });
+}
+
+const CIRCLED = "①②③④⑤⑥⑦⑧⑨⑩⑪⑫⑬⑭⑮⑯⑰⑱⑲⑳";
+
+/**
+ * 결과보고서의 세부사업·회차 제목 — `① 1차 GEPA 포럼`. 띠·색 없이 굵은 글씨, □(16pt)보다 한 단계 작게, 두 칸 들여 □ 의 하위로
+ * 보이게 한다(담당자 2026-11-11). 제목이 이미 ①… 로 시작하면 번호를 또 붙이지 않는다.
+ */
+function numberedSubHeading(ctx: WriterContext, n: number, title: string): XmlNode {
+  const pt = 15;
+  const t = title.trim();
+  const text = /^[①-⑳]/.test(t) ? t : `${CIRCLED[n - 1] ?? `(${n})`} ${t}`;
+  const paraPr = ctx.reg.keepWithNext(ctx.reg.paraPr({ align: "JUSTIFY", lineSpacing: 160, prev: 600 }));
+  const charPr = ctx.reg.charPr({ font: "heading", pt, bold: true });
+  return ctx.para({ paraPr, runs: [{ charPr, text: `  ${text}` }], vertsize: pt * 100, lineSpacing: 160 });
 }
 
 // ---- 장 제목 밴드 (Ⅰ | | 제목) ---------------------------------------------------------

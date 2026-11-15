@@ -23,6 +23,14 @@ const pairs: [string, string][] = [
   ["docs/design-system/closeout-result-writing.md", "agent/.claude/skills/gepa-closeout-design/reference/result-writing.md"],
   // 결과·정산보고도 공문서 — 편람 표기 기준을 함께 보낸다(담당자 2026-10-19)
   ["docs/design-system/gov-manual.md", "agent/.claude/skills/gepa-closeout-design/reference/gov-manual.md"],
+  // 표 모양 — 실문서 214건에서 3건 이상 되풀이된 것만(scripts/mine-table-shapes.ts 가 만든다).
+  // 표를 쓰는 가족 전부가 본다 — DSL 문법 옆에 두고, 표가 많은 계획서·결과보고에도 딸려 보낸다.
+  ["docs/design-system/표-양식.md", "agent/.claude/skills/gepa-dsl/reference/표-양식.md"],
+  ["docs/design-system/표-양식.md", "agent/.claude/skills/gepa-plan-design/reference/표-양식.md"],
+  ["docs/design-system/표-양식.md", "agent/.claude/skills/gepa-closeout-design/reference/표-양식.md"],
+  // 업무보고도 표가 많다. 다만 캐낸 자료에 업무보고는 참고본 1건뿐이라 지금 실린 모양은
+  // 소요예산·현황·일정처럼 가족을 가리지 않는 것들이다 — 실제 주요업무보고가 올라오면 다시 캔다.
+  ["docs/design-system/표-양식.md", "agent/.claude/skills/gepa-report-design/reference/표-양식.md"],
 ];
 for (const [src, dst] of pairs) {
   const s = join(root, src), d = join(root, dst);

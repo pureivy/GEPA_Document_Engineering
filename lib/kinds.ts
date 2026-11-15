@@ -3,7 +3,7 @@
  * program 만 연쇄(research→plan→notice→press)이고 나머지는 단일 단계다.
  * `review` 는 어느 kind 의 단계 목록에도 없다 — 문서 단계에 덧붙는 별도 실행이다.
  */
-import type { Stage } from "./contracts";
+import type { FundingType, Stage } from "./contracts";
 
 export type ProjectKind = "program" | "official" | "report" | "closeout";
 export const PROJECT_KINDS: ProjectKind[] = ["program", "official", "report", "closeout"];
@@ -18,7 +18,16 @@ export const KIND_STAGES: Record<ProjectKind, Stage[]> = {
   // 올해 한 일을 옮겨 적는 데서 그쳤다(담당자 2026-10-21). 판단(성과·우수사례·차년도 반영)을 먼저 따로 한다.
   closeout: ["ledger", "analysis", "result", "settlement", "submit"],
 };
-export function stagesOf(kind: ProjectKind): Stage[] {
+/**
+ * 자체사업(자부담 100%)의 결과·정산 단계 — 위탁기관이 없으니 위탁기관 서식 정산보고서도, 그것을 보내는 제출 공문도
+ * 없다. 결과보고서 하나(예산 집행 현황에 집행 세부내역을 녹인다)로 끝난다(담당자 2026-10-26: GEPA 포럼을 끝까지
+ * 돌렸더니 자체사업인데 정산보고서·공문이 나왔다 — "앞으로 이런 식으로 하지 않게 설계하라").
+ */
+export const CLOSEOUT_SELF_STAGES: Stage[] = ["ledger", "analysis", "result"];
+
+/** 프로젝트의 단계 목록. 결과·정산은 사업 구분(contact.사업구분)에 따라 갈린다 — 없으면 수탁 */
+export function stagesOf(kind: ProjectKind, 사업구분?: FundingType): Stage[] {
+  if (kind === "closeout" && 사업구분 === "자체") return CLOSEOUT_SELF_STAGES;
   return KIND_STAGES[kind];
 }
 export function isProjectKind(v: unknown): v is ProjectKind {

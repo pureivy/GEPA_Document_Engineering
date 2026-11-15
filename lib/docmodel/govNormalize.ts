@@ -52,7 +52,39 @@ export function normalizeDslText(dsl: string): { text: string; changes: Normaliz
     }
     return normalizeLine(line, changes);
   });
-  return { text: equalLabelsUnspaced(yearCommasInTables(mergeLoneSubItems(out, changes), changes), changes).join("\n"), changes: mergeChanges(changes) };
+  return { text: dropEchoHeading(equalLabelsUnspaced(yearCommasInTables(mergeLoneSubItems(out, changes), changes), changes), changes).join("\n"), changes: mergeChanges(changes) };
+}
+
+/**
+ * 장 제목을 되풀이하는 □ 를 뺀다: `# 사업개요` 바로 밑 `□ 사업개요` 가 그 장의 하나뿐인 □ 면 제목이 두 번 찍힌다
+ * (Ⅰ 사업개요 / □ 사업개요 — 담당자 2026-11-11 "이상한가?"). 실문서가 □ 사업개요를 두는 것은 옆에 □ 추진배경 및 목적
+ * 같은 다른 □ 가 있을 때다 — 그때는 그대로 둔다. 장 안에 다른 □ 가 없으면 ㅇ 줄이 장 제목 바로 밑에 온다.
+ */
+function dropEchoHeading(lines: string[], changes: NormalizeChange[]): string[] {
+  const key = (s: string) => s.replace(/\s+/g, "");
+  const drop = new Set<number>();
+  let fenced = false;
+  for (let i = 0; i < lines.length; i++) {
+    if (/^\s*```/.test(lines[i])) fenced = !fenced;
+    const h = !fenced && /^#\s+(.+?)\s*$/.exec(lines[i]);
+    if (!h) continue;
+    let j = i + 1;
+    while (j < lines.length && !lines[j].trim()) j++;
+    const box = /^\s*□\s*(.+?)\s*$/.exec(lines[j] ?? "");
+    if (!box || key(box[1]) !== key(h[1])) continue;
+    let other = false;
+    let inner = false;
+    for (let k = j + 1; k < lines.length && !/^#\s/.test(lines[k]); k++) {
+      if (/^\s*```/.test(lines[k])) inner = !inner;
+      if (!inner && /^\s*□/.test(lines[k])) {
+        other = true;
+        break;
+      }
+    }
+    if (!other) drop.add(j);
+  }
+  if (drop.size) changes.push({ rule: "장 제목 되풀이 □ 삭제", count: drop.size });
+  return lines.filter((_, i) => !drop.has(i));
 }
 
 /**

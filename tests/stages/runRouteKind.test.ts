@@ -32,6 +32,7 @@ function row(id: string, kind: string): ProjectRow {
     contact: JSON.stringify({ 부서명: "전략기획팀", 전화: "054-470-8527", 이메일: "a@gepa.kr" }),
     referenceName: null,
     referenceChanges: null,
+    referenceNames: null,
     createdAt: now,
     updatedAt: now,
   };

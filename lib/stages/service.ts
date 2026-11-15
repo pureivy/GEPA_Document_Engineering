@@ -11,7 +11,7 @@ import { normalizeDocMeta, normalizeDslText, type NormalizeChange } from "../doc
 import { resolveAsset } from "../closeout/photos";
 import { toDsl } from "../docmodel/serialize/toDsl";
 import { expandLedgerMacros, hasLedgerMacro } from "../closeout/macros";
-import { readLedger } from "../closeout/store";
+import { ledgerOptsOf, readLedger } from "../closeout/store";
 import { computeLedger } from "../closeout/ledger";
 import { sourceAmounts, unledgeredWarnings } from "../closeout/amountCheck";
 import { materialsDir, type MaterialBox } from "../closeout/materials";
@@ -107,7 +107,7 @@ export function saveStageDsl(projectId: string, stage: Stage, dslText: string, s
   if (source === "agent" && hasLedgerMacro(text)) {
     const l = readLedger(projectId);
     if (l.ok) {
-      const x = expandLedgerMacros(text, l.ledger);
+      const x = expandLedgerMacros(text, l.ledger, ledgerOptsOf(projectId));
       text = x.text;
       macroWarnings.push(...x.warnings.map((message) => ({ line: 0, message })));
       normalized.push({ rule: "정산매크로", count: 1 });

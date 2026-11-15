@@ -33,6 +33,11 @@ const bodySchema = z.object({
   autoChain: z.boolean().optional(),
   /** plan: allow 보충 조사 (Task/WebSearch/WebFetch, max 2) */
   supplementalResearch: z.boolean().optional(),
+  /**
+   * 스캔 PDF 글자 인식이 남았을 때 409 대신 인식이 끝나기를 뒤에서 기다렸다가 시작한다.
+   * 새 프로젝트 화면의 "만들고 자동 실행"용 — 사람이 다시 누를 필요가 없어야 한다(2026-11-11 지적).
+   */
+  afterScan: z.boolean().optional(),
 });
 
 export async function POST(req: Request, ctx: { params: Promise<{ id: string; stage: string }> }) {
@@ -44,7 +49,7 @@ export async function POST(req: Request, ctx: { params: Promise<{ id: string; st
   // 단계는 프로젝트 종류에 속해야 한다. 화면은 stagesOf 로 404 를 내지만 이 라우트를 직접 POST 하면
   // 사업 프로젝트 안에 공문이 생길 수 있었다. `review` 는 어느 kind 의 목록에도 없고 문서 단계에 덧붙는
   // 별도 실행이므로 통과시킨다(검토 대상은 body.reviewTarget 이 정한다).
-  if (stage !== "review" && !stagesOf(project.kind).includes(stage)) {
+  if (stage !== "review" && !stagesOf(project.kind, project.contact.사업구분).includes(stage)) {
     return jsonError(404, `${KIND_LABEL[project.kind]} 프로젝트에는 ${stage} 단계가 없습니다`);
   }
   const body = await readJsonBody(req, bodySchema);
@@ -61,6 +66,20 @@ export async function POST(req: Request, ctx: { params: Promise<{ id: string; st
   if (project.kind === "closeout" && SCAN_STAGES.has(stage) && !resumeSessionId) {
     const { pending, running } = scanBacklog(id);
     if (pending > 0 || running) {
+      if (body.data.afterScan) {
+        const opts = { model: body.data.model, autoChain: body.data.autoChain, instruction: body.data.instruction };
+        void startScanPending(id)
+          .catch((e) => console.error("[run] 글자 인식 실패:", e))
+          .then(async () => {
+            const fresh = getDb().select().from(projects).where(eq(projects.id, id)).get();
+            if (!fresh) return;
+            const p = serializeProject(fresh);
+            await prepareStage(p, stage, false);
+            startStageRun({ project: p, stage, ...opts });
+          })
+          .catch((e) => console.error("[run] 글자 인식 뒤 실행 실패:", e));
+        return Response.json({ queued: true, pending, stage, projectId: id }, { status: 202 });
+      }
       void startScanPending(id).catch((e) => console.error("[run] 글자 인식 실패:", e));
       return jsonError(409, `스캔 PDF 글자 인식 중입니다(남은 자료 ${pending}개). 끝난 뒤 다시 실행하세요 — 한 쪽에 1초 남짓 걸립니다`);
     }

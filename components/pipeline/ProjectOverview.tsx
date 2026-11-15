@@ -39,10 +39,11 @@ async function fetchOverview(projectId: string, stages: Stage[]): Promise<Overvi
   return { project: d.project, runs: d.runs ?? [], active, hasDoc: Object.fromEntries(results) };
 }
 
-export function ProjectOverview({ projectId, kind }: { projectId: string; kind: ProjectKind }) {
+export function ProjectOverview({ projectId, kind, stages: stagesProp }: { projectId: string; kind: ProjectKind; stages?: Stage[] }) {
   // 서버가 내려준 종류에서 바로 파생한다 — 첫 페인트에 이미 단계 수가 맞다.
   // stagesOf(kind) 대신 레코드를 읽는 이유는 StageRunner.tsx 의 같은 줄 주석 참고(lint)
-  const stages = KIND_STAGES[kind];
+  // 서버가 사업 구분까지 보고 정한 목록(app/projects/[id]/page.tsx)이 있으면 그것을 쓴다
+  const stages = stagesProp ?? KIND_STAGES[kind];
   // 단일 단계 종류(공문)에는 이어질 단계가 없다 — 전체 자동 실행도 진행 막대도 의미가 없다
   const chained = stages.length > 1;
   const [data, setData] = useState<OverviewData | null>(null);

@@ -151,15 +151,15 @@ describe("buildHwpx — press", () => {
     expect(v.errors).toEqual([]);
     expect(report.warnings).toEqual([]);
     const text = await extractText(bytes);
-    // "보도자료" is the reference logotype image; the 머리표 text starts with the date and labels
-    expect(text).toContain("【26. 7. 1(수)】");
-    for (const s of ["담당부서", "북부지소", "작 성 자", "실장", "김OO", "팀장", "김OO (gepa_north@naver.com)", "연 락 처", "054-900-3801"]) expect(text).toContain(s);
-    expect(text).toContain("- 7월 15일까지 접수… 기업당 최대 300만원 지원 -");
-    expect(text).toContain("□ 지원내용"); // □ heading inside the grey box (bold), ㅇ items become •
+    // 2026 서식 머리표: 보도자료【26. 7. 1.】 ‖ 제공일자/제공부서/주책임자/담 당 자, 그 아래 전화·FAX 줄
+    expect(text).toContain("보도자료【26. 7. 1.】");
+    for (const s of ["제공일자", "2026. 7. 1.", "제공부서", "북부지소", "주책임자", "담 당 자", "김OO 팀장", "전화: 054.900.3801 / FAX: 054.472.2989"]) expect(text).toContain(s);
+    expect(text).toContain("7월 15일까지 접수… 기업당 최대 300만원 지원");
+    expect(text).toContain("□ 지원내용"); // □ 줄은 내어쓰기 문단, ㅇ 항목은 • (회색 상자 없음)
     expect(text).toContain("  • 수출용 홍보물 제작 등 4개 분야 11개 사업");
     expect(text).toContain("붙임  사업 공고문 1부  끝.");
-    expect(report.tables).toBe(3); // 머리표 + 제목 box + grey bullet box
-    expect(report.pictures).toBe(2); // GEPA 로고 + 보도자료 로고타입
+    expect(report.tables).toBe(3); // 머리표 + 연락처 줄 + 제목 상자
+    expect(report.pictures).toBe(1); // GEPA 마크
     expect(v.pageCount).toBe(1);
   }, 60_000);
 });

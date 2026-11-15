@@ -11,7 +11,7 @@ import { MCP_SERVER_NAME } from "./tools/register";
 
 export function anyResearchSourceConfigured(env: Record<string, string | undefined> = process.env): boolean {
   const st = researchDataSourcesStatus(env);
-  return (st.dataGoKr.keySet && st.dataGoKr.services.length > 0) || st.kosis || st.law || st.bizinfo;
+  return (st.dataGoKr.keySet && st.dataGoKr.services.length > 0) || st.kosis || st.law || st.bizinfo || st.dart || st.ecos || st.kipris;
 }
 
 export interface McpConfigOptions {

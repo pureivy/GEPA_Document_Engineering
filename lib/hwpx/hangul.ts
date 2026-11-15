@@ -17,9 +17,11 @@ export interface HangulLayout {
   pngs: Uint8Array[];
   /** 쪽마다 한글이 읽어 준 글(표 안 글은 빠진다) */
   texts: string[];
+  /** save 면 한글이 다시 저장한 hwpx — 문단마다 한글이 나눈 줄(hp:linesegarray)이 들어 있다 */
+  saved?: Uint8Array;
 }
 
-const SCRIPT = String.raw`param([string]$src, [string]$out, [int]$dpi, [int]$images)
+const SCRIPT = String.raw`param([string]$src, [string]$out, [int]$dpi, [int]$images, [int]$save)
 $ErrorActionPreference = "Stop"
 Add-Type -AssemblyName System.Drawing
 $before = @(Get-Process Hwp -ErrorAction SilentlyContinue | ForEach-Object { $_.Id })
@@ -42,6 +44,8 @@ try {
       $img.Dispose(); Remove-Item $bmp
     }
   }
+  # Hangul writes its own line breaks (hp:linesegarray) on save - read back to see where it wrapped each paragraph
+  if ($save -eq 1) { $null = $h.SaveAs((Join-Path $out "saved.hwpx"), "HWPX", "") }
   [IO.File]::WriteAllText((Join-Path $out "pages.txt"), [string]$n)
 } finally {
   try { $h.Clear(1) } catch {}
@@ -149,7 +153,7 @@ function serial<T>(fn: () => Promise<T>): Promise<T> {
 }
 
 /** 한글로 열어 쪽 글(과 images 면 쪽 그림)을 얻는다. 실패하면 undefined */
-export function hangulLayout(bytes: Uint8Array, opts: { images?: boolean; dpi?: number; timeoutMs?: number } = {}): Promise<HangulLayout | undefined> {
+export function hangulLayout(bytes: Uint8Array, opts: { images?: boolean; dpi?: number; timeoutMs?: number; save?: boolean } = {}): Promise<HangulLayout | undefined> {
   if (!hangulAvailable()) return Promise.resolve(undefined);
   return serial(async () => {
     if (Date.now() < pausedUntil) return undefined;
@@ -167,7 +171,7 @@ export function hangulLayout(bytes: Uint8Array, opts: { images?: boolean; dpi?: 
       await new Promise<void>((resolve, reject) => {
         execFile(
           "powershell.exe",
-          ["-NoProfile", "-NonInteractive", "-ExecutionPolicy", "Bypass", "-File", ps1, src, out, String(opts.dpi ?? 96), opts.images ? "1" : "0"],
+          ["-NoProfile", "-NonInteractive", "-ExecutionPolicy", "Bypass", "-File", ps1, src, out, String(opts.dpi ?? 96), opts.images ? "1" : "0", opts.save ? "1" : "0"],
           { timeout: opts.timeoutMs ?? 90_000, windowsHide: true },
           (err, _stdout, stderr) => (err ? reject(new Error(String(stderr || err.message).trim().slice(0, 300))) : resolve()),
         );
@@ -182,7 +186,8 @@ export function hangulLayout(bytes: Uint8Array, opts: { images?: boolean; dpi?: 
         if (opts.images) pngs.push(new Uint8Array(readFileSync(join(out, `page-${i}.png`))));
       }
       ok = true;
-      return { pngs, texts };
+      const savedPath = join(out, "saved.hwpx");
+      return { pngs, texts, ...(opts.save && existsSync(savedPath) ? { saved: new Uint8Array(readFileSync(savedPath)) } : {}) };
     } catch {
       return undefined;
     } finally {

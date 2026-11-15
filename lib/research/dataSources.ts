@@ -4,6 +4,7 @@
  *   DATA_GO_KR_KEY        one key per data.go.kr account (Decoding form), shared by every API
  *   DATA_GO_KR_SERVICES   comma-separated data.go.kr service ids the account has 활용신청 for
  *   KOSIS_KEY / LAW_OC / BIZINFO_KEY   the three portals outside data.go.kr
+ *   DART_KEY / ECOS_KEY / KIPRIS_API_KEY   금융감독원 전자공시 · 한국은행 ECOS · 특허청 KIPRIS Plus (2026-11-10)
  *
  * The catalog below is the allow-list: a service id in DATA_GO_KR_SERVICES that is not in the
  * catalog is reported as unknown and never called. Endpoints are filled in as each service is
@@ -52,6 +53,9 @@ export interface ResearchDataSourcesStatus {
   kosis: boolean;
   law: boolean;
   bizinfo: boolean;
+  dart: boolean;
+  ecos: boolean;
+  kipris: boolean;
 }
 
 /** `"15134343, 15095335;15012005"` → ["15134343","15095335","15012005"] (comma/semicolon/space separated) */
@@ -78,6 +82,9 @@ export function researchDataSourcesStatus(env: Record<string, string | undefined
     kosis: has(env.KOSIS_KEY),
     law: has(env.LAW_OC),
     bizinfo: has(env.BIZINFO_KEY),
+    dart: has(env.DART_KEY),
+    ecos: has(env.ECOS_KEY),
+    kipris: has(env.KIPRIS_API_KEY),
   };
 }
 

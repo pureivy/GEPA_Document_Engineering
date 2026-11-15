@@ -16,11 +16,14 @@ export default async function StagePage({ params }: { params: Promise<{ id: stri
   const row = getDb().select().from(projects).where(eq(projects.id, id)).get();
   if (!row) notFound();
   // 단계는 프로젝트 종류에서 파생된다 — 사업 프로젝트의 /official 도, 공문 프로젝트의 /plan 도 여기서 404 다
-  const kind = serializeProject(row).kind;
-  if (!stagesOf(kind).includes(stage as Stage)) notFound();
+  const p = serializeProject(row);
+  const kind = p.kind;
+  // 결과·정산 자체사업에는 정산보고서·제출 공문이 없다(lib/kinds.ts stagesOf)
+  const stages = stagesOf(kind, p.contact.사업구분);
+  if (!stages.includes(stage as Stage)) notFound();
   return (
     <div className="h-[calc(100vh-44px)] min-h-0">
-      <StageRunner projectId={id} stage={stage as Stage} kind={kind} defaultModel={modelFor(stage as Stage)} />
+      <StageRunner projectId={id} stage={stage as Stage} kind={kind} stages={stages} defaultModel={modelFor(stage as Stage)} />
     </div>
   );
 }

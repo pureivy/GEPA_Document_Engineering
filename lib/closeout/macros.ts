@@ -69,17 +69,21 @@ function spendRow(r: LedgerResult, e: Ledger["집행"][number], year?: number): 
   return row([dotDate(e.일자, year), thousands(e.금액), esc(비목(r, l?.비목군 ?? "", e.세목)), esc(e.내역), esc(e.지급처), esc(e.지출번호 === undefined ? "" : String(e.지출번호)), esc(e.지급방법)]);
 }
 
-function 총괄표(r: LedgerResult): string[] {
+// eslint-disable-next-line @typescript-eslint/no-unused-vars -- 표 함수 모양(r, args, opts)을 맞춘다
+function 총괄표(r: LedgerResult, _args: MacroArgs = {}, opts: LedgerOpts = {}): string[] {
+  // 자체사업은 따로 받은 돈·통장이 없다 — 이자 칸을 두지 않는다(이자가 실제로 잡혔으면 그대로 보인다)
+  const withInterest = !opts.자체 || r.이자 !== 0;
+  const pick = (cells: string[]) => (withInterest ? cells : cells.filter((_, i) => i !== 5));
   const lines = [
     "(단위 : 원, %)",
-    "{table role=budget header-rows=2 font=11 header-font=12 widths=72,82,82,48,66,66,66}",
-    row(["구 분", "예 산 액", "지 출 액", "<", "집행잔액", "이 자<br>발생액", "비 고"]),
-    row(["^", "^", "금액", "비율", "^", "^", "^"]),
-    row(["계", money(r.예산), money(r.집행), r.집행률, money(r.잔액), money(r.이자), ""]),
+    `{table role=budget header-rows=2 font=11 header-font=12 widths=${withInterest ? "72,82,82,48,66,66,66" : "80,92,92,52,74,92"}}`,
+    row(pick(["구 분", "예 산 액", "지 출 액", "<", "집행잔액", "이 자<br>발생액", "비 고"])),
+    row(pick(["^", "^", "금액", "비율", "^", "^", "^"])),
+    row(pick(["계", money(r.예산), money(r.집행), r.집행률, money(r.잔액), money(r.이자), ""])),
   ];
   for (const s of r.재원) {
     const name = r.재원.length === 1 ? r.ledger.재원명 : s.이름;
-    lines.push(row([esc(name), money(s.예산), money(s.집행), executionRate(s.집행, s.예산), money(s.잔액), money(s.이자), ""]));
+    lines.push(row(pick([esc(name), money(s.예산), money(s.집행), executionRate(s.집행, s.예산), money(s.잔액), money(s.이자), ""])));
   }
   // 자부담이 없으면 행을 두지 않는다(참고본)
   if (r.ledger.자부담) lines.push(row(["자부담", money(r.ledger.자부담), "-", "-", "-", "-", ""]));
@@ -124,7 +128,7 @@ function 세부내역(r: LedgerResult): string[] {
  * 집행액을 나란히 둔다. 결과보고는 계획서의 세부사업 순서를 그대로 따르므로 예산도 그 단위로 보여 준다.
  */
 function 세부사업별(r: LedgerResult): string[] {
-  const out = ["(단위: 원)", "{table role=budget font=11 header-font=11 widths=58,148,72,72,72,60}", row(["구 분", "세부사업", "당초예산", "최종예산", "집 행 액", "잔 액"])];
+  const out = ["(단위: 원)", "{table role=budget font=11 header-font=11 widths=52,130,75,75,75,75}", row(["구 분", "세부사업", "당초예산", "최종예산", "집 행 액", "잔 액"])];
   for (const g of r.groups) {
     g.lines.forEach((l, i) => out.push(row([i === 0 ? 군명(r, g.비목군) : "^", esc(l.세부사업 ?? l.세목), money(l.당초예산), money(l.예산), money(l.집행), money(l.잔액)])));
   }
@@ -135,7 +139,7 @@ function 세부사업별(r: LedgerResult): string[] {
 /** 사업 및 소요경비배분 변경내역 — 당초예산과 다른 줄만. 없으면 "해 당 없 음" */
 function 변경내역(r: LedgerResult): string[] {
   const changed = r.ledger.예산.filter((b) => b.당초예산 !== undefined && b.당초예산 !== b.예산);
-  const out = ["(단위: 원)", "{table role=generic font=11 header-font=11 widths=112,82,66,66,110,46}", row(["항목", r.ledger.비목칸 === "통계목" ? "통계목" : "비 목", "당초예산", "변경예산", "주요 변경사유", "승인<br>여부"])];
+  const out = ["(단위: 원)", "{table role=generic font=11 header-font=11 widths=100,78,66,66,110,62}", row(["항목", r.ledger.비목칸 === "통계목" ? "통계목" : "비 목", "당초예산", "변경예산", "주요 변경사유", "승인<br>여부"])];
   if (!changed.length) out.push(row(["해 당 없 음", "<", "<", "<", "<", "<"]));
   for (const b of changed) out.push(row([esc(b.세부사업 ?? 군명(r, b.비목군)), esc(b.세목), money(b.당초예산 ?? 0), money(b.예산), esc(b.변경사유 ?? ""), esc(b.승인 ?? "여")]));
   return out;
@@ -157,9 +161,13 @@ function 잔액사유(r: LedgerResult): string[] {
  * 공문 본문의 정산내역 표 — 담당자 공문(ESG·기업지원팀-3629·3630) 그대로 Ⓐ~Ⓓ 첨자, 마지막 열 "통장잔액".
  * `열=반납액` 을 주면 마지막 열 이름만 바꾼다(시군이 반납 의사를 요구할 때).
  */
-function 공문표(r: LedgerResult, args: MacroArgs = {}): string[] {
+function 공문표(r: LedgerResult, args: MacroArgs = {}, opts: LedgerOpts = {}): string[] {
+  // 자체사업: 교부금이 없다 — 예산·집행액·잔액 셋(담당자 2026-11-11). 제출 공문 자체가 없지만 본문에 이 표를 쓰면 이 모양이 된다.
+  if (opts.자체 && r.이자 === 0) {
+    return ["(단위: 원)", "{table role=budget}", row(["예 산<br>Ⓐ", "집행액<br>Ⓑ", "잔 액<br>Ⓒ=Ⓐ-Ⓑ"]), row([money(r.예산), money(r.집행), money(r.잔액)])];
+  }
   const last = args.열 === "반납액" ? "반납액" : "통장잔액";
-  const head = ["교부금<br>Ⓐ", "집행액<br>Ⓑ", "사업비잔액<br>Ⓒ=Ⓐ-Ⓑ", "예금이자<br>Ⓓ", `${last}<br>Ⓒ+Ⓓ`];
+  const head = [opts.자체 ? "예 산<br>Ⓐ" : "교부금<br>Ⓐ", "집행액<br>Ⓑ", "사업비잔액<br>Ⓒ=Ⓐ-Ⓑ", "예금이자<br>Ⓓ", `${last}<br>Ⓒ+Ⓓ`];
   if (r.재원.length === 1) {
     return ["(단위: 원)", "{table role=budget}", row(head), row([money(r.예산), money(r.집행), money(r.잔액), money(r.이자), money(r.반납액)])];
   }
@@ -207,7 +215,9 @@ function 기업별(r: LedgerResult, args: MacroArgs = {}): string[] {
 }
 
 export type MacroArgs = Record<string, string>;
-export const LEDGER_TABLES: Record<string, (r: LedgerResult, args?: MacroArgs) => string[]> = { 총괄표, 집행현황, 항목별, 세부사업별, 세부내역, 기업별, 변경내역, 잔액사유, 공문표 };
+/** 프로젝트에서 오는 값 — 자체사업(자부담 100%)이면 교부금·이자·통장 같은 수탁사업의 말을 쓰지 않는다 */
+export type LedgerOpts = { 자체?: boolean };
+export const LEDGER_TABLES: Record<string, (r: LedgerResult, args?: MacroArgs, opts?: LedgerOpts) => string[]> = { 총괄표, 집행현황, 항목별, 세부사업별, 세부내역, 기업별, 변경내역, 잔액사유, 공문표 };
 export const LEDGER_TABLE_NAMES = Object.keys(LEDGER_TABLES);
 
 // 인자 값은 빈칸이 없으면 그대로, 있으면 따옴표로 감싼다: 세부사업="기술혁신 역량 강화 지원사업"
@@ -229,7 +239,7 @@ export function hasLedgerMacro(text: string): boolean {
  * DSL 안의 `{{정산:…}}` 를 펼친다. 모르는 이름은 그대로 두고 경고한다(파서가 일반 글로 남긴다 —
  * 조용히 지우면 표가 빠진 문서가 결재에 올라간다).
  */
-export function expandLedgerMacros(dsl: string, ledger: Ledger): { text: string; warnings: string[]; result: LedgerResult } {
+export function expandLedgerMacros(dsl: string, ledger: Ledger, opts: LedgerOpts = {}): { text: string; warnings: string[]; result: LedgerResult } {
   const result = computeLedger(ledger);
   const values = ledgerValues(result);
   const warnings: string[] = [];
@@ -237,7 +247,7 @@ export function expandLedgerMacros(dsl: string, ledger: Ledger): { text: string;
   for (const line of dsl.split(/\r?\n/)) {
     const m = LINE_RE.exec(line);
     if (m && LEDGER_TABLES[m[1]]) {
-      const lines = LEDGER_TABLES[m[1]](result, parseArgs(m[2]));
+      const lines = LEDGER_TABLES[m[1]](result, parseArgs(m[2]), opts);
       if (lines[0]?.startsWith("(기업별 지원 내역 없음")) warnings.push(`${line.trim()} — 원장에 맞는 지원금 지급 건이 없습니다(세부사업 이름이 원장과 같은지 확인)`);
       out.push(...lines);
       continue;
