@@ -724,18 +724,22 @@ export function mergeCaptionTables(ctx: WriterContext, nodes: XmlNode[]): XmlNod
   return out;
 }
 
-/** 표를 소개하는 짧은 줄로 보는 길이(글자) — "ㅇ 경상북도 향토뿌리기업", "※ 향토뿌리기업과 중복 지정 4개소" */
+/** 표를 소개하는 짧은 줄로 보는 길이(글자) — "○ 심사 기준", "- 경상북도 향토뿌리기업", "※ 향토뿌리기업과 중복 지정 4개소" */
 const LEAD_IN_MAX_CHARS = 60;
 /** 표 앞에서 거슬러 올라가며 묶는 문단 수 상한 — 긴 본문까지 표에 묶여 쪽이 통째로 비는 일을 막는다 */
-const LEAD_IN_MAX_PARAS = 3;
+const LEAD_IN_MAX_PARAS = 4;
+/** 제목 줄의 글머리 — 여기까지 올라가면 세트의 머리다(□ ○ ㅇ ◦ ❍ ● ◇, 1. 가. 같은 번호) */
+const HEADING_BULLET = /^[\s ]*(□|■|○|ㅇ|◦|❍|●|◇|\d+\.\s|[가-하]\.\s)/;
 
 /**
- * 제목과 표 사이의 ※ 줄·짧은 안내 줄에도 "다음 문단과 함께"를 건다.
+ * 표와 그 표를 소개하는 줄들(제목 + ※·-·(단위) 같은 딸린 줄)을 한 세트로 묶어 "다음 문단과 함께"를 건다.
  *
- * 제목(□·body1)과 (단위) 줄에는 이미 걸지만 그 사이에 ※ 줄이 끼면 사슬이 ※ 에서 끊겨, 한글이 제목과 ※ 만
- * 쪽 끝에 두고 표를 다음 쪽으로 보냈다(향토뿌리 2027 계획서 별첨1 「□ 산업유산 → ※ 중복 지정 → 표」,
- * 담당자가 손으로 엔터를 쳐 넘기던 자리, 2026-11-16). 표 바로 앞에서 위로 올라가며 이미 걸린 문단(제목)을
- * 만날 때까지, 짧은 줄만, 최대 3문단까지 잇는다. keepPass 는 header 의 keepWithNext 를 읽으므로 같이 따른다.
+ * 한 모양씩 고치다 이웃 모양에서 되풀이됐다 — 10-13 (단위) 줄, 11-16 오전 「□ 산업유산 → ※ 중복 지정 → 표」,
+ * 11-16 오후 「○ 심사 기준 → - 경상북도 향토뿌리기업 → 표」(○ 제목은 □ 와 달리 묶음 표시가 없어 사슬이 안 걸렸다).
+ * 담당자: "제목이랑 표는 세트로 넘어가든지 안 넘어가든지 해야지". 그래서 모양이 아니라 원칙으로 잡는다 —
+ * 표 바로 위에서 올라가며 짧은 딸린 줄을 지나 **첫 제목 줄(글머리 □·○·ㅇ… 또는 이미 묶음 표시된 줄)을 만나면**
+ * 거기까지 묶는다. 제목을 못 만나면(긴 본문·빈 줄·다른 표) 묶지 않는다 — 앞 절의 꼬리가 딸려 가지 않게.
+ * keepPass 는 header 의 keepWithNext 를 읽으므로 같이 따른다.
  */
 function keepLeadInsWithTables(ctx: WriterContext, nodes: XmlNode[]): void {
   const isTable = (n: XmlNode) => ctx.splitTableAnchors.has(n) || ctx.inlineTableAnchors.has(n);
@@ -743,22 +747,26 @@ function keepLeadInsWithTables(ctx: WriterContext, nodes: XmlNode[]): void {
   for (let t = 1; t < nodes.length; t++) {
     if (!isTable(nodes[t])) continue;
     const run: XmlNode[] = [];
-    let reachedKept = false;
+    let reachedHead = false;
     for (let k = t - 1; k >= 0 && run.length < LEAD_IN_MAX_PARAS; k--) {
       const p = nodes[k];
       if (isTable(p)) break;
-      // (단위) 줄은 이미 걸려 있지만 제목이 아니다 — 지나쳐 그 위의 ※ 줄까지 본다(□ → ※ → (단위) → 표)
+      // (단위) 줄은 이미 걸려 있지만 제목이 아니다 — 지나쳐 그 위의 줄까지 본다(□ → ※ → (단위) → 표)
       if (ctx.captionParas.has(p)) continue;
+      // 이미 묶음 표시된 줄(□ 제목 등)이면 거기서 사슬이 이어진다
       if (kept(p)) {
-        reachedKept = true;
+        reachedHead = true;
         break;
       }
-      const text = textOf(p).trim();
-      if (!text || text.length > LEAD_IN_MAX_CHARS) break;
+      const text = textOf(p);
+      if (!text.trim() || text.trim().length > LEAD_IN_MAX_CHARS) break;
       run.push(p);
+      if (HEADING_BULLET.test(text)) {
+        reachedHead = true;
+        break;
+      }
     }
-    // 제목까지 닿을 때만 잇는다 — 제목 없이 본문 끝 줄과 표만 묶이면 앞 절의 꼬리가 다음 쪽으로 딸려 간다
-    if (!reachedKept) continue;
+    if (!reachedHead) continue;
     for (const p of run) p.attrs.paraPrIDRef = String(ctx.reg.keepWithNext(Number(p.attrs.paraPrIDRef)));
   }
 }

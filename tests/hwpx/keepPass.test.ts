@@ -66,11 +66,13 @@ describe("keepWithNext 보정", () => {
    * 제목(과 그 줄)만 쪽 끝에 남고 표만 다음 쪽으로 갔다(「□ 산업유산 → ※ 중복 지정 → 표」).
    * 사이에 끼는 줄의 모양마다, 채움 줄 수를 바꿔 세트가 쪽 경계에 걸리는 모든 자리에서 세트 전체가 한 쪽에 있는지 본다.
    */
-  const SETS: Array<{ name: string; lines: string; markers: string[] }> = [
+  const SETS: Array<{ name: string; lines: string; markers: string[]; head?: string }> = [
     { name: "□ → ※ → 표", lines: "※ 세트주석 중복 지정 4개소\n", markers: ["세트주석"] },
     { name: "□ → (단위) → 표", lines: "(단위: 원)\n", markers: ["단위: 원"] },
     { name: "□ → ※ → (단위) → 표", lines: "※ 세트주석 중복 지정 4개소\n(단위: 원)\n", markers: ["세트주석", "단위: 원"] },
     { name: "□ → 짧은 머리 줄 → 표", lines: "ㅇ 세트머리 경상북도 산업유산\n", markers: ["세트머리"] },
+    // 11-16 오후: □ 가 아니라 ○ 소제목이 머리인 세트(향토뿌리 계획서 「○ 심사 기준 → - 경상북도 향토뿌리기업 → 표」)
+    { name: "○ 소제목 → - 머리 줄 → 표", head: "ㅇ 세트제목 심사 기준\n", lines: "- 세트머리 경상북도 향토뿌리기업\n", markers: ["세트머리"] },
   ];
   for (const set of SETS) {
     it(`세트를 쪼개지 않는다: ${set.name}`, async () => {
@@ -79,7 +81,7 @@ describe("keepWithNext 보정", () => {
       for (let n = 18; n <= 30; n++) {
         let s = `---\nfamily: plan\n제목: 실험\nnumbering: roman\n---\n# 개요\n`;
         for (let i = 0; i < n; i++) s += `ㅇ 채움 문장 ${i} 입니다 채움 문장 입니다\n`;
-        s += `□ 세트제목: 8개 시·군 19개소\n${set.lines}| 가 | 나 |\n|---|---|\n| 세트표칸 | 둘 |\n| 셋 | 넷 |\n`;
+        s += `${set.head ?? "□ 세트제목: 8개 시·군 19개소\n"}${set.lines}| 가 | 나 |\n|---|---|\n| 세트표칸 | 둘 |\n| 셋 | 넷 |\n`;
         const built = buildHwpx(parseDsl(s).doc);
         const before = await Promise.all(markers.map((m) => pageOfPara(built.bytes, m, built.sectionXml, true)));
         if (new Set(before).size === 1) continue;
