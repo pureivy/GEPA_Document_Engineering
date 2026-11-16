@@ -37,6 +37,13 @@ describe("buildStagePrompt — reference plan and 보충 조사 option", () => {
     expect(buildStagePrompt({ stage: "research", project: withRef, workspaceDir: ws }).prompt).toContain("바뀌는 내용과 관련된 최신 근거");
     expect(buildStagePrompt({ stage: "plan", project: withRef, workspaceDir: ws }).prompt).toContain("골격");
   });
+  it("the brief carries no 지역 line — 대상 지역 comes from the topic/plan, old region values are ignored", () => {
+    for (const stage of ["research", "plan", "notice"] as const) {
+      const p = buildStagePrompt({ stage, project, workspaceDir: ws }).prompt;
+      expect(p).not.toContain("지역: 안동시");
+      expect(p).toContain("주관기관: (재)경상북도경제진흥원");
+    }
+  });
 });
 
 describe("official 단계 프롬프트", () => {

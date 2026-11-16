@@ -74,7 +74,8 @@ const EMPTY: NewProjectInput = {
   kind: "program",
   title: "",
   topic: "",
-  region: "안동시",
+  // 화면에서 묻지 않는다(2026-11-16). 예전 기본값 안동시가 도 단위 사업에도 실렸다
+  region: "",
   organizer: "(재)경상북도경제진흥원",
   contact: { 부서명: "", 담당자: "", 전화: "", 전송: "", 이메일: "", 우편주소: "", 우편번호: "", 홈페이지: "" },
 };
@@ -230,7 +231,8 @@ function NewProjectDialog({ onClose, onCreated }: { onClose: () => void; onCreat
             // 제목에서 만든다 — "기존 사업계획서를 갱신" 은 업무보고에 쓰면 안 되는 말이다.
             form.topic.trim() ||
             (refFile ? `첨부한 ${REFERENCE_DOC_TITLE[DEFAULT_REFERENCE_ROLE]}(${refLabel})의 내용으로 「${title}」 주요업무보고를 작성` : `「${title}」 주요업무보고 작성`);
-      const p = await api.createProject({ ...form, title, topic, contact });
+      // 지역은 묻지 않는다 — DB 칸(region)은 남겨 두고 늘 빈 값을 넣는다
+      const p = await api.createProject({ ...form, region: "", title, topic, contact });
       // 실제로 쓰인 연락처가 다음 프로젝트의 기본값이 된다(브라우저에만 담는다)
       saveContactPref(form.contact);
       if (isCloseout && materials.length) {
@@ -480,10 +482,8 @@ function NewProjectDialog({ onClose, onCreated }: { onClose: () => void; onCreat
             <Field label="주제" id="topic" hint={refFile ? "비우면 기존 계획서와 바뀌는 내용으로 채웁니다" : "자유 서술 — 목적, 대상, 지원 내용, 예산 규모 등"} required={!refFile}>
               <Textarea id="topic" name="topic" rows={5} placeholder="예) 안동시 소재 수출 유망 중소기업 20개사에 수출용 홍보물 제작·마케팅·디자인 개발을 기업당 최대 300만원 지원. 7월 공고, 8월 선정, 10월 말까지 지원." value={form.topic} onChange={(e) => set("topic", e.target.value)} autoComplete="off" />
             </Field>
+            {/* 지역 칸은 없앴다(2026-11-16) — 사업 대상 지역은 주제·계획서의 지원대상에 적혀 있다 */}
             <div className="grid grid-cols-2 gap-4">
-              <Field label="지역" id="region" hint="예: 안동시">
-                <Input id="region" name="region" value={form.region} onChange={(e) => set("region", e.target.value)} autoComplete="off" />
-              </Field>
               <Field label="주관기관" id="organizer">
                 <Input id="organizer" name="organizer" value={form.organizer} onChange={(e) => set("organizer", e.target.value)} autoComplete="off" />
               </Field>
@@ -527,7 +527,7 @@ function NewProjectDialog({ onClose, onCreated }: { onClose: () => void; onCreat
               <Input id="postal-code" name="postal-code" placeholder="39393" value={form.contact.우편번호 ?? ""} onChange={(e) => setContact("우편번호", e.target.value)} autoComplete="postal-code" />
             </Field>
             <Field label="주소" id="street-address" className="col-span-2">
-              <Input id="street-address" name="street-address" placeholder="경상북도 안동시 북순환로 387, 2층 경상북도경제진흥원" value={form.contact.우편주소 ?? ""} onChange={(e) => setContact("우편주소", e.target.value)} autoComplete="street-address" />
+              <Input id="street-address" name="street-address" placeholder="근무지 주소 — 본원(구미)·북부지소(안동)·동부지소(포항)" value={form.contact.우편주소 ?? ""} onChange={(e) => setContact("우편주소", e.target.value)} autoComplete="street-address" />
             </Field>
             {isOfficial ? (
               <Field label="홈페이지" id="url" className="col-span-2" hint="비우면 결문의 그 칸도 빕니다 — 참고 공문도 비워 둡니다">
@@ -797,11 +797,11 @@ export function ProjectList() {
                   {p.kind === "closeout" ? (
                     <>
                       <span>부서 {p.contact?.부서명 || "-"}</span>
-                      <span>수신 {p.contact?.수신 || "-"}</span>
+                      {/* 자체사업은 제출 공문이 없어 수신이 없다 */}
+                      {p.contact?.사업구분 === "자체" ? <span>자체사업</span> : <span>수신 {p.contact?.수신 || "-"}</span>}
                     </>
                   ) : p.kind === "program" ? (
                     <>
-                      <span>지역 {p.region || "-"}</span>
                       <span>주관 {p.organizer || "-"}</span>
                     </>
                   ) : (

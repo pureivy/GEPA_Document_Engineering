@@ -95,6 +95,30 @@ export function ProjectOverview({ projectId, kind, stages: stagesProp }: { proje
     };
   }, [projectId, stages, reloadKey, polling]);
 
+  /**
+   * 결과·정산 사업 구분(수탁↔자체)을 바꾼다. 단계 목록은 서버가 정하므로(app/projects/[id]/page.tsx)
+   * router.refresh() 로 다시 받는다. 이미 만든 문서는 지우지 않는다.
+   */
+  const [changingFunding, setChangingFunding] = useState(false);
+  const changeFunding = async () => {
+    if (!data?.project) return;
+    const toSelf = data.project.contact?.사업구분 !== "자체";
+    const msg = toSelf
+      ? "자체사업(자부담 100%)으로 바꿉니다.\n\n· 정산보고서·제출 공문 단계가 사라집니다(이미 만든 파일은 지우지 않고 숨깁니다).\n· 이미 만든 결과보고서는 수탁 기준으로 쓰였으니 결과보고서를 다시 실행하세요."
+      : "수탁사업으로 바꿉니다.\n\n· 정산보고서·제출 공문 단계가 생깁니다.\n· 제출 공문의 수신(위탁기관)은 공문 단계 화면의 추가 지시로 적어 주세요.\n· 이미 만든 결과보고서는 자체 기준으로 쓰였으니 결과보고서를 다시 실행하세요.";
+    if (!window.confirm(msg)) return;
+    setChangingFunding(true);
+    try {
+      await api.updateProject(projectId, { 사업구분: toSelf ? "자체" : "수탁" });
+      router.refresh();
+      setReloadKey((k) => k + 1);
+    } catch (e) {
+      setError(errorMessage(e));
+    } finally {
+      setChangingFunding(false);
+    }
+  };
+
   const reload = () => {
     setLoading(true);
     setReloadKey((k) => k + 1);
@@ -135,17 +159,29 @@ export function ProjectOverview({ projectId, kind, stages: stagesProp }: { proje
           </div>
           <p className="mt-2 whitespace-pre-wrap text-sm leading-relaxed text-slate-700">{project.topic}</p>
           <dl className="mt-4 grid grid-cols-2 gap-x-6 gap-y-1 text-xs text-slate-600 md:grid-cols-4">
-            {chained ? (
-              <>
-                <div>
-                  <dt className="text-slate-400">지역</dt>
-                  <dd className="text-slate-800">{project.region || "-"}</dd>
-                </div>
-                <div>
-                  <dt className="text-slate-400">주관기관</dt>
-                  <dd className="text-slate-800">{project.organizer || "-"}</dd>
-                </div>
-              </>
+            {project.kind === "closeout" ? (
+              <div>
+                <dt className="text-slate-400">사업 구분</dt>
+                <dd className="flex items-center gap-1.5 text-slate-800">
+                  {project.contact?.사업구분 === "자체" ? "자체사업" : "수탁사업"}
+                  <button
+                    type="button"
+                    className="rounded px-1 text-sky-700 hover:bg-sky-50 hover:underline disabled:text-slate-400"
+                    onClick={() => void changeFunding()}
+                    disabled={polling || changingFunding}
+                    title={polling ? "실행 중에는 바꿀 수 없습니다" : undefined}
+                  >
+                    {changingFunding ? "바꾸는 중…" : "바꾸기"}
+                  </button>
+                </dd>
+              </div>
+            ) : null}
+            {/* 주관기관은 사업계획서에서만 묻는다. 지역은 묻지 않는다(2026-11-16) — 옛 프로젝트의 region 값(옛 기본값 안동시)은 보이지 않는다 */}
+            {project.kind === "program" ? (
+              <div>
+                <dt className="text-slate-400">주관기관</dt>
+                <dd className="text-slate-800">{project.organizer || "-"}</dd>
+              </div>
             ) : null}
             <div>
               <dt className="text-slate-400">담당</dt>
