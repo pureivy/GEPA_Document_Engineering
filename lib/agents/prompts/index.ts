@@ -153,7 +153,14 @@ function referenceGuide(p: ProjectDTO, stage: Stage | "review", workspaceDir: st
     case "research":
       return `\n기존 사업계획서 ${file} 를 먼저 Read 한다. 그 계획서의 사업개요·지원내용·예산·추진체계는 확정된 사실로 보고 그대로 notes.md 에 옮긴다(출처: "기존 사업계획서"). 조사는 **바뀌는 내용과 관련된 최신 근거**(최신 통계 연도 갱신, 바뀐 지원 규모·단가의 산출 근거, 새 법령·조례)에 한정한다 — 웹검색 5회, WebFetch 5회 이내, 하위 에이전트는 1회 이하.`;
     case "plan":
-      return `\n기존 사업계획서 ${file} 를 먼저 Read 하고, 그 골격(장 구성·소제목 순서)·문체·표 구성을 그대로 유지하되 "이번에 바뀌는 내용"을 모든 장에 일관되게 반영한다(연도, 사업기간, 규모, 금액, 담당 등 관련 수치를 빠짐없이 갱신하고 표의 합계도 다시 맞춘다). 바뀌지 않은 부분은 원문의 표현을 최대한 살린다.`;
+      // 2026-11-16: "골격 유지" 한 줄로는 아래 정본 장 구성(추진배경…기대효과, 세부 절 2~3개)에 졌다 —
+      // 향토뿌리 2027 갱신에서 세부사업 5절이 2절로 합쳐지고 배경·기대효과 장이 새로 생겼다.
+      // 무엇을 두고 무엇을 고치는지를 나눠 적고, 예산 조정 방식(담당자가 맞다고 한 것)을 박는다.
+      return `\n기존 사업계획서 ${file} 를 먼저 Read 한다. 이번 일은 계획서를 **새로 쓰는 것이 아니라 그 계획서를 고치는 것**이다 — 정본 목차보다 이 규칙이 우선한다.
+- 그대로 둔다: 제목(연도만 바꾼다), 골격(장·절의 수·이름·순서), 세부사업마다 둔 소제목(사업개요·선정방법·추진절차·지원내용·소요예산 등)과 표, ※ 주석, 「기타 주요 내용」 같은 끝 항목, 별첨. 원본에 없는 장(추진배경·기대효과 등)을 새로 만들지 않고, 절을 합치거나 나누거나 빼지 않는다. 바뀌지 않은 문장은 원문 그대로 두고 다듬지 않는다.
+- 고친다: ① "이번에 바뀌는 내용" ② 한 해가 넘어가며 바뀌는 기준 연도(사업기간, "○○년 신규 선정기업 우선" 등) ③ 그 변경 때문에 따라 바뀌는 수치(합계·소계·비율 항목·개사 수) — 모든 장에서 일관되게.
+- 예산을 바꿀 때: 지원사업은 기업당 지원 단가를 그대로 두고 개사 수로 조정하고, 비율 항목(대행수수료 등)은 비율대로 다시 계산하며, 그래서 생긴 끝전은 다른 항목에 얹어 총액을 정확히 맞춘다. 원본과 금액이 달라진 항목은 소요예산 표 아래 ※ 한 줄로 빠짐없이 밝힌다(예: "※ 전년 대비 기술혁신 1개사 축소, 대행수수료 7% 재산정, 신규선정 사무관리비 700,000원 증액").
+- 원본의 현황 수치(지정 기업 수·명단·전년 실적)는 바꾸지 않는다. research/notes.md 에 더 새 값이 있어 갱신이 필요해 보이면 값을 대신 넣지 말고 그 자리에 "확인 필요"를 단다.`;
     case "notice":
     case "press":
       return `\n이 프로젝트는 기존 사업계획서(${file})를 갱신한 것이다. 이번에 바뀐 내용이 공고·보도 내용에도 반영되었는지(연도·기간·규모·금액) 확인한다.`;
@@ -269,11 +276,20 @@ ${sourcesGuide(input)}
       };
     case "plan":
       return {
-        systemPromptAppend: `${COMMON()}\n역할: 사업계획(안) 작성자. .claude/skills/gepa-plan-design/SKILL.md 의 정본 목차·표 규격·문체를 따른다. 수치는 research/notes.md 와 sources.json 에 있는 것만 쓰고 (출처, 연도)를 붙인다.`,
-        prompt: `${brief}\n작업 폴더: ${workspaceDir}\n\n${workspaceDir}/research/notes.md 와 sources.json 을 읽고(없으면 주제만으로 작성하되 통계는 "확인 필요"로 표시), 「${project.title}」 사업계획(안)을 작성하라.
+        systemPromptAppend: project.reference
+          ? `${COMMON()}\n역할: 사업계획(안) 갱신자. .claude/skills/gepa-plan-design/SKILL.md 의 표 규격·문체를 따르되, 목차는 기존 사업계획서(reference/base-plan.md)의 것을 그대로 쓴다. 바뀌는 수치는 research/notes.md 와 sources.json 에 있는 것만 쓴다.`
+          : `${COMMON()}\n역할: 사업계획(안) 작성자. .claude/skills/gepa-plan-design/SKILL.md 의 정본 목차·표 규격·문체를 따른다. 수치는 research/notes.md 와 sources.json 에 있는 것만 쓰고 (출처, 연도)를 붙인다.`,
+        // 기존 계획서 갱신이면 정본 장 구성·분량을 싣지 않는다 — 실으면 원본 목차를 이긴다(2026-11-16)
+        prompt: `${
+          project.reference
+            ? `${brief}\n작업 폴더: ${workspaceDir}\n\n${workspaceDir}/research/notes.md 와 sources.json 을 읽고, 기존 사업계획서를 갱신한 사업계획(안)을 작성하라.
+front-matter: 제목(기존 계획서 제목에서 연도만 바꾼다), 연도, 부서(${project.contact.부서명}), 결재{공개구분: 공개}, numbering: roman, lineSpacing: 160, body1Font: hyHeadlineBold. (요약은 쓰지 않는다 — 표지는 결재란·사업명 상자·로고만)
+장 구성·분량: 기존 사업계획서와 같게(위 규칙).`
+            : `${brief}\n작업 폴더: ${workspaceDir}\n\n${workspaceDir}/research/notes.md 와 sources.json 을 읽고(없으면 주제만으로 작성하되 통계는 "확인 필요"로 표시), 「${project.title}」 사업계획(안)을 작성하라.
 front-matter: 제목(…사업계획(안)), 연도, 부서(${project.contact.부서명}), 결재{공개구분: 공개}, numbering: roman, lineSpacing: 160, body1Font: hyHeadlineBold. (요약은 쓰지 않는다 — 표지는 결재란·사업명 상자·로고만)
-장 구성: 추진배경 및 목적(추진배경 ㅇ 3개, 추진목적 ㅇ 2~3개, 1쪽) / 사업개요 및 추진절차 / 세부 추진계획(## 절 2~3개) / 추진일정 / 소요예산(표+예산과목) / 기대효과(ㅇ 3개, 끝.). 분량 A4 8~12쪽.
-${input.supplementalResearch ? "근거가 부족한 항목에 한해 Task(researcher)로 보충 조사할 수 있다(최대 2회, 같은 메시지에서 병렬 호출). 그 밖의 수치는 research/notes.md 와 sources.json 에 있는 것만 쓴다." : "보충 조사는 하지 않는다: 근거는 research/notes.md 와 sources.json 에 있는 것만 쓰고, 없는 수치는 \"확인 필요\"로 표시한다."} notes.md 와 sources.json 은 각각 Read 한 번으로 읽고 Grep 을 반복하지 않는다(위키 경로가 주어진 경우에만 Grep 2~3회).
+장 구성: 추진배경 및 목적(추진배경 ㅇ 3개, 추진목적 ㅇ 2~3개, 1쪽) / 사업개요 및 추진절차 / 세부 추진계획(## 절 2~3개) / 추진일정 / 소요예산(표+예산과목) / 기대효과(ㅇ 3개, 끝.). 분량 A4 8~12쪽.`
+        }
+${input.supplementalResearch ?"근거가 부족한 항목에 한해 Task(researcher)로 보충 조사할 수 있다(최대 2회, 같은 메시지에서 병렬 호출). 그 밖의 수치는 research/notes.md 와 sources.json 에 있는 것만 쓴다." : "보충 조사는 하지 않는다: 근거는 research/notes.md 와 sources.json 에 있는 것만 쓰고, 없는 수치는 \"확인 필요\"로 표시한다."} notes.md 와 sources.json 은 각각 Read 한 번으로 읽고 Grep 을 반복하지 않는다(위키 경로가 주어진 경우에만 Grep 2~3회).
 ${sourcesGuide(input)}${DOC_CONTRACT("plan", "plan")}${resume}`,
         allowedTools: input.supplementalResearch ? ["Read", "Write", "Glob", "Grep", "Task", "WebSearch", "WebFetch"] : ["Read", "Write", "Glob", "Grep"],
         maxTurns: 60,

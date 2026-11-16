@@ -3,11 +3,11 @@ import { parseDsl } from "../../lib/docmodel/dsl";
 import { buildHwpx } from "../../lib/hwpx/build";
 import { applyKeepWithNext, buildLaidOut, hangulParaPages } from "../../lib/hwpx/keepPass";
 import { parseXml, childrenNamed } from "../../lib/hwpx/xml";
-import { rhwp } from "../../lib/hwpx/validate";
+import { asLaidOutByHangul, rhwp } from "../../lib/hwpx/validate";
 import { WriterContext } from "../../lib/hwpx/writers/context";
 import { loadTemplate } from "../../lib/hwpx/template";
 
-async function pageOfPara(bytes: Uint8Array, marker: string, sectionXml: string): Promise<number> {
+async function pageOfPara(bytes: Uint8Array, marker: string, sectionXml: string, hangulLike = false): Promise<number> {
   // 최상위 문단 순번 → rhwp 배치 쪽
   const body = sectionXml.slice(sectionXml.indexOf("<hs:sec"));
   let depth = 0, idx = -1, found = -1;
@@ -16,7 +16,8 @@ async function pageOfPara(bytes: Uint8Array, marker: string, sectionXml: string)
     if (m[1]) depth--; else { if (depth === 0) idx++; depth++; }
   }
   const mod = await rhwp();
-  const doc = new mod.HwpDocument(bytes) as unknown as { getCursorRect(s: number, p: number, o: number): string };
+  // hangulLike: keepPass 가 판정하는 배치(한글이 저장한 줄 배치를 따름) — 한글은 다음 문단과 함께를 지킨다
+  const doc = new mod.HwpDocument(hangulLike ? asLaidOutByHangul(bytes) : bytes) as unknown as { getCursorRect(s: number, p: number, o: number): string };
   return JSON.parse(doc.getCursorRect(0, found, 0)).pageIndex;
 }
 
@@ -33,6 +34,27 @@ describe("keepWithNext 보정", () => {
     const after = [await pageOfPara(kept.bytes, "표제목", kept.sectionXml), await pageOfPara(kept.bytes, "표첫칸", kept.sectionXml)];
     expect(after[0]).toBe(after[1]);
   });
+
+  /**
+   * 반영 장부 P2(2026-11-16): 「□ 산업유산 → ※ 중복 지정 → 표」에서 사슬이 ※ 줄에서 끊겨 제목과 ※ 만 쪽 끝에
+   * 남고 표만 다음 쪽으로 갔다. 채움 줄 수를 바꿔 가며 세트가 쪽 경계에 걸리는 모든 자리에서 셋이 한 쪽에 있는지 본다.
+   */
+  it("□ 제목 → ※ 줄 → 표 세트를 쪼개지 않는다", async () => {
+    let straddled = 0;
+    for (let n = 18; n <= 30; n++) {
+      let s = `---\nfamily: plan\n제목: 실험\nnumbering: roman\n---\n# 개요\n`;
+      for (let i = 0; i < n; i++) s += `ㅇ 채움 문장 ${i} 입니다 채움 문장 입니다\n`;
+      s += `□ 세트제목: 8개 시·군 19개소\n※ 세트주석 중복 지정 4개소\n| 가 | 나 |\n|---|---|\n| 세트표칸 | 둘 |\n| 셋 | 넷 |\n`;
+      const built = buildHwpx(parseDsl(s).doc);
+      const before = await Promise.all(["세트제목", "세트주석", "세트표칸"].map((m) => pageOfPara(built.bytes, m, built.sectionXml, true)));
+      if (new Set(before).size === 1) continue;
+      straddled++;
+      const kept = await applyKeepWithNext(built.bytes);
+      const after = await Promise.all(["세트제목", "세트주석", "세트표칸"].map((m) => pageOfPara(kept.bytes, m, kept.sectionXml, true)));
+      expect(new Set(after).size, `채움 ${n}줄: 제목·※·표 쪽 ${after.join("/")}`).toBe(1);
+    }
+    expect(straddled).toBeGreaterThan(0); // 세트가 쪽 경계에 걸리는 경우를 실제로 시험했다
+  }, 60_000); // 13가지 배치를 rhwp 로 재므로 기본 5초를 넘는다
 });
 
 describe("wrapLines", () => {

@@ -1,5 +1,5 @@
 /** Block handlers shared by all families: paragraphs, blanks, page breaks, images, generic tables. */
-import { childrenNamed, findAll, type XmlNode } from "../xml";
+import { childrenNamed, findAll, textOf, type XmlNode } from "../xml";
 import type { WriterContext } from "./context";
 import type { Block, Cell, Inline, ParaRole, TableStyle, Row, Family } from "../../docmodel/schema";
 import { inlineText } from "../../docmodel/schema";
@@ -719,7 +719,47 @@ export function mergeCaptionTables(ctx: WriterContext, nodes: XmlNode[]): XmlNod
     // 담당자 2026-10-12). (단위) 줄은 표 위 별도 문단으로 둔다.
     out.push(cap);
   }
+  keepLeadInsWithTables(ctx, out);
   return out;
+}
+
+/** 표를 소개하는 짧은 줄로 보는 길이(글자) — "ㅇ 경상북도 향토뿌리기업", "※ 향토뿌리기업과 중복 지정 4개소" */
+const LEAD_IN_MAX_CHARS = 60;
+/** 표 앞에서 거슬러 올라가며 묶는 문단 수 상한 — 긴 본문까지 표에 묶여 쪽이 통째로 비는 일을 막는다 */
+const LEAD_IN_MAX_PARAS = 3;
+
+/**
+ * 제목과 표 사이의 ※ 줄·짧은 안내 줄에도 "다음 문단과 함께"를 건다.
+ *
+ * 제목(□·body1)과 (단위) 줄에는 이미 걸지만 그 사이에 ※ 줄이 끼면 사슬이 ※ 에서 끊겨, 한글이 제목과 ※ 만
+ * 쪽 끝에 두고 표를 다음 쪽으로 보냈다(향토뿌리 2027 계획서 별첨1 「□ 산업유산 → ※ 중복 지정 → 표」,
+ * 담당자가 손으로 엔터를 쳐 넘기던 자리, 2026-11-16). 표 바로 앞에서 위로 올라가며 이미 걸린 문단(제목)을
+ * 만날 때까지, 짧은 줄만, 최대 3문단까지 잇는다. keepPass 는 header 의 keepWithNext 를 읽으므로 같이 따른다.
+ */
+function keepLeadInsWithTables(ctx: WriterContext, nodes: XmlNode[]): void {
+  const isTable = (n: XmlNode) => ctx.splitTableAnchors.has(n) || ctx.inlineTableAnchors.has(n);
+  const kept = (n: XmlNode) => !!ctx.reg.paraPrInfo(Number(n.attrs.paraPrIDRef))?.keepWithNext;
+  for (let t = 1; t < nodes.length; t++) {
+    if (!isTable(nodes[t])) continue;
+    const run: XmlNode[] = [];
+    let reachedKept = false;
+    for (let k = t - 1; k >= 0 && run.length < LEAD_IN_MAX_PARAS; k--) {
+      const p = nodes[k];
+      if (isTable(p)) break;
+      // (단위) 줄은 이미 걸려 있지만 제목이 아니다 — 지나쳐 그 위의 ※ 줄까지 본다(□ → ※ → (단위) → 표)
+      if (ctx.captionParas.has(p)) continue;
+      if (kept(p)) {
+        reachedKept = true;
+        break;
+      }
+      const text = textOf(p).trim();
+      if (!text || text.length > LEAD_IN_MAX_CHARS) break;
+      run.push(p);
+    }
+    // 제목까지 닿을 때만 잇는다 — 제목 없이 본문 끝 줄과 표만 묶이면 앞 절의 꼬리가 다음 쪽으로 딸려 간다
+    if (!reachedKept) continue;
+    for (const p of run) p.attrs.paraPrIDRef = String(ctx.reg.keepWithNext(Number(p.attrs.paraPrIDRef)));
+  }
 }
 
 export interface ScoreLine {

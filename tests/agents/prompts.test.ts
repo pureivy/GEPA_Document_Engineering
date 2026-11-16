@@ -37,6 +37,21 @@ describe("buildStagePrompt — reference plan and 보충 조사 option", () => {
     expect(buildStagePrompt({ stage: "research", project: withRef, workspaceDir: ws }).prompt).toContain("바뀌는 내용과 관련된 최신 근거");
     expect(buildStagePrompt({ stage: "plan", project: withRef, workspaceDir: ws }).prompt).toContain("골격");
   });
+  it("갱신 계획서는 원본 목차를 지키고 정본 장 구성·분량을 싣지 않는다 (2026-11-16 향토뿌리 2027)", () => {
+    const withRef: ProjectDTO = { ...project, reference: { fileName: "2026 계획서.hwpx", changes: "예산 1천만원 감액" } };
+    const p = buildStagePrompt({ stage: "plan", project: withRef, workspaceDir: ws });
+    expect(p.prompt).toContain("새로 쓰는 것이 아니라 그 계획서를 고치는 것");
+    expect(p.prompt).toContain("절을 합치거나 나누거나 빼지 않는다");
+    expect(p.prompt).toContain("기업당 지원 단가를 그대로 두고 개사 수로 조정");
+    expect(p.prompt).toContain("제목(기존 계획서 제목에서 연도만 바꾼다)");
+    expect(p.prompt).not.toContain("세부 추진계획(## 절 2~3개)");
+    expect(p.prompt).not.toContain("분량 A4 8~12쪽");
+    expect(p.systemPromptAppend).not.toContain("정본 목차");
+    // 새로 쓰는 계획서는 예전 그대로
+    const fresh = buildStagePrompt({ stage: "plan", project, workspaceDir: ws });
+    expect(fresh.prompt).toContain("세부 추진계획(## 절 2~3개)");
+    expect(fresh.systemPromptAppend).toContain("정본 목차");
+  });
   it("the brief carries no 지역 line — 대상 지역 comes from the topic/plan, old region values are ignored", () => {
     for (const stage of ["research", "plan", "notice"] as const) {
       const p = buildStagePrompt({ stage, project, workspaceDir: ws }).prompt;
