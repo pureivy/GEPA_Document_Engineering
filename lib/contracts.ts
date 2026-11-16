@@ -222,5 +222,6 @@ export interface ExportReportDTO {
 export const FUNDING_TYPES = ["수탁", "자체"] as const;
 export type FundingType = (typeof FUNDING_TYPES)[number];
 
-export const REPORT_FORMS = ["간략", "책자", "자동"] as const;
+/** 상급기관: 책자형이되 장을 여섯으로(경상북도에 올리는 상급기관 보고) — 기본 책자형은 참고본대로 세 장(2026-11-16 C안) */
+export const REPORT_FORMS = ["간략", "책자", "상급기관", "자동"] as const;
 export type ReportForm = (typeof REPORT_FORMS)[number];

@@ -17,10 +17,11 @@ import { contactDefaults, PREF_PLAN_RESEARCH, saveContactPref, useBoolPref, useC
 
 /** 종류별 한 줄 설명 — 라디오 옆에 그대로 보인다 */
 /** 업무보고 형태 선택지의 이름과 설명 */
-const REPORT_FORM_LABEL: Record<ReportForm, string> = { 간략: "간략 보고(1~2쪽)", 책자: "책자형(표지·보고순서·간지)", 자동: "자동" };
+const REPORT_FORM_LABEL: Record<ReportForm, string> = { 간략: "간략 보고(1~2쪽)", 책자: "책자형(표지·보고순서·간지)", 상급기관: "상급기관 보고(책자형·여섯 장)", 자동: "자동" };
 const REPORT_FORM_HINT: Record<ReportForm, string> = {
   간략: "제목 띠와 □·ㅇ·- 개조식으로 한두 쪽에 정리합니다. 내부 보고·계획 보고에 씁니다.",
-  책자: "도지사·도의회 업무보고 양식입니다. 표지·보고순서·간지와 절 칩이 들어갑니다.",
+  책자: "도지사·도의회 업무보고 양식입니다. 표지·보고순서·간지와 절 칩이 들어가고, 장은 참고본대로 일반현황·추진성과·주요사업 세 장입니다.",
+  상급기관: "경상북도에 올리는 상급기관용 책자형입니다. 일반현황·도정방향 정합성·추진성과·여건 및 방향·중점 추진과제·협업·건의사항 여섯 장으로 씁니다.",
   자동: "지시 내용을 보고 에이전트가 간략·책자형 중에서 고릅니다.",
 };
 
@@ -341,7 +342,7 @@ function NewProjectDialog({ latest, onClose, onCreated }: { latest: ProjectDTO |
         </Field>
         {kind === "report" && (
           <Field label="보고 형태" id="reportForm" required hint={REPORT_FORM_HINT[reportForm]}>
-            <div className="flex gap-2">
+            <div className="flex flex-wrap gap-2">
               {REPORT_FORMS.map((f) => (
                 <label
                   key={f}

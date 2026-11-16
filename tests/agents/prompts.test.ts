@@ -305,6 +305,16 @@ describe("report 단계 프롬프트", () => {
     expect(자동.prompt).toContain("간략인가, 책자인가");
   });
 
+  /** 2026-11-16 C안: 기본 책자형은 참고본 세 장, 「상급기관 보고」를 고르면 여섯 장 */
+  it("상급기관 보고를 고르면 책자형 여섯 장으로 쓰게 하고, 기본 책자형에는 여섯 장을 싣지 않는다", () => {
+    const 상급 = buildStagePrompt({ stage: "report", project: { ...업무보고, kind: "report", contact: { ...업무보고.contact, 보고형태: "상급기관" } }, workspaceDir: ws });
+    expect(상급.prompt).toMatch(/^보고형태: 상급기관$/m);
+    expect(상급.prompt).toContain("장은 여섯이다");
+    for (const 장 of ["# 일 반 현 황", "# 도정방향과의 정합성", "# (지난해)도 추진성과", "# 여건 및 방향", "# (올해)도 중점 추진과제", "# 협업·건의사항"]) expect(상급.prompt).toContain(장);
+    const 책자 = buildStagePrompt({ stage: "report", project: { ...업무보고, kind: "report", contact: { ...업무보고.contact, 보고형태: "책자" } }, workspaceDir: ws });
+    expect(책자.prompt).not.toContain("장은 여섯이다");
+  });
+
   it("보고형태 줄은 업무보고에만 실린다", () => {
     const q = buildStagePrompt({ stage: "official", project: { ...업무보고, kind: "official", contact: { ...업무보고.contact, 보고형태: "간략" } }, workspaceDir: ws });
     expect(q.prompt).not.toMatch(/^보고형태: /m);
