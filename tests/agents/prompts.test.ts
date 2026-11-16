@@ -44,6 +44,7 @@ describe("buildStagePrompt — reference plan and 보충 조사 option", () => {
     expect(p.prompt).toContain("절을 합치거나 나누거나 빼지 않는다");
     expect(p.prompt).toContain("기업당 지원 단가를 그대로 두고 개사 수로 조정");
     expect(p.prompt).toContain("제목(기존 계획서 제목에서 연도만 바꾼다)");
+    expect(p.prompt).toContain("원본의 오타·겹말·띄어쓰기·표기 오류는 바로잡는다"); // 담당자 11-16: 구성은 따르되 이상한 부분은 고친다
     expect(p.prompt).not.toContain("세부 추진계획(## 절 2~3개)");
     expect(p.prompt).not.toContain("분량 A4 8~12쪽");
     expect(p.systemPromptAppend).not.toContain("정본 목차");
