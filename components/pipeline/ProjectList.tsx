@@ -35,7 +35,8 @@ const KIND_HINT: Record<ProjectKind, string> = {
   program: "조사 → 사업계획서 → 공고문 → 보도자료를 차례로 만듭니다.",
   official: "별지 제1호 기안문 한 건을 만듭니다.",
   report: "업무보고를 만듭니다 — 한두 쪽 간략 보고 또는 표지·보고순서·간지를 갖춘 책자형.",
-  closeout: "사업을 마친 뒤 정산자료 → 성과 분석 → 결과보고서를 만들고, 수탁사업이면 정산보고서 → 제출 공문까지 이어 만듭니다.",
+  // 업무보고처럼 한 줄에 들어가게 짧게 둔다(2026-11-16)
+  closeout: "사업 종료 후 정산자료 → 성과 분석 → 결과보고서를 만들고, 수탁사업은 정산보고서 → 공문까지 만듭니다.",
 };
 
 /** 정산·결과보고 자료로 받는 형식 — lib/closeout/materials.ts MATERIAL_EXTENSIONS 와 같다 */
@@ -304,7 +305,8 @@ function NewProjectDialog({ onClose, onCreated }: { onClose: () => void; onCreat
                 )}
               >
                 <input type="radio" name="kind" className="h-3.5 w-3.5" checked={kind === k} onChange={() => set("kind", k)} />
-                <span className="font-semibold">{KIND_LABEL[k]}</span>
+                {/* 줄이 넘쳐도 "결과·정/산" 처럼 종류 이름이 쪼개지지 않게 */}
+                <span className="shrink-0 whitespace-nowrap font-semibold">{KIND_LABEL[k]}</span>
                 <span className="text-slate-500">{KIND_HINT[k]}</span>
               </label>
             ))}
