@@ -67,6 +67,8 @@ export class WriterContext {
   now: Date = new Date();
   /** 쪽 경계에서 나눠도 되는 표(블록 id) — 통째로 넘어가 앞 쪽을 비운 표만 buildLaidOut 이 골라 넣는다 */
   splitTables = new Set<string>();
+  /** 나누지 않고 통째로 둘 표(블록 id) — splitTables·행 수 기준보다 앞선다 */
+  wholeTables = new Set<string>();
   /** 채울 표의 줄 간격(블록 id → %) — buildLaidOut 이 배치를 재 보고 정한다 */
   fillSpacing: Record<string, number> = {};
   /** 본문 줄 간격 배율(hp:p id → 배율) — 쪽 아래가 크게 비는 쪽을 채운다(keepPass.buildLaidOut) */

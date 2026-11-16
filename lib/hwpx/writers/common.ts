@@ -662,7 +662,8 @@ export function emitTable(ctx: WriterContext, fs: FamilyStyle, b: TableBlock): X
   b.rows.forEach((row, ri) => rowSpecs.push({ height: Math.max(rowHeights[ri], row.heightPt ? row.heightPt * 100 : minH), cells: cellSpecs[ri] }));
 
   // 긴 표는 늘 나누고, 짧은 표는 통째로 넘어가 앞 쪽을 크게 비웠을 때만 나눈다(buildLaidOut.splitTablePass 가 고른다)
-  const splittable = (b.rows.length >= 15 || ctx.splitTables.has(b.id)) && b.role !== "support";
+  // 한 쪽에 들어가는 표는 나누지 않는다 — buildLaidOut 이 쪼개진 것을 찾아 wholeTables 로 돌려준다(2026-11-16)
+  const splittable = (b.rows.length >= 15 || ctx.splitTables.has(b.id)) && b.role !== "support" && !ctx.wholeTables.has(b.id);
   const frameBf = d.frame === "grid" ? ctx.reg.borderFill({ l: side(0.12), r: side(0.12), t: side(0.12), b: side(0.12) }) : ctx.reg.borderFill({ l: "none", r: "none", t: "none", b: "none" });
   const tblNode = table({
     id: ctx.ids.nextShapeId(),
