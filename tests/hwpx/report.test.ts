@@ -149,6 +149,21 @@ describe("buildHwpx — report", () => {
     expect(findAll(tc, "hp:p").length).toBe(5);
   });
 
+  it("목차 상자 위에 `목   차` 제목과 밑줄표(t01)가 같은 쪽에 선다", () => {
+    // user 2026-10-27: 상자만 나가서 무엇의 쪽인지 보이지 않았다. 참고본 보고순서 쪽은
+    // 제목 줄(paraPr 15·charPr 48) → 밑줄표 t01 → 상자 t02 순서다.
+    const head = sectionXml.indexOf("<hp:t>목   차</hp:t>");
+    const box = sectionXml.indexOf("<hp:tab/>");
+    expect(head).toBeGreaterThan(-1);
+    expect(head).toBeLessThan(box);
+    // 제목이 쪽 나눔을 먹고, 그 뒤의 밑줄표·상자는 쪽을 나누지 않는다 — 셋이 한 쪽에 있다.
+    const between = sectionXml.slice(head, box);
+    expect(between).not.toMatch(/<hp:p [^>]*pageBreak="1"/);
+    const sec = parseXml(sectionXml);
+    const rule = findAll(sec, "hp:tbl").find((t) => t.attrs.rowCnt === "2" && t.attrs.colCnt === "3" && findAll(t, "hp:pic").length === 0);
+    expect(rule).toBeDefined();
+  });
+
   it("목차 절 줄은 장 줄보다 2타 들여쓴다", () => {
     // 참고본 실측: p46(`Ⅰ. 일반현황`)은 0타, p49(`  1. 성장 단계별 …`)는 반각 공백 둘.
     expect(sectionXml).toContain("<hp:t>Ⅰ. 일 반 현 황</hp:t>");

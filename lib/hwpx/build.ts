@@ -70,6 +70,11 @@ export interface BuildOptions {
   lineFit?: Record<string, LineFit>;
   /** 쪽 경계에서 나눠도 되는 표(블록 id) — buildLaidOut 이 정한다 */
   splitTables?: string[];
+  /**
+   * 쪽 경계에서 나누지 않고 통째로 둘 표(블록 id) — 한 쪽에 들어가는데 쪽 경계에 걸려 쪼개진 표, buildLaidOut 이 정한다.
+   * splitTables 보다 앞선다(담당자 2026-11-16: "한 장으로 만들 수 있는 건 한 장으로").
+   */
+  wholeTables?: string[];
 }
 
 function sec0(paras: XmlNode[]): XmlNode {
@@ -85,6 +90,7 @@ export function buildHwpx(doc: DocModel, opts: BuildOptions = {}): BuildResult {
   ctx.noPrev = new Set(opts.noPrev ?? []);
   ctx.lineFit = opts.lineFit ?? {};
   ctx.splitTables = new Set(opts.splitTables ?? []);
+  ctx.wholeTables = new Set(opts.wholeTables ?? []);
   if (opts.now) ctx.now = opts.now;
   let paras: XmlNode[] = writeForFamily(ctx, doc);
   if (paras.length === 0) paras = [ctx.para({ paraPr: 0, runs: [{ charPr: 0, text: "" }] })];

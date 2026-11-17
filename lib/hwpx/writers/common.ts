@@ -1,5 +1,5 @@
 /** Block handlers shared by all families: paragraphs, blanks, page breaks, images, generic tables. */
-import { childrenNamed, findAll, type XmlNode } from "../xml";
+import { childrenNamed, findAll, textOf, type XmlNode } from "../xml";
 import type { WriterContext } from "./context";
 import type { Block, Cell, Inline, ParaRole, TableStyle, Row, Family } from "../../docmodel/schema";
 import { inlineText } from "../../docmodel/schema";
@@ -662,7 +662,8 @@ export function emitTable(ctx: WriterContext, fs: FamilyStyle, b: TableBlock): X
   b.rows.forEach((row, ri) => rowSpecs.push({ height: Math.max(rowHeights[ri], row.heightPt ? row.heightPt * 100 : minH), cells: cellSpecs[ri] }));
 
   // 긴 표는 늘 나누고, 짧은 표는 통째로 넘어가 앞 쪽을 크게 비웠을 때만 나눈다(buildLaidOut.splitTablePass 가 고른다)
-  const splittable = (b.rows.length >= 15 || ctx.splitTables.has(b.id)) && b.role !== "support";
+  // 한 쪽에 들어가는 표는 나누지 않는다 — buildLaidOut 이 쪼개진 것을 찾아 wholeTables 로 돌려준다(2026-11-16)
+  const splittable = (b.rows.length >= 15 || ctx.splitTables.has(b.id)) && b.role !== "support" && !ctx.wholeTables.has(b.id);
   const frameBf = d.frame === "grid" ? ctx.reg.borderFill({ l: side(0.12), r: side(0.12), t: side(0.12), b: side(0.12) }) : ctx.reg.borderFill({ l: "none", r: "none", t: "none", b: "none" });
   const tblNode = table({
     id: ctx.ids.nextShapeId(),
@@ -719,7 +720,55 @@ export function mergeCaptionTables(ctx: WriterContext, nodes: XmlNode[]): XmlNod
     // 담당자 2026-10-12). (단위) 줄은 표 위 별도 문단으로 둔다.
     out.push(cap);
   }
+  keepLeadInsWithTables(ctx, out);
   return out;
+}
+
+/** 표를 소개하는 짧은 줄로 보는 길이(글자) — "○ 심사 기준", "- 경상북도 향토뿌리기업", "※ 향토뿌리기업과 중복 지정 4개소" */
+const LEAD_IN_MAX_CHARS = 60;
+/** 표 앞에서 거슬러 올라가며 묶는 문단 수 상한 — 긴 본문까지 표에 묶여 쪽이 통째로 비는 일을 막는다 */
+const LEAD_IN_MAX_PARAS = 4;
+/** 제목 줄의 글머리 — 여기까지 올라가면 세트의 머리다(□ ○ ㅇ ◦ ❍ ● ◇, 1. 가. 같은 번호) */
+const HEADING_BULLET = /^[\s ]*(□|■|○|ㅇ|◦|❍|●|◇|\d+\.\s|[가-하]\.\s)/;
+
+/**
+ * 표와 그 표를 소개하는 줄들(제목 + ※·-·(단위) 같은 딸린 줄)을 한 세트로 묶어 "다음 문단과 함께"를 건다.
+ *
+ * 한 모양씩 고치다 이웃 모양에서 되풀이됐다 — 10-13 (단위) 줄, 11-16 오전 「□ 산업유산 → ※ 중복 지정 → 표」,
+ * 11-16 오후 「○ 심사 기준 → - 경상북도 향토뿌리기업 → 표」(○ 제목은 □ 와 달리 묶음 표시가 없어 사슬이 안 걸렸다).
+ * 담당자: "제목이랑 표는 세트로 넘어가든지 안 넘어가든지 해야지". 그래서 모양이 아니라 원칙으로 잡는다 —
+ * 표 바로 위에서 올라가며 짧은 딸린 줄을 지나 **첫 제목 줄(글머리 □·○·ㅇ… 또는 이미 묶음 표시된 줄)을 만나면**
+ * 거기까지 묶는다. 제목을 못 만나면(긴 본문·빈 줄·다른 표) 묶지 않는다 — 앞 절의 꼬리가 딸려 가지 않게.
+ * keepPass 는 header 의 keepWithNext 를 읽으므로 같이 따른다.
+ */
+function keepLeadInsWithTables(ctx: WriterContext, nodes: XmlNode[]): void {
+  const isTable = (n: XmlNode) => ctx.splitTableAnchors.has(n) || ctx.inlineTableAnchors.has(n);
+  const kept = (n: XmlNode) => !!ctx.reg.paraPrInfo(Number(n.attrs.paraPrIDRef))?.keepWithNext;
+  for (let t = 1; t < nodes.length; t++) {
+    if (!isTable(nodes[t])) continue;
+    const run: XmlNode[] = [];
+    let reachedHead = false;
+    for (let k = t - 1; k >= 0 && run.length < LEAD_IN_MAX_PARAS; k--) {
+      const p = nodes[k];
+      if (isTable(p)) break;
+      // (단위) 줄은 이미 걸려 있지만 제목이 아니다 — 지나쳐 그 위의 줄까지 본다(□ → ※ → (단위) → 표)
+      if (ctx.captionParas.has(p)) continue;
+      // 이미 묶음 표시된 줄(□ 제목 등)이면 거기서 사슬이 이어진다
+      if (kept(p)) {
+        reachedHead = true;
+        break;
+      }
+      const text = textOf(p);
+      if (!text.trim() || text.trim().length > LEAD_IN_MAX_CHARS) break;
+      run.push(p);
+      if (HEADING_BULLET.test(text)) {
+        reachedHead = true;
+        break;
+      }
+    }
+    if (!reachedHead) continue;
+    for (const p of run) p.attrs.paraPrIDRef = String(ctx.reg.keepWithNext(Number(p.attrs.paraPrIDRef)));
+  }
 }
 
 export interface ScoreLine {

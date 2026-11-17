@@ -109,10 +109,12 @@ export async function buildLaidOut(doc: DocModel, opts0: BuildOptions = {}): Pro
       }
     }
   }
-  // ①' 통째로 다음 쪽에 간 표 때문에 앞 쪽이 크게 비면 그 표를 쪽 경계에서 나눈다(담당자 2026-10-27)
-  const split = await splitTablePass(doc, { ...opts, fillSpacing: spacing }, built);
-  built = split.built;
-  const opts2: BuildOptions = { ...opts, fillSpacing: spacing, splitTables: split.tables };
+  // ①' 한 쪽에 들어가는 표가 쪽 경계에서 쪼개졌으면 통째로 둔다(담당자 2026-11-16 — 반영 장부 Z1).
+  // 예전(10-27)에는 반대로, 통째로 넘어가 앞 쪽이 비면 표를 나눴다. 담당자: "집행내역처럼 2장 3장 넘어가는 표는
+  // 나눠도 되고, 한 장으로 만들 수 있는 건 한 장으로". 앞 쪽에 남는 빈자리는 줄여서 한 장에 담기(장부 P3)로 푼다.
+  const whole = await wholeTablePass(doc, { ...opts, fillSpacing: spacing }, built);
+  built = whole.built;
+  const opts2: BuildOptions = { ...opts, fillSpacing: spacing, wholeTables: whole.tables };
   const filled = await fillTextPages(doc, opts2, built);
   built = filled.built;
   // 한글이 있으면 한글 배치로 마무리한다(쪽 맨 위 여백·넘침) — 한글은 다음 문단과 함께를 스스로 지키므로 rhwp 로 잰 쪽 나눔은 넣지 않는다
@@ -321,64 +323,51 @@ async function hangulPass(doc: DocModel, opts: BuildOptions, built: BuildResult)
   return cur;
 }
 
-const SPLIT_MIN_ROOM = 6000; // 약 21 mm — 표가 통째로 넘어가 이보다 크게 비면 그 표를 쪽 경계에서 나눈다
-const SPLIT_GAIN = 1500; // 나눠서 이만큼(약 5 mm) 더 차지 않으면 되돌린다
-const SPLIT_MAX = 4; // 한 문서에서 나눌 표 수
+const WHOLE_MAX = 6; // 한 문서에서 통째로 돌릴 표 수
 
-/** 쪽마다 아래에 남은 빈 높이의 합(마지막 쪽은 비어도 되니 뺀다) */
-function emptiness(lay: NonNullable<Awaited<ReturnType<typeof layoutOf>>>): { sum: number; pages: number } {
-  const pages = Math.max(...lay.pos.map((q) => q.page)) + 1;
-  let sum = 0;
-  for (let page = 0; page < pages - 1; page++) {
-    const ks = lay.pos.map((q, k) => (q.page === page ? k : -1)).filter((k) => k >= 0);
-    const last = ks[ks.length - 1];
-    if (last === undefined || !Number.isFinite(lay.pos[last].bottom)) continue;
-    sum += Math.max(0, lay.body.bottom - lay.pos[last].bottom);
-  }
-  return { sum, pages };
+/** 쪽 경계에서 나뉠 수 있게 만든 표인가(행 15개 이상 등) — 글자처럼 취급하지 않는 표 */
+function isSplittableTable(p: XmlNode): boolean {
+  const pos = findAll(p, "hp:tbl").flatMap((t) => findAll(t, "hp:pos"))[0];
+  return !!pos && pos.attrs.treatAsChar === "0";
 }
 
-/** 앞 쪽을 크게 비우고 통째로 다음 쪽에 간 표의 블록 id — 아직 나누지 않은 것 하나 */
-function tableHole(lay: NonNullable<Awaited<ReturnType<typeof layoutOf>>>, built: BuildResult, done: Set<string>): string | undefined {
-  const fills = new Set(built.fillPageTables.map((f) => f.blockId));
-  const pages = Math.max(...lay.pos.map((q) => q.page)) + 1;
-  for (let page = 0; page < pages - 1; page++) {
-    const ks = lay.pos.map((q, k) => (q.page === page ? k : -1)).filter((k) => k >= 0);
-    const last = ks[ks.length - 1];
-    if (last === undefined) continue;
-    const q = lay.pos[last];
-    if (!Number.isFinite(q.bottom) || lay.body.bottom - q.bottom < SPLIT_MIN_ROOM) continue;
-    const next = last + 1;
-    if (next >= lay.top.length || !lay.pos[next].hasTable) continue;
-    const ids = new Set(findAll(lay.top[next], "hp:tbl").map((t) => String(t.attrs.id)));
-    const hit = built.tableBlocks.find((t) => ids.has(t.tblId) && !done.has(t.blockId) && !fills.has(t.blockId));
+/**
+ * 한 쪽에 들어가는데 쪽 경계에서 쪼개진 표의 블록 id — 아직 돌리지 않은 것 하나.
+ * 표의 마지막 칸이 다음 쪽에 있으면 표가 쪽을 넘은 것으로 보고, 두 조각 높이의 합이 쪽 본문 높이 안이면
+ * 통째로 한 쪽에 들어가는 표다. 두 쪽보다 길게 걸친 표(집행내역 등)는 그대로 나눈다.
+ */
+function brokenFittingTable(lay: NonNullable<Awaited<ReturnType<typeof layoutOf>>>, built: BuildResult, done: Set<string>): string | undefined {
+  const bodyH = lay.body.bottom - lay.body.top;
+  for (let k = 0; k < lay.top.length; k++) {
+    const q = lay.pos[k];
+    // 마지막 칸이 바로 다음 쪽에 있으면 표가 쪽을 넘은 것이다(문서 끝 표도 잴 수 있게 다음 문단이 아니라 마지막 칸으로 잰다)
+    if (!q.hasTable || q.page < 0 || q.endPage !== q.page + 1 || !Number.isFinite(q.top) || !Number.isFinite(q.endBottom)) continue;
+    if (!isSplittableTable(lay.top[k])) continue;
+    const tail = q.endBottom - lay.body.top; // 다음 쪽으로 넘어간 조각(마지막 칸 첫 줄까지 — 조금 짧게 잰다)
+    if (lay.body.bottom - q.top + tail > bodyH) continue; // 한 쪽보다 길다 — 나눠도 된다
+    const ids = new Set(findAll(lay.top[k], "hp:tbl").map((t) => String(t.attrs.id)));
+    const hit = built.tableBlocks.find((t) => ids.has(t.tblId) && !done.has(t.blockId));
     if (hit) return hit.blockId;
   }
   return undefined;
 }
 
 /**
- * 쪽 경계에서 표 나누기 — 표는 통째로만 넘어가서 앞 쪽 아래가 70 mm 씩 비었다(GEPA 포럼 결과보고서 2·3쪽, 2026-10-27).
- * 짧은 표는 글자처럼 취급해 나눌 수 없으므로(emitTable.splittable), 구멍을 만든 표만 골라 나뉘게 하고 다시 빌드한다.
- * 줄 간격을 늘려 메우는 것보다 담당자가 한글에서 하는 방식에 가깝다. 더 비어지거나 쪽이 늘면 되돌린다.
+ * 한 쪽에 들어가는 표는 쪼개지 않는다 — 행이 15개 넘어 나뉠 수 있게 만든 표도, 한 쪽 높이 안이면 통째로 다음 쪽으로
+ * 보낸다(담당자 2026-11-16, 향토뿌리 계획서 별첨 지정현황). 쪽이 늘어나는 것은 받아들인다 — 담당자가 고른 쪽이다.
  */
-async function splitTablePass(doc: DocModel, opts: BuildOptions, built: BuildResult): Promise<{ built: BuildResult; tables: string[] }> {
-  const chosen = new Set(opts.splitTables ?? []);
-  const tried = new Set(chosen);
+async function wholeTablePass(doc: DocModel, opts: BuildOptions, built: BuildResult): Promise<{ built: BuildResult; tables: string[] }> {
+  const chosen = new Set(opts.wholeTables ?? []);
   let cur = built;
   let lay = await layoutOf(cur.bytes);
   if (!lay) return { built: cur, tables: [...chosen] };
-  for (let round = 0; round < SPLIT_MAX; round++) {
-    const blockId = tableHole(lay, cur, tried);
+  for (let round = 0; round < WHOLE_MAX; round++) {
+    const blockId = brokenFittingTable(lay, cur, chosen);
     if (!blockId) break;
-    tried.add(blockId);
-    const trial = buildHwpx(doc, { ...opts, splitTables: [...chosen, blockId] });
-    const next = await layoutOf(trial.bytes);
-    if (!next) break;
-    const before = emptiness(lay), after = emptiness(next);
-    if (after.pages > before.pages || after.sum > before.sum - SPLIT_GAIN) continue; // 더 나아지지 않으면 되돌린다
     chosen.add(blockId);
-    cur = trial;
+    cur = buildHwpx(doc, { ...opts, wholeTables: [...chosen] });
+    const next = await layoutOf(cur.bytes);
+    if (!next) break;
     lay = next;
   }
   return { built: cur, tables: [...chosen] };
@@ -417,15 +406,42 @@ export async function layoutOf(bytes: Uint8Array): Promise<{ kept: Fixed; pos: P
   const d = new m.HwpDocument(asLaidOutByHangul(kept.bytes)) as unknown as {
     getCursorRect(s: number, p: number, o: number): string;
     getParagraphLength(s: number, p: number): number;
+    getTableDimensions(s: number, p: number, c: number): string;
+    getCursorRectInCell(s: number, p: number, c: number, cell: number, cp: number, off: number): string;
     free?(): void;
+  };
+  /** 표 문단의 마지막 칸이 놓인 쪽·아래 끝 — 표가 쪽을 넘었는지, 넘은 조각이 얼마인지 잰다 */
+  const tableCell = (k: number, which: "first" | "last"): { page: number; top: number; bottom: number } | undefined => {
+    for (let c = 0; c < 4; c++) {
+      try {
+        const dim = JSON.parse(d.getTableDimensions(0, k, c)) as { cellCount: number };
+        const r = JSON.parse(d.getCursorRectInCell(0, k, c, which === "first" ? 0 : dim.cellCount - 1, 0, 0)) as { pageIndex: number; y: number; height: number };
+        return { page: r.pageIndex, top: Math.round(r.y * PX), bottom: Math.round((r.y + r.height) * PX) };
+      } catch {
+        /* 다음 컨트롤 */
+      }
+    }
+    return undefined;
   };
   try {
     const pos = top.map((p, k): ParaPos => {
       const hasTable = findAll(p, "hp:tbl").length > 0 || findAll(p, "hp:pic").length > 0;
-      const a = rectAt(d, k, 0);
+      let a = rectAt(d, k, 0);
+      // 표만 든 문단은 문단 첫 자리 커서를 못 잴 때가 있다 — 첫 칸 위치로 시작을 잰다(문서 끝 별첨 목록, 2026-11-16)
+      if (!a && hasTable) {
+        const tc = tableCell(k, "first");
+        if (tc) a = { pageIndex: tc.page, y: tc.top / PX, height: 0 } as NonNullable<typeof a>;
+      }
       if (!a) return { page: -1, top: NaN, bottom: NaN, endPage: -1, endBottom: NaN, hasTable };
       let bottom = NaN, endPage = a.pageIndex, endBottom = NaN;
       const e = hasTable ? undefined : rectAt(d, k, Math.max(0, d.getParagraphLength(0, k)));
+      if (hasTable) {
+        const te = tableCell(k, "last");
+        if (te) {
+          endPage = te.page;
+          endBottom = te.bottom;
+        }
+      }
       if (e) {
         endPage = e.pageIndex;
         endBottom = Math.round((e.y + e.height) * PX);

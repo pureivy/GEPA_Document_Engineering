@@ -13,14 +13,15 @@ import { Dialog } from "@/components/ui/dialog";
 import { Field, Input, Select, Textarea } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
 import { KIND_LABEL, PROJECT_KINDS, type ProjectKind } from "@/lib/kinds";
-import { PREF_PLAN_RESEARCH, saveContactPref, useBoolPref, useContactPref, writePref } from "@/lib/client/prefs";
+import { contactDefaults, PREF_PLAN_RESEARCH, saveContactPref, useBoolPref, useContactPref, writePref } from "@/lib/client/prefs";
 
 /** 종류별 한 줄 설명 — 라디오 옆에 그대로 보인다 */
 /** 업무보고 형태 선택지의 이름과 설명 */
-const REPORT_FORM_LABEL: Record<ReportForm, string> = { 간략: "간략 보고(1~2쪽)", 책자: "책자형(표지·보고순서·간지)", 자동: "자동" };
+const REPORT_FORM_LABEL: Record<ReportForm, string> = { 간략: "간략 보고(1~2쪽)", 책자: "책자형(표지·보고순서·간지)", 상급기관: "상급기관 보고(책자형·여섯 장)", 자동: "자동" };
 const REPORT_FORM_HINT: Record<ReportForm, string> = {
   간략: "제목 띠와 □·ㅇ·- 개조식으로 한두 쪽에 정리합니다. 내부 보고·계획 보고에 씁니다.",
-  책자: "도지사·도의회 업무보고 양식입니다. 표지·보고순서·간지와 절 칩이 들어갑니다.",
+  책자: "도지사·도의회 업무보고 양식입니다. 표지·보고순서·간지와 절 칩이 들어가고, 장은 참고본대로 일반현황·추진성과·주요사업 세 장입니다.",
+  상급기관: "경상북도에 올리는 상급기관용 책자형입니다. 일반현황·도정방향 정합성·추진성과·여건 및 방향·중점 추진과제·협업·건의사항 여섯 장으로 씁니다.",
   자동: "지시 내용을 보고 에이전트가 간략·책자형 중에서 고릅니다.",
 };
 
@@ -35,7 +36,8 @@ const KIND_HINT: Record<ProjectKind, string> = {
   program: "조사 → 사업계획서 → 공고문 → 보도자료를 차례로 만듭니다.",
   official: "별지 제1호 기안문 한 건을 만듭니다.",
   report: "업무보고를 만듭니다 — 한두 쪽 간략 보고 또는 표지·보고순서·간지를 갖춘 책자형.",
-  closeout: "사업을 마친 뒤 정산자료 → 성과 분석 → 결과보고서를 만들고, 수탁사업이면 정산보고서 → 제출 공문까지 이어 만듭니다.",
+  // 업무보고처럼 한 줄에 들어가게 짧게 둔다(2026-11-16)
+  closeout: "사업 종료 후 정산자료 → 성과 분석 → 결과보고서를 만들고, 수탁사업은 정산보고서 → 공문까지 만듭니다.",
 };
 
 /** 정산·결과보고 자료로 받는 형식 — lib/closeout/materials.ts MATERIAL_EXTENSIONS 와 같다 */
@@ -74,17 +76,19 @@ const EMPTY: NewProjectInput = {
   kind: "program",
   title: "",
   topic: "",
-  region: "안동시",
+  // 화면에서 묻지 않는다(2026-11-16). 예전 기본값 안동시가 도 단위 사업에도 실렸다
+  region: "",
   organizer: "(재)경상북도경제진흥원",
   contact: { 부서명: "", 담당자: "", 전화: "", 전송: "", 이메일: "", 우편주소: "", 우편번호: "", 홈페이지: "" },
 };
 
 /** mounted only while open, so every opening starts from a blank form (연락처만 지난번 값에서 이어 쓴다) */
-function NewProjectDialog({ onClose, onCreated }: { onClose: () => void; onCreated: (p: ProjectDTO) => void }) {
-  // 연락처는 이 브라우저에 담아 둔 지난번 값으로 시작한다 — 프로젝트마다 다시 치지 않게 한다
-  // (user 2026-09-22). 폼이 열릴 때 한 번만 읽는다: 그 뒤의 편집은 이 프로젝트만의 것이다.
+function NewProjectDialog({ latest, onClose, onCreated }: { latest: ProjectDTO | undefined; onClose: () => void; onCreated: (p: ProjectDTO) => void }) {
+  // 연락처는 이 PC에서 가장 최근에 만든 프로젝트의 값으로 시작한다(없으면 이 브라우저에 담아 둔 값,
+  // 그것도 없으면 빈 칸) — 프로젝트마다 다시 치지 않게 한다(user 2026-09-22, 2026-10-27).
+  // 폼이 열릴 때 한 번만 읽는다: 그 뒤의 편집은 이 프로젝트만의 것이다.
   const saved = useContactPref();
-  const [form, setForm] = useState<NewProjectInput>(() => ({ ...EMPTY, contact: { ...EMPTY.contact, ...saved } }));
+  const [form, setForm] = useState<NewProjectInput>(() => ({ ...EMPTY, contact: { ...EMPTY.contact, ...contactDefaults(latest?.contact, saved) } }));
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
   // 관련 문서 업로드 (선택, 여러 개): 고른 순서대로 쌓인다 — 사업계획서 갱신에서는 첫 파일이 기존 사업계획서다.
@@ -230,7 +234,8 @@ function NewProjectDialog({ onClose, onCreated }: { onClose: () => void; onCreat
             // 제목에서 만든다 — "기존 사업계획서를 갱신" 은 업무보고에 쓰면 안 되는 말이다.
             form.topic.trim() ||
             (refFile ? `첨부한 ${REFERENCE_DOC_TITLE[DEFAULT_REFERENCE_ROLE]}(${refLabel})의 내용으로 「${title}」 주요업무보고를 작성` : `「${title}」 주요업무보고 작성`);
-      const p = await api.createProject({ ...form, title, topic, contact });
+      // 지역은 묻지 않는다 — DB 칸(region)은 남겨 두고 늘 빈 값을 넣는다
+      const p = await api.createProject({ ...form, region: "", title, topic, contact });
       // 실제로 쓰인 연락처가 다음 프로젝트의 기본값이 된다(브라우저에만 담는다)
       saveContactPref(form.contact);
       if (isCloseout && materials.length) {
@@ -302,7 +307,8 @@ function NewProjectDialog({ onClose, onCreated }: { onClose: () => void; onCreat
                 )}
               >
                 <input type="radio" name="kind" className="h-3.5 w-3.5" checked={kind === k} onChange={() => set("kind", k)} />
-                <span className="font-semibold">{KIND_LABEL[k]}</span>
+                {/* 줄이 넘쳐도 "결과·정/산" 처럼 종류 이름이 쪼개지지 않게 */}
+                <span className="shrink-0 whitespace-nowrap font-semibold">{KIND_LABEL[k]}</span>
                 <span className="text-slate-500">{KIND_HINT[k]}</span>
               </label>
             ))}
@@ -336,7 +342,7 @@ function NewProjectDialog({ onClose, onCreated }: { onClose: () => void; onCreat
         </Field>
         {kind === "report" && (
           <Field label="보고 형태" id="reportForm" required hint={REPORT_FORM_HINT[reportForm]}>
-            <div className="flex gap-2">
+            <div className="flex flex-wrap gap-2">
               {REPORT_FORMS.map((f) => (
                 <label
                   key={f}
@@ -406,13 +412,13 @@ function NewProjectDialog({ onClose, onCreated }: { onClose: () => void; onCreat
               label="공문 내용"
               id="body"
               required={!refFile}
-              hint={refFile ? "비우면 아래에 올린 문서의 내용으로 씁니다" : "자유 서술 — 용건, 근거, 기한, 제출 방법 등. 에이전트가 항목 위계를 세워 기안문으로 씁니다. 받는 쪽이 무언가를 써서 보내야 하면 “(붙임 서식) ○○ 양식”처럼 적어 주세요 — 서식을 별지로 만들어 붙입니다"}
+              hint={refFile ? "비우면 아래에 올린 문서의 내용으로 씁니다" : "자유 서술 — 용건, 근거, 기한, 제출 방법 등. 에이전트가 항목 위계를 세워 기안문으로 씁니다"}
             >
               <Textarea
                 id="body"
                 name="body"
                 rows={5}
-                placeholder="예) 경영평가 상시대응을 위해 각 팀의 2026년 사업 추진 현황을 매월 제출받으려 한다. 작성대상은 각 팀 전체 사업, 기준은 전월 말일 예산 집행액, 제출기한은 매월 5일까지. (붙임 서식) 사업 추진 현황 양식"
+                placeholder="예) 경영평가 상시대응을 위해 각 팀의 2026년 사업 추진 현황을 매월 제출받으려 한다. 작성대상은 각 팀 전체 사업, 기준은 전월 말일 예산 집행액, 제출기한은 매월 5일까지."
                 value={form.topic}
                 onChange={(e) => set("topic", e.target.value)}
                 autoComplete="off"
@@ -480,10 +486,8 @@ function NewProjectDialog({ onClose, onCreated }: { onClose: () => void; onCreat
             <Field label="주제" id="topic" hint={refFile ? "비우면 기존 계획서와 바뀌는 내용으로 채웁니다" : "자유 서술 — 목적, 대상, 지원 내용, 예산 규모 등"} required={!refFile}>
               <Textarea id="topic" name="topic" rows={5} placeholder="예) 안동시 소재 수출 유망 중소기업 20개사에 수출용 홍보물 제작·마케팅·디자인 개발을 기업당 최대 300만원 지원. 7월 공고, 8월 선정, 10월 말까지 지원." value={form.topic} onChange={(e) => set("topic", e.target.value)} autoComplete="off" />
             </Field>
+            {/* 지역 칸은 없앴다(2026-11-16) — 사업 대상 지역은 주제·계획서의 지원대상에 적혀 있다 */}
             <div className="grid grid-cols-2 gap-4">
-              <Field label="지역" id="region" hint="예: 안동시">
-                <Input id="region" name="region" value={form.region} onChange={(e) => set("region", e.target.value)} autoComplete="off" />
-              </Field>
               <Field label="주관기관" id="organizer">
                 <Input id="organizer" name="organizer" value={form.organizer} onChange={(e) => set("organizer", e.target.value)} autoComplete="off" />
               </Field>
@@ -509,29 +513,29 @@ function NewProjectDialog({ onClose, onCreated }: { onClose: () => void; onCreat
           {isOfficial ? <p className="mb-2 text-[11px] text-slate-500">부서명은 공문의 처리과가 되고(결재라인·발신명의가 여기서 정해집니다), 전화·전송(팩스)·이메일·우편번호·우편주소·홈페이지는 결문 연락처에 그대로 찍힙니다. 비우면 그 칸도 빕니다.</p> : null}
           <div className="grid grid-cols-2 gap-3">
             <Field label="부서명" id="organization" required>
-              <Input id="organization" name="organization" placeholder="북부지소" value={form.contact.부서명} onChange={(e) => setContact("부서명", e.target.value)} autoComplete="organization" />
+              <Input id="organization" name="organization" value={form.contact.부서명} onChange={(e) => setContact("부서명", e.target.value)} autoComplete="organization" />
             </Field>
             <Field label="담당자" id="name">
-              <Input id="name" name="name" placeholder="홍길동 팀장" value={form.contact.담당자 ?? ""} onChange={(e) => setContact("담당자", e.target.value)} autoComplete="name" />
+              <Input id="name" name="name" value={form.contact.담당자 ?? ""} onChange={(e) => setContact("담당자", e.target.value)} autoComplete="name" />
             </Field>
             <Field label="전화" id="tel" required>
-              <Input id="tel" name="tel" type="tel" placeholder="054-900-3801" value={form.contact.전화} onChange={(e) => setContact("전화", e.target.value)} autoComplete="tel" />
+              <Input id="tel" name="tel" type="tel" value={form.contact.전화} onChange={(e) => setContact("전화", e.target.value)} autoComplete="tel" />
             </Field>
             <Field label={isOfficial ? "전송(팩스)" : "전송"} id="fax">
-              <Input id="fax" name="fax" type="tel" placeholder="054-472-2989" value={form.contact.전송 ?? ""} onChange={(e) => setContact("전송", e.target.value)} autoComplete="fax" />
+              <Input id="fax" name="fax" type="tel" value={form.contact.전송 ?? ""} onChange={(e) => setContact("전송", e.target.value)} autoComplete="fax" />
             </Field>
             <Field label="이메일" id="email" required>
-              <Input id="email" name="email" type="email" placeholder="gepa_north@naver.com" value={form.contact.이메일} onChange={(e) => setContact("이메일", e.target.value)} autoComplete="email" />
+              <Input id="email" name="email" type="email" value={form.contact.이메일} onChange={(e) => setContact("이메일", e.target.value)} autoComplete="email" />
             </Field>
             <Field label="우편번호" id="postal-code">
-              <Input id="postal-code" name="postal-code" placeholder="39393" value={form.contact.우편번호 ?? ""} onChange={(e) => setContact("우편번호", e.target.value)} autoComplete="postal-code" />
+              <Input id="postal-code" name="postal-code" value={form.contact.우편번호 ?? ""} onChange={(e) => setContact("우편번호", e.target.value)} autoComplete="postal-code" />
             </Field>
             <Field label="주소" id="street-address" className="col-span-2">
-              <Input id="street-address" name="street-address" placeholder="경상북도 안동시 북순환로 387, 2층 경상북도경제진흥원" value={form.contact.우편주소 ?? ""} onChange={(e) => setContact("우편주소", e.target.value)} autoComplete="street-address" />
+              <Input id="street-address" name="street-address" placeholder="근무지 주소 — 본원(구미)·북부지소(안동)·동부지소(포항)" value={form.contact.우편주소 ?? ""} onChange={(e) => setContact("우편주소", e.target.value)} autoComplete="street-address" />
             </Field>
             {isOfficial ? (
               <Field label="홈페이지" id="url" className="col-span-2" hint="비우면 결문의 그 칸도 빕니다 — 참고 공문도 비워 둡니다">
-                <Input id="url" name="url" type="url" placeholder="https://gepa.kr" value={form.contact.홈페이지 ?? ""} onChange={(e) => setContact("홈페이지", e.target.value)} autoComplete="url" />
+                <Input id="url" name="url" type="url" value={form.contact.홈페이지 ?? ""} onChange={(e) => setContact("홈페이지", e.target.value)} autoComplete="url" />
               </Field>
             ) : null}
           </div>
@@ -797,11 +801,11 @@ export function ProjectList() {
                   {p.kind === "closeout" ? (
                     <>
                       <span>부서 {p.contact?.부서명 || "-"}</span>
-                      <span>수신 {p.contact?.수신 || "-"}</span>
+                      {/* 자체사업은 제출 공문이 없어 수신이 없다 */}
+                      {p.contact?.사업구분 === "자체" ? <span>자체사업</span> : <span>수신 {p.contact?.수신 || "-"}</span>}
                     </>
                   ) : p.kind === "program" ? (
                     <>
-                      <span>지역 {p.region || "-"}</span>
                       <span>주관 {p.organizer || "-"}</span>
                     </>
                   ) : (
@@ -854,6 +858,7 @@ export function ProjectList() {
 
       {open ? (
         <NewProjectDialog
+          latest={projects?.[0]}
           onClose={() => setOpen(false)}
           onCreated={(p) => {
             setOpen(false);
