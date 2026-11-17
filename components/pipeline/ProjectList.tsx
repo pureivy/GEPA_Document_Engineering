@@ -38,6 +38,7 @@ const KIND_HINT: Record<ProjectKind, string> = {
   report: "업무보고를 만듭니다 — 한두 쪽 간략 보고 또는 표지·보고순서·간지를 갖춘 책자형.",
   // 업무보고처럼 한 줄에 들어가게 짧게 둔다(2026-11-16)
   closeout: "사업 종료 후 정산자료 → 성과 분석 → 결과보고서를 만들고, 수탁사업은 정산보고서 → 공문까지 만듭니다.",
+  template: "한글 파일(양식)의 모양은 그대로 두고 내용만 고칩니다 — 첫 파일이 양식, 나머지는 참고 문서입니다.",
 };
 
 /** 정산·결과보고 자료로 받는 형식 — lib/closeout/materials.ts MATERIAL_EXTENSIONS 와 같다 */
@@ -67,9 +68,9 @@ export { DELEGATION_LEVELS, DEFAULT_DELEGATION };
  * 값 자체(REFERENCE_ROLES)와 changes 칸의 label 은 lib/contracts.ts 가 단일 출처다(프롬프트와 같아야 한다).
  */
 const REFERENCE_ROLE_UI: Record<ReferenceRole, { 표시: string; hint: string }> = {
-  근거자료: { 표시: "내용 근거자료", hint: "예) 지원 대상과 접수 기간만 추려서 알림" },
-  받은공문: { 표시: "받은 공문 (회신)", hint: "예) 자료 제출 요청에 대한 회신, 제출 기한 연장 요청" },
-  붙임: { 표시: "붙임 문서", hint: "예) 2026년 사업 신청서 서식 1부" },
+  근거자료: { 표시: "내용 근거자료", hint: "이 문서에서 가져다 쓸 내용" },
+  받은공문: { 표시: "받은 공문 (회신)", hint: "무엇에 대한 회신인지" },
+  붙임: { 표시: "붙임 문서", hint: "붙임 줄에 적을 문서 이름" },
 };
 
 const EMPTY: NewProjectInput = {
@@ -128,6 +129,9 @@ function NewProjectDialog({ latest, onClose, onCreated }: { latest: ProjectDTO |
    * 그 반대편은 막아 주는 것이 없다 — 사업 전용인 자리는 여기서 `isProgram` 으로 좁힌다.
    */
   const isProgram = kind === "program";
+  /** 양식 맞춰 쓰기 — 첫 파일이 고쳐 쓸 한글 양식(hwpx·hwp), 나머지는 참고 문서. 지시(주제)가 꼭 있어야 한다 */
+  const isTemplate = kind === "template";
+  const templateOk = !!refFile && /\.(hwpx|hwp)$/i.test(refFile.name);
   const set = <K extends keyof NewProjectInput>(k: K, v: NewProjectInput[K]) => setForm((f) => ({ ...f, [k]: v }));
   const setContact = (k: keyof NewProjectInput["contact"], v: string) => setForm((f) => ({ ...f, contact: { ...f.contact, [k]: v } }));
   // with an uploaded 기존 사업계획서 the title/topic can be derived from the file + 변경 사항; the contact is always needed for the documents
@@ -150,7 +154,9 @@ function NewProjectDialog({ latest, onClose, onCreated }: { latest: ProjectDTO |
       ? contactOk && !!form.title.trim() && (funding === "자체" || !!recipient.trim())
       : isProgram
       ? contactOk && (refFile ? true : !!(form.title.trim() && form.topic.trim()))
-      : contactOk && !!form.title.trim();
+      : isTemplate
+        ? contactOk && !!form.title.trim() && templateOk && !!form.topic.trim()
+        : contactOk && !!form.title.trim();
   const missing = isOfficial
     ? [
         ...(!form.title.trim() ? ["제목"] : []),
@@ -164,6 +170,15 @@ function NewProjectDialog({ latest, onClose, onCreated }: { latest: ProjectDTO |
       ? [
           ...(!form.title.trim() ? ["사업명"] : []),
           ...(funding === "수탁" && !recipient.trim() ? ["수신(위탁기관)"] : []),
+          ...(!form.contact.부서명.trim() ? ["부서명"] : []),
+          ...(!form.contact.전화.trim() ? ["전화"] : []),
+          ...(!form.contact.이메일.trim() ? ["이메일"] : []),
+        ]
+    : isTemplate
+      ? [
+          ...(!form.title.trim() ? ["제목"] : []),
+          ...(!refFile ? ["양식 파일"] : !templateOk ? ["양식(첫 파일은 hwpx·hwp)"] : []),
+          ...(!form.topic.trim() ? ["고칠 내용(지시)"] : []),
           ...(!form.contact.부서명.trim() ? ["부서명"] : []),
           ...(!form.contact.전화.trim() ? ["전화"] : []),
           ...(!form.contact.이메일.trim() ? ["이메일"] : []),
@@ -263,9 +278,11 @@ function NewProjectDialog({ latest, onClose, onCreated }: { latest: ProjectDTO |
         setPhase("upload");
         // 공문·업무보고에는 research 단계가 없다 — 자동 실행을 걸 곳이 없으므로 늘 false 로 보낸다
         // (라우트도 같은 게이트를 둔다: app/api/projects/[id]/reference/route.ts:48).
-        await api.uploadReference(p.id, refFiles, changes, isProgram ? autoRun : false, planResearch, (done, total, name) =>
+        await api.uploadReference(p.id, refFiles, isTemplate ? "" : changes, isProgram ? autoRun : false, planResearch, (done, total, name) =>
           setProgress(done < total ? `${done + 1}/${total} ${name}` : ""),
         );
+        // 양식 맞춰 쓰기는 단계가 하나뿐이다 — 올리자마자 시작한다(지시는 이미 받았다)
+        if (isTemplate) await api.runStage(p.id, "template");
       }
       onCreated(p);
     } catch (e) {
@@ -290,7 +307,7 @@ function NewProjectDialog({ latest, onClose, onCreated }: { latest: ProjectDTO |
           </Button>
           {!valid ? <span className="mr-2 self-center text-[11px] text-slate-500">입력 필요: {missing.join(", ")}</span> : null}
           <Button variant="primary" onClick={() => void submit()} disabled={!valid} loading={busy} title={valid ? undefined : `입력 필요: ${missing.join(", ")}`}>
-            {phase === "upload" ? (progress ? `자료 올리는 중 ${progress.split(" ")[0]}…` : "업로드·분석 중…") : (isProgram && refFile && autoRun) || (isCloseout && materials.length) ? "만들고 자동 실행" : "만들기"}
+            {phase === "upload" ? (progress ? `자료 올리는 중 ${progress.split(" ")[0]}…` : "업로드·분석 중…") : (isProgram && refFile && autoRun) || (isCloseout && materials.length) ? "만들고 자동 실행" : isTemplate ? "만들고 실행" : "만들기"}
           </Button>
         </>
       }
@@ -325,6 +342,8 @@ function NewProjectDialog({ latest, onClose, onCreated }: { latest: ProjectDTO |
                 ? "비우면 파일 이름을 제목으로 씁니다"
                 : isOfficial
                   ? "공문의 제목 칸에 그대로 들어갑니다"
+                  : isTemplate
+                    ? "프로젝트 목록에 보이는 이름입니다(결과 파일 이름은 양식 이름 + (수정))"
                   : !isProgram
                     ? "표지에 나가는 유일한 글자입니다"
                     : undefined
@@ -333,7 +352,6 @@ function NewProjectDialog({ latest, onClose, onCreated }: { latest: ProjectDTO |
           <Input
             id="title"
             name="title"
-            placeholder={isCloseout ? "예) 2025년 서비스산업 투자유치협의체" : isOfficial ? "예) 경영평가 대응을 위한 2026년 사업 추진 현황 제출 요청" : isProgram ? "예) 2026년 안동시 수출기업 역량강화 지원사업" : "예) 2026년 주요업무보고"}
             value={form.title}
             onChange={(e) => set("title", e.target.value)}
             autoComplete="off"
@@ -372,11 +390,10 @@ function NewProjectDialog({ latest, onClose, onCreated }: { latest: ProjectDTO |
               {recipientKind === "내부결재" ? (
                 <div className="self-end pb-2 text-[11px] text-slate-500">내부결재는 수신 대상 없이 &ldquo;내부결재&rdquo;로 찍힙니다.</div>
               ) : (
-                <Field label={RECIPIENT_KEY[recipientKind]} id="recipient" required hint={recipientKind === "수신자참조" ? "여럿이면 쉼표로 구분" : "예: 경상북도지사"}>
+                <Field label={RECIPIENT_KEY[recipientKind]} id="recipient" required hint={recipientKind === "수신자참조" ? "여럿이면 쉼표로 구분" : undefined}>
                   <Input
                     id="recipient"
                     name="recipient"
-                    placeholder={recipientKind === "수신자참조" ? "경영지원팀장, 마케팅팀장, 일자리종합지원팀장" : "경상북도지사"}
                     value={recipient}
                     onChange={(e) => setRecipient(e.target.value)}
                     autoComplete="off"
@@ -418,7 +435,6 @@ function NewProjectDialog({ latest, onClose, onCreated }: { latest: ProjectDTO |
                 id="body"
                 name="body"
                 rows={5}
-                placeholder="예) 경영평가 상시대응을 위해 각 팀의 2026년 사업 추진 현황을 매월 제출받으려 한다. 작성대상은 각 팀 전체 사업, 기준은 전월 말일 예산 집행액, 제출기한은 매월 5일까지."
                 value={form.topic}
                 onChange={(e) => set("topic", e.target.value)}
                 autoComplete="off"
@@ -443,8 +459,8 @@ function NewProjectDialog({ latest, onClose, onCreated }: { latest: ProjectDTO |
               </div>
             </Field>
             <div className={cn("grid grid-cols-[1fr_9rem_8rem] gap-4", funding === "자체" && "hidden")}>
-              <Field label="수신(위탁기관)" id="recipient" required hint="제출 공문의 수신 — 예: 경상북도지사(투자유치단장), 고령군수(투자유치과장)">
-                <Input id="recipient" name="recipient" placeholder="경상북도지사(투자유치단장)" value={recipient} onChange={(e) => setRecipient(e.target.value)} autoComplete="off" />
+              <Field label="수신(위탁기관)" id="recipient" required hint="제출 공문의 수신(위탁기관)">
+                <Input id="recipient" name="recipient" value={recipient} onChange={(e) => setRecipient(e.target.value)} autoComplete="off" />
               </Field>
               <Field label="전결" id="delegation" required>
                 <Select id="delegation" name="delegation" value={전결} onChange={(e) => setDelegation(e.target.value as DelegationLevel)}>
@@ -474,7 +490,6 @@ function NewProjectDialog({ latest, onClose, onCreated }: { latest: ProjectDTO |
                 id="topic"
                 name="topic"
                 rows={5}
-                placeholder="예) 사업기간 2025. 2.~12. / 투자유치 회의 3회(4. 7. 킥오프 21명, 5. 26. 소규모 8명, 9. 30. 전체회의 22명) / 물류분야 위원 1명 추가 위촉 / 잔액은 회의비·여비 실비 정산분"
                 value={form.topic}
                 onChange={(e) => set("topic", e.target.value)}
                 autoComplete="off"
@@ -484,7 +499,7 @@ function NewProjectDialog({ latest, onClose, onCreated }: { latest: ProjectDTO |
         ) : isProgram ? (
           <>
             <Field label="주제" id="topic" hint={refFile ? "비우면 기존 계획서와 바뀌는 내용으로 채웁니다" : "자유 서술 — 목적, 대상, 지원 내용, 예산 규모 등"} required={!refFile}>
-              <Textarea id="topic" name="topic" rows={5} placeholder="예) 안동시 소재 수출 유망 중소기업 20개사에 수출용 홍보물 제작·마케팅·디자인 개발을 기업당 최대 300만원 지원. 7월 공고, 8월 선정, 10월 말까지 지원." value={form.topic} onChange={(e) => set("topic", e.target.value)} autoComplete="off" />
+              <Textarea id="topic" name="topic" rows={5} value={form.topic} onChange={(e) => set("topic", e.target.value)} autoComplete="off" />
             </Field>
             {/* 지역 칸은 없앴다(2026-11-16) — 사업 대상 지역은 주제·계획서의 지원대상에 적혀 있다 */}
             <div className="grid grid-cols-2 gap-4">
@@ -493,6 +508,17 @@ function NewProjectDialog({ latest, onClose, onCreated }: { latest: ProjectDTO |
               </Field>
             </div>
           </>
+        ) : isTemplate ? (
+          <Field label="고칠 내용(지시)" id="topic" required hint="무엇을 어떤 자료대로 고칠지 — 범위를 정하면 그 밖은 바꾸지 않고, 양식 모양은 그대로 둡니다">
+            <Textarea
+              id="topic"
+              name="topic"
+              rows={5}
+              value={form.topic}
+              onChange={(e) => set("topic", e.target.value)}
+              autoComplete="off"
+            />
+          </Field>
         ) : (
           // 업무보고에는 지역·주관기관이 없다(표지에 나가는 글자는 제목뿐이다). 보고 내용도
           // 비워 둘 수 있다 — 붙인 문서나 단계 화면의 추가 지시로 채운다.
@@ -501,7 +527,6 @@ function NewProjectDialog({ latest, onClose, onCreated }: { latest: ProjectDTO |
               id="topic"
               name="topic"
               rows={5}
-              placeholder="예) 경상북도지사 대상 2026년 주요업무보고. 일반현황(설립목적·연혁·조직)과 2025년도 추진성과, 2026년도 주요사업을 장으로 나눠 작성."
               value={form.topic}
               onChange={(e) => set("topic", e.target.value)}
               autoComplete="off"
@@ -584,10 +609,12 @@ function NewProjectDialog({ latest, onClose, onCreated }: { latest: ProjectDTO |
         {/* 공문·업무보고에도 파일을 붙인다 — 같은 업로드 경로를 쓰되 용도는 공문만 묻고(업무보고는 언제나
             근거자료다), 자동 실행은 걸지 않는다(둘 다 조사 단계가 없다). 정산·결과보고는 위의 자료함을 쓴다 */}
         <fieldset className={cn("rounded-md border border-slate-200 p-3", isCloseout && "hidden")}>
-          <legend className="px-1 text-xs font-semibold text-slate-600">{isProgram ? "기존 사업계획서로 시작 (선택)" : "관련 문서 첨부 (선택)"}</legend>
+          <legend className="px-1 text-xs font-semibold text-slate-600">{isProgram ? "기존 사업계획서로 시작 (선택)" : isTemplate ? "양식과 참고 문서 (필수)" : "관련 문서 첨부 (선택)"}</legend>
           <p className="mb-2 text-[11px] text-slate-500">
             {isOfficial
               ? "관련 문서를 올리면 그 내용을 읽고 공문을 씁니다. 주제 칸을 길게 적는 대신 파일로 대신할 수 있고, 여러 개를 올리면 모두 읽습니다."
+              : isTemplate
+                ? "첫 파일이 고쳐 쓸 양식입니다(한글 hwpx·hwp — 모양은 그대로 두고 글자만 바꿉니다). 나머지는 새 내용의 근거가 되는 참고 문서입니다(hwp·hwpx·pdf·docx·엑셀 xlsx·xls·csv — 월별 현황처럼 수치가 바뀌는 보고는 엑셀을 함께 올리세요)."
               : isProgram
                 ? "지난해 사업계획서(hwp·hwpx·pdf·docx)를 올리고 바뀌는 내용을 적으면, 그 계획서를 기준으로 조사 → 사업계획서 → 공고문 → 보도자료를 자동으로 만듭니다. 여러 개를 올리면 첫 파일을 기존 사업계획서로 보고 나머지는 참고 문서로 함께 읽습니다."
                 : "지난 보고서나 실적 자료를 올리면 그 내용을 읽고 업무보고를 씁니다(여러 개 가능). 지난 연도 표기는 이번 보고 기준으로 고쳐 씁니다."}
@@ -595,14 +622,14 @@ function NewProjectDialog({ latest, onClose, onCreated }: { latest: ProjectDTO |
           <div className="grid gap-3">
             <label className="flex cursor-pointer items-center gap-2 rounded border border-dashed border-slate-300 px-3 py-2 text-xs text-slate-700 hover:bg-slate-50">
               <Upload className="h-4 w-4 text-slate-400" />
-              <span className="flex-1 truncate">{refFiles.length ? `파일 더 올리기 (${refFiles.length}개 골랐음)` : "파일 선택(여러 개 가능) — .hwp .hwpx .pdf .docx .md .txt"}</span>
+              <span className="flex-1 truncate">{refFiles.length ? `파일 더 올리기 (${refFiles.length}개 골랐음)` : "파일 선택(여러 개 가능) — .hwp .hwpx .pdf .docx .xlsx .xls .csv .md .txt"}</span>
               <input
                 id="referenceFile"
                 name="referenceFile"
                 type="file"
                 multiple
                 className="hidden"
-                accept=".hwp,.hwpx,.pdf,.docx,.md,.txt"
+                accept=".hwp,.hwpx,.pdf,.docx,.xlsx,.xls,.csv,.md,.txt"
                 onChange={(e) => {
                   const picked = Array.from(e.target.files ?? []);
                   // 같은 이름은 새로 고른 것으로 바꾸고, 나머지는 고른 순서대로 뒤에 쌓는다 — 다시 골라도 앞의 것이 사라지지 않는다
@@ -615,10 +642,15 @@ function NewProjectDialog({ latest, onClose, onCreated }: { latest: ProjectDTO |
               <ul className="grid gap-1 text-xs text-slate-700">
                 {refFiles.map((f, i) => (
                   <li key={f.name} className="flex items-center gap-2 rounded bg-slate-50 px-2 py-1">
-                    {isProgram ? (
-                      <span className={cn("shrink-0 rounded px-1 text-[10px] font-semibold", i === 0 ? "bg-sky-100 text-sky-800" : "bg-slate-200 text-slate-600")}>{i === 0 ? "기존 계획서" : "참고"}</span>
+                    {isProgram || isTemplate ? (
+                      <span className={cn("shrink-0 rounded px-1 text-[10px] font-semibold", i === 0 ? "bg-sky-100 text-sky-800" : "bg-slate-200 text-slate-600")}>{i === 0 ? (isTemplate ? "양식" : "기존 계획서") : "참고"}</span>
                     ) : null}
                     <span className="flex-1 truncate">{f.name}</span>
+                    {isTemplate && i > 0 && /\.(hwpx|hwp)$/i.test(f.name) ? (
+                      <button type="button" className="shrink-0 rounded px-1 text-[10px] text-sky-700 hover:bg-sky-50" onClick={() => setRefFiles((cur) => [f, ...cur.filter((c) => c !== f)])}>
+                        양식으로
+                      </button>
+                    ) : null}
                     <span className="text-slate-400">{Math.max(1, Math.round(f.size / 1024))} KB</span>
                     <button type="button" aria-label={`${f.name} 빼기`} className="rounded p-0.5 text-slate-400 hover:text-red-600" onClick={() => setRefFiles((cur) => cur.filter((c) => c !== f))}>
                       <Trash2 className="h-3.5 w-3.5" />
@@ -652,6 +684,7 @@ function NewProjectDialog({ latest, onClose, onCreated }: { latest: ProjectDTO |
                 ) : null}
                 {/* 업무보고는 용도를 묻지 않으므로 이름도 기본 용도의 것을 쓴다 — 이 label 은
                     프롬프트의 줄 이름이자 base-plan.md 의 절 제목이다(lib/contracts.ts 가 단일 출처). */}
+                {isTemplate ? null : (
                 <Field
                   label={isProgram ? "이번에 바뀌는 내용" : REFERENCE_CHANGES_LABEL[isOfficial ? refRole : DEFAULT_REFERENCE_ROLE]}
                   id="changes"
@@ -659,8 +692,8 @@ function NewProjectDialog({ latest, onClose, onCreated }: { latest: ProjectDTO |
                     isOfficial
                       ? REFERENCE_ROLE_UI[refRole].hint
                       : isProgram
-                        ? "예) 2027년으로 연도 변경, 지원 규모 20개사 → 30개사, 기업당 한도 300만원 → 500만원, 접수 7월 → 8월"
-                        : "예) 2025년 추진성과와 조직 현황만 추려서 씀"
+                        ? "연도·기간·규모·금액·일정 등 달라지는 점"
+                        : "이 문서에서 무엇을 가져다 쓸지"
                   }
                 >
                   <Textarea
@@ -669,9 +702,9 @@ function NewProjectDialog({ latest, onClose, onCreated }: { latest: ProjectDTO |
                     rows={3}
                     value={changes}
                     onChange={(e) => setChanges(e.target.value)}
-                    placeholder={isProgram ? "연도·기간·규모·금액·담당 등 달라지는 점을 적어 주세요" : undefined}
                   />
                 </Field>
+                )}
                 {/* 자동 실행은 조사 → 보도자료 파이프라인의 것이다 — 공문·업무보고에는 그 단계가 없어 아예 그리지 않는다 */}
                 {isProgram ? (
                   <div className="flex flex-wrap gap-4 text-xs text-slate-700">

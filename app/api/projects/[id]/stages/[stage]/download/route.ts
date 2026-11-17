@@ -1,6 +1,7 @@
 import type { NextRequest } from "next/server";
 import { readFileSync } from "node:fs";
-import { hwpxPath, pdfPath, readStageDoc, readStageDsl } from "@/lib/stages/service";
+import { hwpxPath, pdfPath, projectDir, readStageDoc, readStageDsl } from "@/lib/stages/service";
+import { templateDownloadBase } from "@/lib/template/store";
 import { toText } from "@/lib/docmodel/serialize/toText";
 import { toMarkdown } from "@/lib/docmodel/serialize/toMarkdown";
 import { DOC_FAMILIES } from "@/lib/docmodel/families";
@@ -19,7 +20,8 @@ export async function GET(req: NextRequest, ctx: { params: Promise<{ id: string;
   const s = stage as Stage;
   const format = req.nextUrl.searchParams.get("format") ?? "hwpx";
   const doc = readStageDoc(id, s);
-  const title = doc ? DOC_FAMILIES[doc.family].exportBaseName(doc) : `${id}_${s}`;
+  // 양식 맞춰 쓰기는 문서 모델이 없다 — 양식 이름에 (수정)을 붙인다
+  const title = doc ? DOC_FAMILIES[doc.family].exportBaseName(doc) : (s === "template" ? templateDownloadBase(projectDir(id)) : null) ?? `${id}_${s}`;
   if (format === "hwpx") {
     const p = hwpxPath(id, s);
     if (!p) return new Response("not exported", { status: 404 });

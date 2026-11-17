@@ -5,9 +5,9 @@
  */
 import type { FundingType, Stage } from "./contracts";
 
-export type ProjectKind = "program" | "official" | "report" | "closeout";
-export const PROJECT_KINDS: ProjectKind[] = ["program", "official", "report", "closeout"];
-export const KIND_LABEL: Record<ProjectKind, string> = { program: "사업", official: "공문", report: "업무보고", closeout: "결과·정산" };
+export type ProjectKind = "program" | "official" | "report" | "closeout" | "template";
+export const PROJECT_KINDS: ProjectKind[] = ["program", "official", "report", "closeout", "template"];
+export const KIND_LABEL: Record<ProjectKind, string> = { program: "사업", official: "공문", report: "업무보고", closeout: "결과·정산", template: "양식 맞춰 쓰기" };
 export const KIND_STAGES: Record<ProjectKind, Stage[]> = {
   program: ["research", "plan", "notice", "press"],
   official: ["official"],
@@ -17,6 +17,9 @@ export const KIND_STAGES: Record<ProjectKind, Stage[]> = {
   // 성과 분석(analysis)은 문서가 아니라 메모다 — 결과보고서 한 번에 자료 읽기·성과 판단·서식 맞추기를 다 시키면
   // 올해 한 일을 옮겨 적는 데서 그쳤다(담당자 2026-10-21). 판단(성과·우수사례·차년도 반영)을 먼저 따로 한다.
   closeout: ["ledger", "analysis", "result", "settlement", "submit"],
+  // 담당자가 준 한글 파일(양식)을 버리지 않고 그 안의 글자만 고친다(lib/template/engine.ts) — 다른 종류처럼
+  // 우리 작성기가 새로 그리지 않는다. "이 양식대로 내용만 바꿔 줘"가 다른 종류로는 안 됐다(담당자 2026-11-17).
+  template: ["template"],
 };
 /**
  * 자체사업(자부담 100%)의 결과·정산 단계 — 위탁기관이 없으니 위탁기관 서식 정산보고서도, 그것을 보내는 제출 공문도

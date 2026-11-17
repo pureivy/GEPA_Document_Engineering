@@ -24,6 +24,8 @@ import { isDocStage, type FundingType, type ProjectDTO, type Stage } from "../co
 import { writeLedgerSummary } from "../closeout/store";
 import { collectWebMaterials } from "../closeout/webMaterials";
 import { awaitScans } from "../closeout/scanPdf";
+import { appendDialog, ensureTemplateResult, prepareTemplate } from "../template/store";
+import { ensureRendered } from "../hwpx/export";
 
 /** 올린 자료를 읽는 단계 — 스캔 PDF 글자 인식이 끝난 뒤에 시작한다 */
 export const SCAN_STAGES: ReadonlySet<string> = new Set(["ledger", "analysis", "result", "settlement"]);
@@ -90,6 +92,13 @@ export function nextStage(stage: Stage | "review", kind: ProjectKind, 사업구�
  * 미리 409 로 돌려보내므로 여기서 오래 기다리는 것은 자동으로 이어지는 단계(chainNext)뿐이다.
  */
 export async function prepareStage(project: ProjectDTO, stage: Stage | "review", resume = false): Promise<void> {
+  // 양식 맞춰 쓰기: 양식을 문단 목록으로 풀어 둔다(에이전트는 Bash 가 없어 hwpx 를 직접 못 연다). 양식이 없거나 한글 파일이
+  // 아니면 여기서 던져 실행 버튼이 그 까닭을 보여 준다
+  if (stage === "template") {
+    const r = prepareTemplate(project, dirname(stageDir(project.id, "template")));
+    console.log(`[runIntegration] template: 양식 문단 ${r.paragraphs}개`);
+    return;
+  }
   if (project.kind === "closeout" && SCAN_STAGES.has(stage)) {
     const n = await awaitScans(project.id).catch((e) => (console.error("[runIntegration] 글자 인식 실패:", e), 0));
     if (n) console.log(`[runIntegration] 스캔 PDF ${n}개 글자 인식`);
@@ -292,7 +301,14 @@ export function startStageRun(opts: StartStageRunOptions): { runId: string; sess
     }, 500);
   };
 
-  const onEnd: StartRunInput["onEnd"] = (run) => {
+  const onEnd: StartRunInput["onEnd"] = (run, result) => {
+    if (opts.stage === "template") {
+      try {
+        appendDialog(workspaceDir, "assistant", result?.text?.trim() || (run.status === "succeeded" ? "(답변 없음)" : `실행이 ${run.status === "cancelled" ? "중지" : "실패"}했습니다${run.error ? `: ${run.error}` : ""}`));
+      } catch (e) {
+        console.error("[runIntegration] template 대화 기록 실패:", (e as Error).message);
+      }
+    }
     if (opts.stage === "ledger") {
       // 원장 계산·검증은 플랫폼이 한다 — 에이전트는 Bash 가 없어 스스로 검산할 수 없다.
       // 오류가 있으면 같은 세션에 오류 목록을 주고 **한 번** 고치게 하고, 그래도 남으면 연쇄를 멈춘다
@@ -325,6 +341,22 @@ export function startStageRun(opts: StartStageRunOptions): { runId: string; sess
       const notes = join(workspaceDir, opts.stage, "notes.md");
       if (!existsSync(notes)) publish({ type: "doc.error", message: `${opts.stage}/notes.md 가 생성되지 않았습니다. '이어서 수정 요청'으로 정리를 지시하세요.`, status: run.status });
       else chainNext(run.status);
+      return;
+    }
+    if (opts.stage === "template") {
+      // 고칠 목록(edits.json)을 원본에 적용해 out.hwpx 를 만들고, 한글로 쪽을 그려 미리보기에 올린다.
+      // 실패해도 실행 상태는 그대로 두고 화면에 까닭을 띄운다
+      const started = Date.now();
+      void ensureTemplateResult(workspaceDir)
+        .then(async (r) => {
+          if (!r) {
+            console.error("[runIntegration] template: 고칠 목록이 없습니다");
+            return;
+          }
+          await ensureRendered(stageDir(opts.project.id, "template"));
+          console.log(`[runIntegration] template: v${r.version} 바뀐 곳 ${r.changes}, 경고 ${r.report.warnings.length}, ${Math.round((Date.now() - started) / 1000)}s`);
+        })
+        .catch((e: Error) => console.error("[runIntegration] template 결과 만들기 실패:", e.message));
       return;
     }
     if (!isDoc) return;
@@ -392,5 +424,12 @@ export function startStageRun(opts: StartStageRunOptions): { runId: string; sess
     runner: opts.runner,
   });
   runId = res.runId;
+  if (opts.stage === "template") {
+    try {
+      appendDialog(workspaceDir, "user", opts.instruction?.trim() || "처음 실행 — 지시(주제·이 문서에서 쓸 내용)대로 양식을 고친다");
+    } catch (e) {
+      console.error("[runIntegration] template 대화 기록 실패:", (e as Error).message);
+    }
+  }
   return res;
 }

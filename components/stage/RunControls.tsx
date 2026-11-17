@@ -167,7 +167,7 @@ export function RunControls(p: RunControlsProps) {
           </>
         }
       >
-        <Textarea autoFocus rows={6} placeholder="예) 5. 신청자격에 우대업체 항목을 추가하고, 지원내용 표의 금액을 500만원으로 수정" value={instruction} onChange={(e) => setInstruction(e.target.value)} />
+        <Textarea autoFocus rows={6} value={instruction} onChange={(e) => setInstruction(e.target.value)} />
       </Dialog>
     </div>
   );

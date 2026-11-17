@@ -5,6 +5,7 @@
 import { DEFAULT_REFERENCE_ROLE, REFERENCE_CHANGES_LABEL, type Stage, type ProjectDTO, type ReferenceRole } from "../../contracts";
 import { orgSummary } from "../../org";
 import { closeoutStagePrompt } from "./closeout";
+import { templateStagePrompt } from "./template";
 
 export interface StagePromptInput {
   stage: Stage | "review";
@@ -123,6 +124,12 @@ function projectBrief(p: ProjectDTO, workspaceDir?: string): string {
       lines.push(`참고 문서(용도: ${용도}): ${workspaceDir ?? "<작업폴더>"}/reference/base-plan.md (원본 파일 ${referenceFiles(p)})`);
       // 비면 줄 자체를 싣지 않는다 — "(미기재 — 연도·일정·담당만 갱신)" 은 사업계획서 갱신을 전제한 문구라 공문에 맞지 않는다
       if (p.reference.changes) lines.push(`${REFERENCE_CHANGES_LABEL[용도]}: ${p.reference.changes}`);
+    } else if (p.kind === "template") {
+      // 양식 맞춰 쓰기: 첫 파일이 고쳐 쓸 양식, 나머지가 내용 근거다. 아래 사업계획서 갱신 줄이 실리면 안 된다
+      const names = p.reference.fileNames?.length ? p.reference.fileNames : [p.reference.fileName];
+      lines.push(`양식(고쳐 쓸 파일): ${names[0]}`);
+      if (names.length > 1) lines.push(`참고 문서(새 내용의 근거): ${names.slice(1).join(", ")}`);
+      if (p.reference.changes) lines.push(`${REFERENCE_CHANGES_LABEL[DEFAULT_REFERENCE_ROLE]}: ${p.reference.changes}`);
     } else if (p.kind === "report") {
       // 업무보고에는 용도가 없다(화면에도 라디오가 없다) — 붙인 문서는 언제나 내용 근거자료다.
       // 여기서 갈라 두지 않으면 사업계획서 쪽 두 줄이 그대로 실려 에이전트가 업무보고를
@@ -273,6 +280,7 @@ const REVIEW_SKILL: Record<Stage, string> = {
   result: "gepa-closeout-design",
   settlement: "gepa-closeout-design",
   submit: "gepa-closeout-design",
+  template: "gepa-report-design",
 };
 
 export function buildStagePrompt(input: StagePromptInput): StagePrompt {
@@ -415,6 +423,8 @@ ${reportFormGuide(project)}
 
 [추가 지시] ${instruction}
 기존 analysis/notes.md 를 위 지시에 맞게 Edit 로 고친다(전체를 다시 쓰지 않는다).` : resume });
+    case "template":
+      return templateStagePrompt({ ...input, brief, common: COMMON() });
     default:
       throw new Error(`${stage} 단계의 프롬프트가 아직 구현되지 않았습니다`);
   }

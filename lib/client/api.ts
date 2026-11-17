@@ -187,6 +187,12 @@ export const api = {
   putDoc: (projectId: string, stage: Stage, doc: DocModel) => request<{ version: number }>(`${stageBase(projectId, stage)}/doc`, { method: "PUT", body: JSON.stringify({ doc }) }),
 
   // export / render / download
+  /** 올린 참고 문서 하나를 뺀다 */
+  removeReference: (id: string, name: string) =>
+    request<{ project: ProjectDTO; removed: string }>(`/api/projects/${encodeURIComponent(id)}/reference?name=${encodeURIComponent(name)}`, { method: "DELETE" }),
+  /** 양식 맞춰 쓰기: 바뀐 곳 표·지시와 답 기록·파일 이름 */
+  getTemplate: (projectId: string) =>
+    request<{ template: string | null; references: string[]; changes: string | null; dialog: { at: string; role: "user" | "assistant"; text: string }[] }>(`/api/projects/${encodeURIComponent(projectId)}/template`),
   exportStage: (projectId: string, stage: Stage) => request<ExportReportDTO>(`${stageBase(projectId, stage)}/export`, { method: "POST" }),
   renderManifest: (projectId: string, stage: Stage) => request<{ pages: number; hash: string }>(`${stageBase(projectId, stage)}/render/manifest`),
   /** page index is 0-based (docs/architecture.md M4: "page 0 SVG") */

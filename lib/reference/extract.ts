@@ -6,6 +6,7 @@
  *   .pdf   → `pdftotext -layout` (poppler; Homebrew `brew install poppler`)
  *   .docx  → word/document.xml (w:t runs, paragraphs → lines)
  *   .md/.txt → as is (UTF-8)
+ *   .xlsx/.xls/.csv → 시트마다 마크다운 표(closeout/sheet.ts) — 양식 맞춰 쓰기의 월별 현황처럼 수치를 엑셀로 받는다(2026-11-17)
  */
 import { REFERENCE_CHANGES_LABEL, REFERENCE_DOC_TITLE, type ReferenceRole } from "../contracts";
 import { pdftotextBin, rhwpBin, spawnCommandSync as spawnSync } from "../platform";
@@ -15,12 +16,25 @@ import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { unzipSync } from "fflate";
 import { sectionText } from "../hwpx/validate";
+import { readCsv, readXlsx, sheetsToMarkdown } from "../closeout/sheet";
+import { readXls } from "../closeout/xls";
 
-export const REFERENCE_EXTENSIONS = [".hwpx", ".hwp", ".pdf", ".docx", ".md", ".txt"] as const;
+export const REFERENCE_EXTENSIONS = [".hwpx", ".hwp", ".pdf", ".docx", ".md", ".txt", ".xlsx", ".xls", ".csv"] as const;
 /** keep the prompt input bounded (a 30-page plan is ~40k chars) */
 export const REFERENCE_MAX_CHARS = 80_000;
 /** several files share one base-plan.md — keep the whole file readable in one sitting */
 export const REFERENCE_TOTAL_MAX_CHARS = 200_000;
+/**
+ * 엑셀·CSV 는 자르지 않는다(이 값은 터무니없이 큰 파일만 막는 울타리) — 수치 표는 한 행만 빠져도 합계가 틀어진다.
+ * 2026-11-17 월별 사업 추진 현황 엑셀(390행)이 8만 자에서 잘려 247행 이후 팀·지소가 통째로 빠졌고, 에이전트는 합계를
+ * 맞출 수 없어 아무것도 고치지 못했다. 에이전트는 긴 파일을 Read 로 나눠 읽는다.
+ */
+export const SHEET_MAX_CHARS = 3_000_000;
+const SHEET_EXTENSIONS = new Set<string>([".xlsx", ".xls", ".csv"]);
+export function isSheetFile(fileName: string): boolean {
+  const ext = referenceExtension(fileName);
+  return !!ext && SHEET_EXTENSIONS.has(ext);
+}
 
 export interface ReferenceDoc {
   fileName: string;
@@ -97,6 +111,15 @@ export function pdfText(bytes: Uint8Array, bin = pdftotextBin()): string {
   }
 }
 
+/** 은행·ERP 에서 내려받은 CSV 는 CP949 가 흔하다 — UTF-8 로 읽히지 않으면 EUC-KR 로 다시 읽는다 */
+function decodeCsv(bytes: Uint8Array): string {
+  try {
+    return new TextDecoder("utf-8", { fatal: true }).decode(bytes);
+  } catch {
+    return new TextDecoder("euc-kr").decode(bytes);
+  }
+}
+
 /** Plain text of a reference document, or throws for unsupported/undecodable files. */
 export function extractReferenceText(fileName: string, bytes: Uint8Array): { text: string; truncated: boolean } {
   const ext = referenceExtension(fileName);
@@ -106,11 +129,15 @@ export function extractReferenceText(fileName: string, bytes: Uint8Array): { tex
   else if (ext === ".hwp") text = hwpxText(hwpToHwpx(bytes));
   else if (ext === ".pdf") text = pdfText(bytes);
   else if (ext === ".docx") text = docxText(bytes);
+  else if (ext === ".xlsx") text = sheetsToMarkdown(fileName, readXlsx(bytes));
+  else if (ext === ".xls") text = sheetsToMarkdown(fileName, readXls(bytes));
+  else if (ext === ".csv") text = sheetsToMarkdown(fileName, [readCsv(decodeCsv(bytes))]);
   else text = new TextDecoder().decode(bytes);
   text = text.replace(/\r\n?/g, "\n").replace(/[ \t]+\n/g, "\n").replace(/\n{3,}/g, "\n\n").trim();
   if (!text) throw new Error("문서에서 글자를 읽지 못했습니다");
-  const truncated = text.length > REFERENCE_MAX_CHARS;
-  return { text: truncated ? text.slice(0, REFERENCE_MAX_CHARS) + "\n\n[… 이하 생략 …]" : text, truncated };
+  const max = SHEET_EXTENSIONS.has(ext) ? SHEET_MAX_CHARS : REFERENCE_MAX_CHARS;
+  const truncated = text.length > max;
+  return { text: truncated ? text.slice(0, max) + "\n\n[… 이하 생략 …]" : text, truncated };
 }
 
 /**
@@ -151,7 +178,9 @@ export function referenceMarkdownMulti(docs: ReferenceDoc[], changes: string, ro
   if (docs.length === 1) return referenceMarkdown(docs[0].fileName, changes, docs[0].text, role);
   // 파일마다 REFERENCE_MAX_CHARS 안이어도 합치면 한 번에 읽기 버겁다 — 전체 분량을 묶어 제한한다
   let budget = REFERENCE_TOTAL_MAX_CHARS;
+  // 엑셀·CSV 는 분량 제한에 넣지 않는다(SHEET_MAX_CHARS 참고) — 글 문서끼리만 나눠 쓴다
   const bodies = docs.map((d) => {
+    if (isSheetFile(d.fileName)) return d.text;
     if (budget <= 0) return "[… 전체 분량 제한으로 생략 …]";
     const body = d.text.length > budget ? `${d.text.slice(0, budget)}\n\n[… 이하 생략 …]` : d.text;
     budget -= d.text.length;

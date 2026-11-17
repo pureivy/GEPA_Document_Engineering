@@ -11,6 +11,7 @@
 import { eq } from "drizzle-orm";
 import { existsSync, mkdirSync, readFileSync, writeFileSync } from "node:fs";
 import { basename, join } from "node:path";
+import { removeSync } from "@/lib/fsSafe";
 import { getDb } from "@/lib/db/client";
 import { projects } from "@/lib/db/schema";
 import { referenceFileNames, serializeProject } from "@/lib/db/serialize";
@@ -147,4 +148,34 @@ export async function POST(req: Request, ctx: { params: Promise<{ id: string }> 
     },
     { status: 201 },
   );
+}
+
+/**
+ * DELETE ?name=<파일 이름> — 올린 참고 문서 하나를 뺀다(원본·추출 글 캐시를 지우고 base-plan.md 를 남은 파일로 다시 만든다).
+ * 프로젝트를 만든 뒤 파일을 잘못 올렸거나 바꾸고 싶을 때 처음부터 다시 만들지 않게 한다(담당자 2026-11-17: "참고자료를
+ * 셋 줘야 하는데 하나만 줬으면 뒤로 돌아가서 더 주고 싶다"). 올리기는 POST 가 이미 누적한다.
+ */
+export async function DELETE(req: Request, ctx: { params: Promise<{ id: string }> }) {
+  const { id } = await ctx.params;
+  const db = getDb();
+  const row = db.select().from(projects).where(eq(projects.id, id)).get();
+  if (!row) return jsonError(404, "Project not found");
+  const name = safeNameOf(new URL(req.url).searchParams.get("name") ?? "");
+  const names = referenceFileNames(row);
+  if (!name || !names.includes(name)) return jsonError(404, `올린 파일에 없습니다: ${name}`);
+  const dir = join(projectDir(id), "reference");
+  for (const f of [join(dir, name), join(cacheDir(id), `${name}.txt`)]) if (existsSync(f)) removeSync(f);
+  const left = names.filter((n) => n !== name);
+  const before = serializeProject(row);
+  const role = referenceRoleFor(before.kind, before.contact.참고문서용도);
+  const docs = left.map((n) => ({ fileName: n, text: cachedText(id, n) })).filter((d): d is ReferenceDoc => typeof d.text === "string");
+  if (docs.length) writeFileSync(join(dir, "base-plan.md"), referenceMarkdownMulti(docs, row.referenceChanges ?? "", role), "utf8");
+  else if (existsSync(join(dir, "base-plan.md"))) removeSync(join(dir, "base-plan.md"));
+  db.update(projects)
+    .set({ referenceName: left[0] ?? null, referenceNames: left.length ? JSON.stringify(left) : null, updatedAt: new Date().toISOString() })
+    .where(eq(projects.id, id))
+    .run();
+  const project = serializeProject(db.select().from(projects).where(eq(projects.id, id)).get()!);
+  writeFileSync(join(projectDir(id), "project.json"), JSON.stringify(project, null, 2), "utf8");
+  return Response.json({ project, removed: name });
 }

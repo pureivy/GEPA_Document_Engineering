@@ -19,6 +19,7 @@ import { priorCopyWarnings } from "../closeout/priorCopy";
 import { exportStageDoc, ensureRendered, readExportReport, readPageSvg } from "../hwpx/export";
 import type { ExportReportDTO, Stage } from "../contracts";
 import { db, schema } from "../db/client";
+import { ensureTemplateResult } from "../template/store";
 import { desc, and, eq } from "drizzle-orm";
 
 const CLOSEOUT_DOC_STAGES = new Set<string>(["result", "settlement", "submit"]);
@@ -187,6 +188,13 @@ function materialTexts(projectId: string, box: MaterialBox = "materials"): strin
 }
 
 export async function exportStage(projectId: string, stage: Stage): Promise<ExportReportDTO | null> {
+  // 양식 맞춰 쓰기에는 DocModel 이 없다 — 원본 양식 + 고칠 목록으로 만든 out.hwpx 가 결과다(lib/template/store.ts)
+  if (stage === "template") {
+    const r = await ensureTemplateResult(projectDir(projectId));
+    if (!r) return null;
+    await ensureRendered(stageDir(projectId, stage));
+    return r.report;
+  }
   const doc = readStageDoc(projectId, stage);
   if (!doc) return null;
   // 사진 대지(```photos)의 그림은 프로젝트 작업 폴더에서 읽는다

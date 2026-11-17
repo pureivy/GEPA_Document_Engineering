@@ -6,8 +6,8 @@ import type { Block, DocModel, Family, OfficialMeta } from "./docmodel/schema";
 import type { ProjectKind } from "./kinds";
 
 /** 문서·파이프라인 단계 — 화면에 탭으로 보이는 것들 */
-export type Stage = "research" | "plan" | "notice" | "press" | "official" | "report" | "ledger" | "analysis" | "result" | "settlement" | "submit";
-export const STAGES: Stage[] = ["research", "plan", "notice", "press", "official", "report", "ledger", "analysis", "result", "settlement", "submit"];
+export type Stage = "research" | "plan" | "notice" | "press" | "official" | "report" | "ledger" | "analysis" | "result" | "settlement" | "submit" | "template";
+export const STAGES: Stage[] = ["research", "plan", "notice", "press", "official", "report", "ledger", "analysis", "result", "settlement", "submit", "template"];
 export const STAGE_LABEL: Record<Stage, string> = {
   research: "조사",
   plan: "사업계획서",
@@ -20,6 +20,7 @@ export const STAGE_LABEL: Record<Stage, string> = {
   result: "결과보고서",
   settlement: "정산보고서",
   submit: "제출 공문",
+  template: "양식 맞춰 쓰기",
 };
 /**
  * 정산·결과보고(closeout)는 새 family 를 만들지 않는다 — 결과보고서는 사업계획서와 같은 내부결재

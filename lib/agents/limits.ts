@@ -38,6 +38,8 @@ export const STAGE_LIMITS: Record<RunStage, StageLimits> = {
   result: { maxTurns: 30, wallTimeoutMs: 25 * MIN, idleTimeoutMs: DEFAULT_IDLE_TIMEOUT_MS },
   settlement: { maxTurns: 25, wallTimeoutMs: 20 * MIN, idleTimeoutMs: DEFAULT_IDLE_TIMEOUT_MS },
   submit: { maxTurns: 20, wallTimeoutMs: 15 * MIN, idleTimeoutMs: DEFAULT_IDLE_TIMEOUT_MS },
+  // 양식 맞춰 쓰기: 양식 문단 목록과 참고 문서를 읽고 고칠 목록(edits.json)을 쓴다 — 긴 양식은 칸이 많다(실측 전 잠정값)
+  template: { maxTurns: 40, wallTimeoutMs: 30 * MIN, idleTimeoutMs: DEFAULT_IDLE_TIMEOUT_MS },
   review: { maxTurns: 15, wallTimeoutMs: 15 * MIN, idleTimeoutMs: DEFAULT_IDLE_TIMEOUT_MS },
 };
 
@@ -58,6 +60,8 @@ export const STAGE_ALLOWED_TOOLS: Record<RunStage, string[]> = {
   result: ["Read", "Write", "Glob", "Grep"],
   settlement: ["Read", "Write", "Glob", "Grep"],
   submit: ["Read", "Write", "Glob", "Grep"],
+  // 양식 맞춰 쓰기는 담당자가 준 자료로만 쓴다 — 조사 도구 없음. 이어서 고칠 때 edits.json 을 Edit 한다
+  template: ["Read", "Write", "Edit", "Glob", "Grep"],
   review: ["Read"],
 };
 
@@ -92,6 +96,8 @@ export const STAGE_MODELS: Record<RunStage, ModelAlias> = {
   result: "opus",
   settlement: "sonnet",
   submit: "sonnet",
+  // 원본 문장을 9월 자료와 대조해 칸마다 고치는 판단이 많다 — VS 에서 담당자가 쓸 만하다고 한 결과도 opus 였다
+  template: "opus",
   review: "sonnet",
 };
 

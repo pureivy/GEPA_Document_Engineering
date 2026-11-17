@@ -2,7 +2,7 @@ import { describe, it, expect } from "vitest";
 import { readFileSync, existsSync } from "node:fs";
 import { spawnSync } from "node:child_process";
 import { join } from "node:path";
-import { extractReferenceText, hwpxText, docxText, referenceExtension, referenceMarkdown } from "../../lib/reference/extract";
+import { extractReferenceText, hwpxText, docxText, referenceExtension, referenceMarkdown, referenceMarkdownMulti, REFERENCE_MAX_CHARS, REFERENCE_TOTAL_MAX_CHARS } from "../../lib/reference/extract";
 import { DEFAULT_REFERENCE_ROLE, referenceRoleFor } from "../../lib/contracts";
 
 const planHwpx = join(process.cwd(), "templates", "plan", "reference.hwpx");
@@ -12,7 +12,8 @@ describe("reference document extraction", () => {
   it("recognises the supported extensions (case-insensitive)", () => {
     expect(referenceExtension("계획서.HWP")).toBe(".hwp");
     expect(referenceExtension("a.pdf")).toBe(".pdf");
-    expect(referenceExtension("a.xlsx")).toBeNull();
+    expect(referenceExtension("a.xlsx")).toBe(".xlsx");
+    expect(referenceExtension("a.hwt")).toBeNull();
   });
   it("reads every section of an HWPX 사업계획서", () => {
     const text = hwpxText(new Uint8Array(readFileSync(planHwpx)));
@@ -40,8 +41,31 @@ describe("reference document extraction", () => {
     expect(r.text).toContain("범정부");
   });
   it("rejects unsupported files and empty documents", () => {
-    expect(() => extractReferenceText("a.xlsx", new Uint8Array())).toThrow(/지원하지 않는/);
+    expect(() => extractReferenceText("a.hwt", new Uint8Array())).toThrow(/지원하지 않는/);
     expect(() => extractReferenceText("a.txt", new Uint8Array())).toThrow(/읽지 못/);
+  });
+  it("엑셀·CSV 수치 자료를 표로 읽는다(양식 맞춰 쓰기의 월별 현황, 2026-11-17)", () => {
+    const csv = new TextEncoder().encode("구분,10월,11월\n지원 기업,12,15\n");
+    const { text } = extractReferenceText("월별 현황.csv", csv);
+    expect(text).toContain("지원 기업");
+    expect(text).toContain("15");
+    // 은행·ERP 의 CP949 CSV — 글자가 깨지지 않아야 한다
+    const cp949 = new Uint8Array([0xb1, 0xb8, 0xba, 0xd0, 0x2c, 0x31, 0x0a, 0xc7, 0xd5, 0xb0, 0xe8, 0x2c, 0x32, 0x0a]); // 구분,1 / 합계,2
+    expect(extractReferenceText("a.csv", cp949).text).toContain("합계");
+  });
+  it("엑셀·CSV 는 길어도 자르지 않는다 — 한 행만 빠져도 합계가 틀어진다(월별 현황 390행이 247행에서 잘림, 2026-11-17)", () => {
+    // 행 수는 시트 변환기의 울타리(closeout/sheet.ts SHEET_MAX_ROWS 3000) 안쪽, 글자 수는 8만 자를 넘게
+    const rows = Array.from({ length: 2500 }, (_, i) => `${i + 1},세부사업 이름이 긴 지원사업 사업${i + 1},${(i + 1) * 1000}`);
+    const csv = new TextEncoder().encode(["연번,사업명,예산", ...rows].join(String.fromCharCode(10)));
+    const r = extractReferenceText("현황.csv", csv);
+    expect(r.truncated).toBe(false);
+    expect(r.text.length).toBeGreaterThan(REFERENCE_MAX_CHARS);
+    expect(r.text).toContain("사업2500");
+    // 여러 파일을 합칠 때도 엑셀은 분량 제한에 걸리지 않는다
+    const md = referenceMarkdownMulti([{ fileName: "양식.hwpx", text: "가".repeat(REFERENCE_TOTAL_MAX_CHARS) }, { fileName: "현황.csv", text: r.text }], "", "근거자료");
+    expect(md).toContain("사업2500");
+    // 글 문서는 지금처럼 자른다
+    expect(extractReferenceText("긴글.txt", new TextEncoder().encode("가".repeat(REFERENCE_MAX_CHARS + 10))).truncated).toBe(true);
   });
   it("referenceMarkdown carries the change notes and the body", () => {
     const md = referenceMarkdown("plan.hwp", "2027년으로 변경", "본문");
