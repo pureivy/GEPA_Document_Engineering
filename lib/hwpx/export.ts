@@ -13,6 +13,7 @@ import { embedPreview } from "./preview";
 import { buildLaidOut } from "./keepPass";
 import { hangulLayout, pngPageSvg } from "./hangul";
 import { pageSplitWarnings } from "./pageSplit";
+import { onePageWarnings } from "./onePage";
 import type { DocModel } from "../docmodel/schema";
 import type { ExportReportDTO } from "../contracts";
 
@@ -54,6 +55,8 @@ export async function exportStageDoc(stageDir: string, doc: DocModel, opts: Buil
       svgs = r.svgs;
       // 한글이 나눈 쪽으로 장·절이 애매하게 쪼개졌는지(pageSplit.ts) — 한글이 없으면 쪽 글이 없어 건너뛴다
       if (r.texts) warnings.push(...pageSplitWarnings(r.texts));
+      // 원페이지(간략) 업무보고가 한 쪽을 넘겼는지(onePage.ts) — 뒷장 참고는 세지 않는다
+      if (r.texts) warnings.push(...onePageWarnings(doc, r.texts));
       const pv = await embedPreview(built.bytes, svgs[0]);
       bytes = pv.bytes;
       if (!pv.embedded && pv.error) warnings.push(`미리보기 이미지 생성 실패: ${pv.error}`);

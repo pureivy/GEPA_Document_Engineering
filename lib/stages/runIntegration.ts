@@ -54,13 +54,13 @@ export interface StartStageRunOptions {
 }
 
 /**
- * 에이전트가 고칠 수 있는 내보내기 경고 — 편람 표기·문장(참고 등급 제외), 장·절 쪽 나눔, 원장과 다른 금액.
+ * 에이전트가 고칠 수 있는 내보내기 경고 — 편람 표기·문장(참고 등급 제외), 장·절 쪽 나눔, 원페이지 한 장 넘침, 원장과 다른 금액.
  * 렌더 실패·미리보기 같은 시스템 경고는 에이전트가 고칠 수 없어 뺀다.
  */
 // 참고 등급 가운데 '항목 하나'는 담당자가 남은 경고로 손을 대야 했다 — ㅇ 아래 `-` 하나는 이어 쓸지·뺄지 판단이 필요해
 // 자동 정리(govNormalize 는 `-` 아래 `·` 하나만 잇는다)가 아니라 다듬기에 넘긴다(결과보고서 ⑥ 맞춤형, 2026-10-22)
 export function fixableWarnings(warnings: string[]): string[] {
-  return warnings.filter((w) => (w.startsWith("[편람·") && !w.startsWith("[편람·참고")) || w.startsWith("[편람·참고·항목 하나]") || w.startsWith("[쪽 나눔]") || w.startsWith("[정산·금액 대조]") || w.startsWith("[전년 문장]"));
+  return warnings.filter((w) => (w.startsWith("[편람·") && !w.startsWith("[편람·참고")) || w.startsWith("[편람·참고·항목 하나]") || w.startsWith("[쪽 나눔]") || w.startsWith("[한 장 넘침]") || w.startsWith("[정산·금액 대조]") || w.startsWith("[전년 문장]"));
 }
 
 /** 자동 다듬기 지시 — 경고 목록 + 대원칙(고치려고 필요한 내용을 빼지 않는다) */

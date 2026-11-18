@@ -3,7 +3,7 @@ import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
 import { FolderOpen, Plus, RefreshCw, Trash2, Upload } from "lucide-react";
-import { DEFAULT_REFERENCE_ROLE, FUNDING_TYPES, REFERENCE_CHANGES_LABEL, REFERENCE_DOC_TITLE, REFERENCE_ROLES, REPORT_FORMS, type FundingType, type ProjectDTO, type ReferenceRole, type ReportForm } from "@/lib/contracts";
+import { DEFAULT_REFERENCE_ROLE, FUNDING_TYPES, REFERENCE_CHANGES_LABEL, REFERENCE_DOC_TITLE, REFERENCE_ROLES, type FundingType, type ProjectDTO, type ReferenceRole, type ReportForm } from "@/lib/contracts";
 import { OfficialMetaSchema } from "@/lib/docmodel/schema";
 import { approvalLineFor, approvalLineUpTo, DEFAULT_DELEGATION, DELEGATION_LEVELS, findUnit, senderTitleFor, type DelegationLevel } from "@/lib/org";
 import { api, errorMessage, type NewProjectInput } from "@/lib/client/api";
@@ -16,13 +16,23 @@ import { KIND_LABEL, PROJECT_KINDS, type ProjectKind } from "@/lib/kinds";
 import { contactDefaults, PREF_PLAN_RESEARCH, saveContactPref, useBoolPref, useContactPref, writePref } from "@/lib/client/prefs";
 
 /** 종류별 한 줄 설명 — 라디오 옆에 그대로 보인다 */
-/** 업무보고 형태 선택지의 이름과 설명 */
-const REPORT_FORM_LABEL: Record<ReportForm, string> = { 간략: "간략 보고(1~2쪽)", 책자: "책자형(표지·보고순서·간지)", 상급기관: "상급기관 보고(책자형·여섯 장)", 자동: "자동" };
-const REPORT_FORM_HINT: Record<ReportForm, string> = {
-  간략: "제목 띠와 □·ㅇ·- 개조식으로 한두 쪽에 정리합니다. 내부 보고·계획 보고에 씁니다.",
-  책자: "도지사·도의회 업무보고 양식입니다. 표지·보고순서·간지와 절 칩이 들어가고, 장은 참고본대로 일반현황·추진성과·주요사업 세 장입니다.",
-  상급기관: "경상북도에 올리는 상급기관용 책자형입니다. 일반현황·도정방향 정합성·추진성과·여건 및 방향·중점 추진과제·협업·건의사항 여섯 장으로 씁니다.",
-  자동: "지시 내용을 보고 에이전트가 간략·책자형 중에서 고릅니다.",
+/**
+ * 업무보고 형태 — 「원페이지(간략) / 자동 + 우리 양식 중 골라 참조」 두 갈래(담당자 2026-11-18).
+ * 예전 네 갈래(간략·책자·상급기관·자동)는 저장값으로 그대로 남는다: 원페이지 = 간략, 자동 + 양식 = 그 양식(책자·상급기관),
+ * 자동 + 선택 안 함 = 자동. 그래서 옛 프로젝트도 프롬프트가 그대로 읽는다.
+ * 「세 장·여섯 장」은 장(章) 수인데 쪽수로 읽혀 혼동됐다 — 이름에서 뺐다.
+ */
+type ReportMode = "원페이지" | "자동";
+const REPORT_MODE_LABEL: Record<ReportMode, string> = { 원페이지: "원페이지(간략)", 자동: "자동" };
+/** 참조 양식 — 실제 문서가 근거로 있는 것만 올린다(개인 취향이 아니라 기관 표준). 실문서가 들어오면 늘린다 */
+type ReportTemplate = Exclude<ReportForm, "간략" | "자동">;
+const REPORT_TEMPLATES: { form: ReportTemplate; label: string; hint: string }[] = [
+  { form: "책자", label: "도지사·도의회 업무보고", hint: "표지·보고순서·간지를 갖춘 책자형 — 장 구성: 일반현황 · 추진성과 · 주요사업" },
+  { form: "상급기관", label: "경상북도 상급기관 보고", hint: "책자형 — 장 구성: 일반현황 · 도정방향 정합성 · 추진성과 · 여건 및 방향 · 중점 추진과제 · 협업·건의사항" },
+];
+const REPORT_MODE_HINT: Record<ReportMode, string> = {
+  원페이지: "제목 띠와 □·ㅇ·- 개조식으로 본문을 한 쪽에 끝냅니다. 길지만 근거로 필요한 기준표·명세는 ☞ 참고로 뒷장에 붙입니다.",
+  자동: "참조 양식을 고르면 그 양식의 장 구성을 따르고, 고르지 않으면 지시 내용을 보고 에이전트가 원페이지·책자형 중에서 정합니다.",
 };
 
 /** 결과·정산 사업 구분 — 고르면 만들 단계가 달라진다(lib/kinds.ts stagesOf) */
@@ -35,7 +45,7 @@ const FUNDING_HINT: Record<FundingType, string> = {
 const KIND_HINT: Record<ProjectKind, string> = {
   program: "조사 → 사업계획서 → 공고문 → 보도자료를 차례로 만듭니다.",
   official: "별지 제1호 기안문 한 건을 만듭니다.",
-  report: "업무보고를 만듭니다 — 한두 쪽 간략 보고 또는 표지·보고순서·간지를 갖춘 책자형.",
+  report: "업무보고를 만듭니다 — 한 쪽짜리 원페이지(간략) 보고 또는 진흥원 양식을 참조한 책자형.",
   // 업무보고처럼 한 줄에 들어가게 짧게 둔다(2026-11-16)
   closeout: "사업 종료 후 정산자료 → 성과 분석 → 결과보고서를 만들고, 수탁사업은 정산보고서 → 공문까지 만듭니다.",
   template: "한글 파일(양식)의 모양은 그대로 두고 내용만 고칩니다 — 첫 파일이 양식, 나머지는 참고 문서입니다.",
@@ -108,8 +118,10 @@ function NewProjectDialog({ latest, onClose, onCreated }: { latest: ProjectDTO |
   const [delegation, setDelegation] = useState<DelegationLevel>(DEFAULT_DELEGATION);
   // 공개구분은 되돌리기 어려운 선택이다 — 비공개 문서를 공개로 내보내면 주워 담을 수 없다.
   const [disclosure, setDisclosure] = useState<DisclosureKind>(DISCLOSURE_KINDS[0]);
-  // 업무보고 형태 — 기본은 간략 보고(한 장짜리가 가장 많이 쓰인다, 담당자 2026-11-09)
-  const [reportForm, setReportForm] = useState<ReportForm>(REPORT_FORMS[0]);
+  // 업무보고 형태 — 기본은 원페이지(한 장짜리가 가장 많이 쓰인다, 담당자 2026-11-09). 자동이면 참조 양식을 고를 수 있다
+  const [reportMode, setReportMode] = useState<ReportMode>("원페이지");
+  const [reportTemplate, setReportTemplate] = useState<ReportTemplate | "">("");
+  const reportForm: ReportForm = reportMode === "원페이지" ? "간략" : reportTemplate || "자동";
   const [funding, setFunding] = useState<FundingType>("수탁");
   const planResearch = useBoolPref(PREF_PLAN_RESEARCH, false);
   const [phase, setPhase] = useState<"" | "create" | "upload">("");
@@ -359,20 +371,48 @@ function NewProjectDialog({ latest, onClose, onCreated }: { latest: ProjectDTO |
           />
         </Field>
         {kind === "report" && (
-          <Field label="보고 형태" id="reportForm" required hint={REPORT_FORM_HINT[reportForm]}>
-            <div className="flex flex-wrap gap-2">
-              {REPORT_FORMS.map((f) => (
+          <Field label="보고 형태" id="reportForm" required hint={REPORT_MODE_HINT[reportMode]}>
+            <div className="flex flex-wrap items-center gap-2">
+              {(["원페이지", "자동"] as const).map((m) => (
                 <label
-                  key={f}
+                  key={m}
                   className={`flex cursor-pointer items-center gap-1.5 rounded border px-3 py-1.5 text-xs ${
-                    reportForm === f ? "border-sky-500 bg-sky-50 text-sky-900" : "border-slate-300 text-slate-700 hover:bg-slate-50"
+                    reportMode === m ? "border-sky-500 bg-sky-50 text-sky-900" : "border-slate-300 text-slate-700 hover:bg-slate-50"
                   }`}
                 >
-                  <input type="radio" name="reportForm" className="h-3.5 w-3.5" checked={reportForm === f} onChange={() => setReportForm(f)} />
-                  <span className="font-semibold">{REPORT_FORM_LABEL[f]}</span>
+                  <input type="radio" name="reportForm" className="h-3.5 w-3.5" checked={reportMode === m} onChange={() => setReportMode(m)} />
+                  <span className="font-semibold">{REPORT_MODE_LABEL[m]}</span>
                 </label>
               ))}
+              {reportMode === "자동" && (
+                <Select
+                  id="reportTemplate"
+                  aria-label="참조 양식"
+                  className="w-auto text-xs"
+                  value={reportTemplate}
+                  onChange={(e) => setReportTemplate(e.target.value as ReportTemplate | "")}
+                >
+                  <option value="">참조 양식: 선택 안 함(에이전트가 정함)</option>
+                  {REPORT_TEMPLATES.map((t) => (
+                    <option key={t.form} value={t.form}>
+                      참조 양식: {t.label}
+                    </option>
+                  ))}
+                </Select>
+              )}
             </div>
+            {reportMode === "자동" && reportTemplate && (
+              <p className="mt-1 text-[11px] text-slate-500">{REPORT_TEMPLATES.find((t) => t.form === reportTemplate)?.hint}</p>
+            )}
+            {reportMode === "자동" && (
+              <p className="mt-1 text-[11px] text-slate-500">
+                가지고 있는 한글 양식에 그대로 써야 하면{" "}
+                <button type="button" className="text-sky-700 underline" onClick={() => set("kind", "template")}>
+                  양식 맞춰 쓰기
+                </button>
+                로 만드세요 — 양식 모양은 두고 글자만 고칩니다.
+              </p>
+            )}
           </Field>
         )}
         {isOfficial ? (

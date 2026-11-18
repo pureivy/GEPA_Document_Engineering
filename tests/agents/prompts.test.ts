@@ -288,7 +288,7 @@ describe("report 단계 프롬프트", () => {
 
   /** 2026-11-09: 1.5쪽 내용의 계획 보고가 표지·목차·간지·빈 뒷면으로 12쪽이 됐다 */
   it("보고형태가 없으면 쓰기 전에 간략·책자를 고르게 하고, 애매하면 간략이다", () => {
-    expect(p.prompt).toContain("간략인가, 책자인가");
+    expect(p.prompt).toContain("간략(원페이지)인가, 책자인가");
     expect(p.prompt).toContain("애매하면 **간략**");
     expect(p.prompt).toContain("형태: 간략");
     expect(p.prompt).toContain("형태: 간략, 1쪽");
@@ -297,12 +297,19 @@ describe("report 단계 프롬프트", () => {
   it("새 프로젝트 화면에서 고른 보고형태를 싣고 그대로 따르게 한다", () => {
     const 간략 = buildStagePrompt({ stage: "report", project: { ...업무보고, kind: "report", contact: { ...업무보고.contact, 보고형태: "간략" } }, workspaceDir: ws });
     expect(간략.prompt).toMatch(/^보고형태: 간략$/m);
-    expect(간략.prompt).toContain("형태: 간략 보고로 정해져 있다");
-    expect(간략.prompt).not.toContain("간략인가, 책자인가");
+    expect(간략.prompt).toContain("형태: 원페이지(간략) 보고로 정해져 있다");
+    // 원페이지 = 본문 한 쪽(2026-11-18). 넘치면 [한 장 넘침] 경고로 되돌아온다
+    expect(간략.prompt).toContain("본문을 한 쪽에 끝낸다");
+    expect(간략.prompt).toContain("[한 장 넘침]");
+    expect(간략.prompt).not.toContain("1~2쪽");
+    expect(간략.prompt).not.toContain("책자인가");
     const 책자 = buildStagePrompt({ stage: "report", project: { ...업무보고, kind: "report", contact: { ...업무보고.contact, 보고형태: "책자" } }, workspaceDir: ws });
     expect(책자.prompt).toContain("형태: 책자형으로 정해져 있다");
     const 자동 = buildStagePrompt({ stage: "report", project: { ...업무보고, kind: "report", contact: { ...업무보고.contact, 보고형태: "자동" } }, workspaceDir: ws });
-    expect(자동.prompt).toContain("간략인가, 책자인가");
+    expect(자동.prompt).toContain("간략(원페이지)인가, 책자인가");
+    expect(자동.prompt).toContain("참조 양식을 고르지 않았다");
+    // 자동 + 참조 양식을 고르면 그 양식 이름이 실린다(화면 「자동 + 우리 양식 중 골라 참조」, 2026-11-18)
+    expect(책자.prompt).toContain("참조 양식 「도지사·도의회 업무보고」");
   });
 
   /** 2026-11-16 C안: 기본 책자형은 참고본 세 장, 「상급기관 보고」를 고르면 여섯 장 */

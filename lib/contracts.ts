@@ -137,8 +137,8 @@ export interface ProjectDTO {
     /** 공문(official) 전용 — 붙인 참고 문서의 용도. 값이 있으면 reference 도 있다 */
     참고문서용도?: ReferenceRole;
     /**
-     * 업무보고(report) 전용 — 새 프로젝트 화면에서 고른 문서 형태. `간략` = 한두 쪽 내부 보고,
-     * `책자` = 표지·보고순서·간지를 갖춘 주요업무보고, `자동` = 지시를 보고 에이전트가 고른다.
+     * 업무보고(report) 전용 — 새 프로젝트 화면에서 고른 문서 형태. `간략` = 원페이지(본문 한 쪽) 보고,
+     * `책자`·`상급기관` = 자동 + 그 참조 양식, `자동` = 지시를 보고 에이전트가 고른다.
      * ReportMetaSchema.형태(책자|간략)와 짝이다 — `자동`은 화면에만 있는 값이다.
      */
     보고형태?: ReportForm;
@@ -223,6 +223,10 @@ export interface ExportReportDTO {
 export const FUNDING_TYPES = ["수탁", "자체"] as const;
 export type FundingType = (typeof FUNDING_TYPES)[number];
 
-/** 상급기관: 책자형이되 장을 여섯으로(경상북도에 올리는 상급기관 보고) — 기본 책자형은 참고본대로 세 장(2026-11-16 C안) */
+/**
+ * 업무보고 형태의 저장값. 화면은 「원페이지(간략) / 자동 + 참조 양식」 두 갈래다(담당자 2026-11-18):
+ * 원페이지 = `간략`, 자동 + 참조 양식 = 그 양식(`책자` 도지사·도의회 업무보고, `상급기관` 경상북도 상급기관 보고),
+ * 자동 + 선택 안 함 = `자동`. 상급기관은 책자형이되 장을 여섯으로(2026-11-16 C안).
+ */
 export const REPORT_FORMS = ["간략", "책자", "상급기관", "자동"] as const;
 export type ReportForm = (typeof REPORT_FORMS)[number];
