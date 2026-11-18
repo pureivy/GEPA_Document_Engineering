@@ -998,7 +998,7 @@ function ladderPara(ctx: WriterContext, b: ParaBlock): XmlNode {
     runs = [
       ...(spaces ? [{ charPr: mark, text: spaces }] : []),
       { charPr: mark, text: `${BULLET1_PUA} ` },
-      ...ctx.runsFor(b.inlines, s.base, s.charPr),
+      ...ctx.runsFor(shrinkAsides(b.inlines, s.base.pt - ASIDE_SHRINK_PT), s.base, s.charPr),
     ];
   } else if (role === "subHeading") {
     const chip = subHeadingChip(ctx);
@@ -1012,7 +1012,7 @@ function ladderPara(ctx: WriterContext, b: ParaBlock): XmlNode {
     ];
     if (chip) vertsize = Math.max(vertsize, SUBHEADING_CHIP_HEIGHT);
   } else {
-    runs = ctx.runsFor(prefixed(spaces + (glyph ? `${glyph} ` : ""), b.inlines), s.base, s.charPr);
+    runs = ctx.runsFor(prefixed(spaces + (glyph ? `${glyph} ` : ""), shrinkAsides(b.inlines, s.base.pt - ASIDE_SHRINK_PT)), s.base, s.charPr);
   }
   return ctx.para({
     paraPr: s.paraPr,

@@ -5,7 +5,8 @@
  * outcome are done here; judgement calls stay with the reviewer / lint warnings.
  *
  * Text (DSL) fixes (every line, fenced box/flow blocks included):
- *   - 물결표 앞뒤 공백 제거:           `4. 23. ~ 6. 15.` → `4. 23.~6. 15.`
+ *   - 기간(날짜·시각)의 물결표는 앞뒤 한 칸: `2026. 11. 11.(수)~12. 31.(목)` → `2026. 11. 11.(수) ~ 12. 31.(목)`, `13:00~15:00` → `13:00 ~ 15:00`
+ *     (담당자 2026-11-18: "기간은 항상 이렇게" — 편람의 「앞뒤 붙임」보다 앞선다). 수 범위(`1~2개사`)는 붙인다.
  *   - 날짜 0 제거:                      `2026. 07. 01.` → `2026. 7. 1.`
  *   - 요일 앞 마침표 보충:             `2026. 7. 14(화)` → `2026. 7. 14.(화)`
  *   - 붙은 날짜 띄우기:                 `2026.7.14.` → `2026. 7. 14.`
@@ -31,6 +32,23 @@ function countReplace(text: string, re: RegExp, repl: string | ((...m: string[])
     return typeof repl === "string" ? (args[0] as string).replace(re, repl) : repl(...(args as string[]));
   });
   if (n) changes.push({ rule, count: n });
+  return out;
+}
+
+/** 기간의 앞쪽 끝(날짜 마침표·요일 괄호·시각) — 물결표 뒤가 숫자면 기간이다 */
+const OTHER_TILDE = /(\S)( *)~( *)(?=\S)/g;
+
+/** 물결표 — 기간은 「 ~ 」, 그 밖(수 범위)은 붙인다. 실제로 바뀐 곳만 센다 */
+export function normalizeTilde(t: string, changes: NormalizeChange[]): string {
+  let n = 0;
+  const out = t.replace(OTHER_TILDE, (m: string, a: string, sp1: string, sp2: string, at: number, whole: string) => {
+    const head = whole.slice(Math.max(0, at - 4), at + 1);
+    const isPeriod = /(\d\.|\([월화수목금토일]\)|\d:\d{2})$/.test(head) && /^[\d'’]/.test(whole.slice(at + m.length));
+    const want = isPeriod ? `${a} ~ ` : `${a}~`;
+    if (want !== m) n++;
+    return want;
+  });
+  if (n) changes.push({ rule: "물결표", count: n });
   return out;
 }
 
@@ -181,8 +199,7 @@ function normalizeLine(line: string, changes: NormalizeChange[]): string {
   t = countReplace(t, /(?<=(?:^|[~\s(])\d{1,2}\. )0(\d)(?=[.(\s]|$)/g, (_m, d) => d, "날짜 0 생략", changes);
   // 요일 앞 마침표: 2026. 7. 14(화) → 2026. 7. 14.(화)
   t = countReplace(t, /((?:19|20)\d{2}|’\d{2})\. (\d{1,2})\. (\d{1,2})(\(\S)/g, (_m, y, mo, d, rest) => `${y}. ${mo}. ${d}.${rest}`, "날짜 마침표", changes);
-  // 물결표: 앞뒤 공백 제거 (` ~ `, ` ~`, `~ `)
-  t = countReplace(t, /(\S)(?: ~ | ~|~ )(?=\S)/g, (_m, a) => `${a}~`, "물결표", changes);
+  t = normalizeTilde(t, changes);
   // 쌍점: 앞 공백 제거 (라벨: 값) — but not inside times like 18 : 00 (rare) or URLs
   t = countReplace(t, /([가-힣A-Za-z)\]]) :(?=\s)/g, (_m, a) => `${a}:`, "쌍점", changes);
   // 끝. 앞 두 타

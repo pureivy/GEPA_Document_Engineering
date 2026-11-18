@@ -519,8 +519,35 @@ async function fillTextPages(doc: DocModel, opts: BuildOptions, built: BuildResu
       base = (await layoutOf(cur.bytes)) ?? base;
     }
   }
+  // ③ 한 장 보고 채우기 — 원페이지(간략) 업무보고의 본문 쪽(첫 쪽)은 아래가 비면 줄 간격을 넓혀 채운다.
+  // 위 ①은 다음 내용이 넘어간 쪽만 보므로 한 쪽으로 끝나는 문서(또는 뒤가 「참고」 새 쪽)는 비운 채 남았다.
+  // 담당자 2026-11-18: "아래 4~5cm 비어 있다 → 남는 공간만큼 줄 간격을 넓혀 채우는 것을 보고서 작성할 때 기본으로".
+  if (doc.family === "report" && doc.meta.형태 === "간략") {
+    const ks: number[] = base.pos.map((q, k) => (q.page === 0 ? k : -1)).filter((k) => k >= 0);
+    const last = ks[ks.length - 1];
+    const next = last + 1;
+    const ids = ks.filter((k) => !base.pos[k].hasTable).map((k) => String(base.top[k].attrs.id));
+    const q = last === undefined ? undefined : base.pos[last];
+    const endsPage = next >= base.top.length || explicit.has(next);
+    const bottom = q ? (Number.isFinite(q.bottom) ? q.bottom : q.endBottom) : NaN;
+    if (q && ids.length && endsPage && q.endPage === 0 && Number.isFinite(bottom) && base.body.bottom - bottom >= TEXT_FILL_MIN_ROOM && ids.every((id) => !boost[id])) {
+      const found = await search(ids, 1, BRIEF_FILL_MAX, (lay) => {
+        const e = lay.pos[last];
+        if (!e || e.page !== 0 || e.endPage !== 0) return false;
+        const b = Number.isFinite(e.bottom) ? e.bottom : e.endBottom;
+        return b <= lay.body.bottom - TEXT_FILL_SAFETY && (next >= lay.pos.length || lay.pos[next].page === 1);
+      });
+      if (found && found.factor !== 1) {
+        for (const id of ids) boost[id] = found.factor;
+        cur = found.built;
+      }
+    }
+  }
   return { built: cur, boost };
 }
+
+/** 한 장 보고 채우기의 줄 간격 배율 상한 — 160% 줄 간격이 약 210%까지(그 이상은 줄 사이가 벌어져 보인다) */
+const BRIEF_FILL_MAX = 1.3;
 
 const PX = 75; // rhwp 좌표(96 dpi 픽셀) 1 = 75 HWPUNIT
 

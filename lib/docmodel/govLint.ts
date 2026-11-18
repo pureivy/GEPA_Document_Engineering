@@ -26,7 +26,6 @@ const DATE_NO_SPACE = /(?<![\d.])(\d{4}|’\d{2})\.(\d{1,2})\.(\d{1,2})\.?(?![\d
 const DATE_NO_TRAILING_PERIOD = /(?<![\d.])(\d{4}|’\d{2})\. (\d{1,2})\. (\d{1,2})(?=\s*[(\s,~]|$)/g;
 const DATE_ZERO_PADDED = /(?<![\d.])(\d{4}|’\d{2})\. 0(\d)\. |(?<![\d.])(\d{4}|’\d{2})\. (\d{1,2})\. 0(\d)\./g;
 const COLON_SPACED = /(\S) :(?=\s)/g;
-const TILDE_SPACED = /(\S) ~ (?=\S)|(\S) ~(?=\S)|(\S)~ (?=\S)/g;
 const KOREAN_TIME = /(오전|오후)\s?\d{1,2}시(\s?\d{1,2}분)?/g;
 // "지원금 3,677,110원" 의 '금'은 금액 표기가 아니다 — 낱말 첫머리의 '금'만 본다(2026-10-06 오탐)
 const AMOUNT_WON = /(?<![가-힣])금\s?\d{1,3}(,\d{3})+원(?!\()/g;
@@ -63,7 +62,13 @@ function checkText(text: string, blockId: string | undefined, out: GovLintIssue[
   }
   for (const m of text.matchAll(DATE_ZERO_PADDED)) out.push({ blockId, rule: "날짜 0 생략", severity: "warn", message: `날짜 "${m[0].trim()}"의 월·일 앞 0은 쓰지 않는다` });
   for (const m of text.matchAll(COLON_SPACED)) out.push({ blockId, rule: "쌍점", severity: "warn", message: `"${m[0]}" — 쌍점(:)은 앞말에 붙이고 뒷말과 띄운다`, fix: `${m[1]}: ` });
-  for (const m of text.matchAll(TILDE_SPACED)) out.push({ blockId, rule: "물결표", severity: "warn", message: `"${m[0].trim()}" — 물결표(~)는 앞말·뒷말에 붙여 쓴다` });
+  // 물결표 — 기간(날짜·시각)은 앞뒤 한 칸 「11. 11.(수) ~ 12. 31.(목)」(담당자 2026-11-18), 수 범위는 붙인다「1~2개사」
+  for (const m of text.matchAll(/(\S)( *)~( *)(?=(\S))/g)) {
+    const at = m.index ?? 0;
+    const isPeriod = /(\d\.|\([월화수목금토일]\)|\d:\d{2})$/.test(text.slice(Math.max(0, at - 4), at + 1)) && /[\d'’]/.test(m[4]);
+    const want = isPeriod ? `${m[1]} ~ ` : `${m[1]}~`;
+    if (m[0] !== want) out.push({ blockId, rule: "물결표", severity: "warn", message: isPeriod ? `"${m[0].trim()}" — 기간의 물결표는 앞뒤를 한 칸 띄운다(예: 11. 11.(수) ~ 12. 31.(목), 13:00 ~ 15:00)` : `"${m[0].trim()}" — 수 범위의 물결표(~)는 앞말·뒷말에 붙여 쓴다(예: 1~2개사)` });
+  }
   for (const m of text.matchAll(KOREAN_TIME)) out.push({ blockId, rule: "시간 표기", severity: "warn", message: `"${m[0]}" — 시간은 24시각제 숫자와 쌍점으로 쓴다(예: 15:20)` });
   for (const m of text.matchAll(AMOUNT_WON)) out.push({ blockId, rule: "금액 한글 병기", severity: "warn", message: `"${m[0]}" — 금액은 숫자 뒤 괄호에 한글을 병기한다(예: 금113,560원(금일십일만삼천오백육십원))` });
   const arrows = text.match(ARROW)?.length ?? 0;
