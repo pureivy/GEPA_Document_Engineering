@@ -13,6 +13,7 @@
  * build.ts:65 가 구역에 pageNum 이 없을 때 그것을 첫 문단에 꽂는다(plan·press·official 과 같다).
  *
  */
+import { ASIDE_SHRINK_PT, shrinkAsides } from "./asides";
 import { child, childrenNamed, clone, el, findAll, isNode, type XmlNode } from "../xml";
 import { cellAt, cloneFragment, loadGeometry, setCellText, setShapeText } from "../geometry";
 import { pictureFrom, pictureSize } from "../emit/picture";
@@ -382,7 +383,8 @@ function briefTitle(ctx: WriterContext, m: ReportMeta, inlines: Inline[]): XmlNo
   const sub = [briefDate(m.보고일, ctx.now), m.부서].map((s) => s.trim()).filter(Boolean).join(" ");
   if (sub) {
     const c: CharSpec = { font: "body", pt: 12 };
-    out.push(ctx.para({ paraPr: ctx.reg.paraPr({ align: "RIGHT", lineSpacing: 130, prev: 200 }), runs: ctx.runsFor([{ t: "text", text: sub }], c, ctx.reg.charPr(c)), vertsize: 1200, lineSpacing: 130 }));
+    // 제목 띠·날짜 줄·요지 상자 사이를 띄운다(담당자 2026-11-18: "제목 날짜 요지 그 부분 줄간격을 좀 더") — 한 장이 넘치면 [한 장 넘침] 으로 글을 줄인다
+    out.push(ctx.para({ paraPr: ctx.reg.paraPr({ align: "RIGHT", lineSpacing: 130, prev: 900, next: 1400 }), runs: ctx.runsFor([{ t: "text", text: sub }], c, ctx.reg.charPr(c)), vertsize: 1200, lineSpacing: 130 }));
   }
   return out;
 }
@@ -509,7 +511,8 @@ function briefPara(ctx: WriterContext, b: ParaBlock, keepWithNext = false): XmlN
   const hanging = prefix ? Math.round(ctx.textWidth(prefix, pt)) : 0;
   return ctx.para({
     paraPr: ctx.reg.paraPr({ align: "JUSTIFY", lineSpacing: 160, prev, ...(hanging ? { hanging } : {}), ...(keepWithNext ? { keepWithNext: true } : {}) }),
-    runs: ctx.runsFor(prefixed(prefix, b.inlines), c, ctx.reg.charPr(c)),
+    // 앞말을 설명하는 괄호는 2pt 작게(asides.ts, 담당자 2026-11-18)
+    runs: ctx.runsFor(prefixed(prefix, shrinkAsides(b.inlines, pt - ASIDE_SHRINK_PT)), c, ctx.reg.charPr(c)),
     vertsize: pt * 100,
     lineSpacing: 160,
     forcePageBreak: b.pageBreakBefore,
