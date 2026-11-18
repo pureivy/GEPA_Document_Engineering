@@ -307,9 +307,18 @@ describe("report 단계 프롬프트", () => {
     expect(책자.prompt).toContain("형태: 책자형으로 정해져 있다");
     const 자동 = buildStagePrompt({ stage: "report", project: { ...업무보고, kind: "report", contact: { ...업무보고.contact, 보고형태: "자동" } }, workspaceDir: ws });
     expect(자동.prompt).toContain("간략(원페이지)인가, 책자인가");
-    expect(자동.prompt).toContain("참조 양식을 고르지 않았다");
-    // 자동 + 참조 양식을 고르면 그 양식 이름이 실린다(화면 「자동 + 우리 양식 중 골라 참조」, 2026-11-18)
-    expect(책자.prompt).toContain("참조 양식 「업무보고」");
+    expect(자동.prompt).toContain("본보기 모음이 있으면");
+  });
+
+  /** 2026-11-18: 고정 참조 양식 대신 진흥원 실제 보고서 본보기 모음에서 골라 따른다 */
+  it("본보기 모음이 있으면 catalog 를 먼저 읽고 고르게 하되, 수치·문장은 가져오지 않게 한다", () => {
+    const 자동 = buildStagePrompt({ stage: "report", project: { ...업무보고, kind: "report", contact: { ...업무보고.contact, 보고형태: "자동" } }, workspaceDir: ws, examplesDir: "/x/report-examples" });
+    expect(자동.prompt).toContain("/x/report-examples/catalog.md");
+    expect(자동.prompt).toContain("대상");
+    expect(자동.prompt).toContain("[본보기 문장]");
+    expect(자동.prompt).toContain("본보기: ");
+    const 없음 = buildStagePrompt({ stage: "report", project: { ...업무보고, kind: "report" }, workspaceDir: ws });
+    expect(없음.prompt).not.toContain("catalog.md");
   });
 
   /** 2026-11-16 C안: 기본 책자형은 참고본 세 장, 「상급기관 보고」를 고르면 여섯 장 */

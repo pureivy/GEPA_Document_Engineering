@@ -19,6 +19,7 @@ import { callableDataGoKrServices, researchDataSourcesStatus } from "../research
 import { writeResearchMcpConfig } from "../research/mcpConfig";
 import { RESEARCH_MCP_TOOL_IDS } from "../research/tools/register";
 import { syncWikiSnapshot, wikiSnapshotDir } from "../research/wikiSnapshot";
+import { examplesDir, indexExamples } from "../report/examples";
 import { dataDir, exportStage, saveStageDsl, stageDir } from "./service";
 import { isDocStage, type FundingType, type ProjectDTO, type Stage } from "../contracts";
 import { writeLedgerSummary } from "../closeout/store";
@@ -60,7 +61,7 @@ export interface StartStageRunOptions {
 // 참고 등급 가운데 '항목 하나'는 담당자가 남은 경고로 손을 대야 했다 — ㅇ 아래 `-` 하나는 이어 쓸지·뺄지 판단이 필요해
 // 자동 정리(govNormalize 는 `-` 아래 `·` 하나만 잇는다)가 아니라 다듬기에 넘긴다(결과보고서 ⑥ 맞춤형, 2026-10-22)
 export function fixableWarnings(warnings: string[]): string[] {
-  return warnings.filter((w) => (w.startsWith("[편람·") && !w.startsWith("[편람·참고")) || w.startsWith("[편람·참고·항목 하나]") || w.startsWith("[쪽 나눔]") || w.startsWith("[한 장 넘침]") || w.startsWith("[정산·금액 대조]") || w.startsWith("[전년 문장]"));
+  return warnings.filter((w) => (w.startsWith("[편람·") && !w.startsWith("[편람·참고")) || w.startsWith("[편람·참고·항목 하나]") || w.startsWith("[쪽 나눔]") || w.startsWith("[한 장 넘침]") || w.startsWith("[본보기 문장]") || w.startsWith("[정산·금액 대조]") || w.startsWith("[전년 문장]"));
 }
 
 /** 자동 다듬기 지시 — 경고 목록 + 대원칙(고치려고 필요한 내용을 빼지 않는다) */
@@ -169,8 +170,19 @@ export function startStageRun(opts: StartStageRunOptions): { runId: string; sess
       }
     }
   }
+  // 업무보고 본보기 모음(lib/report/examples.ts) — 원본이 바뀐 것만 글을 다시 뽑고 카드(catalog.md)를 새로 쓴다
+  let reportExamplesDir: string | undefined;
+  if (opts.stage === "report") {
+    try {
+      const r = indexExamples(examplesDir(dataDir()), [join(process.cwd(), "templates", "report", "reference.hwpx")]);
+      if (r.cards.length) reportExamplesDir = r.dir;
+      if (r.extracted || r.failed.length) console.log(`[runIntegration] 본보기 ${r.cards.length}건(새로 뽑음 ${r.extracted}, 실패 ${r.failed.length}${r.failed.length ? ": " + r.failed.join(" / ") : ""})`);
+    } catch (e) {
+      console.error("[runIntegration] 본보기 색인 실패:", (e as Error).message);
+    }
+  }
   const dataTools = mcpConfigPath ? availableDataTools() : undefined;
-  const input: StagePromptInput = { stage: opts.stage, project: opts.project, workspaceDir, instruction: opts.instruction, reviewTarget: opts.reviewTarget, dataTools, wikiDir, supplementalResearch: opts.supplementalResearch };
+  const input: StagePromptInput = { stage: opts.stage, project: opts.project, workspaceDir, instruction: opts.instruction, reviewTarget: opts.reviewTarget, dataTools, wikiDir, examplesDir: reportExamplesDir, supplementalResearch: opts.supplementalResearch };
   const p = buildStagePrompt(input);
   const limits = limitsFor(opts.stage);
   const isDoc = isDocStage(opts.stage);
@@ -415,7 +427,7 @@ export function startStageRun(opts: StartStageRunOptions): { runId: string; sess
       maxTurns: p.maxTurns ?? limits.maxTurns,
       model: modelFor(opts.stage, opts.model),
       jsonSchema: p.jsonSchema,
-      addDirs: [workspaceDir, ...(wikiDir ? [wikiDir] : [])],
+      addDirs: [workspaceDir, ...(wikiDir ? [wikiDir] : []), ...(reportExamplesDir ? [reportExamplesDir] : [])],
       ...(mcpConfigPath ? { mcpConfigPath } : {}),
       ...(opts.resumeSessionId ? { resumeSessionId: opts.resumeSessionId } : {}),
     },
