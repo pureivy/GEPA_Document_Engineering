@@ -186,6 +186,19 @@ function lintStructure(doc: DocModel): GovLintIssue[] {
   const out: GovLintIssue[] = [];
   const blocks = doc.blocks;
 
+  // ---- 절 제목 「기타 사항」 — 행정 조치를 모은 절은 「행정 사항」이라 부른다(박종덕 실무 보고서 작성법, 담당자 2026-11-18 지침서)
+  for (const b of blocks) {
+    const t = b.k === "sectionChip" ? b.title : b.k === "para" && b.glyph === "□" ? inlineText(b.inlines) : "";
+    if (/^\s*(기타|그\s?밖의?)\s*사항\s*$/.test(t)) out.push({ blockId: b.id, rule: "기타 사항 제목", severity: "warn", message: `절 제목 「${t.trim()}」 — 행정 조치를 모은 절은 「행정 사항」으로 부르고, 늘어놓지 말고 표나 묶음으로 쓴다`, fix: "행정 사항" });
+  }
+  // ---- 보고서 제목: 보고 갈래로 끝내고 15~20자 안팎 한 줄(지침서 — 알림만, 자동 다듬기 대상 아님)
+  if (doc.family === "report") {
+    const title = String((doc.meta as Record<string, unknown>).제목 ?? "").trim();
+    const len = title.replace(/\s/g, "").length;
+    if (len > 28) out.push({ rule: "제목 길이", severity: "info", message: `제목이 ${len}자다 — 15~20자 안팎 한 줄로 줄이고, 더 담을 것은 부제(\`- 부제 -\`)로` });
+    if (/(동향|현황)$/.test(title)) out.push({ rule: "제목 끝말", severity: "info", message: `제목 「${title}」 — 「~동향」「~현황」만으로 끝내지 말고 보고 갈래(보고·계획·결과·검토·방안)로 끝내거나 무엇이 일어났는지 구체적으로` });
+  }
+
   // ---- 항목 구분: 항목이 하나뿐이면 기호를 붙이지 않는다; 위계는 한 단계씩
   const items = blocks.map((b, i) => ({ b, i })).filter(({ b }) => b.k === "para" && b.glyph && ITEM_GLYPHS.has(b.glyph)) as { b: Extract<Block, { k: "para" }>; i: number }[];
   // group consecutive same-level siblings under the same parent

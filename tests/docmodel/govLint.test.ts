@@ -82,3 +82,16 @@ describe("lintGovStyle — 공문서의 끝 표시", () => {
     expect(official("", `1. 자료를 제출하여 주시기 바랍니다.\n`)).toContain("끝 표시");
   });
 });
+
+describe("지침서 구조 규칙(2026-11-18)", () => {
+  it("「기타 사항」 절 제목을 잡는다", () => {
+    expect(rules(`□ 기타 사항\nㅇ 협조 부서 회의\nㅇ 둘  끝.\n`)).toContain("기타 사항 제목");
+    expect(rules(`□ 행정 사항\nㅇ 협조 부서 회의\nㅇ 둘  끝.\n`)).not.toContain("기타 사항 제목");
+  });
+  it("업무보고 제목이 「~현황」으로 끝나거나 너무 길면 알린다", () => {
+    const r = (t: string) => lintGovStyle(parseDsl(`---\nfamily: report\n제목: ${t}\n---\n□ 가\nㅇ 하나\nㅇ 둘\n`).doc).map((i) => i.rule);
+    expect(r("도내 중소기업 현황")).toContain("제목 끝말");
+    expect(r("2027년 주요사업 안내책자 제작 현황 보고")).not.toContain("제목 끝말");
+    expect(r("2027년 주요사업 안내책자 제작 현황 보고 및 향후 추진 일정과 협조 요청 사항")).toContain("제목 길이");
+  });
+});

@@ -85,3 +85,16 @@ describe("normalizeDslText — 항목 하나 이어 쓰기", () => {
     expect(normalizeDslText(src).text).toBe(src);
   });
 });
+
+/** 담당자 2026-11-18 지침서(박종덕 공문서 작성법 3장): 겹말·고압 표현은 저장할 때 바로 고친다 */
+describe("겹말·고압 표현 자동 고침", () => {
+  it("고칠 말이 하나로 정해지는 겹말을 고친다", () => {
+    const { text, changes } = normalizeDslText("ㅇ 2월달 새로 신설 사업, 반드시 필요함\nㅇ 매 2년마다 점검, 과반수 이상 찬성, 필히 제출, 협조 요망\n");
+    expect(text).toBe("ㅇ 2월 신설 사업, 필요함\nㅇ 2년마다 점검, 과반수 찬성, 반드시 제출, 협조 바람\n");
+    expect(changes.map((c) => c.rule)).toContain("겹말·고압 표현");
+  });
+  it("멀쩡한 말은 건드리지 않는다", () => {
+    const src = "ㅇ 반드시 확인, 필요 시 보완, 2월 중 개최\n";
+    expect(normalizeDslText(src).text).toBe(src);
+  });
+});

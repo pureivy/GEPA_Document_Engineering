@@ -251,7 +251,7 @@ function reportExamplesGuide(dir: string | undefined): string {
   - 일정을 \`● ('26. 9월) …\` 처럼 시기 머리말 줄로 쓰면 표 대신 그렇게 쓴다(시기를 모르면 그 줄을 \`[확인필요]\` 로 둔다 — 표 머리줄에 \`[확인필요]\` 를 넣지 않는다).
 - 날짜는 편람대로 \`2026. 11. 19.(목)\` — 지시에 「19일」만 있어도 보고 시점의 달로 풀어 쓴다.
 - 본보기에서 가져오지 않는 것: **수치·사업명·업체·일정·문장, 직원 성명·연락처·포상·징계 같은 개인 정보.** 내용은 이번 지시·자료·위키의 사실로만 쓴다. 본보기 문장을 그대로 옮기면 내보낼 때 [본보기 문장] 경고로 되돌아온다.
-- 마지막 요약 3줄의 둘째 줄에 따른 본보기를 적는다(예: "본보기: 혁신과제 운영계획(약 1쪽, 내부 계획) · 경영평가 대응 계획(약 1쪽)"). 이어서 따른 점을 짧게 붙인다(예: "— ❖ 요지 줄, 애로→보완 흐름, 시기 머리말 일정"). 맞는 본보기가 없으면 "본보기: 맞는 것 없음 — 스킬 규격대로"라고 적는다.`;
+- 마지막 요약 3줄의 둘째 줄에 따른 본보기를 적는다(예: "본보기: 혁신과제 운영계획(약 1쪽, 내부 계획) · 경영평가 대응 계획(약 1쪽)"). 이어서 따른 점을 짧게 붙인다(예: "— ❖ 요지 줄, 애로→보완 흐름, 시기 머리말 일정"). 맞는 본보기가 없으면 .claude/skills/gepa-report-design/reference/report-types.md §1 에서 이 보고의 유형(추진 계획·운영 계획·방안·행사·검토·결과·상황·회의 결과·조정 등)을 골라 그 짜임을 따르고 "본보기: 맞는 것 없음 — 유형별 짜임(○○ 보고)"라고 적는다. 제목은 같은 파일 §2(보고 갈래로 끝, 15~20자 안팎 한 줄), 요약 상자는 §3(4줄 이내)을 따른다.`;
 }
 
 const KIND_NAME: Record<string, string> = { program: "사업계획", official: "공문", report: "업무보고", closeout: "결과·정산", template: "양식 맞춰 쓰기" };
@@ -385,7 +385,8 @@ front-matter: 기관 (재)경상북도경제진흥원, 배포일(공고일), 보
         systemPromptAppend: `${COMMON()}\n역할: 문서 검토관. .claude/agents/reviewer.md 의 점검 항목을 적용한다.`,
         prompt: `${brief}\n작업 폴더: ${workspaceDir}\n\n${workspaceDir}/${target}/draft.dsl.md 를 검토하라. 관련 규격: .claude/skills/${REVIEW_SKILL[target]}/SKILL.md.
 이슈마다 blockHint(문제가 있는 줄의 앞 20자), severity(error|warn|info), message, fix(수정 제안 DSL 줄)를 채우고 0~100점 score를 매긴다.
-참고 자료: ${workspaceDir}/research/notes.md (수치·출처 대조), ${workspaceDir}/plan/draft.dsl.md (공고문·보도자료 검토 시 정합성 기준).`,
+참고 자료: ${workspaceDir}/research/notes.md (수치·출처 대조), ${workspaceDir}/plan/draft.dsl.md (공고문·보도자료 검토 시 정합성 기준).${target === "report" ? `
+업무보고 검토는 .claude/skills/gepa-report-design/reference/report-types.md §4 점검표(칭찬받는 보고서 6기준·흔한 문제·유형별 점검)와 §5 헷갈리는 말을 함께 적용한다 — 특히 읽는 사람이 「그래서 내가 무엇을 하면 되나」를 묻지 않게 요청·결정 사항이 적혀 있는지 본다.` : ""}`,
         allowedTools: ["Read", "Glob", "Grep"],
         maxTurns: 15,
         jsonSchema: {

@@ -94,6 +94,7 @@ export function cleanName(source: string): string {
     .replace(/^기본__/, "")
     .replace(/\.[^.]+$/, "")
     .replace(/[★☆]?\(최종\)/g, "")
+    .replace(/^[★☆]+/, "")
     .replace(/^\s*(?:참고_)?(?:\(\s*\d{1,2}\.\s*\d{1,2}\.\s*\)|\d{6}|\d{4}\.\d{2}\.\d{2}_?|\d{1,2}\.\s*\d{1,2}\.\(.\)|\d{2}\.)\s*/, "")
     .replace(/^참고_/, "")
     .replace(/\s*\(\d+\)$/, "") // 내려받기 사본 꼬리 " (1)"
