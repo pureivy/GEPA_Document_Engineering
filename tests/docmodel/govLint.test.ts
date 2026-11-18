@@ -1,11 +1,20 @@
 import { describe, it, expect } from "vitest";
 import { parseDsl } from "../../lib/docmodel/dsl";
-import { lintGovStyle } from "../../lib/docmodel/govLint";
+import { arrowShorthand, lintGovStyle } from "../../lib/docmodel/govLint";
 
 const FM = `---\nfamily: plan\n제목: 테스트 계획(안)\n---\n`;
 const rules = (dsl: string) => lintGovStyle(parseDsl(FM + dsl).doc).map((i) => i.rule);
 
 describe("lintGovStyle — 행정업무운영 편람 작성 기준", () => {
+  /** 담당자 2026-11-18: 화살표를 무조건 막지 않는다 — 수치 추이·전후 비교·짧은 단계는 괜찮다 */
+  it("수치 추이·전후 비교·짧은 단계의 화살표는 넘기고, 문장을 줄인 화살표만 잡는다", () => {
+    expect(arrowShorthand("ㅇ (상담) ’23년 1,204건 → ’24년 1,680건 → ’25년 2,851건")).toBeUndefined();
+    expect(arrowShorthand("- ’24년 진흥원 자체사업 → ’25년 도·진흥원 매칭")).toBeUndefined();
+    expect(arrowShorthand("ㅇ 절차: 신청 → 서류심사 → 현장실사 → 선정")).toBeUndefined();
+    expect(arrowShorthand("ㅇ 운영 시기 7월 → 11월로 변경")).toBeDefined();
+    expect(arrowShorthand("ㅇ 참가기업 모집을 위한 온라인 홍보 강화 → 신청기업 증가")).toBeDefined();
+  });
+
   it("화살표로 줄인 문장을 경고한다(담당자 2026-10-07)", () => {
     expect(rules(`□ 가
 ㅇ 운영 시기 7월 → 11월로 변경

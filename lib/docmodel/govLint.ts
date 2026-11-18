@@ -30,8 +30,6 @@ const KOREAN_TIME = /(오전|오후)\s?\d{1,2}시(\s?\d{1,2}분)?/g;
 // "지원금 3,677,110원" 의 '금'은 금액 표기가 아니다 — 낱말 첫머리의 '금'만 본다(2026-10-06 오탐)
 const AMOUNT_WON = /(?<![가-힣])금\s?\d{1,3}(,\d{3})+원(?!\()/g;
 const AMOUNT_NO_COMMA = /금\d{4,}원/g;
-// 보고서 본문의 화살표 — 단계·변경·인과를 → 로 줄이지 말고 문장으로 쓴다(담당자 2026-10-07: "화살표가 너무 많다")
-const ARROW = /[→⇒➡▶]/g;
 
 /**
  * 요일 없는 날짜 — 「2026. 11. 11.」「11. 19.」 뒤에 (수)·(목)이 없다. 담당자 2026-11-18: "날짜는 항상 11. 19.(목)과 같이 요일까지".
@@ -39,6 +37,32 @@ const ARROW = /[→⇒➡▶]/g;
  */
 const DATE_NO_WEEKDAY = /(?<![\d.])(?:(\d{4})\.\s)?(\d{1,2})\.\s(\d{1,2})\.(?!\d)(?!\s*\()(?!\s*(?:기준|현재|시행|개정|공포|발표|자\b))/g;
 const WEEKDAYS = "일월화수목금토";
+
+/**
+ * 화살표 — 무조건 금지가 아니다(담당자 2026-11-18: "화살표를 무조건 쓰지 말라는 것은 전혀 아니야").
+ * 수치 추이·전후 비교·짧은 단계(「’23년 1,204건 → ’25년 2,851건」「신청 → 심사 → 선정」)는 괜찮고,
+ * 문장을 줄인 화살표만 잡는다(2026-10-07 "화살표가 너무 많다"):
+ *  - 화살표 뒤가 「…로 변경·확대·전환」처럼 화살표와 같은 뜻을 또 말한다 → 「7월 → 11월로 변경」
+ *  - 화살표 양쪽 가운데 숫자 없이 긴 말(15자 넘게)이 있다 → 인과·경위를 기호로 이은 문장
+ * 걸린 화살표 둘레 글을 돌려준다. 없으면 undefined.
+ */
+const ARROW_REDUNDANT = /(?:으)?로\s*\S*(?:변경|전환|확대|축소|조정|개편|이관|증가|감소|상향|하향|개선|바뀜|변동)/;
+const ARROW_SEGMENT_MAX = 15;
+export function arrowShorthand(text: string): string | undefined {
+  const parts = text.split(/\s*[→⇒➡▶]\s*/);
+  if (parts.length < 2) return undefined;
+  const seg = (s: string, side: "left" | "right") => {
+    const cut = side === "left" ? s.split(/[,;:(·]|\s-\s/).pop() ?? s : (s.split(/[,;)]/)[0] ?? s);
+    return cut.replace(/^\s*(?:[□ㅇ○●◦\-·※]\s*)?(?:\([^()]{1,12}\)\s*)?/, "").trim();
+  };
+  for (let i = 0; i + 1 < parts.length; i++) {
+    const l = seg(parts[i], "left");
+    const r = seg(parts[i + 1], "right");
+    const long = (x: string) => x.replace(/\s/g, "").length > ARROW_SEGMENT_MAX && !/\d/.test(x);
+    if (ARROW_REDUNDANT.test(r) || long(l) || long(r)) return `${l} → ${r}`.slice(0, 40);
+  }
+  return undefined;
+}
 
 function textOf(b: Block): string {
   if (b.k === "para" || b.k === "coverTitle") return inlineText(b.inlines as Inline[]);
@@ -71,8 +95,8 @@ function checkText(text: string, blockId: string | undefined, out: GovLintIssue[
   }
   for (const m of text.matchAll(KOREAN_TIME)) out.push({ blockId, rule: "시간 표기", severity: "warn", message: `"${m[0]}" — 시간은 24시각제 숫자와 쌍점으로 쓴다(예: 15:20)` });
   for (const m of text.matchAll(AMOUNT_WON)) out.push({ blockId, rule: "금액 한글 병기", severity: "warn", message: `"${m[0]}" — 금액은 숫자 뒤 괄호에 한글을 병기한다(예: 금113,560원(금일십일만삼천오백육십원))` });
-  const arrows = text.match(ARROW)?.length ?? 0;
-  if (arrows) out.push({ blockId, rule: "화살표", severity: "warn", message: `"${text.slice(0, 24)}…" — 화살표(→)로 줄이지 말고 "…에서 …로 변경", "…하여 …" 처럼 개조식 문장으로 쓴다` });
+  const bad = arrowShorthand(text);
+  if (bad) out.push({ blockId, rule: "화살표", severity: "warn", message: `"${bad}" — 화살표(→)로 문장을 줄이지 말고 "…에서 …로 변경", "…하여 …" 처럼 개조식 문장으로 쓴다(수치 추이·전후 비교의 짧은 표기 「’24년 1,204건 → ’25년 2,851건」은 괜찮다)` });
   for (const m of text.matchAll(AMOUNT_NO_COMMA)) out.push({ blockId, rule: "금액 자릿점", severity: "warn", message: `"${m[0]}" — 금액은 세 자리마다 쉼표를 찍는다` });
 }
 
