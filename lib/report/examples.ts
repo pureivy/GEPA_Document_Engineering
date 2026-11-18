@@ -96,6 +96,7 @@ export function cleanName(source: string): string {
     .replace(/[★☆]?\(최종\)/g, "")
     .replace(/^\s*(?:참고_)?(?:\(\s*\d{1,2}\.\s*\d{1,2}\.\s*\)|\d{6}|\d{4}\.\d{2}\.\d{2}_?|\d{1,2}\.\s*\d{1,2}\.\(.\)|\d{2}\.)\s*/, "")
     .replace(/^참고_/, "")
+    .replace(/\s*\(\d+\)$/, "") // 내려받기 사본 꼬리 " (1)"
     .trim();
 }
 
@@ -108,6 +109,8 @@ export interface IndexResult {
   cards: ExampleCard[];
   extracted: number;
   failed: string[];
+  /** 글이 앞 본보기와 똑같아 카드에서 뺀 파일("뺀 것 = 남긴 것") */
+  duplicates: string[];
 }
 
 /**
@@ -122,6 +125,8 @@ export function indexExamples(dir: string, builtIn: string[] = []): IndexResult 
   const files = [...builtIn.filter((f) => existsSync(f)).map((f) => ({ path: f, rel: `기본__${basename(f)}` })), ...walk(srcDir).map((f) => ({ path: f, rel: relative(srcDir, f) }))];
   const cards: ExampleCard[] = [];
   const failed: string[] = [];
+  const duplicates: string[] = [];
+  const seenText = new Map<string, string>();
   let extracted = 0;
   for (const { path, rel } of files) {
     const id = textId(rel);
@@ -143,10 +148,18 @@ export function indexExamples(dir: string, builtIn: string[] = []): IndexResult 
       writeFileSync(txt, text);
       extracted++;
     }
+    // 글이 똑같은 파일(이름만 다른 사본)은 카드 한 장 — 같은 본보기가 두 번 뽑히지 않게
+    const key = text.replace(/\s+/g, "");
+    const first = seenText.get(key);
+    if (first) {
+      duplicates.push(`${rel} = ${first}`);
+      continue;
+    }
+    seenText.set(key, rel);
     cards.push(cardFromText(id, rel, text, tableCount(path)));
   }
   writeFileSync(join(dir, "catalog.md"), catalogMarkdown(cards));
-  return { dir, cards, extracted, failed };
+  return { dir, cards, extracted, failed, duplicates };
 }
 
 export function catalogMarkdown(cards: ExampleCard[]): string {

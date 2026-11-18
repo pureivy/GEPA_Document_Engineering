@@ -2,7 +2,7 @@ import { describe, expect, it } from "vitest";
 import { mkdtempSync, mkdirSync, readFileSync, writeFileSync, existsSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
-import { cardFromText, exampleCopyWarnings, indexExamples } from "../../lib/report/examples";
+import { cardFromText, cleanName, exampleCopyWarnings, indexExamples } from "../../lib/report/examples";
 import { fixableWarnings } from "../../lib/stages/runIntegration";
 
 /** 업무보고 본보기 모음(담당자 2026-11-18) — 고정 양식 목록 대신 실제 보고서를 골라 따른다 */
@@ -36,6 +36,12 @@ describe("본보기 카드", () => {
     expect(r.cards).toHaveLength(0);
     expect(existsSync(join(dir, "catalog.md"))).toBe(true);
     expect(readFileSync(join(dir, "catalog.md"), "utf8")).toContain("본보기 카드 (0건)");
+  });
+
+  it("이름에서 날짜·★(최종)·내려받기 사본 꼬리 (1) 를 뗀다", () => {
+    expect(cleanName("2026.08.04_경영평가 대응 계획.hwpx")).toBe("경영평가 대응 계획");
+    expect(cleanName("★(최종)2026년 행정사무감사 책자자료 통합본.hwpx")).toBe("2026년 행정사무감사 책자자료 통합본");
+    expect(cleanName("언론브리핑(한장)_변경 (1).hwpx")).toBe("언론브리핑(한장)_변경");
   });
 });
 
