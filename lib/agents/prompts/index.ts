@@ -22,6 +22,8 @@ export interface StagePromptInput {
   wikiDir?: string;
   /** report: 업무보고 본보기 모음(catalog.md + 글/) 절대 경로(lib/report/examples.ts), 있으면 */
   examplesDir?: string;
+  /** report: 같은 일의 이전 프로젝트(lib/report/related.ts) — 계획안·공문·과업지시서에 이번 보고의 사실이 있다 */
+  relatedProjects?: { title: string; kind: string; createdAt?: string; dir: string; files: string[] }[];
   /** plan: allow up to two Task(researcher) 보충 조사 calls (user option; default off for speed) */
   supplementalResearch?: boolean;
 }
@@ -243,8 +245,28 @@ function reportExamplesGuide(dir: string | undefined): string {
 본보기: 진흥원 실제 보고서 모음 ${dir}. **쓰기 전에 ${dir}/catalog.md 를 읽고 본보기를 고른다.**
 - 지시·첨부자료를 보고 이번 보고의 **대상**(내부 결재·도지사·도의회·행정사무감사·상급기관), **성격**(계획·추진·결과·현황·건의), **분량**을 먼저 정한 뒤, 카드에서 가장 가까운 본보기 2~3건을 골라 \`글/<파일>\` 을 Read 한다. **가까움은 주제(사업명)가 아니라 대상·성격·분량으로 본다** — 주제가 같은 본보기는 거의 없다. 예: 내부 결재용 한 쪽짜리 추진·계획 보고면 분량 약 1~2쪽인 계획·현황 본보기가 가깝다. 대상과 분량이 둘 다 다른 것만 있을 때에만 "맞는 것 없음"이고, 고른 본보기는 반드시 글을 Read 한 뒤 쓴다. 지시가 특정 문서를 "이것처럼"이라고 가리키거나 그런 문서를 첨부했으면 그것을 먼저 따른다.
 - 본보기에서 따르는 것: 장·절 짜임과 순서, 분량, 절마다의 깊이, 어투, 표를 쓰는 자리와 모양. 위 「형태」 규칙(원페이지 한 쪽, 책자형 목차·간지)이 정해져 있으면 그 안에서 따른다.
+- **글을 Read 한 뒤, 쓰기 전에 고른 본보기에서 따를 점 셋을 스스로 적어 둔다**(머릿속으로 — 원고에는 적지 않는다). 지난 원고나 스킬의 기본 틀을 그대로 쓰면 본보기를 고른 뜻이 없다. 자주 보이는 것:
+  - 맨 위 한 줄 요지(\`❖ …하고자 함\`)가 있으면 첫 \`##\` 앞에 \`\`\`box\` 로 \`❖\` 한 줄을 둔다 — 이 보고가 무엇을 위해 무엇을 하는지 한 문장.
+  - 절이 「애로사항 → 보완 방향」, 「현황 → 문제 → 대책」처럼 흐르면 그 흐름대로 절을 나눈다.
+  - 일정을 \`● ('26. 9월) …\` 처럼 시기 머리말 줄로 쓰면 표 대신 그렇게 쓴다(시기를 모르면 그 줄을 \`[확인필요]\` 로 둔다 — 표 머리줄에 \`[확인필요]\` 를 넣지 않는다).
+- 날짜는 편람대로 \`2026. 11. 19.(목)\` — 지시에 「19일」만 있어도 보고 시점의 달로 풀어 쓴다.
 - 본보기에서 가져오지 않는 것: **수치·사업명·업체·일정·문장, 직원 성명·연락처·포상·징계 같은 개인 정보.** 내용은 이번 지시·자료·위키의 사실로만 쓴다. 본보기 문장을 그대로 옮기면 내보낼 때 [본보기 문장] 경고로 되돌아온다.
-- 마지막 요약 3줄의 둘째 줄에 따른 본보기를 적는다(예: "본보기: 혁신과제 운영계획(약 1쪽, 내부 계획) · 경영평가 대응 계획(약 1쪽)"). 맞는 본보기가 없으면 "본보기: 맞는 것 없음 — 스킬 규격대로"라고 적는다.`;
+- 마지막 요약 3줄의 둘째 줄에 따른 본보기를 적는다(예: "본보기: 혁신과제 운영계획(약 1쪽, 내부 계획) · 경영평가 대응 계획(약 1쪽)"). 이어서 따른 점을 짧게 붙인다(예: "— ❖ 요지 줄, 애로→보완 흐름, 시기 머리말 일정"). 맞는 본보기가 없으면 "본보기: 맞는 것 없음 — 스킬 규격대로"라고 적는다.`;
+}
+
+const KIND_NAME: Record<string, string> = { program: "사업계획", official: "공문", report: "업무보고", closeout: "결과·정산", template: "양식 맞춰 쓰기" };
+
+function relatedProjectsGuide(list: StagePromptInput["relatedProjects"]): string {
+  if (!list?.length) return "";
+  const rows = list
+    .map((r) => `- 「${r.title}」(${KIND_NAME[r.kind] ?? r.kind}${r.createdAt ? `, ${r.createdAt.slice(0, 10)}` : ""}) ${r.dir}\n  읽을 파일: ${r.files.join(", ")}`)
+    .join("\n");
+  return `
+같은 일의 이전 프로젝트(시스템 안에 이미 만든 계획안·공문·보고): **위키보다 먼저 읽는다.**
+${rows}
+- project.json 의 topic 은 담당자가 그때 준 지시·붙여넣은 원문이다. 예산·계약업체·규모·일정 같은 이번 보고의 사실이 여기와 draft.dsl.md 에 있다.
+- 거기서 확인한 사실은 \`[확인필요]\` 로 비우지 않고 쓴다. 다만 이전 문서도 \`[확인필요]\` 로 남긴 자리는 사실이 아니다 — 그대로 비운다.
+- 이전 프로젝트가 같은 보고의 앞선 판이면 짜임은 따르지 말고(본보기를 따른다) 사실만 가져온다.`;
 }
 
 function reportWikiGuide(wikiDir: string | undefined): string {
@@ -426,7 +448,7 @@ ${reportFormGuide(project)}
 - **칸마다 맡은 일이 다르다**: \`●\` 는 무엇을 왜 했는지(30자 안팎, 수치 없이), \`-\` 는 얼마나 했는지를 수치와 단위로(38자 안팎). \`●\` 에 숫자를 넣으면 아래 줄이 할 일이 없어진다. 스킬의 「내용」 절에 참고본 한 절이 본보기로 실려 있으니 그 모양을 따른다.
 - **최근 3년 흐름을 만든다.** 위키에서 같은 사업의 연도별 수치를 찾아 \`'23년 1,204건 → '24년 1,680건 → '25년 2,851건\` 처럼 잇는다. 세 해를 못 찾으면 두 해라도 잇고(\`'24년 대비 170%↑\`), 한 해뿐이면 그 줄을 성과가 아니라 실적으로만 적는다.
 - **비교 기준이 자료에 있으면 반드시 쓴다** — \`’24년 대비 170%↑\`, \`목표 대비 120%\`, \`전년 1,680건 → 2,851건\`. 없으면 지어내지 말고, 대신 그 줄을 성과인 양 쓰지 않는다(\`교육 11명\` 은 투입이지 성과가 아니다).
-- 조직도 자리에는 <조직도> 한 줄만 둔다(글은 참고본 조각에 굳어 있다).${reportExamplesGuide(input.examplesDir)}${reportWikiGuide(input.wikiDir)}${reportDataGuide(input.dataTools)}${DOC_CONTRACT("report", "report")}${resume}`,
+- 조직도 자리에는 <조직도> 한 줄만 둔다(글은 참고본 조각에 굳어 있다).${reportExamplesGuide(input.examplesDir)}${relatedProjectsGuide(input.relatedProjects)}${reportWikiGuide(input.wikiDir)}${reportDataGuide(input.dataTools)}${DOC_CONTRACT("report", "report")}${resume}`,
         allowedTools: ["Read", "Write", "Glob", "Grep", "WebSearch", "WebFetch"],
         maxTurns: 40,
       };

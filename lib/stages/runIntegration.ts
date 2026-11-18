@@ -20,6 +20,7 @@ import { writeResearchMcpConfig } from "../research/mcpConfig";
 import { RESEARCH_MCP_TOOL_IDS } from "../research/tools/register";
 import { syncWikiSnapshot, wikiSnapshotDir } from "../research/wikiSnapshot";
 import { examplesDir, indexExamples } from "../report/examples";
+import { relatedProjects, type RelatedProject } from "../report/related";
 import { dataDir, exportStage, saveStageDsl, stageDir } from "./service";
 import { isDocStage, type FundingType, type ProjectDTO, type Stage } from "../contracts";
 import { writeLedgerSummary } from "../closeout/store";
@@ -181,8 +182,17 @@ export function startStageRun(opts: StartStageRunOptions): { runId: string; sess
       console.error("[runIntegration] 본보기 색인 실패:", (e as Error).message);
     }
   }
+  // 같은 일의 이전 프로젝트(lib/report/related.ts) — 계획안·공문에 있는 예산·업체·일정을 업무보고가 못 보던 구멍(11-18)
+  let related: RelatedProject[] = [];
+  if (opts.stage === "report") {
+    try {
+      related = relatedProjects(opts.project, dirname(workspaceDir));
+    } catch (e) {
+      console.error("[runIntegration] 이전 프로젝트 찾기 실패:", (e as Error).message);
+    }
+  }
   const dataTools = mcpConfigPath ? availableDataTools() : undefined;
-  const input: StagePromptInput = { stage: opts.stage, project: opts.project, workspaceDir, instruction: opts.instruction, reviewTarget: opts.reviewTarget, dataTools, wikiDir, examplesDir: reportExamplesDir, supplementalResearch: opts.supplementalResearch };
+  const input: StagePromptInput = { stage: opts.stage, project: opts.project, workspaceDir, instruction: opts.instruction, reviewTarget: opts.reviewTarget, dataTools, wikiDir, examplesDir: reportExamplesDir, relatedProjects: related, supplementalResearch: opts.supplementalResearch };
   const p = buildStagePrompt(input);
   const limits = limitsFor(opts.stage);
   const isDoc = isDocStage(opts.stage);
@@ -427,7 +437,7 @@ export function startStageRun(opts: StartStageRunOptions): { runId: string; sess
       maxTurns: p.maxTurns ?? limits.maxTurns,
       model: modelFor(opts.stage, opts.model),
       jsonSchema: p.jsonSchema,
-      addDirs: [workspaceDir, ...(wikiDir ? [wikiDir] : []), ...(reportExamplesDir ? [reportExamplesDir] : [])],
+      addDirs: [workspaceDir, ...(wikiDir ? [wikiDir] : []), ...(reportExamplesDir ? [reportExamplesDir] : []), ...related.map((r) => r.dir)],
       ...(mcpConfigPath ? { mcpConfigPath } : {}),
       ...(opts.resumeSessionId ? { resumeSessionId: opts.resumeSessionId } : {}),
     },

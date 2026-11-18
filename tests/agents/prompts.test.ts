@@ -321,6 +321,28 @@ describe("report 단계 프롬프트", () => {
     expect(없음.prompt).not.toContain("catalog.md");
   });
 
+  /** 2026-11-18 실시험: 계획안 프로젝트에 예산·업체가 있었는데 업무보고가 [확인필요] 로 비웠다 */
+  it("같은 일의 이전 프로젝트가 있으면 경로·읽을 파일을 싣고 위키보다 먼저 읽게 한다", () => {
+    const p = buildStagePrompt({
+      stage: "report",
+      project: { ...업무보고, kind: "report" },
+      workspaceDir: ws,
+      relatedProjects: [{ title: "2027년 주요사업 안내책자 제작", kind: "report", createdAt: "2026-11-09T02:19:35Z", dir: "/x/p1", files: ["project.json", "report/draft.dsl.md"] }],
+    });
+    expect(p.prompt).toContain("「2027년 주요사업 안내책자 제작」(업무보고, 2026-11-09) /x/p1");
+    expect(p.prompt).toContain("읽을 파일: project.json, report/draft.dsl.md");
+    expect(p.prompt.indexOf("같은 일의 이전 프로젝트")).toBeGreaterThan(-1);
+    const 없음 = buildStagePrompt({ stage: "report", project: { ...업무보고, kind: "report" }, workspaceDir: ws });
+    expect(없음.prompt).not.toContain("같은 일의 이전 프로젝트");
+  });
+
+  it("본보기에서 따를 점(요지 줄·흐름·일정 표기)을 구체적으로 짚는다", () => {
+    const p = buildStagePrompt({ stage: "report", project: { ...업무보고, kind: "report" }, workspaceDir: ws, examplesDir: "/x/report-examples" });
+    expect(p.prompt).toContain("따를 점 셋");
+    expect(p.prompt).toContain("❖");
+    expect(p.prompt).toContain("표 머리줄에 `[확인필요]` 를 넣지 않는다");
+  });
+
   /** 2026-11-16 C안: 기본 책자형은 참고본 세 장, 「상급기관 보고」를 고르면 여섯 장 */
   it("상급기관 보고를 고르면 책자형 여섯 장으로 쓰게 하고, 기본 책자형에는 여섯 장을 싣지 않는다", () => {
     const 상급 = buildStagePrompt({ stage: "report", project: { ...업무보고, kind: "report", contact: { ...업무보고.contact, 보고형태: "상급기관" } }, workspaceDir: ws });
