@@ -165,7 +165,7 @@ export function indexExamples(dir: string, builtIn: string[] = []): IndexResult 
 export function catalogMarkdown(cards: ExampleCard[]): string {
   const head = `# 업무보고 본보기 카드 (${cards.length}건)
 
-진흥원 실제 보고서다. 쓰려는 보고와 **대상(내부 결재·도지사·도의회·행정사무감사 등)·성격(계획·추진·결과·현황)·분량**이
+진흥원 실제 보고서다(이름에 「행정안전부」처럼 다른 기관이 적힌 것은 중앙부처 업무보고 — 상급기관·정부 보고 형식의 본보기). 쓰려는 보고와 **대상(내부 결재·도지사·도의회·행정사무감사 등)·성격(계획·추진·결과·현황)·분량**이
 가장 가까운 것을 2~3건 고르고, 고른 것의 글을 \`글/<파일>\` 에서 Read 한다. 분량은 글자 수로 어림한 값이다.
 `;
   const body = cards.map(
