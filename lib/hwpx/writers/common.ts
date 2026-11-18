@@ -1,5 +1,5 @@
 /** Block handlers shared by all families: paragraphs, blanks, page breaks, images, generic tables. */
-import { childrenNamed, findAll, textOf, type XmlNode } from "../xml";
+import { findAll, textOf, type XmlNode } from "../xml";
 import type { WriterContext } from "./context";
 import type { Block, Cell, Inline, ParaRole, TableStyle, Row, Family } from "../../docmodel/schema";
 import { inlineText } from "../../docmodel/schema";
@@ -646,11 +646,17 @@ export function emitTable(ctx: WriterContext, fs: FamilyStyle, b: TableBlock): X
           const line = sub ? trimLeading(g) : g;
           const prefix = sub ? bullet[1].trimStart() : bullet?.[1] ?? "";
           const cellParaPr = bullet && !isHeader ? ctx.reg.paraPr({ align: alignDefault === "CENTER" ? "LEFT" : alignDefault, lineSpacing: d.lineSpacing, hanging: ctx.textWidth(prefix, pt), ...(sub ? { left: ctx.textWidth("  ", pt) } : {}) }) : paraPr;
-          paras.push(ctx.cellPara({ paraPr: cellParaPr, runs: ctx.runsFor(line, base), vertsize: pt * 100, lineSpacing: d.lineSpacing, horzsize: interior }));
+          const cellNode = ctx.cellPara({ paraPr: cellParaPr, runs: ctx.runsFor(line, base), vertsize: pt * 100, lineSpacing: d.lineSpacing, horzsize: interior });
+          paras.push(cellNode);
+          // 줄 맞춤(fitLines)이 이 칸 글자를 줄여(크기·자간) 줄 수를 줄였으면 높이도 줄인 글자로 센다 — 안 그러면 한 줄로 맞춘
+          // 칸의 행이 두 줄 높이로 남아 그 행만 키가 컸다(담당자 2026-11-18, 미흡 사항 표 「전략·재정·인력」 행)
+          const cellFit = ctx.lineFit[String(cellNode.attrs.id)];
+          const fitPt = pt * ((cellFit?.sizePct ?? 100) / 100);
+          const fitWidth = interior * 1.1 * (cellFit?.charSpacing ? 100 / (100 + cellFit.charSpacing) : 1);
           // 글자 폭 추정(한글 1em)은 굴림·맑은 고딕의 실제 폭보다 넓다 — 넉넉히 잡으면 한 줄 칸이 두 줄 높이로 잡혀 표가
           // 길어진다(정산 집행현황 "사업비(민간사업지원금)"). 한글은 넘치는 칸의 행을 스스로 늘리므로 10 % 여유를 준다.
           // 줄은 어절 단위로 센다 — 글자 폭 합으로 세면 4줄로 꺾이는 칸을 3줄로 잡아 끝줄이 잘렸다(결과보고서 2026-10-12)
-          lines += ctx.wrapLines(gText, pt, interior * 1.1);
+          lines += ctx.wrapLines(gText, fitPt, fitWidth);
         }
       }
       const h = Math.round(Math.max(lines, nestedHeight ? 0 : 1) * pt * 100 * (d.lineSpacing / 100)) + nestedHeight + margin.t + margin.b + 300;

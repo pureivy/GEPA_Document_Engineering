@@ -247,15 +247,22 @@ export function writeReport(ctx: WriterContext, doc: ReportDoc): XmlNode[] {
         out.push(brief || inRef ? briefHeading(ctx, `□ ${b.title}`) : sectionChip(ctx, b.label, b.title));
         break;
       case "summaryBox":
-        out.push(...summaryBox(ctx, b));
+        out.push(...summaryBox(ctx, b, brief));
         break;
       case "para":
         if (b.role === "unitCaption") out.push(unitCaptionPara(ctx, b));
         else out.push(brief ? briefPara(ctx, b, leadsIntoTable(doc.blocks, i)) : ladderPara(ctx, b));
         break;
-      case "blank":
+      case "blank": {
+        // 새 쪽(참고 띠·쪽 나눔) 바로 앞 빈 줄은 내지 않는다 — 본문이 쪽 끝까지 차면 그 빈 줄 하나가 다음 쪽으로 넘어가
+        // 빈 쪽이 생겼다(회의 결과 보고 2026-11-18: 1쪽 본문, 2쪽 빈 쪽, 3쪽 참고)
+        let j = i + 1;
+        while (j < doc.blocks.length && doc.blocks[j].k === "blank") j++;
+        const nx = doc.blocks[j];
+        if (nx && (nx.k === "pageBreak" || (nx.k === "table" && nx.role === "refHead"))) break;
         out.push(emitBlank(ctx, REPORT_TABLE_STYLE, b.role === "blankSmall"));
         break;
+      }
       case "pageBreak":
         ctx.pendingPageBreak = true;
         break;
@@ -891,7 +898,7 @@ function joinWrappedLines(lines: Inline[][]): Inline[][] {
   return out;
 }
 
-function summaryBox(ctx: WriterContext, b: Extract<Block, { k: "summaryBox" }>): XmlNode[] {
+function summaryBox(ctx: WriterContext, b: Extract<Block, { k: "summaryBox" }>, brief = false): XmlNode[] {
   const s = roleSpec(ctx, "summary");
   const interior = cellInteriorWidth(BOX_WIDTH, BOX_MARGIN);
   // 참고본 요약문에는 글머리 기호가 없다 — 사업계획서(`plan.ts:textBox`)처럼 `❖` 를 기본값으로
@@ -904,13 +911,18 @@ function summaryBox(ctx: WriterContext, b: Extract<Block, { k: "summaryBox" }>):
     for (const g of groups.length ? groups : [[]]) {
       const inl = glyph ? prefixed(glyph, g) : g;
       paras.push(ctx.cellPara({ paraPr: s.paraPr, runs: ctx.runsFor(inl, s.base, s.charPr), vertsize: Math.round(s.base.pt * 100), lineSpacing: s.lineSpacing, horzsize: interior }));
-      lineCount += ctx.lineCount(inlineText(inl), s.base.pt, interior);
+      // 간략 보고는 어절 단위·실제 글꼴 폭(10 % 여유)으로 센다 — 글자 폭 합 추정은 두 줄 요지를 세 줄로 잡아 상자가 한 줄만큼 떴다
+      lineCount += brief ? ctx.wrapLines(inlineText(inl), s.base.pt, interior * 1.1) : ctx.lineCount(inlineText(inl), s.base.pt, interior);
     }
   }
   if (!paras.length) return [];
   const dash = { type: "DASH" as const, widthMm: 0.12, color: "#000000" };
   const bf = ctx.reg.borderFill({ l: dash, r: dash, t: dash, b: dash, fill: BOX_FILL });
-  const height = Math.max(BOX_MIN_HEIGHT, BOX_MARGIN.t + BOX_MARGIN.b + BOX_LINE_HEIGHT * lineCount);
+  // 간략(한 장) 보고의 요지 상자는 글 줄만큼만 — 참고본(책자) 상자의 최소 높이·넉넉한 줄 높이를 쓰면 두 줄 요지에 빈 줄만큼
+  // 위아래가 떠서 한 장을 못 채웠다(담당자 2026-11-18: "개요 부분 박스를 줄이고")
+  const height = brief
+    ? BOX_MARGIN.t + BOX_MARGIN.b + Math.round(s.base.pt * 100 * (s.lineSpacing / 100)) * lineCount + 300
+    : Math.max(BOX_MIN_HEIGHT, BOX_MARGIN.t + BOX_MARGIN.b + BOX_LINE_HEIGHT * lineCount);
   const tbl = table({
     id: ctx.ids.nextShapeId(),
     zOrder: ctx.ids.nextZOrder(),

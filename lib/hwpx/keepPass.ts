@@ -523,6 +523,31 @@ async function fillTextPages(doc: DocModel, opts: BuildOptions, built: BuildResu
   // 위 ①은 다음 내용이 넘어간 쪽만 보므로 한 쪽으로 끝나는 문서(또는 뒤가 「참고」 새 쪽)는 비운 채 남았다.
   // 담당자 2026-11-18: "아래 4~5cm 비어 있다 → 남는 공간만큼 줄 간격을 넓혀 채우는 것을 보고서 작성할 때 기본으로".
   if (doc.family === "report" && doc.meta.형태 === "간략") {
+    // ③-1 한 장 당기기 — 본문(참고 앞)이 둘째 쪽으로 몇 줄만 넘쳤으면 본문 글 줄 간격을 줄여(최대 0.8배) 첫 쪽에 넣는다.
+    // 회의 결과 보고 시험(담당자 2026-11-18): 조치 사항 두 줄과 ※ 한 줄이 2쪽으로 넘어갔다 — "한장으로 충분히 만들 수 있을 것 같아".
+    // ②는 한 문단의 꼬리만 보므로 문단 몇 개가 통째로 넘어간 경우를 잡지 못했다.
+    const bodyEnd = (() => {
+      const e = [...explicit].filter((k) => k > 0).sort((a, b) => a - b)[0];
+      return e === undefined ? base.top.length : e;
+    })();
+    const body = base.pos.slice(0, bodyEnd);
+    const spilled = body.filter((q) => q.page === 1 || q.endPage === 1);
+    if (body.length && spilled.length && body.every((q) => q.page <= 1 && q.endPage <= 1)) {
+      const spillBottom = Math.max(...spilled.map((q) => (Number.isFinite(q.endBottom) ? q.endBottom : q.bottom)));
+      if (spillBottom - base.body.top <= BRIEF_PULL_MAX_SPILL) {
+        const ids = body.map((q, k) => (q.hasTable ? "" : String(base.top[k].attrs.id))).filter(Boolean);
+        const fits = (lay: NonNullable<Awaited<ReturnType<typeof layoutOf>>>) =>
+          lay.pos.slice(0, bodyEnd).every((q) => q.page === 0 && q.endPage === 0) && (bodyEnd >= lay.pos.length || lay.pos[bodyEnd].page >= 1);
+        const firstTry = buildHwpx(doc, { ...opts, spacingBoost: { ...boost, ...Object.fromEntries(ids.map((id) => [id, TEXT_PULL_MIN])) } });
+        const lay0 = await layoutOf(firstTry.bytes);
+        if (lay0 && fits(lay0)) {
+          const found = (await search(ids, TEXT_PULL_MIN, 1, fits)) ?? { factor: TEXT_PULL_MIN, built: firstTry };
+          for (const id of ids) boost[id] = found.factor;
+          cur = found.built;
+          base = (await layoutOf(cur.bytes)) ?? base;
+        }
+      }
+    }
     const ks: number[] = base.pos.map((q, k) => (q.page === 0 ? k : -1)).filter((k) => k >= 0);
     const last = ks[ks.length - 1];
     const next = last + 1;
@@ -548,6 +573,8 @@ async function fillTextPages(doc: DocModel, opts: BuildOptions, built: BuildResu
 
 /** 한 장 보고 채우기의 줄 간격 배율 상한 — 160% 줄 간격이 약 210%까지(그 이상은 줄 사이가 벌어져 보인다) */
 const BRIEF_FILL_MAX = 1.3;
+/** 한 장 당기기 — 둘째 쪽으로 넘친 본문이 이 높이(HWPUNIT, 약 35mm — 대여섯 줄) 이하일 때만 */
+const BRIEF_PULL_MAX_SPILL = 10000;
 
 const PX = 75; // rhwp 좌표(96 dpi 픽셀) 1 = 75 HWPUNIT
 
