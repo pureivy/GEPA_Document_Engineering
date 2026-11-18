@@ -34,6 +34,13 @@ const AMOUNT_NO_COMMA = /금\d{4,}원/g;
 // 보고서 본문의 화살표 — 단계·변경·인과를 → 로 줄이지 말고 문장으로 쓴다(담당자 2026-10-07: "화살표가 너무 많다")
 const ARROW = /[→⇒➡▶]/g;
 
+/**
+ * 요일 없는 날짜 — 「2026. 11. 11.」「11. 19.」 뒤에 (수)·(목)이 없다. 담당자 2026-11-18: "날짜는 항상 11. 19.(목)과 같이 요일까지".
+ * 「2025. 12. 31. 기준」처럼 기준·현재·시행 시점을 밝힌 날짜는 요일을 붙이지 않는다.
+ */
+const DATE_NO_WEEKDAY = /(?<![\d.])(?:(\d{4})\.\s)?(\d{1,2})\.\s(\d{1,2})\.(?!\d)(?!\s*\()(?!\s*(?:기준|현재|시행|개정|공포|발표|자\b))/g;
+const WEEKDAYS = "일월화수목금토";
+
 function textOf(b: Block): string {
   if (b.k === "para" || b.k === "coverTitle") return inlineText(b.inlines as Inline[]);
   return "";
@@ -47,6 +54,12 @@ function checkText(text: string, blockId: string | undefined, out: GovLintIssue[
   for (const m of text.matchAll(DATE_NO_TRAILING_PERIOD)) {
     const [, y, mo, d] = m;
     out.push({ blockId, rule: "날짜 마침표", severity: "warn", message: `날짜 "${m[0]}"는 일 뒤에도 마침표를 찍는다`, fix: `${y}. ${Number(mo)}. ${Number(d)}.` });
+  }
+  for (const m of text.matchAll(DATE_NO_WEEKDAY)) {
+    const [, y, mo, d] = m;
+    if (Number(mo) < 1 || Number(mo) > 12 || Number(d) < 1 || Number(d) > 31) continue;
+    const wd = y ? WEEKDAYS[new Date(Number(y), Number(mo) - 1, Number(d)).getDay()] : undefined;
+    out.push({ blockId, rule: "날짜 요일", severity: "warn", message: `날짜 "${m[0]}" 뒤에 요일을 붙인다(예: 11. 19.(목)) — 연도가 없으면 보고하는 해의 달력으로 요일을 셈한다`, ...(wd ? { fix: `${m[0]}(${wd})` } : {}) });
   }
   for (const m of text.matchAll(DATE_ZERO_PADDED)) out.push({ blockId, rule: "날짜 0 생략", severity: "warn", message: `날짜 "${m[0].trim()}"의 월·일 앞 0은 쓰지 않는다` });
   for (const m of text.matchAll(COLON_SPACED)) out.push({ blockId, rule: "쌍점", severity: "warn", message: `"${m[0]}" — 쌍점(:)은 앞말에 붙이고 뒷말과 띄운다`, fix: `${m[1]}: ` });

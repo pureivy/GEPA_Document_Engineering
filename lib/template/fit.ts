@@ -11,6 +11,10 @@
  * ② 표 당기기: 표가 통째로 다음 쪽으로 넘어가 앞 쪽 아래가 크게(30mm 넘게) 비었고, 표 높이를 20% 안쪽으로 줄이면 들어갈 것 같으면
  *    칸 높이를 줄여 본다. 앞 쪽으로 올라오지 않으면 원래대로 둔다. 일부러 나눈 쪽(쪽 나눔)은 건드리지 않는다.
  *
+ * ④ 제목 띄우기: 문서 맨 위 제목 표 바로 밑에 붙은 짧은 줄(부서·날짜)은 위에 간격을 둔다 — 줄 간격을 못 넓혀도 이것만은 한다.
+ * ⑤ 여백 채우기: 한 쪽짜리 문서의 아래가 10mm 넘게 비면 본문 문단의 줄 간격을 넓혀 채운다. 쪽 수가 늘면 한 단계씩 물린다.
+ *    (담당자 2026-11-18: "문서 전체적으로 줄간격이 좀 더 넓으면 좋겠고, 공간이 여의치 않을 때에는 제목과 전략기획팀 그 부분만이라도")
+ *
  * 줄·쪽 위치는 한글로 다시 저장한 파일의 줄 정보(hp:lineseg — textpos 는 줄 첫 글자, vertpos 는 쪽 본문 맨 위에서의 높이)로 잰다.
  * 한글이 없으면 아무것도 하지 않는다.
  */
@@ -286,6 +290,61 @@ function tightenLines(bytes: Uint8Array, ids: number[], dec: number): Uint8Array
   return repack(doc.entries, doc.sectionNames, sections, header);
 }
 
+/** 넓혀 볼 줄 간격(%p) — 큰 것부터, 쪽이 늘지 않는 첫 단계를 쓴다 */
+const WIDEN_STEPS = [30, 20, 15, 10, 5];
+/** 한 쪽 문서의 아래가 이만큼(HWPUNIT, 10mm) 넘게 비면 넓힌다 */
+const FILL_MIN = 2835;
+/** 제목 표와 그 밑 줄 사이 간격(HWPUNIT, 약 3mm) */
+const TITLE_GAP = 850;
+
+/** 문서 맨 위 제목 표 바로 밑의 짧은 줄(부서·날짜) — 위 간격이 거의 없을 때만 */
+function titleFollower(m: NonNullable<Awaited<ReturnType<typeof measure>>>): number | undefined {
+  const top = m.paras.filter((p) => p.parent === undefined);
+  const ti = top.slice(0, 3).findIndex((p) => p.tables.length > 0);
+  if (ti < 0) return undefined;
+  const title = top[ti];
+  const next = top.slice(ti + 1).find((p) => paragraphText(p).trim() !== "" || p.tables.length);
+  if (!next || next.tables.length || paragraphText(next).trim().length > 20) return undefined;
+  // 사이에 띄움 줄이 이미 있으면 둘 필요 없다
+  if (top.indexOf(next) !== ti + 1) return undefined;
+  const xml = m.sections[next.section];
+  const segsT = segsOf(m.sections[title.section], title);
+  const segsN = segsOf(xml, next);
+  if (!segsT.length || !segsN.length) return undefined;
+  const gap = segsN[0].vertpos - (segsT[segsT.length - 1].vertpos + segsT[segsT.length - 1].vertsize);
+  return gap < TITLE_GAP ? next.id : undefined;
+}
+
+/** 쪽마다 맨 아래 문단의 아래 끝 — 마지막 쪽 */
+function lastPageFree(m: NonNullable<Awaited<ReturnType<typeof measure>>>): number | undefined {
+  const body = bodyHeight(m.sections[0]);
+  const pos = pageMap(m);
+  if (!body || !pos.length) return undefined;
+  const last = Math.max(...pos.map((q) => q.endPage));
+  return body - Math.max(...pos.filter((q) => q.endPage === last).map((q) => q.bottom));
+}
+
+/** 문단 모양을 본떠 위 간격(prev)을 gap 으로 둔 새 모양을 쓰게 한다 */
+function spaceBefore(bytes: Uint8Array, id: number, gap: number): Uint8Array {
+  const doc = readTemplate(bytes);
+  const p = doc.paragraphs.find((x) => x.id === id);
+  if (!p) return bytes;
+  let header = new TextDecoder().decode(doc.entries["Contents/header.xml"]);
+  const sections = [...doc.sections];
+  let s = sections[p.section].slice(p.start, p.end);
+  const orig = /^<hp:p\b[^>]*?paraPrIDRef="(\d+)"/.exec(s)?.[1];
+  const m = orig ? new RegExp(`<hh:paraPr id="${orig}"[\\s\\S]*?</hh:paraPr>`).exec(header) : null;
+  if (!m) return bytes;
+  const nid = String(Math.max(-1, ...[...header.matchAll(/<hh:paraPr id="(\d+)"/g)].map((x) => Number(x[1]))) + 1);
+  const xml = m[0].replace(/<hh:paraPr id="\d+"/, `<hh:paraPr id="${nid}"`).replace(/<hc:prev value="\d+"/g, `<hc:prev value="${gap}"`);
+  if (p.lineseg) s = s.slice(0, p.lineseg[0] - p.start) + s.slice(p.lineseg[1] - p.start);
+  s = s.replace(/^(<hp:p\b[^>]*?paraPrIDRef=")\d+/, `$1${nid}`);
+  sections[p.section] = sections[p.section].slice(0, p.start) + s + sections[p.section].slice(p.end);
+  header = header.replace(/(<hh:paraProperties\b[^>]*itemCnt=")(\d+)(")/, (_, a: string, n: string, b: string) => `${a}${Number(n) + 1}${b}`);
+  header = header.replace("</hh:paraProperties>", `${xml}</hh:paraProperties>`);
+  return repack(doc.entries, doc.sectionNames, sections, header);
+}
+
 /**
  * 배치 다듬기. changed = 바꾸거나 넣은 문단의 글 — 넣은 문단 때문에 결과 파일의 문단 번호는 원본과 달라지므로 글로 찾는다.
  * 같은 글이 바꾸지 않은 문단에도 있으면 그 문단도 함께 맞춰지지만, 모양(자간)만 바뀌고 글자는 그대로다.
@@ -379,6 +438,35 @@ export async function fitTemplateLayout(bytes: Uint8Array, changed: Set<string>)
       }
     }
     if (!ok) notes.push(`넘침 당기기 못 함: ${sp.page + 1}쪽으로 넘어간 줄은 줄 간격을 ${LINE_STEPS[LINE_STEPS.length - 1]}%p 줄여도 앞 쪽에 들어가지 않음 — 문장을 줄이면 들어갑니다`);
+  }
+
+  // ④ 제목 띄우기 — 쪽이 늘지 않을 때만(늘면 글을 줄여야 한다)
+  const tf = titleFollower(m);
+  if (tf !== undefined) {
+    const trial = spaceBefore(cur, tf, TITLE_GAP);
+    const mm = await measure(trial);
+    if (mm && mm.pages <= m.pages) {
+      cur = trial;
+      m = mm;
+      notes.push(`제목 띄우기: 제목 밑 ${label(tf)} 위에 간격(약 3mm)`);
+    } else notes.push(`제목 띄우기 못 함: 제목 밑 ${label(tf)} 위에 간격을 두면 쪽이 늘어남`);
+  }
+
+  // ⑤ 여백 채우기 — 한 쪽 문서만(여러 쪽은 줄 간격을 넓히면 쪽 넘김 자리가 흔들린다)
+  const free = m.pages === 1 ? lastPageFree(m) : undefined;
+  if (free !== undefined && free > FILL_MIN) {
+    const ids = m.paras.filter((p) => p.parent === undefined && !p.tables.length && !p.hasObject).map((p) => p.id);
+    for (const inc of WIDEN_STEPS) {
+      const trial = tightenLines(cur, ids, -inc);
+      const mm = await measure(trial);
+      if (!mm || mm.pages > m.pages) continue;
+      const left = lastPageFree(mm);
+      if (left === undefined || left < 0) continue;
+      cur = trial;
+      m = mm;
+      notes.push(`여백 채우기: 아래 빈칸 ${Math.round(free / 283.5)}mm → ${Math.round(left / 283.5)}mm(본문 줄 간격 +${inc}%p)`);
+      break;
+    }
   }
   return { bytes: cur, notes };
 }

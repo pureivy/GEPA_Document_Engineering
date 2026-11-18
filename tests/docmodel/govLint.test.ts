@@ -18,8 +18,18 @@ describe("lintGovStyle — 행정업무운영 편람 작성 기준", () => {
   });
 
   it("passes a compliant document", () => {
-    const dsl = `# 사업개요\n□ 사업개요\nㅇ (사업기간) 2026. 7. 1.~12. 31.\nㅇ (사 업 비) 금60,000,000원(금육천만원)\nㅇ 접수 마감: 2026. 7. 15.(수) 18:00\n# 기대효과\nㅇ 수출 확대\nㅇ 일자리 창출  끝.\n`;
+    const dsl = `# 사업개요\n□ 사업개요\nㅇ (사업기간) 2026. 7. 1.(수)~12. 31.(목)\nㅇ (사 업 비) 금60,000,000원(금육천만원)\nㅇ 접수 마감: 2026. 7. 15.(수) 18:00\n# 기대효과\nㅇ 수출 확대\nㅇ 일자리 창출  끝.\n`;
     expect(rules(dsl)).toEqual([]);
+  });
+  /** 담당자 2026-11-18: "날짜는 항상 11. 19.(목)과 같이 요일까지" */
+  it("요일 없는 날짜를 잡고, 연도가 있으면 요일을 셈해 고칠 값을 준다. 기준 시점 날짜는 넘긴다", () => {
+    const issues = lintGovStyle(parseDsl(FM + `□ 가
+ㅇ 계약기간: 2026. 11. 11.~12. 31.
+ㅇ 마감: 11. 19.(목) 15:00
+ㅇ 2025. 12. 31. 기준 1,234개사  끝.
+`).doc).filter((i) => i.rule === "날짜 요일");
+    expect(issues.map((i) => i.fix)).toEqual(["2026. 11. 11.(수)", undefined]);
+    expect(issues[1].message).toContain("12. 31.");
   });
   it("flags dates without a space / trailing period / zero padding", () => {
     expect(rules(`□ 가\nㅇ 2021.12.12. 시행\nㅇ 2023. 6. 27(화) 접수\nㅇ 1985. 09. 06. 개정  끝.\n`)).toEqual(expect.arrayContaining(["날짜 띄어쓰기", "날짜 마침표", "날짜 0 생략"]));

@@ -11,6 +11,7 @@
  *
  * 양식은 reference/ 에 올린 첫 파일이다(나머지는 참고 문서). 원본은 손대지 않는다.
  */
+import { dropPageNumber } from "../hwpx/pageNumber";
 import { appendFileSync, copyFileSync, existsSync, mkdirSync, readdirSync, readFileSync, statSync, writeFileSync } from "node:fs";
 import { join } from "node:path";
 import type { ExportReportDTO, ProjectDTO } from "../contracts";
@@ -134,6 +135,8 @@ export async function buildTemplateResult(workspaceDir: string): Promise<Templat
     const before = await basePages(dir);
     if (before && before !== outPages) warnings.unshift(`[쪽수] 원본 ${before}쪽 → ${outPages}쪽 — 글 길이가 달라져 쪽 넘김이 바뀌었습니다. 늘어난 문단을 줄이거나 한글에서 확인하세요`);
   }
+  // 한 장짜리 결과에는 쪽번호를 찍지 않는다(담당자 2026-11-18: "1장짜리인데 1이라고 표시할 필요가 없다")
+  if (pageCount === 1) r.bytes = dropPageNumber(r.bytes).bytes;
   writeFileSync(join(workspaceDir, "template", "out.hwpx"), r.bytes);
   const fitSection = fit.notes.length ? ["", "## 배치 다듬기", ...fit.notes.map((n) => `- ${n}`), ""].join("\n") : "";
   const esc = (s: string) => s.replace(/\|/g, "／");

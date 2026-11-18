@@ -14,6 +14,7 @@ import { buildLaidOut } from "./keepPass";
 import { hangulLayout, pngPageSvg } from "./hangul";
 import { pageSplitWarnings } from "./pageSplit";
 import { onePageWarnings } from "./onePage";
+import { dropPageNumber, stripPageNumberXml } from "./pageNumber";
 import type { DocModel } from "../docmodel/schema";
 import type { ExportReportDTO } from "../contracts";
 
@@ -51,7 +52,16 @@ export async function exportStageDoc(stageDir: string, doc: DocModel, opts: Buil
   for (const i of lintGovStyle(doc)) warnings.push(`[편람${i.severity === "info" ? "·참고" : ""}·${i.rule}]${i.blockId ? ` [${i.blockId}]` : ""} ${i.message}${i.fix ? ` → ${i.fix}` : ""}`);
   if (v.ok) {
     try {
-      const r = await renderPages(built.bytes);
+      let r = await renderPages(built.bytes);
+      // 한 장짜리 문서에는 쪽번호를 찍지 않는다(담당자 2026-11-18) — 빼고 미리보기를 다시 그린다(꼬리말 자리라 배치는 그대로)
+      if (r.svgs.length === 1) {
+        const dp = dropPageNumber(built.bytes);
+        if (dp.removed) {
+          built = { ...built, bytes: dp.bytes, sectionXml: stripPageNumberXml(built.sectionXml) };
+          bytes = built.bytes;
+          r = await renderPages(built.bytes);
+        }
+      }
       svgs = r.svgs;
       // 한글이 나눈 쪽으로 장·절이 애매하게 쪼개졌는지(pageSplit.ts) — 한글이 없으면 쪽 글이 없어 건너뛴다
       if (r.texts) warnings.push(...pageSplitWarnings(r.texts));
