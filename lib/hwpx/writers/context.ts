@@ -75,6 +75,8 @@ export class WriterContext {
   spacingBoost: Record<string, number> = {};
   /** 문단 위 간격을 없앨 문단(hp:p id) — 쪽 맨 위에 온 제목·띠는 위 여백 없이(담당자 2026-10-13) */
   noPrev = new Set<string>();
+  /** 한 장 조이기 단계(간략 보고) — 0 그대로, 1 ※ 줄 붙이기, 2 + 위 여백 줄이기. buildLaidOut 이 정한다 */
+  squeeze = 0;
   /** 문단별 줄 맞춤(hp:p id → 내어쓰기 HWPUNIT·자간 %) — 실제 배치로 재서 정한다(keepPass.fitLines) */
   lineFit: Record<string, LineFit> = {};
   /** build option: emit approximate linesegs (see docs/adr/0003-lineseg.md) */

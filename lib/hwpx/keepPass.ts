@@ -79,7 +79,33 @@ export async function applyKeepWithNext(bytes: Uint8Array): Promise<Fixed> {
  * 이상이고 뒤 내용이 그 쪽에 들어오지 못해 표 아래가 비는 경우만(shouldFill). 표가 작으면 뒤 내용이 이어 들어오는 게
  * 맞다(담당자 2026-10-12). ② 본문 쪽도 같은 경우면 글 줄 간격을 늘려 채운다(fillTextPages). ③ 홀로 남은 제목을 다음 쪽으로 넘긴다.
  */
+/**
+ * 한 장 조이기 — 간략(원페이지) 업무보고의 본문이 둘째 쪽으로 넘치면 담당자가 손으로 하는 순서대로 한 단계씩 조이고,
+ * 본문이 첫 쪽에 들어오는 단계에서 멈춘다(담당자 2026-11-18: "너무 많이 바뀌지 않을 정도로 조금씩"):
+ *   0. 그대로(본문 줄 간격은 넘친 만큼만 조금 줄인다 — fillTextPages ③-1)
+ *   1. ※ 줄을 윗줄·표에 바짝 붙인다
+ *   2. 머리말 여백 20 → 15mm
+ * 덜 눈에 띄는 것부터 손대므로 필요한 만큼만 모양이 바뀐다.
+ */
 export async function buildLaidOut(doc: DocModel, opts0: BuildOptions = {}): Promise<BuildResult> {
+  let built = await buildLaidOutOnce(doc, opts0);
+  if (doc.family !== "report" || doc.meta.형태 !== "간략" || opts0.squeeze !== undefined) return built;
+  for (let level = 1; level <= SQUEEZE_MAX && (await bodySpills(built.bytes)); level++) built = await buildLaidOutOnce(doc, { ...opts0, squeeze: level });
+  return built;
+}
+
+const SQUEEZE_MAX = 2;
+
+/** 본문(첫 쪽 나눔 앞 — 뒤는 참고 뒷장)이 둘째 쪽으로 넘쳤는가 */
+async function bodySpills(bytes: Uint8Array): Promise<boolean> {
+  const lay = await layoutOf(bytes);
+  if (!lay) return false;
+  const brk = lay.top.findIndex((p, k) => k > 0 && p.attrs.pageBreak === "1");
+  const body = lay.pos.slice(0, brk < 0 ? lay.pos.length : brk);
+  return body.some((q) => q.page >= 1 || q.endPage >= 1);
+}
+
+async function buildLaidOutOnce(doc: DocModel, opts0: BuildOptions = {}): Promise<BuildResult> {
   // ⓪ 줄 맞춤(내어쓰기·자간) — 줄 나눔이 정해져야 쪽 채우기를 잴 수 있다
   const lineFit = await fitLines(doc, opts0);
   const opts: BuildOptions = { ...opts0, lineFit };

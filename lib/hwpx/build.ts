@@ -75,6 +75,11 @@ export interface BuildOptions {
    * splitTables 보다 앞선다(담당자 2026-11-16: "한 장으로 만들 수 있는 건 한 장으로").
    */
   wholeTables?: string[];
+  /**
+   * 한 장 조이기 단계(간략 보고, 담당자 2026-11-18 손질 순서) — 0 그대로, 1 ※ 줄을 윗줄·표에 붙인다, 2 머리말 여백 20→15mm.
+   * 본문 줄 간격을 조금씩 줄이는 것은 각 단계에서 keepPass 가 따로 한다. buildLaidOut 이 정한다.
+   */
+  squeeze?: number;
 }
 
 function sec0(paras: XmlNode[]): XmlNode {
@@ -88,6 +93,7 @@ export function buildHwpx(doc: DocModel, opts: BuildOptions = {}): BuildResult {
   ctx.fillSpacing = opts.fillSpacing ?? {};
   ctx.spacingBoost = opts.spacingBoost ?? {};
   ctx.noPrev = new Set(opts.noPrev ?? []);
+  ctx.squeeze = opts.squeeze ?? 0;
   ctx.lineFit = opts.lineFit ?? {};
   ctx.splitTables = new Set(opts.splitTables ?? []);
   ctx.wholeTables = new Set(opts.wholeTables ?? []);
@@ -100,6 +106,11 @@ export function buildHwpx(doc: DocModel, opts: BuildOptions = {}): BuildResult {
     // 범정부오피스(범피스) 용지 여백: 위 15 / 아래 10 / 좌·우 20 mm, 머리말·꼬리말 10 mm — 모든 계획서에 적용(user, 2026-09-16)
     const margin = findFirst(secPrRun, "hp:margin");
     if (margin) Object.assign(margin.attrs, { top: "4252", bottom: "2835", left: "5669", right: "5669", header: "2835", footer: "2835" });
+  }
+  if (doc.family === "report" && (opts.squeeze ?? 0) >= 2) {
+    // 한 장 조이기 마지막 단계 — 머리말 여백 20 → 15mm(담당자 손질본 2026-11-18)
+    const margin = findFirst(secPrRun, "hp:margin");
+    if (margin && Number(margin.attrs.header) > 4252) margin.attrs.header = "4252";
   }
   paras[0].children.unshift(secPrRun);
   // page number control (bottom centre, as in every reference) — the notice writer places it

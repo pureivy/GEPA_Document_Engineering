@@ -209,11 +209,20 @@ export class StyleRegistry {
    * (담당자 2026-10-13). 한글은 쪽 맨 위에서도 문단 위 간격을 그대로 두어 띠·제목이 내려앉았다.
    */
   withoutPrev(id: number): number {
+    return this.zeroGap(id, "prev");
+  }
+
+  /** 같은 문단 모양에 아래 간격만 없앤 paraPr — 표 바로 밑 ※ 줄을 표에 붙일 때(한 장 조이기) */
+  withoutNext(id: number): number {
+    return this.zeroGap(id, "next");
+  }
+
+  private zeroGap(id: number, side: "prev" | "next"): number {
     const info = this.paraPrInfo(id);
-    if (!info || !info.prev) return id;
+    if (!info || !info[side]) return id;
     const { id: _omit, ...rest } = info;
     void _omit;
-    const want = { ...rest, prev: 0 };
+    const want = { ...rest, [side]: 0 };
     const sig = paraPrSignature(want);
     const hit = this.paraBySig.get(sig);
     if (hit !== undefined) return hit;
@@ -222,7 +231,7 @@ export class StyleRegistry {
     if (!list || !src) return id;
     const node = clone(src);
     for (const m of findAll(node, "hh:margin")) {
-      const p = child(m, "hc:prev");
+      const p = child(m, `hc:${side}`);
       if (p) p.attrs.value = "0";
     }
     const nid = childrenNamed(list, "hh:paraPr").length;

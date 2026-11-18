@@ -272,7 +272,15 @@ export function writeReport(ctx: WriterContext, doc: ReportDoc): XmlNode[] {
           // 참고는 언제나 새 쪽에서 연다 — 본문 끝에 이어 붙으면 무엇이 본문이고 무엇이 붙임인지 흐려진다
           if (out.length) ctx.pendingPageBreak = true;
           out.push(...refHead(ctx, b));
-        } else out.push(...emitTable(ctx, REPORT_TABLE_STYLE, b));
+        } else {
+          const nodes = emitTable(ctx, REPORT_TABLE_STYLE, b);
+          // 한 장 조이기 1단계: 표 바로 밑 ※ 줄은 표에 바짝 붙인다 — 표 앵커 문단의 아래 간격을 없앤다(담당자 2026-11-18)
+          const nx = doc.blocks[i + 1];
+          const last = nodes[nodes.length - 1];
+          if (brief && ctx.squeeze >= 1 && last && nx?.k === "para" && (nx.glyph === "※" || nx.glyph === "*"))
+            last.attrs.paraPrIDRef = String(ctx.reg.withoutNext(Number(last.attrs.paraPrIDRef)));
+          out.push(...nodes);
+        }
         break;
       default:
         ctx.warnings.push({ blockId: b.id, message: `block kind "${b.k}" is not supported in 주요업무보고; skipped` });
@@ -510,7 +518,8 @@ function briefPara(ctx: WriterContext, b: ParaBlock, keepWithNext = false): XmlN
   } else if (g === "※" || g === "*") {
     prefix = `   ${g} `;
     pt = BRIEF_NOTE_PT;
-    prev = 100;
+    // 한 장 조이기 1단계: ※ 줄은 윗줄(표 아래면 표)에 바짝 붙인다(담당자 2026-11-18)
+    prev = ctx.squeeze >= 1 ? 0 : 100;
   } else if (g) {
     prefix = `${g} `;
   }
