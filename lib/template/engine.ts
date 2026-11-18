@@ -297,6 +297,34 @@ function rewriteParagraph(xml: string, p: TParagraph, sets: [TRun, string][]): s
   return out;
 }
 
+/**
+ * p 바로 뒤에 붙은 빈 문단(띄움 줄) — 글자·표·그림이 없고 같은 칸(또는 본문)에 있다.
+ *
+ * 담당자 2026-11-18: 언론브리핑 양식은 줄마다 빈 문단을 하나씩 끼워 띄웠다. 새로 넣은 줄에는 띄움 줄이 없고,
+ * 지운 줄의 띄움 줄은 남아 「계약금액과 계약기간 사이에 한 줄 더」처럼 간격이 들쭉날쭉했다. 띄움 줄은 문단 목록에
+ * 나오지 않아 AI 가 고칠 수 없으므로 엔진이 줄과 함께 다룬다.
+ */
+function spacerAfter(doc: TemplateDoc, p: TParagraph): TParagraph | null {
+  if (p.tables.length || p.hasSecPr) return null;
+  const i = doc.paragraphs.indexOf(p);
+  // 뒤에 오는 첫 문단 가운데 같은 자리(같은 바깥 문단·같은 칸)에 있는 것 — 표를 품은 문단이면 그 안 문단을 건너뛴다
+  const q = doc.paragraphs.slice(i + 1).find((x) => x.section === p.section && x.parent === p.parent && x.start >= p.end);
+  if (!q || !isSpacer(doc, q) || doc.sections[p.section].slice(p.end, q.start).trim() !== "") return null;
+  return q;
+}
+
+function isSpacer(doc: TemplateDoc, q: TParagraph): boolean {
+  return !q.tables.length && !q.hasObject && !q.hasSecPr && paragraphText(q).trim() === "" && !doc.paragraphs.some((x) => x.parent === q.id);
+}
+
+/** p 바로 앞의 띄움 줄 — 넣는 줄은 본뜬 문단의 앞 간격을 따른다(무리 끝 줄 뒤의 띄움 줄은 다음 □ 앞이라 더 넓다) */
+function spacerBefore(doc: TemplateDoc, p: TParagraph): TParagraph | null {
+  const i = doc.paragraphs.indexOf(p);
+  const q = doc.paragraphs.slice(0, i).reverse().find((x) => x.section === p.section && x.parent === p.parent && x.end <= p.start);
+  if (!q || !isSpacer(doc, q) || doc.sections[p.section].slice(q.end, p.start).trim() !== "") return null;
+  return q;
+}
+
 export function applyEdits(doc: TemplateDoc, input: TemplateEdits): ApplyResult {
   const errors: string[] = [];
   const warnings: string[] = [];
@@ -327,7 +355,11 @@ export function applyEdits(doc: TemplateDoc, input: TemplateEdits): ApplyResult 
       const sets = runsMapValid(like, e.runs, errors, label);
       const str = rewriteParagraph(doc.sections[like.section], like, sets);
       const text = like.runs.map((r) => sets.find(([x]) => x === r)?.[1] ?? r.text).join("");
-      inserts.push({ after, str, like, text });
+      // 뒤 문단에 띄움 줄이 있으면 새 줄 앞에도 같은 띄움 줄을 둔다: 뒤 문단 · (띄움) · 새 줄 · 원래 띄움 · 다음 줄
+      // 띄움 줄 모양은 본뜬 문단 앞의 것을 먼저 쓴다 — 없으면 뒤 문단의 띄움 줄
+      const sp = spacerAfter(doc, after) ? (spacerBefore(doc, like) ?? spacerAfter(doc, after)) : null;
+      const spacerXml = sp ? doc.sections[sp.section].slice(sp.start, sp.end) : "";
+      inserts.push({ after, str: spacerXml + str, like, text });
       continue;
     }
     const p = byId.get(Number(e.p));
@@ -345,6 +377,11 @@ export function applyEdits(doc: TemplateDoc, input: TemplateEdits): ApplyResult 
         continue;
       }
       deleted.add(p.id);
+      // 글이 있는 줄을 지우면 그 줄의 띄움 줄도 함께 — 남기면 그 자리만 간격이 벌어진다
+      if (paragraphText(p).trim()) {
+        const sp = spacerAfter(doc, p);
+        if (sp) deleted.add(sp.id);
+      }
       continue;
     }
     if ("runs" in e) {

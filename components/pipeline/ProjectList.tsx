@@ -347,7 +347,7 @@ function NewProjectDialog({ latest, onClose, onCreated }: { latest: ProjectDTO |
                 : isOfficial
                   ? "공문의 제목 칸에 그대로 들어갑니다"
                   : isTemplate
-                    ? "프로젝트 목록에 보이는 이름입니다(결과 파일 이름은 양식 이름 + (수정))"
+                    ? "프로젝트 목록과 내려받는 파일 이름에 쓰입니다"
                   : !isProgram
                     ? "표지에 나가는 유일한 글자입니다"
                     : undefined

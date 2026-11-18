@@ -20,7 +20,7 @@ export async function GET(req: NextRequest, ctx: { params: Promise<{ id: string;
   const s = stage as Stage;
   const format = req.nextUrl.searchParams.get("format") ?? "hwpx";
   const doc = readStageDoc(id, s);
-  // 양식 맞춰 쓰기는 문서 모델이 없다 — 양식 이름에 (수정)을 붙인다
+  // 양식 맞춰 쓰기는 문서 모델이 없다 — 프로젝트 제목(요청한 작업 이름)으로 내려준다(templateDownloadBase)
   const title = doc ? DOC_FAMILIES[doc.family].exportBaseName(doc) : (s === "template" ? templateDownloadBase(projectDir(id)) : null) ?? `${id}_${s}`;
   if (format === "hwpx") {
     const p = hwpxPath(id, s);

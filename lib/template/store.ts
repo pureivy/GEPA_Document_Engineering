@@ -193,8 +193,18 @@ export function ensureTemplateResult(workspaceDir: string): Promise<TemplateResu
   return p;
 }
 
-/** 내려받을 파일 이름 바탕 — 양식 이름 + (수정) */
+/**
+ * 내려받을 파일 이름 바탕 — 프로젝트 제목(담당자가 요청한 작업 이름). 제목이 없을 때만 양식 이름 + (수정).
+ * 담당자 2026-11-18: 언론브리핑 양식으로 「2027년 주요사업 안내책자 제작 현황」을 썼더니 내려받은 파일 이름이
+ * 「…언론브리핑(한장)_변경(수정)」이었다 — 양식은 모양만 빌린 것이라 이름은 이번 작업을 따라야 한다.
+ */
 export function templateDownloadBase(workspaceDir: string): string | null {
+  try {
+    const title = (JSON.parse(readFileSync(join(workspaceDir, "project.json"), "utf8")) as { title?: string }).title?.trim();
+    if (title) return title;
+  } catch {
+    // project.json 이 없거나 깨졌으면 양식 이름으로
+  }
   const f = join(workspaceDir, "template", "base.source");
   if (!existsSync(f)) return null;
   const name = readFileSync(f, "utf8").split("\n")[0] ?? "";

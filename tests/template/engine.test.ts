@@ -75,6 +75,34 @@ describe("applyEdits", () => {
     expect(after.paragraphs[2].runs.map((t) => t.charPr)).toEqual(["0", "1", "0"]);
   });
 
+  /** 담당자 2026-11-18: 줄마다 빈 문단으로 띄운 양식에서 넣은 줄은 붙고 지운 줄 자리는 벌어졌다 */
+  it("줄 사이 띄움 줄(빈 문단)을 지킨다 — 지운 줄의 띄움 줄은 같이 빼고, 넣은 줄 앞에는 띄움 줄을 둔다", () => {
+    const sec =
+      `<hs:sec><hp:p id="0"><hp:run charPrIDRef="0"><hp:secPr/><hp:t>제목</hp:t></hp:run></hp:p>` +
+      p([[0, " ㅇ (일시) 11. 24.(화)"]]) + p([[0, ""]]) + // 1 2
+      p([[0, " ㅇ (장소) 브리핑룸"]]) + p([[0, ""]]) + // 3 4
+      p([[0, " ㅇ (내용) 브리핑"]]) + p([[0, ""]]) + // 5 6
+      p([[0, "□ 일정"]]) + `</hs:sec>`; // 7
+    const bytes = zipSync({ mimetype: [strToU8("application/hwp+zip"), { level: 0 }], "Contents/header.xml": strToU8(HEADER), "Contents/section0.xml": strToU8(sec) });
+    const d = readTemplate(bytes);
+    const r = applyEdits(d, { edits: [{ p: 3, delete: true }, { insertAfter: 5, like: 5, runs: { "0": " ㅇ (비고) 새 줄" } }] });
+    expect(r.errors).toEqual([]);
+    const texts = readTemplate(r.bytes).paragraphs.map((x) => x.runs.map((t) => t.text).join(""));
+    expect(texts).toEqual(["제목", " ㅇ (일시) 11. 24.(화)", "", " ㅇ (내용) 브리핑", "", " ㅇ (비고) 새 줄", "", "□ 일정"]);
+  });
+
+  it("무리 끝 줄 뒤에 넣을 때는 다음 □ 앞의 넓은 띄움 줄이 아니라 본뜬 줄 앞의 띄움 줄을 쓴다", () => {
+    const sp = (pp: number) => `<hp:p id="0" paraPrIDRef="${pp}"><hp:run charPrIDRef="0"/></hp:p>`;
+    const sec =
+      `<hs:sec><hp:p id="0"><hp:run charPrIDRef="0"><hp:secPr/><hp:t>제목</hp:t></hp:run></hp:p>` +
+      p([[0, " - (대상) 전 부서"]]) + sp(36) + p([[0, " - (자료) 사업별 1장"]]) + sp(39) + p([[0, "□ 일정"]]) + `</hs:sec>`;
+    const bytes = zipSync({ mimetype: [strToU8("application/hwp+zip"), { level: 0 }], "Contents/header.xml": strToU8(HEADER), "Contents/section0.xml": strToU8(sec) });
+    const r = applyEdits(readTemplate(bytes), { edits: [{ insertAfter: 3, like: 3, runs: { "0": " - (기한) 11. 19.(목)" } }] });
+    const out = sectionOf(r.bytes);
+    const order = [...out.matchAll(/paraPrIDRef="(\d+)"|<hp:t>([^<]*)<\/hp:t>/g)].map((m) => m[1] ?? m[2]).filter((x) => x !== "1");
+    expect(order).toEqual(["제목", " - (대상) 전 부서", "36", " - (자료) 사업별 1장", "36", " - (기한) 11. 19.(목)", "39", "□ 일정"]);
+  });
+
   it("없는 번호·지울 수 없는 문단은 적용하지 않고 까닭을 남긴다", () => {
     const d = readTemplate(hwpx());
     const r = applyEdits(d, {
