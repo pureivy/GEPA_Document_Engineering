@@ -152,7 +152,10 @@ export function startStageRun(opts: StartStageRunOptions): { runId: string; sess
    * 붙인다 — 없을 때 「중소기업·소상공인 현황」 보고가 온통 [확인필요] 로 나왔다.
    */
   // 성과 분석도 위키를 읽는다 — 같은 사업의 전년도 실적이 있어야 전년 대비와 차년도 반영사항을 근거 있게 쓴다
-  const wikiCapable = researchCapable || opts.stage === "report" || opts.stage === "analysis";
+  // 업무보고 검토도 작성 때와 같은 자료(위키·같은 일의 이전 프로젝트)를 본다 — 녹취만 보고 위키에서 가져온 수치를
+  // 「지어낸 수치」로 잘못 짚었다(2026-11-18 회의 결과 보고 시험)
+  const reportReview = opts.stage === "review" && opts.reviewTarget === "report";
+  const wikiCapable = researchCapable || opts.stage === "report" || opts.stage === "analysis" || reportReview;
   // public-data MCP server + read-only wiki snapshot for the stages that research
   let mcpConfigPath: string | undefined;
   let wikiDir: string | undefined;
@@ -184,7 +187,7 @@ export function startStageRun(opts: StartStageRunOptions): { runId: string; sess
   }
   // 같은 일의 이전 프로젝트(lib/report/related.ts) — 계획안·공문에 있는 예산·업체·일정을 업무보고가 못 보던 구멍(11-18)
   let related: RelatedProject[] = [];
-  if (opts.stage === "report") {
+  if (opts.stage === "report" || reportReview) {
     try {
       related = relatedProjects(opts.project, dirname(workspaceDir));
     } catch (e) {

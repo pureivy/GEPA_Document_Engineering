@@ -336,6 +336,14 @@ describe("report 단계 프롬프트", () => {
     expect(없음.prompt).not.toContain("같은 일의 이전 프로젝트");
   });
 
+  /** 2026-11-18 시험: 검토가 녹취만 보고 위키에서 온 수치를 「지어낸 수치」로 짚었다 */
+  it("업무보고 검토는 작성 때와 같은 위키·이전 프로젝트를 대조 자료로 받고 점검표를 쓴다", () => {
+    const p = buildStagePrompt({ stage: "review", reviewTarget: "report", project: { ...업무보고, kind: "report" }, workspaceDir: ws, wikiDir: "/x/wiki", relatedProjects: [{ title: "이전", kind: "report", dir: "/x/p1", files: ["project.json"] }] });
+    expect(p.prompt).toContain("진흥원 위키 /x/wiki");
+    expect(p.prompt).toContain("/x/p1(project.json)");
+    expect(p.prompt).toContain("report-types.md §4");
+  });
+
   it("본보기에서 따를 점(요지 줄·흐름·일정 표기)을 구체적으로 짚는다", () => {
     const p = buildStagePrompt({ stage: "report", project: { ...업무보고, kind: "report" }, workspaceDir: ws, examplesDir: "/x/report-examples" });
     expect(p.prompt).toContain("따를 점 셋");

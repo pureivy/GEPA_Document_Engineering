@@ -386,7 +386,8 @@ front-matter: 기관 (재)경상북도경제진흥원, 배포일(공고일), 보
         prompt: `${brief}\n작업 폴더: ${workspaceDir}\n\n${workspaceDir}/${target}/draft.dsl.md 를 검토하라. 관련 규격: .claude/skills/${REVIEW_SKILL[target]}/SKILL.md.
 이슈마다 blockHint(문제가 있는 줄의 앞 20자), severity(error|warn|info), message, fix(수정 제안 DSL 줄)를 채우고 0~100점 score를 매긴다.
 참고 자료: ${workspaceDir}/research/notes.md (수치·출처 대조), ${workspaceDir}/plan/draft.dsl.md (공고문·보도자료 검토 시 정합성 기준).${target === "report" ? `
-업무보고 검토는 .claude/skills/gepa-report-design/reference/report-types.md §4 점검표(칭찬받는 보고서 6기준·흔한 문제·유형별 점검)와 §5 헷갈리는 말을 함께 적용한다 — 특히 읽는 사람이 「그래서 내가 무엇을 하면 되나」를 묻지 않게 요청·결정 사항이 적혀 있는지 본다.` : ""}`,
+${input.wikiDir || input.relatedProjects?.length ? `수치·사실 대조 자료(작성자가 본 것과 같다): 첨부 원문(reference/base-plan.md)${input.wikiDir ? `, 진흥원 위키 ${input.wikiDir}` : ""}${input.relatedProjects?.length ? `, 같은 일의 이전 프로젝트 ${input.relatedProjects.map((r) => `${r.dir}(${r.files.join(", ")})`).join("; ")}` : ""}. 원문에 없는 수치는 이 자료들을 Grep 으로 찾아본 뒤에만 「근거 없음」으로 짚는다.
+` : ""}업무보고 검토는 .claude/skills/gepa-report-design/reference/report-types.md §4 점검표(칭찬받는 보고서 6기준·흔한 문제·유형별 점검)와 §5 헷갈리는 말을 함께 적용한다 — 특히 읽는 사람이 「그래서 내가 무엇을 하면 되나」를 묻지 않게 요청·결정 사항이 적혀 있는지 본다.` : ""}`,
         allowedTools: ["Read", "Glob", "Grep"],
         maxTurns: 15,
         jsonSchema: {
