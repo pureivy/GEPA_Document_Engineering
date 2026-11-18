@@ -27,7 +27,7 @@ const REPORT_MODE_LABEL: Record<ReportMode, string> = { 원페이지: "원페이
 /** 참조 양식 — 실제 문서가 근거로 있는 것만 올린다(개인 취향이 아니라 기관 표준). 실문서가 들어오면 늘린다 */
 type ReportTemplate = Exclude<ReportForm, "간략" | "자동">;
 const REPORT_TEMPLATES: { form: ReportTemplate; label: string; hint: string }[] = [
-  { form: "책자", label: "도지사·도의회 업무보고", hint: "표지·보고순서·간지를 갖춘 책자형 — 장 구성: 일반현황 · 추진성과 · 주요사업" },
+  { form: "책자", label: "업무보고", hint: "표지·보고순서·간지를 갖춘 책자형 — 장 구성: 일반현황 · 추진성과 · 주요사업" },
   { form: "상급기관", label: "경상북도 상급기관 보고", hint: "책자형 — 장 구성: 일반현황 · 도정방향 정합성 · 추진성과 · 여건 및 방향 · 중점 추진과제 · 협업·건의사항" },
 ];
 const REPORT_MODE_HINT: Record<ReportMode, string> = {

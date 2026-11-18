@@ -309,7 +309,7 @@ describe("report 단계 프롬프트", () => {
     expect(자동.prompt).toContain("간략(원페이지)인가, 책자인가");
     expect(자동.prompt).toContain("참조 양식을 고르지 않았다");
     // 자동 + 참조 양식을 고르면 그 양식 이름이 실린다(화면 「자동 + 우리 양식 중 골라 참조」, 2026-11-18)
-    expect(책자.prompt).toContain("참조 양식 「도지사·도의회 업무보고」");
+    expect(책자.prompt).toContain("참조 양식 「업무보고」");
   });
 
   /** 2026-11-16 C안: 기본 책자형은 참고본 세 장, 「상급기관 보고」를 고르면 여섯 장 */
