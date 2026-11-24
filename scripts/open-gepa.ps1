@@ -67,7 +67,7 @@ function Open-Browser {
 
 # 빌드가 코드보다 오래됐는가 — BUILD_ID 가 있다고 최신은 아니다.
 # 2026-11-11: 11/09 빌드로 계속 떠 있어서 11/10 에 고친 것(간략 보고 날짜 등)이 하나도 안 나왔다.
-$buildId = Join-Path $proj ".nextBUILD_ID"
+$buildId = Join-Path $proj ".next\BUILD_ID"
 function Test-Stale {
     if (-not (Test-Path $buildId)) { return $true }
     $built = (Get-Item $buildId).LastWriteTime
