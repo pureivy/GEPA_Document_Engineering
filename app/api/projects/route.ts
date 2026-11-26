@@ -9,7 +9,7 @@ import { ensureProjectDir } from "@/lib/storage/paths";
 import { isProjectKind } from "@/lib/kinds";
 import { OfficialMetaSchema } from "@/lib/docmodel/schema";
 import { DELEGATION_LEVELS } from "@/lib/org";
-import { FUNDING_TYPES, REFERENCE_ROLES, REPORT_FORMS } from "@/lib/contracts";
+import { FUNDING_TYPES, REFERENCE_ROLES, REPORT_FORMS, TEMPLATE_MODES } from "@/lib/contracts";
 import { writeFileSync } from "node:fs";
 import path from "node:path";
 
@@ -51,6 +51,8 @@ const contactSchema = z
     보고형태: z.enum(REPORT_FORMS).optional(),
     /** 결과·정산 사업 구분(수탁|자체) — 자체면 정산보고서·제출 공문 단계가 없다(lib/kinds.ts stagesOf) */
     사업구분: z.enum(FUNDING_TYPES).optional(),
+    /** 양식 맞춰 쓰기의 쓰임(고쳐 쓰기|새로 쓰기) — lib/contracts.ts TEMPLATE_MODES */
+    양식쓰임: z.enum(TEMPLATE_MODES).optional(),
     /** 결문 연락처의 홈페이지(공문 전용) — OfficialMetaSchema.연락처.홈페이지 와 같은 값. 비면 결문의 그 칸도 빈다 */
     홈페이지: z.string().trim().max(200).optional(),
     /**

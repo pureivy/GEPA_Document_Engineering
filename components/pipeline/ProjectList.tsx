@@ -3,7 +3,7 @@ import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
 import { FolderOpen, Plus, RefreshCw, Trash2, Upload } from "lucide-react";
-import { DEFAULT_REFERENCE_ROLE, FUNDING_TYPES, REFERENCE_CHANGES_LABEL, REFERENCE_DOC_TITLE, REFERENCE_ROLES, type FundingType, type ProjectDTO, type ReferenceRole, type ReportForm } from "@/lib/contracts";
+import { DEFAULT_REFERENCE_ROLE, FUNDING_TYPES, TEMPLATE_MODES, type TemplateMode, REFERENCE_CHANGES_LABEL, REFERENCE_DOC_TITLE, REFERENCE_ROLES, type FundingType, type ProjectDTO, type ReferenceRole, type ReportForm } from "@/lib/contracts";
 import { OfficialMetaSchema } from "@/lib/docmodel/schema";
 import { approvalLineFor, approvalLineUpTo, DEFAULT_DELEGATION, DELEGATION_LEVELS, findUnit, senderTitleFor, type DelegationLevel } from "@/lib/org";
 import { api, errorMessage, type NewProjectInput } from "@/lib/client/api";
@@ -36,13 +36,22 @@ const FUNDING_HINT: Record<FundingType, string> = {
   자체: "진흥원 자부담(목적사업비) 100% 사업 — 위탁기관이 없어 결과보고서 하나로 끝냅니다(정산보고서·제출 공문 없음)",
 };
 
+/**
+ * 양식 맞춰 쓰기의 쓰임 — 기본값을 두지 않고 고르게 한다. 담당자 2026-11-24: 다른 기관 업무보고 양식에 우리 내용을 쓰려 했는데
+ * 고쳐 쓰기로 돌아 원본 내용이 그대로 남았다. 둘 다 흔하다(경영목표·월별 현황은 고쳐 쓰기, 언론브리핑·행안부 양식은 새로 쓰기).
+ */
+const TEMPLATE_MODE_HINT: Record<TemplateMode, string> = {
+  "고쳐 쓰기": "같은 문서를 새 자료로 고칩니다 — 지난달 현황 → 이번 달, 경영목표 중 우리 팀 부분만. 틀·쪽수를 지키고 범위 밖은 그대로 둡니다",
+  "새로 쓰기": "양식은 모양만 빌립니다 — 다른 기관·다른 사업 문서의 꼴에 이번 내용을 정리. 원본 내용은 지우고, 구성·분량은 자료에 맞춥니다",
+};
+
 const KIND_HINT: Record<ProjectKind, string> = {
   program: "조사 → 사업계획서 → 공고문 → 보도자료를 차례로 만듭니다.",
   official: "별지 제1호 기안문 한 건을 만듭니다.",
   report: "업무보고를 만듭니다 — 한 쪽짜리 원페이지(간략) 보고, 또는 진흥원 실제 보고서 본보기를 골라 따르는 자동.",
   // 업무보고처럼 한 줄에 들어가게 짧게 둔다(2026-11-16)
   closeout: "사업 종료 후 정산자료 → 성과 분석 → 결과보고서를 만들고, 수탁사업은 정산보고서 → 공문까지 만듭니다.",
-  template: "한글 파일(양식)의 모양은 그대로 두고 내용만 고칩니다 — 첫 파일이 양식, 나머지는 참고 문서입니다.",
+  template: "한글 파일(양식)의 모양을 그대로 살려 씁니다 — 같은 문서를 고쳐 쓰거나, 모양만 빌려 새 내용으로 씁니다. 첫 파일이 양식, 나머지는 참고 문서입니다.",
 };
 
 /** 정산·결과보고 자료로 받는 형식 — lib/closeout/materials.ts MATERIAL_EXTENSIONS 와 같다 */
@@ -115,6 +124,7 @@ function NewProjectDialog({ latest, onClose, onCreated }: { latest: ProjectDTO |
   // 업무보고 형태 — 기본은 원페이지(한 장짜리가 가장 많이 쓰인다, 담당자 2026-11-09)
   const [reportForm, setReportForm] = useState<ReportMode>("간략");
   const [funding, setFunding] = useState<FundingType>("수탁");
+  const [templateMode, setTemplateMode] = useState<TemplateMode | null>(null);
   const planResearch = useBoolPref(PREF_PLAN_RESEARCH, false);
   const [phase, setPhase] = useState<"" | "create" | "upload">("");
   // 정산·결과보고 자료(여러 개) — 사업계획서·집행 집계표·통장거래내역·실적 메모
@@ -159,7 +169,7 @@ function NewProjectDialog({ latest, onClose, onCreated }: { latest: ProjectDTO |
       : isProgram
       ? contactOk && (refFile ? true : !!(form.title.trim() && form.topic.trim()))
       : isTemplate
-        ? contactOk && !!form.title.trim() && templateOk && !!form.topic.trim()
+        ? contactOk && !!form.title.trim() && templateOk && !!templateMode && !!form.topic.trim()
         : contactOk && !!form.title.trim();
   const missing = isOfficial
     ? [
@@ -182,6 +192,7 @@ function NewProjectDialog({ latest, onClose, onCreated }: { latest: ProjectDTO |
       ? [
           ...(!form.title.trim() ? ["제목"] : []),
           ...(!refFile ? ["양식 파일"] : !templateOk ? ["양식(첫 파일은 hwpx·hwp)"] : []),
+          ...(!templateMode ? ["양식 쓰임"] : []),
           ...(!form.topic.trim() ? ["고칠 내용(지시)"] : []),
           ...(!form.contact.부서명.trim() ? ["부서명"] : []),
           ...(!form.contact.전화.trim() ? ["전화"] : []),
@@ -225,6 +236,7 @@ function NewProjectDialog({ latest, onClose, onCreated }: { latest: ProjectDTO |
       }
       // 업무보고 형태는 contact 에 얹는다(공문의 수신유형과 같은 길) — 프롬프트가 읽어 에이전트에 넘긴다
       if (kind === "report") contact.보고형태 = reportForm;
+      if (isTemplate && templateMode) contact.양식쓰임 = templateMode;
       // 정산·결과보고: 제출 공문은 늘 위탁기관 한 곳에 보낸다(실문서 457건 중 수신자참조 0건 — closeout-cover.md §A)
       // 자체사업은 위탁기관이 없다 — 제출 공문이 없으니 수신·전결·공개구분도 싣지 않는다
       if (isCloseout) {
@@ -520,7 +532,28 @@ function NewProjectDialog({ latest, onClose, onCreated }: { latest: ProjectDTO |
             </div>
           </>
         ) : isTemplate ? (
-          <Field label="고칠 내용(지시)" id="topic" required hint="무엇을 어떤 자료대로 고칠지 — 범위를 정하면 그 밖은 바꾸지 않고, 양식 모양은 그대로 둡니다">
+          <>
+          <Field label="양식 쓰임" id="templateMode" required hint={templateMode ? TEMPLATE_MODE_HINT[templateMode] : "올린 양식을 어떻게 쓸지 고르세요"}>
+            <div className="flex gap-2">
+              {TEMPLATE_MODES.map((m) => (
+                <label
+                  key={m}
+                  className={`flex cursor-pointer items-center gap-1.5 rounded border px-3 py-1.5 text-xs ${
+                    templateMode === m ? "border-sky-500 bg-sky-50 text-sky-900" : "border-slate-300 text-slate-700 hover:bg-slate-50"
+                  }`}
+                >
+                  <input type="radio" name="templateMode" className="h-3.5 w-3.5" checked={templateMode === m} onChange={() => setTemplateMode(m)} />
+                  <span className="font-semibold">{m === "고쳐 쓰기" ? "고쳐 쓰기 (같은 문서 갱신)" : "새로 쓰기 (모양만 빌림)"}</span>
+                </label>
+              ))}
+            </div>
+          </Field>
+          <Field
+            label={templateMode === "새로 쓰기" ? "쓸 내용(지시)" : "고칠 내용(지시)"}
+            id="topic"
+            required
+            hint={templateMode === "새로 쓰기" ? "무엇을 어떤 자료로 정리할지 — 분량·구성은 자료에 맞추고, 양식에서는 모양만 따옵니다" : "무엇을 어떤 자료대로 고칠지 — 범위를 정하면 그 밖은 바꾸지 않고, 양식 모양은 그대로 둡니다"}
+          >
             <Textarea
               id="topic"
               name="topic"
@@ -530,6 +563,7 @@ function NewProjectDialog({ latest, onClose, onCreated }: { latest: ProjectDTO |
               autoComplete="off"
             />
           </Field>
+          </>
         ) : (
           // 업무보고에는 지역·주관기관이 없다(표지에 나가는 글자는 제목뿐이다). 보고 내용도
           // 비워 둘 수 있다 — 붙인 문서나 단계 화면의 추가 지시로 채운다.

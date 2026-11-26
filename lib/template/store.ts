@@ -13,8 +13,11 @@
  */
 import { dropPageNumber } from "../hwpx/pageNumber";
 import { appendFileSync, copyFileSync, existsSync, mkdirSync, readdirSync, readFileSync, statSync, writeFileSync } from "node:fs";
-import { join } from "node:path";
-import type { ExportReportDTO, ProjectDTO } from "../contracts";
+import { basename, join } from "node:path";
+import { eq } from "drizzle-orm";
+import { getDb } from "../db/client";
+import { projects } from "../db/schema";
+import type { ExportReportDTO, ProjectDTO, TemplateMode } from "../contracts";
 import { hwpToHwpx } from "../reference/extract";
 import { validateHwpx } from "../hwpx/validate";
 import { sha1 } from "../hwpx/export";
@@ -22,6 +25,19 @@ import { hangulLayout } from "../hwpx/hangul";
 import { applyEdits, changesMarkdown, listParagraphs, readTemplate, type TemplateEdits } from "./engine";
 import { fitTemplateLayout } from "./fit";
 import { applyRowOps } from "./rows";
+import { tidyNewWriting } from "./tidy";
+import { clearStaleRuns, moveOutOfScript, leftoverByChapter, leftoverMarkdown, leftoverWarnings } from "./leftover";
+
+/** 양식 쓰임 — contact 의 진짜는 DB 다(lib/closeout/store.ts ledgerOptsOf 와 같다). 작업 폴더 이름이 프로젝트 id */
+export function templateModeOf(workspaceDir: string): TemplateMode {
+  try {
+    const row = getDb().select({ contact: projects.contact }).from(projects).where(eq(projects.id, basename(workspaceDir))).get();
+    const contact = row ? (JSON.parse(row.contact) as { 양식쓰임?: string }) : {};
+    return contact.양식쓰임 === "새로 쓰기" ? "새로 쓰기" : "고쳐 쓰기";
+  } catch {
+    return "고쳐 쓰기";
+  }
+}
 
 export const TEMPLATE_EXTENSIONS = [".hwpx", ".hwp"] as const;
 
@@ -107,7 +123,12 @@ export async function buildTemplateResult(workspaceDir: string): Promise<Templat
     throw new Error(`template/edits.json 을 읽지 못했습니다: ${(e as Error).message}`);
   }
   const doc = readTemplate(new Uint8Array(readFileSync(join(dir, "base.hwpx"))));
-  const r = applyEdits(doc, edits);
+  // 새로 쓰기는 모양만 빌린다 — 원본 내용이 남으면 틀린 문서다(담당자 2026-11-24). 고친 문단의 안 적은 칸에 남은 원본 글은 비운다
+  const newWriting = templateModeOf(workspaceDir) === "새로 쓰기";
+  const stale = newWriting ? clearStaleRuns(doc, edits) : { edits, cleared: [] };
+  // 첨자 칸에 들어간 본문 글은 보통 칸으로 — 두 쓰임 모두(leftover.ts moveOutOfScript)
+  const script = moveOutOfScript(doc, stale.edits);
+  const r = applyEdits(doc, script.edits);
   // 표 행 넣기·빼기(rows.ts) — 문단 고침 뒤에. 문단을 지우며 통째로 빠진 표는 번호를 되돌려 찾는다
   const deletedTables = new Set(
     r.changes
@@ -121,11 +142,16 @@ export async function buildTemplateResult(workspaceDir: string): Promise<Templat
   const rows = applyRowOps(r.bytes, rowOps, deletedTables);
   r.bytes = rows.bytes;
   r.errors.push(...rows.errors);
+  // 새로 쓰기 뒷정리 — 지운 원본 사이에 남은 빈 줄·쪽 나눔, 원본 줄 수에 맞춘 표 높이(tidy.ts)
+  const tidy = newWriting ? tidyNewWriting(r.bytes) : { bytes: r.bytes, notes: [] as string[] };
+  r.bytes = tidy.bytes;
   // 배치 다듬기 — 끝 몇 글자만 내려간 바꾼 문단은 자간을 좁히고, 통째로 넘어가 앞 쪽을 비운 표는 높이를 줄여 본다(fit.ts)
   const fit = r.changes.length || rows.changes.length ? await fitTemplateLayout(r.bytes, new Set(r.changes.filter((c) => c.kind !== "지움").map((c) => c.after))).catch((e: Error) => ({ bytes: r.bytes, notes: [`배치 다듬기 실패: ${e.message}`] })) : { bytes: r.bytes, notes: [] };
   r.bytes = fit.bytes;
   const v = await validateHwpx(r.bytes);
-  const warnings = [...r.warnings, ...r.errors.map((e) => `[적용 못 함] ${e}`), ...fit.notes.filter((n) => /못 함|실패/.test(n)).map((n) => `[배치] ${n}`)];
+  // 새로 쓰기는 길이·쪽수를 맞출 대상이 아니다
+  const leftover = leftoverByChapter(doc, r.changes);
+  const warnings = [...(newWriting ? leftoverWarnings(leftover) : []), ...r.warnings.filter((w) => !(newWriting && w.startsWith("[길이]"))), ...r.errors.map((e) => `[적용 못 함] ${e}`), ...fit.notes.filter((n) => /못 함|실패/.test(n)).map((n) => `[배치] ${n}`)];
   // 쪽수 대조 — 원본과 다르면 글이 늘거나 줄어 쪽 넘김이 바뀐 것이다(한글이 없으면 건너뛴다)
   let pageCount = v.pageCount;
   const h = await hangulLayout(r.bytes).catch(() => undefined);
@@ -133,15 +159,17 @@ export async function buildTemplateResult(workspaceDir: string): Promise<Templat
   if (outPages) {
     pageCount = outPages;
     const before = await basePages(dir);
-    if (before && before !== outPages) warnings.unshift(`[쪽수] 원본 ${before}쪽 → ${outPages}쪽 — 글 길이가 달라져 쪽 넘김이 바뀌었습니다. 늘어난 문단을 줄이거나 한글에서 확인하세요`);
+    if (before && before !== outPages && !newWriting) warnings.unshift(`[쪽수] 원본 ${before}쪽 → ${outPages}쪽 — 글 길이가 달라져 쪽 넘김이 바뀌었습니다. 늘어난 문단을 줄이거나 한글에서 확인하세요`);
   }
   // 한 장짜리 결과에는 쪽번호를 찍지 않는다(담당자 2026-11-18: "1장짜리인데 1이라고 표시할 필요가 없다")
   if (pageCount === 1) r.bytes = dropPageNumber(r.bytes).bytes;
   writeFileSync(join(workspaceDir, "template", "out.hwpx"), r.bytes);
-  const fitSection = fit.notes.length ? ["", "## 배치 다듬기", ...fit.notes.map((n) => `- ${n}`), ""].join("\n") : "";
+  const fitNotes = [...script.moved.map((m) => `첨자 칸 글을 보통 칸으로 옮김: 문단 ${m.p} 「${m.text}」`), ...tidy.notes, ...fit.notes];
+  const fitSection = fitNotes.length ? ["", "## 배치 다듬기", ...fitNotes.map((n) => `- ${n}`), ""].join("\n") : "";
   const esc = (s: string) => s.replace(/\|/g, "／");
+  const staleSection = stale.cleared.length ? ["", `## 남은 원본 칸 비움 ${stale.cleared.length}곳`, "", ...stale.cleared.map((c) => `- 문단 ${c.p}: ${esc(c.text)}`), ""].join("\n") : "";
   const rowSection = rows.changes.length ? ["", `## 표 행 ${rows.changes.length}개`, "", "| 표 | 행 | 구분 | 칸 |", "|---|---|---|---|", ...rows.changes.map((c) => `| 표${c.table} | ${c.row} | ${c.kind} | ${esc(c.text)} |`), ""].join("\n") : "";
-  writeFileSync(join(dir, "changes.md"), changesMarkdown(r) + rowSection + fitSection, "utf8");
+  writeFileSync(join(dir, "changes.md"), changesMarkdown(r) + rowSection + staleSection + leftoverMarkdown(leftover) + fitSection, "utf8");
   const versions = join(dir, "versions");
   mkdirSync(versions, { recursive: true });
   const version = readdirSync(versions).filter((n) => /^v\d+\.hwpx$/.test(n)).length + 1;

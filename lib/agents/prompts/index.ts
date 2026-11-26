@@ -131,7 +131,12 @@ function projectBrief(p: ProjectDTO, workspaceDir?: string): string {
     } else if (p.kind === "template") {
       // 양식 맞춰 쓰기: 첫 파일이 고쳐 쓸 양식, 나머지가 내용 근거다. 아래 사업계획서 갱신 줄이 실리면 안 된다
       const names = p.reference.fileNames?.length ? p.reference.fileNames : [p.reference.fileName];
-      lines.push(`양식(고쳐 쓸 파일): ${names[0]}`);
+      lines.push(
+        p.contact.양식쓰임 === "새로 쓰기"
+          ? `양식(모양만 빌릴 파일 — 내용은 쓰지 않는다): ${names[0]}`
+          : `양식(고쳐 쓸 파일): ${names[0]}`,
+      );
+      lines.push(`양식 쓰임: ${p.contact.양식쓰임 === "새로 쓰기" ? "새로 쓰기 — 모양만 빌리고 내용·구성·분량은 참고 문서를 따른다" : "고쳐 쓰기 — 같은 문서를 새 자료로 고친다"}`);
       if (names.length > 1) lines.push(`참고 문서(새 내용의 근거): ${names.slice(1).join(", ")}`);
       if (p.reference.changes) lines.push(`${REFERENCE_CHANGES_LABEL[DEFAULT_REFERENCE_ROLE]}: ${p.reference.changes}`);
     } else if (p.kind === "report") {

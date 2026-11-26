@@ -165,6 +165,28 @@ export function TemplateRunner({ projectId, defaultModel }: TemplateRunnerProps)
     }
   };
 
+  /** 양식 쓰임 바꾸기 — 다음 실행부터 지시가 바뀐다. 이미 만든 결과는 그대로라 처음부터 다시 실행해야 반영된다 */
+  const mode = project?.contact?.양식쓰임 === "새로 쓰기" ? "새로 쓰기" : "고쳐 쓰기";
+  const changeMode = async () => {
+    const to = mode === "새로 쓰기" ? "고쳐 쓰기" : "새로 쓰기";
+    const msg =
+      to === "새로 쓰기"
+        ? "「새로 쓰기」로 바꿉니다 — 양식은 모양만 빌리고, 원본 내용은 지우고, 구성·분량은 참고 문서에 맞춥니다.\n\n바꾼 뒤 ‘실행’(처음부터)을 눌러야 반영됩니다."
+        : "「고쳐 쓰기」로 바꿉니다 — 같은 문서를 새 자료로 고치고, 틀·쪽수를 지키며 범위 밖은 그대로 둡니다.\n\n바꾼 뒤 ‘실행’(처음부터)을 눌러야 반영됩니다.";
+    if (!window.confirm(msg)) return;
+    setBusy(true);
+    setError(null);
+    try {
+      await api.updateProject(projectId, { 양식쓰임: to });
+      await load();
+      setFileNote(`양식 쓰임을 「${to}」로 바꿨습니다 — ‘실행’(처음부터)을 누르면 반영됩니다`);
+    } catch (e) {
+      setError(errorMessage(e));
+    } finally {
+      setBusy(false);
+    }
+  };
+
   const hasResult = !!info?.changes;
   const dialog = info?.dialog ?? [];
 
@@ -181,6 +203,12 @@ export function TemplateRunner({ projectId, defaultModel }: TemplateRunnerProps)
 
       {/* 올린 파일 — 만든 뒤에도 참고 문서를 더 올리거나 뺄 수 있다(담당자 2026-11-17). 다시 실행하거나 이어서 수정하면 반영된다 */}
       <div className="flex flex-wrap items-center gap-1.5 border-b border-slate-200 bg-slate-50 px-3 py-1.5 text-[11px] text-slate-600">
+        <span className="inline-flex items-center gap-1 rounded border border-slate-300 bg-white px-2 py-0.5" title={mode === "새로 쓰기" ? "양식은 모양만 빌리고 내용·구성·분량은 참고 문서를 따릅니다" : "같은 문서를 새 자료로 고칩니다 — 틀·쪽수를 지키고 범위 밖은 그대로 둡니다"}>
+          <span className="font-semibold text-slate-800">{mode}</span>
+          <button type="button" className="text-sky-700 hover:underline disabled:text-slate-400" disabled={running || busy || !project} onClick={() => void changeMode()}>
+            바꾸기
+          </button>
+        </span>
         {info?.template ? <FileChip icon="양식" name={info.template} disabled={running || busy} onRemove={() => void removeFile(info.template!)} /> : <span className="text-red-600">양식 파일이 없습니다 — 한글 파일을 올려 주세요</span>}
         {info?.references.map((n) => <FileChip key={n} icon="참고" name={n} disabled={running || busy} onRemove={() => void removeFile(n)} />)}
         <label className={cn("inline-flex cursor-pointer items-center gap-1 rounded border border-dashed border-slate-300 px-2 py-0.5 hover:bg-white", (running || busy) && "pointer-events-none opacity-50")}>

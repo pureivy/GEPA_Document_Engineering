@@ -3,7 +3,7 @@
  * Pure `fetch`; no server imports (this file is bundled into the client).
  */
 import type { DocModel } from "@/lib/docmodel/schema";
-import type { ExportReportDTO, FundingType, ProjectDTO, RunDTO, Stage } from "@/lib/contracts";
+import type { ExportReportDTO, FundingType, ProjectDTO, RunDTO, Stage, TemplateMode } from "@/lib/contracts";
 import type { ProjectKind } from "@/lib/kinds";
 
 export class ApiError extends Error {
@@ -159,8 +159,8 @@ export const api = {
   listMaterials: (id: string, box: MaterialBoxDTO = "materials") => request<{ materials: MaterialDTO[] }>(`/api/projects/${encodeURIComponent(id)}/materials${boxQuery(box, "?")}`),
   deleteMaterial: (id: string, name: string, box: MaterialBoxDTO = "materials") =>
     request<{ materials: MaterialDTO[] }>(`/api/projects/${encodeURIComponent(id)}/materials?name=${encodeURIComponent(name)}${boxQuery(box, "&")}`, { method: "DELETE" }),
-  /** 프로젝트 설정 바꾸기 — 지금은 결과·정산의 사업 구분(수탁|자체)만 */
-  updateProject: (id: string, patch: { 사업구분: FundingType }) =>
+  /** 프로젝트 설정 바꾸기 — 결과·정산의 사업 구분(수탁|자체), 양식 맞춰 쓰기의 쓰임(고쳐 쓰기|새로 쓰기) */
+  updateProject: (id: string, patch: { 사업구분: FundingType } | { 양식쓰임: TemplateMode }) =>
     request<{ project: ProjectDTO }>(`/api/projects/${encodeURIComponent(id)}`, { method: "PATCH", body: JSON.stringify(patch) }).then((r) => r.project),
   deleteProject: (id: string) => request<{ ok: true; id: string }>(`/api/projects/${encodeURIComponent(id)}`, { method: "DELETE" }),
 

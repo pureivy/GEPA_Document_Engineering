@@ -147,6 +147,11 @@ export interface ProjectDTO {
      * 자체사업(자부담 100%: 결과보고서 하나로 끝)인지. 없으면 수탁(예전 프로젝트). lib/kinds.ts stagesOf 가 단계 목록을 가른다.
      */
     사업구분?: FundingType;
+    /**
+     * 양식 맞춰 쓰기(template) 전용 — `고쳐 쓰기` = 같은 문서를 새 자료로 고친다(경영목표·월별 현황처럼 내용을 이어 감),
+     * `새로 쓰기` = 양식은 모양만 빌리고 내용·구성은 이번 자료로 쓴다(다른 기관 업무보고 양식에 우리 내용). 없으면 고쳐 쓰기.
+     */
+    양식쓰임?: TemplateMode;
   };
   /**
    * uploaded reference documents (projects/<id>/reference/<fileName>, text of all of them in reference/base-plan.md)
@@ -222,6 +227,13 @@ export interface ExportReportDTO {
 /** 결과·정산 프로젝트의 사업 구분 — 자체사업은 위탁기관이 없어 정산보고서·제출 공문이 없다(담당자 2026-10-26) */
 export const FUNDING_TYPES = ["수탁", "자체"] as const;
 export type FundingType = (typeof FUNDING_TYPES)[number];
+
+/**
+ * 양식 맞춰 쓰기의 쓰임 — 담당자 2026-11-24: 행정안전부 업무보고 양식에 「'모두의 성장' 추진」을 쓰라고 했더니 행안부 내용이
+ * 그대로 남았다(고쳐 쓰기 규칙: 근거 없는 원본 문장은 둔다). 모양만 빌리는 쓰임은 구성·분량이 자료를 따른다.
+ */
+export const TEMPLATE_MODES = ["고쳐 쓰기", "새로 쓰기"] as const;
+export type TemplateMode = (typeof TEMPLATE_MODES)[number];
 
 /**
  * 업무보고 형태의 저장값. 화면은 「원페이지(간략) / 자동」 두 갈래다(담당자 2026-11-18) — 원페이지 = `간략`, 자동 = `자동`

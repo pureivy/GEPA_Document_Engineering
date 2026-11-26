@@ -109,6 +109,9 @@ function charHintsOf(header: string): Record<string, string> {
     if (!id) continue;
     const hints: string[] = [];
     if (/<hh:bold\b/.test(m[2])) hints.push("굵게");
+    // 각주 표시용 첨자 칸 — 본문 글을 넣으면 아주 작게 찍힌다(2026-11-26 「'모두의 성장' 추진」)
+    if (/<hh:supscript\b/.test(m[2])) hints.push("윗첨자");
+    if (/<hh:subscript\b/.test(m[2])) hints.push("아랫첨자");
     const color = /\btextColor="#([0-9A-Fa-f]{6})"/.exec(m[1])?.[1];
     if (color && color.toUpperCase() !== "000000") hints.push(`색#${color.toUpperCase()}`);
     const h = /\bheight="(\d+)"/.exec(m[1])?.[1];
@@ -251,7 +254,7 @@ export function listParagraphs(doc: TemplateDoc, title = "양식"): string {
       .filter((r) => r.text !== "")
       .map((r) => {
         const hint = r.charPr ? doc.charHints[r.charPr] : "";
-        const bold = hint && /굵게|색#/.test(hint) ? ` ${hint.split(" ").filter((h) => !h.endsWith("pt")).join(" ")}` : "";
+        const bold = hint && /굵게|색#|첨자/.test(hint) ? ` ${hint.split(" ").filter((h) => !h.endsWith("pt")).join(" ")}` : "";
         return `⟦${r.k}${bold}⟧${r.text.replace(/\n/g, "↵").replace(/\t/g, "⇥")}`;
       })
       .join("");

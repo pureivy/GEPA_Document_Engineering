@@ -130,7 +130,7 @@ function condense(bytes: Uint8Array, targets: Map<number, Squeeze>): Uint8Array 
   return repack(doc.entries, doc.sectionNames, sections, header);
 }
 
-function repack(entries: Record<string, Uint8Array>, sectionNames: string[], sections: string[], header?: string): Uint8Array {
+export function repack(entries: Record<string, Uint8Array>, sectionNames: string[], sections: string[], header?: string): Uint8Array {
   const enc = new TextEncoder();
   const out: Zippable = {};
   for (const [name, data] of Object.entries(entries)) {
