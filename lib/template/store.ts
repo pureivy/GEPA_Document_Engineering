@@ -22,7 +22,7 @@ import { hwpToHwpx } from "../reference/extract";
 import { validateHwpx } from "../hwpx/validate";
 import { sha1 } from "../hwpx/export";
 import { hangulLayout } from "../hwpx/hangul";
-import { applyEdits, changesMarkdown, listParagraphs, readTemplate, type TemplateEdits } from "./engine";
+import { applyEdits, changesMarkdown, fillEmptyBoxes, listParagraphs, readTemplate, type TemplateEdits } from "./engine";
 import { fitTemplateLayout } from "./fit";
 import { applyRowOps } from "./rows";
 import { tidyNewWriting } from "./tidy";
@@ -148,6 +148,10 @@ export async function buildTemplateResult(workspaceDir: string): Promise<Templat
   // 배치 다듬기 — 끝 몇 글자만 내려간 바꾼 문단은 자간을 좁히고, 통째로 넘어가 앞 쪽을 비운 표는 높이를 줄여 본다(fit.ts)
   const fit = r.changes.length || rows.changes.length ? await fitTemplateLayout(r.bytes, new Set(r.changes.filter((c) => c.kind !== "지움").map((c) => c.after))).catch((e: Error) => ({ bytes: r.bytes, notes: [`배치 다듬기 실패: ${e.message}`] })) : { bytes: r.bytes, notes: [] };
   r.bytes = fit.bytes;
+  // 빈 상자(표 칸·글상자)가 남으면 한글이 열다 죽는다 — 어느 단계가 비웠든 여기서 빈 문단을 채운다(engine.ts fillEmptyBoxes)
+  const boxes = fillEmptyBoxes(r.bytes);
+  r.bytes = boxes.bytes;
+  if (boxes.filled) fit.notes.push(`빈 상자 ${boxes.filled}곳에 빈 문단을 넣음(한글이 열지 못하는 것을 막음)`);
   const v = await validateHwpx(r.bytes);
   // 새로 쓰기는 길이·쪽수를 맞출 대상이 아니다
   const leftover = leftoverByChapter(doc, r.changes);

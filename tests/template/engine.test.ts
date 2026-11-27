@@ -5,7 +5,7 @@
  */
 import { describe, expect, it } from "vitest";
 import { strToU8, unzipSync, zipSync } from "fflate";
-import { applyEdits, listParagraphs, readTemplate } from "@/lib/template/engine";
+import { applyEdits, fillEmptyBoxes, listParagraphs, readTemplate } from "@/lib/template/engine";
 
 const HEADER = `<hh:head><hh:charProperties><hh:charPr id="0" height="1500" textColor="#000000"></hh:charPr><hh:charPr id="1" height="1500" textColor="#000000"><hh:bold/></hh:charPr></hh:charProperties></hh:head>`;
 const p = (runs: [number, string][], extra = "") =>
@@ -129,5 +129,53 @@ describe("applyEdits", () => {
   it("문단이 크게 길어지면 쪽 밀림을 경고한다", () => {
     const r = applyEdits(readTemplate(hwpx()), { edits: [{ p: 1, runs: { "2": " 경북도와 현장 요구에 부응하는 디지털 경영혁신 모델을 추구하고 그 성과를 확산한다" } }] });
     expect(r.warnings[0]).toMatch(/^\[길이\] 문단 1:/);
+  });
+});
+
+/**
+ * 2026-11-27 「중소기업 AX 대전환 지원 계획」(새로 쓰기): 표지 글상자 4개의 하나뿐인 문단을 지워 빈 <hp:subList> 가 남았고,
+ * 한글이 파일을 열다 닫혔다. 상자(표 칸·글상자)는 문단이 하나도 없으면 안 된다.
+ */
+describe("빈 상자 막기", () => {
+  const boxSection =
+    `<hs:sec>` +
+    `<hp:p id="0"><hp:run charPrIDRef="0"><hp:secPr/><hp:t>첫 문단</hp:t></hp:run></hp:p>` + // 0
+    `<hp:p id="0"><hp:run charPrIDRef="0"><hp:rect><hp:drawText><hp:subList>${p([[0, "□□"]])}</hp:subList></hp:drawText></hp:rect><hp:t>표지</hp:t></hp:run></hp:p>` + // 1(글상자) 2
+    `<hp:p id="0"><hp:run charPrIDRef="0"><hp:tbl><hp:tr>${cell(0, 0, p([[0, "가"]]) + p([[0, "나"]]))}</hp:tr></hp:tbl><hp:t/></hp:run></hp:p>` + // 3(표) 4 5
+    `</hs:sec>`;
+  const boxHwpx = () => zipSync({ mimetype: [strToU8("application/hwp+zip"), { level: 0 }], "Contents/header.xml": strToU8(HEADER), "Contents/section0.xml": strToU8(boxSection) });
+  const emptyBoxes = (xml: string) => (xml.match(/<hp:subList\b[^>]*>\s*<\/hp:subList>/g) ?? []).length;
+
+  it("글상자의 하나뿐인 문단을 지우라 해도 글자만 비우고 문단은 남긴다", () => {
+    const d = readTemplate(boxHwpx());
+    expect(d.paragraphs[2].box).toBeDefined();
+    const r = applyEdits(d, { edits: [{ p: 2, delete: true }] });
+    const xml = sectionOf(r.bytes);
+    expect(emptyBoxes(xml)).toBe(0);
+    expect(xml).not.toContain("□□");
+    expect(r.warnings.some((w) => w.startsWith("[빈 상자] 문단 2"))).toBe(true);
+  });
+
+  it("표 칸의 문단을 모두 지우라 해도 첫 문단은 남긴다", () => {
+    const r = applyEdits(readTemplate(boxHwpx()), { edits: [{ p: 4, delete: true }, { p: 5, delete: true }] });
+    const xml = sectionOf(r.bytes);
+    expect(emptyBoxes(xml)).toBe(0);
+    expect(xml).not.toContain("<hp:t>가</hp:t>");
+    expect(xml).not.toContain("<hp:t>나</hp:t>");
+  });
+
+  it("상자를 품은 문단째 지우면 상자가 통째로 빠진다", () => {
+    const r = applyEdits(readTemplate(boxHwpx()), { edits: [{ p: 1, delete: true }, { p: 2, delete: true }] });
+    const xml = sectionOf(r.bytes);
+    expect(xml).not.toContain("<hp:rect>");
+    expect(r.warnings.some((w) => w.startsWith("[빈 상자]"))).toBe(false);
+  });
+
+  it("fillEmptyBoxes 는 남은 빈 상자에 빈 문단을 넣는다", () => {
+    const broken = zipSync({ mimetype: [strToU8("application/hwp+zip"), { level: 0 }], "Contents/section0.xml": strToU8(`<hs:sec><hp:subList id=""></hp:subList><hp:subList/><hp:subList>${p([[0, "x"]])}</hp:subList></hs:sec>`) });
+    const r = fillEmptyBoxes(broken);
+    expect(r.filled).toBe(2);
+    expect(emptyBoxes(sectionOf(r.bytes))).toBe(0);
+    expect(sectionOf(r.bytes)).toContain("<hp:t>x</hp:t>");
   });
 });

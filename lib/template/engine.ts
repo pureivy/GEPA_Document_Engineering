@@ -46,6 +46,8 @@ export interface TParagraph {
   hasSecPr: boolean;
   /** 표 칸 안 문단의 바깥 문단 번호(바로 위) */
   parent?: number;
+  /** 문단을 담은 상자(<hp:subList> — 표 칸·글상자) 번호. 상자에 문단이 하나도 없으면 한글이 열다 죽는다 */
+  box?: number;
 }
 
 export interface TemplateDoc {
@@ -121,13 +123,15 @@ function charHintsOf(header: string): Record<string, string> {
   return out;
 }
 
-const TOKEN_RE = /<(\/?)(hp:p|hp:t|hp:run|hp:linesegarray|hp:tbl|hp:tc|hp:cellAddr|hp:secPr|hp:pic|hp:rect|hp:ellipse|hp:container|hp:equation|hp:ole)\b([^>]*?)(\/?)>/g;
+const TOKEN_RE = /<(\/?)(hp:p|hp:t|hp:run|hp:linesegarray|hp:tbl|hp:tc|hp:cellAddr|hp:subList|hp:secPr|hp:pic|hp:rect|hp:ellipse|hp:container|hp:equation|hp:ole)\b([^>]*?)(\/?)>/g;
 
 function parseSection(xml: string, section: number, firstId: number, tableBase: number): { paragraphs: TParagraph[]; tables: number } {
   const paragraphs: TParagraph[] = [];
   const pStack: TParagraph[] = [];
   const cellStack: { table: number; row: number; col: number; paras: TParagraph[] }[] = [];
   const tblStack: number[] = [];
+  const boxStack: number[] = [];
+  let boxes = 0;
   let tables = 0;
   let charPr: string | undefined;
   let id = firstId;
@@ -140,7 +144,8 @@ function parseSection(xml: string, section: number, firstId: number, tableBase: 
     if (name === "hp:p") {
       if (!close) {
         const cell = cellStack[cellStack.length - 1];
-        const p: TParagraph = { id: id++, section, start: at, end: -1, runs: [], tables: [], hasObject: false, hasSecPr: false, ...(top ? { parent: top.id } : {}) };
+        const box = boxStack[boxStack.length - 1];
+        const p: TParagraph = { id: id++, section, start: at, end: -1, runs: [], tables: [], hasObject: false, hasSecPr: false, ...(top ? { parent: top.id } : {}), ...(box !== undefined ? { box } : {}) };
         if (cell) cell.paras.push(p);
         paragraphs.push(p);
         pStack.push(p);
@@ -188,6 +193,10 @@ function parseSection(xml: string, section: number, firstId: number, tableBase: 
         c.col = Number(/colAddr="(\d+)"/.exec(attrs)?.[1] ?? -1);
         c.row = Number(/rowAddr="(\d+)"/.exec(attrs)?.[1] ?? -1);
       }
+    } else if (name === "hp:subList") {
+      // 번호는 섹션마다 따로 매기므로 섹션 번호를 앞에 붙여 겹치지 않게 한다
+      if (!close && !selfClose) boxStack.push(section * 1_000_000 + ++boxes);
+      else if (close) boxStack.pop();
     } else if (name === "hp:secPr" && !close && top) {
       top.hasSecPr = true;
     } else if (!close && top) {
@@ -400,6 +409,21 @@ export function applyEdits(doc: TemplateDoc, input: TemplateEdits): ApplyResult 
     errors.push(`${label}: 알 수 없는 지시입니다(p+runs, p+delete, insertAfter+like+runs 중 하나)`);
   }
 
+  // 상자(표 칸·글상자)의 문단을 모두 지우면 빈 상자가 남고 한글이 파일을 열다 죽는다(2026-11-27 「중소기업 AX 대전환
+  // 지원 계획」: 표지 글상자 4개의 문단을 지워 열리지 않음). 상자를 품은 문단째 지우는 게 아니면 첫 문단은 남기고 글자만 비운다
+  const boxParas = new Map<number, TParagraph[]>();
+  for (const q of doc.paragraphs) if (q.box !== undefined) boxParas.set(q.box, [...(boxParas.get(q.box) ?? []), q]);
+  for (const paras of boxParas.values()) {
+    if (!paras.every((q) => deleted.has(q.id))) continue;
+    const holder = paras[0].parent !== undefined ? byId.get(paras[0].parent) : undefined;
+    const holderGone = (q?: TParagraph): boolean => !!q && (deleted.has(q.id) || holderGone(q.parent !== undefined ? byId.get(q.parent) : undefined));
+    if (holderGone(holder)) continue;
+    const keep = paras[0];
+    deleted.delete(keep.id);
+    runSets.set(keep.id, keep.runs.map((r) => [r, ""] as [TRun, string]));
+    warnings.push(`[빈 상자] 문단 ${keep.id} 은 ${keep.cell ? "표 칸" : "글상자"}의 마지막 문단이라 지우지 않고 글자만 비웠습니다 — 상자째 없애려면 상자를 품은 문단 ${holder?.id ?? "?"} 을 지웁니다`);
+  }
+
   // 지운 문단(과 그 안의 문단)
   const isInside = (q: TParagraph, outer: TParagraph) => q.section === outer.section && q.start > outer.start && q.end <= outer.end;
   const deletedOuter = doc.paragraphs.filter((p) => deleted.has(p.id));
@@ -452,6 +476,32 @@ export function applyEdits(doc: TemplateDoc, input: TemplateEdits): ApplyResult 
     out[name] = name === "mimetype" ? [bytes, { level: 0 }] : [bytes, { level: 6 }];
   }
   return { bytes: zipSync(out, { mtime: new Date("1980-01-01T00:00:00Z") }), changes, errors, warnings };
+}
+
+/**
+ * 마지막 안전망: 문단이 하나도 없는 상자(<hp:subList>)에 빈 문단을 하나 넣는다. 고침·행 빼기·뒷정리·배치 다듬기
+ * 어느 단계가 상자를 비워도 한글이 열다 죽지 않게 — 내보내기 직전에 한 번 거른다.
+ */
+export function fillEmptyBoxes(bytes: Uint8Array): { bytes: Uint8Array; filled: number } {
+  const entries = unzipSync(bytes);
+  const dec = new TextDecoder();
+  const enc = new TextEncoder();
+  let filled = 0;
+  const EMPTY_P = `<hp:p id="0" paraPrIDRef="0" styleIDRef="0" pageBreak="0" columnBreak="0" merged="0"><hp:run charPrIDRef="0"><hp:t/></hp:run></hp:p>`;
+  const out: Zippable = {};
+  for (const [name, data] of Object.entries(entries)) {
+    let bytesOut = data;
+    if (SECTION_RE.test(name)) {
+      const xml = dec.decode(data);
+      const next = xml.replace(/<hp:subList\b([^>]*?)(?:\/>|>\s*<\/hp:subList>)/g, (_, a: string) => {
+        filled++;
+        return `<hp:subList${a}>${EMPTY_P}</hp:subList>`;
+      });
+      if (next !== xml) bytesOut = enc.encode(next);
+    }
+    out[name] = name === "mimetype" ? [bytesOut, { level: 0 }] : [bytesOut, { level: 6 }];
+  }
+  return filled ? { bytes: zipSync(out, { mtime: new Date("1980-01-01T00:00:00Z") }), filled } : { bytes, filled };
 }
 
 /** 바뀐 문단을 사람이 읽는 표로 */
